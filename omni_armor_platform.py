@@ -11,16 +11,19 @@ Each result cites the rule it applies. Thresholds that come from company or
 agency policy rather than law are parameters, and the message says so.
 This is decision support, not legal advice: confirm each rule for your
 jurisdiction and operation before relying on it.
+
+Two layers of checks:
+    - 25 detailed checks, one per industry (the *_armor_* methods below)
+    - the rule catalog in omni_armor_rules: the ten costliest compliance
+      risks per industry, 250 in all, run with check_rule / run_industry
 """
 
 import datetime
 import json
 from dataclasses import dataclass, asdict
 
-CLEARED = "CLEARED"
-WARNING = "WARNING"
-BLOCKED = "BLOCKED"
-LEVELS = (CLEARED, WARNING, BLOCKED)
+from omni_armor_rules import CATALOG, get_rule, evaluate
+from omni_armor_rules.rule import BLOCKED, CLEARED, LEVELS, WARNING
 
 
 # =====================================================================
@@ -59,6 +62,32 @@ class MoonstoneThemeColors:
         23: {"name": "MineArmor (Mining & Minerals)", "color": "Blasting Orange-Yellow", "hex": "#FF5A5F"},
         24: {"name": "PortArmor (Port Authorities)", "color": "Oceanic Deep Harbor Blue", "hex": "#03045E"},
         25: {"name": "GeneArmor (Biotech & Genetics)", "color": "Glowing Cyber Lab Ultraviolet", "hex": "#7209B7"},
+        # Expansion industries 26-50: rule catalog only, no detailed check yet.
+        26: {"name": "SeniorArmor (Nursing Homes & Assisted Living)", "color": "Heirloom Rose", "hex": "#C4577A"},
+        27: {"name": "DentalArmor (Dental & Medical Practices)", "color": "Enamel Aqua", "hex": "#2BB3C0"},
+        28: {"name": "PharmacyArmor (Pharmacies)", "color": "Apothecary Green", "hex": "#2F9E6E"},
+        29: {"name": "BuildArmor (Construction)", "color": "Hi-Vis Hardhat Yellow", "hex": "#F5B700"},
+        30: {"name": "HRArmor (Employers & HR)", "color": "Payroll Indigo", "hex": "#3F51B5"},
+        31: {"name": "PrivacyArmor (Data Privacy & SaaS)", "color": "Encrypted Slate Violet", "hex": "#6C5B9E"},
+        32: {"name": "PayArmor (Payments & Merchants)", "color": "Terminal Teal", "hex": "#008C8C"},
+        33: {"name": "CryptoArmor (Crypto & Money Services)", "color": "Block Orange", "hex": "#F7931A"},
+        34: {"name": "MortgageArmor (Mortgage Lending)", "color": "Deed Blue", "hex": "#1E5AA8"},
+        35: {"name": "CollectArmor (Debt Collection)", "color": "Notice Burgundy", "hex": "#8C2F39"},
+        36: {"name": "DefenseArmor (Defense Contractors)", "color": "Field Olive Drab", "hex": "#5B6B2E"},
+        37: {"name": "FoodArmor (Food Manufacturing)", "color": "Harvest Wheat", "hex": "#D9A441"},
+        38: {"name": "DeviceArmor (Medical Devices)", "color": "Sterile Steel Blue", "hex": "#4F7CAC"},
+        39: {"name": "ChemArmor (Chemical Plants)", "color": "Reagent Chartreuse", "hex": "#9BC53D"},
+        40: {"name": "WasteArmor (Hazardous Waste)", "color": "Drum Hazard Orange", "hex": "#E86A1C"},
+        41: {"name": "GridArmor (Electric Utilities)", "color": "High-Voltage Cyan", "hex": "#00A6D6"},
+        42: {"name": "WaterArmor (Water Utilities)", "color": "Reservoir Navy", "hex": "#16457A"},
+        43: {"name": "LawArmor (Law Firms)", "color": "Counsel Oxblood", "hex": "#6D1A36"},
+        44: {"name": "CampusArmor (Colleges & Universities)", "color": "Ivy Green", "hex": "#2E6B3A"},
+        45: {"name": "ChildArmor (Child Care)", "color": "Crayon Sky Blue", "hex": "#5AB0F0"},
+        46: {"name": "HotelArmor (Hotels & Lodging)", "color": "Concierge Plum", "hex": "#7B3F7E"},
+        47: {"name": "BarArmor (Bars, Breweries & Liquor)", "color": "Amber Ale", "hex": "#C8792A"},
+        48: {"name": "FirearmArmor (Firearms Dealers)", "color": "Gunmetal Grey", "hex": "#53565A"},
+        49: {"name": "CasinoArmor (Casinos & Gaming)", "color": "Felt Table Green", "hex": "#0B7A3E"},
+        50: {"name": "ShopArmor (E-commerce)", "color": "Cart Magenta", "hex": "#D63384"},
     }
 
 
@@ -173,6 +202,29 @@ class OmniArmorPortal:
     def export_audit_log(self):
         """Returns every result recorded so far as a JSON string."""
         return json.dumps([r.to_dict() for r in self.audit_log], indent=2, ensure_ascii=False)
+
+    # ==========================================
+    # 💸 COSTLIEST-RISK RULE CATALOG (10 PER INDUSTRY)
+    # ==========================================
+    def check_rule(self, module_id, rule_key, value):
+        """Checks one catalog rule against one reading."""
+        rule = get_rule(module_id, rule_key)
+        level, status, message = evaluate(rule, value)
+        citation = rule.citation + (" (policy setting)" if rule.policy else "")
+        return self._execute_gatekeeper_event(module_id, rule.title, level, status, message, citation)
+
+    def run_industry(self, module_id, readings=None):
+        """Checks all ten rules for one industry. readings maps rule key to
+        value; rules without a reading use their sample value."""
+        readings = readings or {}
+        unknown = set(readings) - {r.key for r in CATALOG[module_id]}
+        if unknown:
+            raise KeyError(f"Industry {module_id} has no rules {sorted(unknown)}")
+        return [self.check_rule(module_id, r.key, readings.get(r.key, r.sample)) for r in CATALOG[module_id]]
+
+    def run_full_catalog(self):
+        """Checks all 250 rules with their sample values."""
+        return {module_id: self.run_industry(module_id) for module_id in sorted(CATALOG)}
 
     # --- 1. FLEETARMOR (LOGISTICS) ---
     def fleet_armor_hos_timer(self, driving_hours, on_duty_window_hours=None, driving_since_break_hours=None):
@@ -650,12 +702,30 @@ class OmniArmorPortal:
 
         if self.verbose:
             counts = {level: sum(r.level == level for r in results) for level in LEVELS}
-            print(f"\n🏁 [Launch Matrix Execution Complete] - Industries Checked: {len({r.module_id for r in results})} of {len(self.theme.INDUSTRIES)}")
+            print(f"\n🏁 [Launch Matrix Execution Complete] - Detailed Checks Run: {len({r.module_id for r in results})} industries (all {len(self.theme.INDUSTRIES)} are covered by the rule catalog)")
             print(f"🚦 Cleared: {counts[CLEARED]} | Warnings: {counts[WARNING]} | Blocked: {counts[BLOCKED]}")
             print(f"💳 Final Calculated Running Overhead Cost: {self.tracker.total_cost_tracker()}")
         return results
 
 
+def print_catalog_summary():
+    """Runs all 250 catalog rules on their sample values and prints one line per industry."""
+    portal = OmniArmorPortal(verbose=False)
+    print("\n💸 [Costliest-Risk Catalog] - 10 rules per industry, sample readings")
+    print("-" * 83)
+    totals = {level: 0 for level in LEVELS}
+    for module_id, results in portal.run_full_catalog().items():
+        counts = {level: sum(r.level == level for r in results) for level in LEVELS}
+        for level in LEVELS:
+            totals[level] += counts[level]
+        name = portal.theme.INDUSTRIES[module_id]["name"]
+        name = name if len(name) <= 44 else name[:43] + "…"
+        print(f" [{module_id:02d}] {name:<44} Cleared {counts[CLEARED]:>2} | Warning {counts[WARNING]:>2} | Blocked {counts[BLOCKED]:>2}")
+    print("-" * 83)
+    print(f" All {sum(totals.values())} rules: Cleared {totals[CLEARED]} | Warning {totals[WARNING]} | Blocked {totals[BLOCKED]}")
+
+
 if __name__ == "__main__":
     portal = OmniArmorPortal()
     portal.run_portal()
+    print_catalog_summary()
