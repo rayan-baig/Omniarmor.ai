@@ -18,6 +18,7 @@
   --warn:#E07A1F;  --warn-deep:#B35E12; --warn-bg:#F5E3CF; --warn-text:#8F4A0C; --on-warn:#1E1A17;
   --clear:#8C847B; --clear-bg:transparent;
   --none-bg:#E8E3DB;
+  --slogan:#F08A2E;
   --shadow:0 1px 0 rgba(30,26,23,.08);
   --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
@@ -29,7 +30,7 @@
     --bg:#141210;--surface:#1C1916;--surface-2:#23201C;--ink:#EDE7DE;--muted:#A89F94;--faint:#7C7369;--line:#35302A;--line-strong:#EDE7DE;--on-ink:#141210;
     --block:#FF5A45;--block-deep:#C23A28;--block-bg:#3A1A15;--block-text:#FF7A66;--on-block:#141210;
     --warn:#F08A2E;--warn-deep:#B8641A;--warn-bg:#35240F;--warn-text:#F5A04E;--on-warn:#141210;
-    --clear:#7C7369;--none-bg:#27231F;
+    --clear:#7C7369;--none-bg:#27231F;--slogan:#A8520F;
     --shadow:0 1px 0 rgba(0,0,0,.4);
   }
 }
@@ -38,7 +39,7 @@
   --bg:#141210;--surface:#1C1916;--surface-2:#23201C;--ink:#EDE7DE;--muted:#A89F94;--faint:#7C7369;--line:#35302A;--line-strong:#EDE7DE;--on-ink:#141210;
   --block:#FF5A45;--block-deep:#C23A28;--block-bg:#3A1A15;--block-text:#FF7A66;--on-block:#141210;
   --warn:#F08A2E;--warn-deep:#B8641A;--warn-bg:#35240F;--warn-text:#F5A04E;--on-warn:#141210;
-  --clear:#7C7369;--none-bg:#27231F;
+  --clear:#7C7369;--none-bg:#27231F;--slogan:#A8520F;
   --shadow:0 1px 0 rgba(0,0,0,.4);
 }
 
@@ -162,6 +163,18 @@ button,input{font:inherit;color:inherit}
 .msg{margin:0;font-size:14px;text-wrap:pretty}
 .msg.BLOCKED{color:var(--block-text);font-weight:500}.msg.WARNING{color:var(--warn-text);font-weight:500}.msg.CLEARED,.msg.NONE{color:var(--muted)}
 .no-rows{padding:32px 24px;color:var(--muted)}
+.slogan{margin:10px 0 0;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.05;letter-spacing:.02em;text-transform:uppercase;color:var(--slogan);animation:fadeUp .7s .25s cubic-bezier(.2,.8,.2,1) both}
+.date-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.date-pick input{height:36px;border:1.5px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);padding:0 8px;font-family:var(--mono);font-size:13px}
+.date-pick input:focus{border-color:var(--ink);outline:none}
+.rule.match h2 span{box-shadow:inset 0 -.38em 0 color-mix(in srgb,var(--warn) 38%,transparent)}
+.match-note{color:var(--warn-text);font-size:12px;font-weight:500}
+.report-box{padding:14px 24px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+[hidden]{display:none!important}
+.report-box textarea{width:100%;min-height:200px;font-family:var(--mono);font-size:12.5px;line-height:1.5;border:1.5px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);padding:10px;resize:vertical}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:4px;font-size:14px;font-weight:500;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fadeUp .3s both}
+.btn.primary{background:var(--ink);color:var(--on-ink)}
+.btn.primary:hover{opacity:.9}
 
 footer{color:var(--muted);font-size:13px;max-width:84ch;text-wrap:pretty}
 
@@ -231,6 +244,7 @@ footer{color:var(--muted);font-size:13px;max-width:84ch;text-wrap:pretty}
         </svg>
         <div class="wordmark" aria-label="OmniArmor.ai"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
       </div>
+      <p class="slogan">Catch the fine before it catches you.</p>
       <p class="tagline">The ten compliance failures that cost each industry the most, checked against your readings. Change any reading and the result updates.</p>
     </div>
     <div class="stamp" id="stamp"></div>
@@ -250,7 +264,7 @@ footer{color:var(--muted);font-size:13px;max-width:84ch;text-wrap:pretty}
     <nav class="rail" aria-label="Industries">
       <div class="rail-head">
         <div class="rail-top"><label class="label" for="q">Industries</label><span class="label" id="rail-count"></span></div>
-        <input class="search" id="q" type="search" placeholder="Find an industry" autocomplete="off">
+        <input class="search" id="q" type="search" placeholder="Find an industry or rule, e.g. OFAC" autocomplete="off">
         <div class="filters" role="group" aria-label="Filter industries">
           <button class="fbtn" type="button" data-filter="all" aria-pressed="true">All</button>
           <button class="fbtn" type="button" data-filter="problems" aria-pressed="false">With problems</button>
@@ -268,11 +282,17 @@ footer{color:var(--muted);font-size:13px;max-width:84ch;text-wrap:pretty}
           <p id="ind-sector"></p>
         </div>
         <div class="tools">
-          <label class="toggle"><input type="checkbox" id="only-problems"> Only show problems</label>
+          <label class="toggle"><input type="checkbox" id="problems-first" checked> Problems first</label>
+          <label class="toggle"><input type="checkbox" id="only-problems"> Only problems</label>
           <button class="btn" type="button" id="reset">Reset readings</button>
+          <button class="btn primary" type="button" id="copy">Copy report</button>
         </div>
       </div>
       <div class="ind-summary" id="ind-summary" aria-live="polite"></div>
+      <div class="report-box" id="report-box" hidden>
+        <label class="label" for="report-text">Report text: select it and copy</label>
+        <textarea id="report-text" readonly></textarea>
+      </div>
       <ul class="rules" id="rules"></ul>
     </main>
   </div>
@@ -411,9 +431,12 @@ $("bar").addEventListener("mousemove", e => {
 $("bar").addEventListener("mouseleave", () => { const t = $("bar").querySelector(".tip"); if (t) t.remove(); });
 
 /* Industry rail */
+const query = () => $("q").value.trim().toLowerCase();
+const ruleMatches = (r, q) => !!q && `${r.title} ${r.citation} ${r.input}`.toLowerCase().includes(q);
 function renderRail() {
-  const q = $("q").value.trim().toLowerCase();
-  const list = INDUSTRIES.filter(i => !q || `${i.brand} ${i.sector}`.toLowerCase().includes(q))
+  const q = query();
+  const hits = i => i.rules.filter(r => ruleMatches(r, q)).length;
+  const list = INDUSTRIES.filter(i => !q || `${i.brand} ${i.sector}`.toLowerCase().includes(q) || hits(i) > 0)
     .filter(i => railFilter === "all" || tally(levelsFor(i)).BLOCKED + tally(levelsFor(i)).WARNING > 0);
   $("rail-count").textContent = `${list.length} shown`;
   $("ind-list").innerHTML = list.length ? list.map(i => {
@@ -424,7 +447,7 @@ function renderRail() {
     const label = `${i.brand}, ${i.sector}: ${t.BLOCKED} blocked, ${t.WARNING} warnings`;
     return `<li><button class="ind" type="button" data-id="${i.id}" aria-current="${i.id === selectedId}" aria-label="${esc(label)}">
       <span class="code">${code(i.id)}</span>
-      <span class="ind-name"><strong>${esc(i.brand)}</strong><small>${esc(i.sector)}</small></span>
+      <span class="ind-name"><strong>${esc(i.brand)}</strong><small>${esc(i.sector)}</small>${q && hits(i) ? `<small class="match-note">${hits(i)} matching ${hits(i) === 1 ? "rule" : "rules"}</small>` : ""}</span>
       <span class="counts" aria-hidden="true">${counts}</span></button></li>`;
   }).join("") : `<li class="empty">No industry matches.</li>`;
 }
@@ -432,7 +455,7 @@ $("ind-list").addEventListener("click", e => {
   const b = e.target.closest(".ind");
   if (b) select(Number(b.dataset.id));
 });
-$("q").addEventListener("input", renderRail);
+$("q").addEventListener("input", () => { renderRail(); renderIndustry(false); });
 document.querySelectorAll(".fbtn").forEach(b => b.addEventListener("click", () => {
   railFilter = b.dataset.filter;
   document.querySelectorAll(".fbtn").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
@@ -445,12 +468,29 @@ function limitText(r) {
   if (r.kind === "min") return `Minimum ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns at ${fmt(r.warn, r.unit)} or less` : "");
   return "";
 }
+/* Day counts can be entered as a date: "days since" counts up to today, "days until" counts down from it. */
+function dateMode(r) {
+  if (r.unit !== "days" && r.unit !== "calendar days") return null;
+  if (/\bdays? since\b/i.test(r.input)) return "since";
+  if (/\bdays? until\b/i.test(r.input)) return "until";
+  return null;
+}
+const MS_DAY = 86400000;
+function todayStart() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function daysFromDate(value, mode) {
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const picked = new Date(y, m - 1, d);
+  return Math.round((mode === "since" ? todayStart() - picked : picked - todayStart()) / MS_DAY);
+}
 function inputHtml(ind, r) {
   const id = `in-${ind.id}-${r.key}`;
   const v = readings[ind.id][r.key];
   if (r.kind === "max" || r.kind === "min") {
+    const mode = dateMode(r);
     return `<label class="q" for="${id}">${esc(r.input)}</label>
       <div class="num"><input id="${id}" type="number" inputmode="decimal" step="any" value="${v === null ? "" : v}" data-key="${r.key}">${r.unit ? `<span class="unit">${esc(r.unit)}</span>` : ""}</div>
+      ${mode ? `<label class="date-pick" for="${id}-date">Or pick the ${mode === "since" ? "date it happened" : "due date"} <input type="date" id="${id}-date" data-date-for="${r.key}" data-mode="${mode}"></label>` : ""}
       <span class="limit">${esc(limitText(r))}</span>`;
   }
   return `<span class="q" id="${id}-q">${esc(r.input)}</span>
@@ -472,12 +512,15 @@ function renderIndustry(animate = true) {
   $("ind-title").textContent = ind.brand;
   $("ind-sector").textContent = `${ind.sector} · the 10 compliance failures that cost this industry the most`;
   const only = $("only-problems").checked;
-  const rows = ind.rules.map(r => ({r, res: evaluate(r, readings[ind.id][r.key])}))
+  const rank = {BLOCKED: 0, WARNING: 1, NONE: 2, CLEARED: 3};
+  const q = query();
+  let rows = ind.rules.map((r, n) => ({r, n, res: evaluate(r, readings[ind.id][r.key])}))
     .filter(({res}) => !only || res[0] === "BLOCKED" || res[0] === "WARNING");
+  if ($("problems-first").checked) rows = rows.sort((a, b) => rank[a.res[0]] - rank[b.res[0]] || a.n - b.n);
   $("rules").innerHTML = rows.length ? rows.map(({r, res}, idx) => `
-    <li class="rule${animate ? " enter" : ""}" style="--i:${idx}" data-level="${res[0]}" data-key="${r.key}">
+    <li class="rule${animate ? " enter" : ""}${ruleMatches(r, q) ? " match" : ""}" style="--i:${idx}" data-level="${res[0]}" data-key="${r.key}">
       <div class="rule-main">
-        <div class="rule-top"><h2>${esc(r.title)}</h2><span class="status">${tagHtml(res[0])}</span></div>
+        <div class="rule-top"><h2><span>${esc(r.title)}</span></h2><span class="status">${tagHtml(res[0])}</span></div>
         <p class="cost">${esc(r.cost)}</p>
         <p class="cite"><span>${esc(r.citation)}</span>${r.policy ? '<span class="policy">Policy</span>' : ""}</p>
       </div>
@@ -516,8 +559,19 @@ function updateRow(ind, key) {
 }
 $("rules").addEventListener("input", e => {
   const el = e.target;
-  if (!el.dataset.key) return;
   const ind = INDUSTRIES.find(i => i.id === selectedId);
+  if (el.dataset.dateFor) {
+    const days = daysFromDate(el.value, el.dataset.mode);
+    if (days === null) return;
+    const key = el.dataset.dateFor;
+    readings[ind.id][key] = days;
+    const num = $(`in-${ind.id}-${key}`);
+    if (num) num.value = days;
+    updateRow(ind, key);
+    save();
+    return;
+  }
+  if (!el.dataset.key) return;
   if (el.type === "number") {
     const n = el.value.trim() === "" ? null : Number(el.value);
     readings[ind.id][el.dataset.key] = Number.isFinite(n) ? n : null;
@@ -528,6 +582,47 @@ $("rules").addEventListener("input", e => {
   save();
 });
 $("only-problems").addEventListener("change", () => renderIndustry());
+$("problems-first").addEventListener("change", () => renderIndustry());
+
+function reportText(ind) {
+  const t = tally(levelsFor(ind));
+  const date = new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+  const lines = [`OmniArmor.ai compliance report`, `${ind.brand} (${ind.sector}), ${date}`,
+    `${t.BLOCKED} blocked, ${t.WARNING} warnings, ${t.CLEARED} cleared` + (t.NONE ? `, ${t.NONE} without a reading` : ""), ""];
+  for (const level of ["BLOCKED", "WARNING", "NONE", "CLEARED"]) {
+    const rules = ind.rules.filter(r => evaluate(r, readings[ind.id][r.key])[0] === level);
+    if (!rules.length) continue;
+    lines.push(LEVEL_LABEL[level].toUpperCase());
+    for (const r of rules) {
+      const res = evaluate(r, readings[ind.id][r.key]);
+      lines.push(level === "CLEARED" ? `- ${r.title}` : `- ${r.title}: ${res[2]} [${r.citation}]`);
+    }
+    lines.push("");
+  }
+  lines.push("Readings entered by hand. Decision support, not legal advice.");
+  return lines.join("\n");
+}
+function toast(text) {
+  document.querySelectorAll(".toast").forEach(t => t.remove());
+  const el = document.createElement("div");
+  el.className = "toast"; el.setAttribute("role", "status"); el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
+}
+$("copy").addEventListener("click", () => {
+  const ind = INDUSTRIES.find(i => i.id === selectedId);
+  const text = reportText(ind);
+  const fallback = () => {
+    $("report-box").hidden = false;
+    $("report-text").value = text;
+    $("report-text").focus();
+    $("report-text").select();
+    toast("Select the report text and copy it");
+  };
+  try {
+    navigator.clipboard.writeText(text).then(() => { $("report-box").hidden = true; toast(`Report for ${ind.brand} copied`); }, fallback);
+  } catch (e) { fallback(); }
+});
 $("reset").addEventListener("click", () => {
   const ind = INDUSTRIES.find(i => i.id === selectedId);
   for (const r of ind.rules) readings[ind.id][r.key] = r.sample;
@@ -537,6 +632,7 @@ $("reset").addEventListener("click", () => {
 
 function select(id) {
   selectedId = id;
+  $("report-box").hidden = true;
   const ind = INDUSTRIES.find(i => i.id === id);
   try { history.replaceState(null, "", "#" + slug(ind)); } catch (e) {}
   save();

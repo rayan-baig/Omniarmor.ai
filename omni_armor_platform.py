@@ -25,6 +25,8 @@ from dataclasses import dataclass, asdict
 from omni_armor_rules import CATALOG, get_rule, evaluate
 from omni_armor_rules.rule import BLOCKED, CLEARED, LEVELS, WARNING
 
+SLOGAN = "Catch the fine before it catches you."
+
 
 # =====================================================================
 # 🌌 THE MEGAPOLIS THEME MATRIX: MOONSTONE LAVENDER GREY CORE
@@ -667,7 +669,8 @@ class OmniArmorPortal:
     def run_portal(self):
         """Runs one sample check for each of the 25 modules and returns the results."""
         if self.verbose:
-            print(f"\n🌌 [OmniArmor.ai Master Portal]: Active - Theme: {self.theme.BASE_THEME} / Brand: {self.theme.BRAND_PRIMARY}")
+            print(f"\n🛡️  OmniArmor.ai: {SLOGAN}")
+            print(f"🌌 [OmniArmor.ai Master Portal]: Active - Theme: {self.theme.BASE_THEME} / Brand: {self.theme.BRAND_PRIMARY}")
             print(f"💰 Bootstrapped Maintenance Overhead Active: {self.tracker.total_cost_tracker()}")
             print("-" * 75)
 
