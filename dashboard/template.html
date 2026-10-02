@@ -1,221 +1,172 @@
 <title>OmniArmor Risk Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Night shift: one dark theme on every device, by design. Warm charcoal surfaces, bone text, and red and orange kept for status. */
+/* Black, orange and red. One dark theme on every device, by design: few
+   surfaces, thin dividers, orange as the accent, red for anything blocked. */
 :root{
   color-scheme:dark;
-  --bg:#121110;
-  --surface:#1B1815;
-  --surface-2:#221E1A;
-  --placard:#0B0A09;
-  --raise:#2E2924;
-  --active-bg:#2C241C;
+  --bg:#0F0E0D;
+  --raise:#1A1816;
+  --hover:#1D1A17;
   --ink:#E9E2D8;
   --muted:#ABA297;
   --faint:#958B80;
-  --line:#332E28;
-  --line-strong:#4A433C;
-  --field-line:#776D63;
-  --on-ink:#121110;
-  --block:#FF5A45; --block-deep:#C23A28; --block-bg:#3A1A15; --block-text:#FF8572; --on-block:#121110;
-  --warn:#F08A2E;  --warn-deep:#B8641A; --warn-bg:#35240F; --warn-text:#F7A85A; --on-warn:#121110;
-  --clear-seg:#5A524A;
-  --none-bg:#27231F;
-  --slogan:#F08A2E;
+  --line:#2A2622;
+  --field:#776D63;
+  --accent:#F08A2E; --accent-text:#F7A85A; --on-accent:#0F0E0D;
+  --block:#FF5A45; --block-text:#FF8572; --block-tint:rgba(255,90,69,.07); --on-block:#0F0E0D;
+  --warn:#F08A2E;  --warn-text:#F7A85A; --warn-tint:rgba(240,138,46,.07);
+  --clear-seg:#4A433C;
   --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
   --display:'Big Shoulders Display','Arial Narrow','Helvetica Neue',sans-serif;
 }
-
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
 button,input{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
-.wrap{max-width:1320px;margin:0 auto;padding-inline:24px;padding-block:20px 40px;display:flex;flex-direction:column;gap:18px}
-.label{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.hazard{height:4px;background-image:linear-gradient(135deg,var(--warn) 25%,var(--placard) 25%,var(--placard) 50%,var(--warn) 50%,var(--warn) 75%,var(--placard) 75%);border-radius:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-9999px;top:12px;z-index:20;background:var(--accent);color:var(--on-accent);padding:10px 16px;border-radius:6px;font-weight:600;text-decoration:none}
+.skip:focus{left:16px}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:32px;padding-block:28px 48px;display:flex;flex-direction:column;gap:36px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 
-/* Header placard */
-.placard{background:var(--placard);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:18px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center}
-.lockup{display:flex;align-items:center;gap:14px}
+/* Header */
+.top{display:flex;flex-direction:column;gap:18px}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px}
+.brand{display:flex;flex-direction:column;gap:6px}
+.lockup{display:flex;align-items:center;gap:12px}
 .lockup svg{flex:none}
-.wordmark{font-family:var(--display);font-weight:800;font-size:38px;line-height:.9;letter-spacing:.02em;text-transform:uppercase}
-.wordmark .dim{opacity:.55}
-.tagline{margin:8px 0 0;color:var(--muted);max-width:62ch;font-size:15px;text-wrap:pretty}
-.stamp{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;border:1.5px solid currentColor;border-radius:4px;padding:6px 10px;opacity:.85;white-space:nowrap}
-
-.summary{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 22px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px 28px;align-items:center}
-.stats{display:flex;gap:28px;flex-wrap:wrap}
-.stat{display:flex;flex-direction:column}
-.stat b{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
-.stat span{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
-.stat svg{width:14px;height:14px;flex:none}
-.stat.BLOCKED b{color:var(--block-text)}.stat.WARNING b{color:var(--warn-text)}
-.meter{display:flex;flex-direction:column;gap:8px;min-width:0}
-.bar{position:relative;display:flex;gap:2px;height:18px}
-.seg{height:100%;min-width:0;border-radius:2px;transition:flex-grow .35s ease}
-.seg:first-child{border-radius:4px 2px 2px 4px}.seg:last-child{border-radius:2px 4px 4px 2px}.seg:only-child{border-radius:4px}
-.seg.BLOCKED{background:repeating-linear-gradient(135deg,var(--block) 0 6px,var(--block-deep) 6px 9px)}
-.seg.WARNING{background:var(--warn)}
-.seg.CLEARED{background:var(--clear-seg)}
-.seg.NONE{background:var(--none-bg);box-shadow:inset 0 0 0 1px var(--line)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.legend .BLOCKED{background:var(--block)}.legend .WARNING{background:var(--warn)}.legend .CLEARED{background:var(--clear-seg)}.legend .NONE{background:var(--none-bg);box-shadow:inset 0 0 0 1px var(--line)}
-.tip{position:absolute;bottom:calc(100% + 8px);transform:translateX(-50%);background:var(--raise);color:var(--ink);border:1px solid var(--line-strong);font-size:12px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+.wordmark{font-family:var(--display);font-weight:800;font-size:32px;line-height:.9;letter-spacing:.03em;text-transform:uppercase}
+.wordmark .dim{color:var(--faint)}
+.slogan{margin:0;color:var(--accent-text);font-size:15px;font-weight:500;letter-spacing:.01em}
+.totals{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:15px;color:var(--muted)}
+.totals b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:6px}
+.totals .t-BLOCKED b{color:var(--block-text)}
+.totals .t-WARNING b{color:var(--warn-text)}
+.bar{position:relative;display:flex;gap:2px;height:4px}
+.seg{height:100%;min-width:0;border-radius:2px;transform-origin:left center}
+.seg.BLOCKED{background:var(--block)}.seg.WARNING{background:var(--warn)}.seg.CLEARED{background:var(--clear-seg)}.seg.NONE{background:var(--line)}
+.tip{position:absolute;top:calc(100% + 8px);transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);color:var(--ink);font-size:13px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums;z-index:2}
 
 /* Layout */
-.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
-.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);background:var(--surface);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;max-height:calc(100vh - 24px);overflow:hidden}
-.rail-head{padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
-.rail-top{display:flex;justify-content:space-between;align-items:baseline}
-.search{width:100%;height:44px;padding:0 12px;border:1.5px solid var(--field-line);border-radius:6px;background:var(--bg)}
-.search:focus{border-color:var(--warn);outline:2px solid var(--warn);outline-offset:1px}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:48px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 40px)}
+.search{flex:none;width:100%;height:44px;padding:0 14px;border:1px solid var(--field);border-radius:8px;background:transparent}
 .search::placeholder{color:var(--faint)}
-.filters{display:flex;gap:6px}
-.fbtn{flex:1;height:44px;border:1.5px solid var(--field-line);border-radius:6px;background:none;font-size:14px;font-weight:500;cursor:pointer;color:var(--muted)}
-.fbtn[aria-pressed="true"]{background:var(--warn);color:var(--on-warn);border-color:var(--warn);font-weight:600}
-.ind-list{list-style:none;margin:0;padding:6px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.ind{width:100%;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:6px;background:none;text-align:left;cursor:pointer;min-height:48px}
-.ind:hover{background:var(--surface-2)}
-.ind[aria-current="true"]{background:var(--active-bg);box-shadow:inset 0 0 0 1.5px var(--warn)}
-.code{font-family:var(--display);font-weight:800;font-size:20px;line-height:1;font-variant-numeric:tabular-nums;opacity:.9}
+.search:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 1px var(--accent)}
+.ind-list{list-style:none;margin:0;padding:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.ind{width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer;min-height:44px;transition:background-color .15s ease}
+.ind:hover{background:var(--hover)}
+.ind[aria-current="true"]{background:var(--raise)}
+.ind[aria-current="true"] .code,.ind[aria-current="true"] strong{color:var(--accent-text)}
+.code{font-family:var(--mono);font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
 .ind-name{display:flex;flex-direction:column;min-width:0}
-.ind-name strong{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ind-name small{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.counts{display:flex;gap:4px}
-.count{min-width:22px;height:22px;padding:0 6px;border-radius:3px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
-.count.BLOCKED{background:var(--block);color:var(--on-block)}
-.count.WARNING{background:none;color:var(--warn-text);box-shadow:inset 0 0 0 1.5px var(--warn)}
-.count.clean{color:var(--faint)}
-.empty{padding:16px;color:var(--muted);font-size:14px}
+.ind-name strong{font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.match-note{color:var(--accent-text);font-size:12.5px}
+.blk{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--block-text);font-variant-numeric:tabular-nums}
+.blk::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--block)}
+.empty{padding:12px 10px;color:var(--muted);font-size:14px}
 
-/* Industry panel */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.panel-head{padding:22px 24px 18px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px 20px;align-items:end;border-bottom:1.5px solid var(--line-strong)}
-.big-code{font-family:var(--display);font-weight:800;font-size:84px;line-height:.8;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.title-block{display:flex;flex-direction:column;gap:4px;min-width:0}
-.title-block h1{margin:0;font-family:var(--display);font-weight:800;font-size:40px;line-height:.95;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
-.title-block p{margin:0;color:var(--muted)}
-.tools{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-top:14px;border-top:1px solid var(--line)}
-.tools .spacer{flex:1}
-.toggle{display:inline-flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;min-height:44px;padding:0 4px}
-.toggle input{width:20px;height:20px;accent-color:var(--warn)}
-.btn{height:44px;padding:0 16px;border-radius:6px;border:1.5px solid var(--field-line);background:none;cursor:pointer;font-size:15px;font-weight:500}
-.btn:hover{border-color:var(--warn);color:var(--warn-text)}
-.ind-summary{padding:12px 24px;display:flex;flex-wrap:wrap;gap:6px 20px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:15px;color:var(--muted)}
-.ind-summary b{color:var(--ink);font-variant-numeric:tabular-nums}
+/* Industry */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px 32px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.title-block{display:flex;flex-direction:column;gap:6px;min-width:0}
+.title-block h1{margin:0;font-family:var(--display);font-weight:800;font-size:46px;line-height:.95;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+.sub{margin:0;color:var(--muted);font-size:15px}
+.sub b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.switch{display:inline-flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;min-height:44px}
+.switch input{appearance:none;-webkit-appearance:none;margin:0;width:38px;height:22px;border-radius:11px;background:var(--line);box-shadow:inset 0 0 0 1px var(--field);position:relative;cursor:pointer;transition:background-color .2s ease}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:transform .2s ease,background-color .2s ease}
+.switch input:checked{background:var(--accent);box-shadow:none}
+.switch input:checked::after{transform:translateX(16px);background:var(--on-accent)}
+.btn{height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent-text);cursor:pointer;font-size:15px;font-weight:500;transition:background-color .15s ease,color .15s ease}
+.btn:hover{background:var(--accent);color:var(--on-accent)}
+.link{height:44px;padding:0 4px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;text-decoration:underline;text-decoration-color:var(--field);text-underline-offset:3px}
+.link:hover{color:var(--ink)}
+.report-box{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.report-box textarea{width:100%;min-height:200px;font-family:var(--mono);font-size:13px;line-height:1.5;border:1px solid var(--field);border-radius:8px;background:var(--raise);color:var(--ink);padding:12px;resize:vertical}
 
-.rules{list-style:none;margin:0;padding:0;counter-reset:rule}
-.rule{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px 32px;padding:22px 24px;border-bottom:1px solid var(--line);transition:background-color .25s ease}
-.rule:last-child{border-bottom:0}
-.rule[data-level="BLOCKED"]{background:color-mix(in srgb,var(--block-bg) 65%,transparent)}
-.rule[data-level="WARNING"]{background:color-mix(in srgb,var(--warn-bg) 60%,transparent)}
+.rules{list-style:none;margin:0;padding:0}
+.rule{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:12px 40px;padding:22px 16px;margin-inline:-16px;border-radius:10px;border-bottom:1px solid var(--line)}
+.rule[data-level="BLOCKED"]{background:var(--block-tint)}
+.rule[data-level="WARNING"]{background:var(--warn-tint)}
 .rule-main{display:flex;flex-direction:column;gap:8px;min-width:0}
-.rule-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-.rule h2{margin:0;font-size:18px;font-weight:600;line-height:1.3;text-wrap:balance}
-.cost{margin:0;text-wrap:pretty}
-.cost::before{content:"Cost: ";font-weight:600}
-.cite{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-family:var(--mono);font-size:13px;color:var(--muted)}
-.policy{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border:1px dashed var(--muted);border-radius:3px}
+.rule-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.rule h2{margin:0;font-size:17px;font-weight:600;line-height:1.35}
+.rule.match h2 span{box-shadow:inset 0 -.38em 0 rgba(240,138,46,.35)}
+.msg{margin:0;font-size:15px;text-wrap:pretty}
+.msg.BLOCKED{color:var(--block-text)}.msg.WARNING{color:var(--warn-text)}.msg.NONE{color:var(--muted)}
+details{font-size:14px;color:var(--muted)}
+summary{cursor:pointer;width:max-content;min-height:32px;display:flex;align-items:center;gap:6px;color:var(--faint);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s ease;margin-right:2px}
+details[open] summary::before{transform:rotate(45deg)}
+summary:hover{color:var(--ink)}
+.why{display:flex;flex-direction:column;gap:6px;padding:4px 0 2px 14px;max-width:62ch}
+.why p{margin:0;text-wrap:pretty}
+.cite{font-family:var(--mono);font-size:13px}
 
-/* Inspection tag: status stamped on a tag with a punched hole */
-.tag{flex:none;position:relative;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 24px;border-radius:3px 6px 6px 3px;font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
-.tag::before{content:"";position:absolute;left:8px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--surface)}
-.tag svg{width:14px;height:14px}
+/* Status: Blocked is filled, Warning is outlined, Cleared is plain text */
+.tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tag svg{width:13px;height:13px}
 .tag.BLOCKED{background:var(--block);color:var(--on-block)}
-.tag.WARNING{background:var(--warn);color:var(--on-warn)}
-.tag.CLEARED{background:none;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--field-line)}
-.tag.CLEARED::before{box-shadow:inset 0 0 0 1.5px var(--field-line)}
-.tag.NONE{background:none;color:var(--faint);box-shadow:inset 0 0 0 1.5px var(--line);outline:1px dashed var(--line);outline-offset:-5px}
-.rule[data-level="BLOCKED"] .tag::before{background:color-mix(in srgb,var(--block-bg) 65%,var(--surface))}
-.rule[data-level="WARNING"] .tag::before{background:color-mix(in srgb,var(--warn-bg) 60%,var(--surface))}
+.tag.WARNING{color:var(--warn-text);box-shadow:inset 0 0 0 1px var(--warn)}
+.tag.CLEARED{color:var(--muted);padding:0}
+.tag.NONE{color:var(--faint);padding:0}
 
 .rule-input{display:flex;flex-direction:column;gap:8px;min-width:0}
-.q{font-size:15px;font-weight:500}
-.num{display:flex;align-items:stretch;max-width:280px;border:1.5px solid var(--field-line);border-radius:6px;background:var(--surface);overflow:hidden}
-.num:focus-within{border-color:var(--warn);outline:2px solid var(--warn);outline-offset:1px}
+.q{font-size:14.5px;color:var(--muted)}
+.field-row{display:flex;flex-wrap:wrap;gap:8px}
+.num{display:flex;align-items:stretch;flex:1 1 140px;max-width:200px;border:1px solid var(--field);border-radius:8px;overflow:hidden}
+.num:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .num input{flex:1;min-width:0;height:44px;padding:0 12px;border:0;background:none;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:16px;outline:none}
-.num .unit{display:flex;align-items:center;padding:0 12px;background:var(--surface-2);border-left:1.5px solid var(--field-line);color:var(--muted);font-size:14px;white-space:nowrap}
-.limit{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.yn{position:relative;display:inline-flex;border:1.5px solid var(--field-line);border-radius:6px;overflow:hidden;width:max-content;background:var(--surface)}
+.num .unit{display:flex;align-items:center;padding:0 12px;color:var(--faint);font-size:14px;white-space:nowrap}
+.date{height:46px;border:1px solid var(--field);border-radius:8px;background:none;color:var(--muted);padding:0 10px;font-family:var(--mono);font-size:13px}
+.date:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 1px var(--accent)}
+.limit{font-family:var(--mono);font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+.yn{position:relative;display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;width:max-content}
 .yn input{position:absolute;opacity:0;pointer-events:none}
-.yn label{min-width:84px;height:44px;display:flex;align-items:center;justify-content:center;padding:0 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted)}
-.yn label+input+label{border-left:1.5px solid var(--field-line)}
-.yn input:checked+label{background:var(--warn);color:var(--on-warn);font-weight:600}
-.yn input:focus-visible+label{outline:2px solid var(--warn);outline-offset:-3px}
-.msg{margin:0;font-size:15px;text-wrap:pretty}
-.msg.BLOCKED{color:var(--block-text);font-weight:500}.msg.WARNING{color:var(--warn-text);font-weight:500}.msg.CLEARED,.msg.NONE{color:var(--muted)}
-.no-rows{padding:32px 24px;color:var(--muted)}
-.skip{position:absolute;left:-9999px;top:12px;z-index:20;background:var(--warn);color:var(--on-warn);padding:10px 16px;border-radius:6px;font-weight:600;text-decoration:none}
-.skip:focus{left:16px}
-.slogan{margin:10px 0 0;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.05;letter-spacing:.02em;text-transform:uppercase;color:var(--slogan);animation:fadeUp .7s .25s cubic-bezier(.2,.8,.2,1) both}
-.date-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
-.date-pick input{height:44px;border:1.5px solid var(--field-line);border-radius:6px;background:var(--surface);color:var(--ink);padding:0 8px;font-family:var(--mono);font-size:13px}
-.date-pick input:focus{border-color:var(--warn);outline:2px solid var(--warn);outline-offset:1px}
-.rule.match h2 span{box-shadow:inset 0 -.38em 0 color-mix(in srgb,var(--warn) 38%,transparent)}
-.match-note{color:var(--warn-text);font-size:12px;font-weight:500}
-.report-box{padding:14px 24px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
-[hidden]{display:none!important}
-.report-box textarea{width:100%;min-height:200px;font-family:var(--mono);font-size:13px;line-height:1.5;border:1.5px solid var(--field-line);border-radius:4px;background:var(--surface);color:var(--ink);padding:10px;resize:vertical}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--raise);color:var(--ink);border:1px solid var(--warn);padding:10px 16px;border-radius:4px;font-size:14px;font-weight:500;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fadeUp .3s both}
-.btn.primary{background:var(--warn);color:var(--on-warn);border-color:var(--warn);font-weight:600}
-.btn.primary:hover{background:var(--warn-text);color:var(--on-warn)}
+.yn label{min-width:84px;height:44px;display:flex;align-items:center;justify-content:center;padding:0 16px;cursor:pointer;font-size:15px;color:var(--muted);transition:background-color .15s ease,color .15s ease}
+.yn label+input+label{border-left:1px solid var(--field)}
+.yn input:checked+label{background:var(--accent);color:var(--on-accent);font-weight:600}
+.yn input:focus-visible+label{outline:2px solid var(--accent);outline-offset:-3px}
+.no-rows{padding:32px 0;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--raise);color:var(--ink);border:1px solid var(--line);padding:10px 16px;border-radius:8px;font-size:14px;z-index:10;box-shadow:0 12px 32px rgba(0,0,0,.4);animation:fadeUp .3s both}
+footer{color:var(--faint);font-size:13.5px;padding-top:8px;border-top:1px solid var(--line)}
 
-footer{color:var(--muted);font-size:14px;max-width:84ch;text-wrap:pretty}
-
-@media (max-width: 980px){
-  .layout{grid-template-columns:minmax(0,1fr)}
-  .rail{position:static;max-height:none}
-  .ind-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:8px;gap:4px}
-  .ind-list li{flex:none}
-  .ind{width:auto;max-width:250px}
-  .summary{grid-template-columns:minmax(0,1fr)}
-}
-@media (max-width: 640px){
-  .wrap{padding-inline:16px;padding-block:16px 32px}
-  .placard{grid-template-columns:minmax(0,1fr)}
-  .stamp{justify-self:start}
-  .wordmark{font-size:30px}
-  .stats{gap:18px}
-  .stat b{font-size:36px}
-  .panel-head{grid-template-columns:auto minmax(0,1fr);padding-inline:16px}
-  .big-code{font-size:60px}
-  .title-block h1{font-size:30px}
-  .ind-summary{padding-inline:16px}
-  .rule{grid-template-columns:minmax(0,1fr);padding:18px 16px}
-}
 /* Motion */
-.wordmark .ch{display:inline-block;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 35ms)}
-@keyframes rise{from{transform:translateY(.45em);opacity:.15}to{transform:none;opacity:1}}
-.tagline,.stamp{animation:fadeUp .7s .35s cubic-bezier(.2,.8,.2,1) both}
+.wordmark .ch{display:inline-block;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 30ms)}
+@keyframes rise{from{transform:translateY(.4em);opacity:.15}to{transform:none;opacity:1}}
+.slogan,.totals{animation:fadeUp .7s .3s cubic-bezier(.2,.8,.2,1) both}
 @keyframes fadeUp{from{transform:translateY(6px);opacity:.3}to{transform:none;opacity:1}}
 .mark-ring{stroke-dasharray:44;animation:draw 1.1s .2s ease-out both}
 @keyframes draw{from{stroke-dashoffset:44}to{stroke-dashoffset:0}}
-.mark-shield{animation:shieldIn .7s cubic-bezier(.2,.8,.2,1) both}
-@keyframes shieldIn{from{transform:scale(.8) rotate(-8deg);opacity:.3}to{transform:none;opacity:1}}
-.mark-shield{transform-origin:20px 23px}
-.hazard{background-size:28.28px 28.28px;animation:crawl 4s linear infinite}
-@keyframes crawl{from{background-position:0 0}to{background-position:28.28px 0}}
-.rule.enter{animation:slideIn .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 45ms)}
-@keyframes slideIn{from{transform:translateY(10px);opacity:.25}to{transform:none;opacity:1}}
-.big-code.roll{animation:roll .5s cubic-bezier(.2,.8,.2,1)}
-@keyframes roll{from{transform:translateY(35%);opacity:.2}to{transform:none;opacity:1}}
-.title-block.roll h1{animation:fadeUp .5s .05s cubic-bezier(.2,.8,.2,1) both}
-.tag.stamp{animation:stamp .42s cubic-bezier(.3,1.6,.5,1)}
-@keyframes stamp{0%{transform:scale(1.35) rotate(-6deg);opacity:.4}60%{transform:scale(.95) rotate(1deg);opacity:1}100%{transform:none}}
-.stat b.bump{animation:bump .4s ease-out}
-@keyframes bump{0%{transform:translateY(-4px)}100%{transform:none}}
-.ind{transition:background-color .15s ease}
-.ind .code{transition:transform .2s ease}
-.ind:hover .code{transform:translateX(3px)}
-.seg{transform-origin:left center}
-.bar.grow .seg{animation:grow .8s cubic-bezier(.2,.8,.2,1) both}
+.bar.grow .seg{animation:grow .9s .2s cubic-bezier(.2,.8,.2,1) both}
 @keyframes grow{from{transform:scaleX(0)}to{transform:none}}
-.count{transition:transform .2s ease}
+.title-block.roll h1{animation:fadeUp .45s cubic-bezier(.2,.8,.2,1) both}
+.rule.enter{animation:slideIn .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 40ms)}
+@keyframes slideIn{from{transform:translateY(8px);opacity:.25}to{transform:none;opacity:1}}
+.tag.stamp{animation:stamp .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes stamp{0%{transform:scale(1.3);opacity:.4}60%{transform:scale(.96);opacity:1}100%{transform:none}}
 
+@media (max-width: 900px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:24px}
+  .rail{position:static;max-height:none}
+  .ind-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding-bottom:4px}
+  .ind-list li{flex:none}
+  .ind{width:auto;max-width:220px}
+  .rule{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width: 560px){
+  .wrap{padding-inline:16px;padding-block:20px 36px;gap:28px}
+  .rule{padding-inline:12px;margin-inline:-12px}
+  .title-block h1{font-size:36px}
+  .wordmark{font-size:28px}
+}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
@@ -223,72 +174,52 @@ footer{color:var(--muted);font-size:14px;max-width:84ch;text-wrap:pretty}
 
 <a class="skip" href="#panel">Skip to checks</a>
 <div class="wrap">
-  <header class="placard">
-    <div>
-      <div class="lockup">
-        <svg viewBox="0 0 40 46" width="36" height="42" aria-hidden="true">
-          <path class="mark-shield" d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path>
-          <circle class="mark-ring" cx="20" cy="22.5" r="7" fill="none" stroke="var(--warn)" stroke-width="3.5"></circle>
-        </svg>
-        <div class="wordmark" aria-label="OmniArmor.ai"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <div class="lockup">
+          <svg viewBox="0 0 40 46" width="28" height="32" aria-hidden="true">
+            <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path>
+            <circle class="mark-ring" cx="20" cy="22.5" r="7" fill="none" stroke="var(--accent)" stroke-width="3.5"></circle>
+          </svg>
+          <div class="wordmark" aria-label="OmniArmor.ai"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
+        </div>
+        <p class="slogan">Catch the fine before it catches you.</p>
       </div>
-      <p class="slogan">Catch the fine before it catches you.</p>
-      <p class="tagline">The ten compliance failures that cost each industry the most, checked against your readings. Change any reading and the result updates.</p>
+      <div class="totals" id="totals" aria-live="polite"></div>
     </div>
-    <div class="stamp" id="stamp"></div>
+    <div class="bar" id="bar" role="img"></div>
   </header>
-  <div class="hazard" aria-hidden="true"></div>
-
-  <section class="summary" aria-labelledby="sum-title">
-    <div class="stats" id="stats"></div>
-    <div class="meter">
-      <div class="label" id="sum-title">All industries · every rule</div>
-      <div class="bar" id="bar" role="img"></div>
-      <div class="legend" id="legend"></div>
-    </div>
-  </section>
 
   <div class="layout">
     <nav class="rail" aria-label="Industries">
-      <div class="rail-head">
-        <div class="rail-top"><label class="label" for="q">Industries</label><span class="label" id="rail-count"></span></div>
-        <input class="search" id="q" type="search" placeholder="Search industries or rules" autocomplete="off">
-        <div class="filters" role="group" aria-label="Filter industries">
-          <button class="fbtn" type="button" data-filter="all" aria-pressed="true">All</button>
-          <button class="fbtn" type="button" data-filter="problems" aria-pressed="false">With problems</button>
-        </div>
-      </div>
+      <label class="sr" for="q">Search industries or rules</label>
+      <input class="search" id="q" type="search" placeholder="Search industries or rules" autocomplete="off">
       <ul class="ind-list" id="ind-list"></ul>
     </nav>
 
-    <main class="panel" id="panel" tabindex="-1">
-      <div class="panel-head">
-        <div class="big-code" id="ind-code" aria-hidden="true"></div>
+    <main id="panel" tabindex="-1">
+      <div class="head">
         <div class="title-block">
-          <span class="label" id="ind-eyebrow"></span>
+          <span class="eyebrow" id="ind-eyebrow"></span>
           <h1 id="ind-title"></h1>
-          <p id="ind-sector"></p>
+          <p class="sub" id="ind-sub" aria-live="polite"></p>
         </div>
         <div class="tools">
-          <label class="toggle"><input type="checkbox" id="problems-first" checked> Problems first</label>
-          <label class="toggle"><input type="checkbox" id="only-problems"> Only problems</label>
-          <span class="spacer"></span>
-          <button class="btn" type="button" id="reset">Reset readings</button>
-          <button class="btn primary" type="button" id="copy">Copy report</button>
+          <label class="switch"><input type="checkbox" id="only-problems" role="switch"> Only problems</label>
+          <button class="link" type="button" id="reset">Reset</button>
+          <button class="btn" type="button" id="copy">Copy report</button>
         </div>
       </div>
-      <div class="ind-summary" id="ind-summary" aria-live="polite"></div>
       <div class="report-box" id="report-box" hidden>
-        <label class="label" for="report-text">Report text: select it and copy</label>
+        <label class="eyebrow" for="report-text">Report text: select it and copy</label>
         <textarea id="report-text" readonly></textarea>
       </div>
       <ul class="rules" id="rules"></ul>
     </main>
   </div>
 
-  <footer>
-    Readings start as examples, not your data. Each rule names its source. Rules marked Policy use an industry standard or common policy where the law sets no single number, so set them to your own. This is a starting point, not legal advice: confirm each rule with a compliance professional for your jurisdiction.
-  </footer>
+  <footer>Readings start as examples. Each check names its source rule. Decision support, not legal advice.</footer>
 </div>
 
 <script>
@@ -296,8 +227,8 @@ const INDUSTRIES = /*__CATALOG__*/[];
 
 const LEVEL_LABEL = {BLOCKED: "Blocked", WARNING: "Warning", CLEARED: "Cleared", NONE: "No reading"};
 const ICONS = {
-  BLOCKED: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M5.2 1.5h5.6l3.7 3.7v5.6l-3.7 3.7H5.2l-3.7-3.7V5.2z"/><path d="M5.8 5.8l4.4 4.4M10.2 5.8l-4.4 4.4" stroke-linecap="round"/></svg>',
-  WARNING: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8l6.6 12H1.4z"/><path d="M8 6.3v3.4" stroke-linecap="round"/><circle cx="8" cy="11.8" r=".5" fill="currentColor"/></svg>',
+  BLOCKED: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>',
+  WARNING: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.3 11.5H1.7z"/><path d="M8 6.5v3" stroke-linecap="round"/></svg>',
   CLEARED: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.4l3.2 3.2L13 4.8"/></svg>',
   NONE: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8h8"/></svg>'
 };
@@ -341,7 +272,6 @@ for (const ind of INDUSTRIES) {
   for (const r of ind.rules) readings[ind.id][r.key] = r.sample;
 }
 let selectedId = INDUSTRIES.length ? INDUSTRIES[0].id : null;
-let railFilter = "all";
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
   if (saved && saved.readings) {
@@ -366,21 +296,22 @@ function tally(levels) {
   for (const l of levels) t[l]++;
   return t;
 }
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const code = id => String(id).padStart(2, "0");
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const current = () => INDUSTRIES.find(i => i.id === selectedId);
 const totalRules = INDUSTRIES.reduce((n, i) => n + i.rules.length, 0);
-$("stamp").textContent = `${INDUSTRIES.length} industries · ${totalRules} rules`;
-
-/* Numbers count from their last value to the new one. */
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let firstPaint = true;
+
+/* Numbers count from what is on screen to the new value. */
 function countTo(el, target) {
   const from = Number.parseInt(el.textContent, 10) || 0;
   el.dataset.value = target;
   if (from === target) return;
   if (reduceMotion) { el.textContent = target; return; }
-  el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
-  const start = performance.now(), dur = from === 0 ? 900 : 350;
+  const start = performance.now(), dur = from === 0 ? 900 : 300;
   const step = now => {
     const t = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - t, 3);
     el.textContent = Math.round(from + (target - from) * e);
@@ -388,25 +319,24 @@ function countTo(el, target) {
   };
   requestAnimationFrame(step);
 }
-let firstPaint = true;
 
-/* Portfolio summary */
+/* Header totals and bar */
 function renderSummary() {
   const all = tally(INDUSTRIES.flatMap(levelsFor));
-  const withBlock = INDUSTRIES.filter(i => tally(levelsFor(i)).BLOCKED > 0).length;
-  const values = {BLOCKED: all.BLOCKED, WARNING: all.WARNING, CLEARED: all.CLEARED, IND: withBlock};
-  if (!$("stats").children.length) {
-    $("stats").innerHTML = ["BLOCKED", "WARNING", "CLEARED"].map(l =>
-      `<div class="stat ${l}"><b data-stat="${l}">0</b><span>${ICONS[l]}${LEVEL_LABEL[l]}</span></div>`).join("")
-      + `<div class="stat"><b data-stat="IND">0</b><span>Industries with a block</span></div>`;
+  if (!$("totals").children.length) {
+    $("totals").innerHTML = ["BLOCKED", "WARNING", "CLEARED"].map(l =>
+      `<span class="t-${l}"><b data-stat="${l}">0</b><span data-label="${l}"></span></span>`).join("")
+      + `<span><b>${totalRules}</b>checks</span>`;
   }
-  for (const [k, v] of Object.entries(values)) countTo($("stats").querySelector(`[data-stat="${k}"]`), v);
+  for (const l of ["BLOCKED", "WARNING", "CLEARED"]) countTo($("totals").querySelector(`[data-stat="${l}"]`), all[l]);
+  $("totals").querySelector('[data-label="BLOCKED"]').textContent = "blocked";
+  $("totals").querySelector('[data-label="WARNING"]').textContent = all.WARNING === 1 ? "warning" : "warnings";
+  $("totals").querySelector('[data-label="CLEARED"]').textContent = "cleared";
   const order = ["BLOCKED", "WARNING", "CLEARED", "NONE"].filter(l => all[l]);
   const bar = $("bar");
-  bar.setAttribute("aria-label", order.map(l => `${LEVEL_LABEL[l]} ${all[l]}`).join(", "));
+  bar.setAttribute("aria-label", order.map(l => `${LEVEL_LABEL[l]} ${all[l]}`).join(", ") + ` of ${totalRules} checks`);
   bar.classList.toggle("grow", firstPaint);
-  bar.innerHTML = order.map(l => `<div class="seg ${l}" style="flex-grow:${all[l]}" data-tip="${LEVEL_LABEL[l]}: ${all[l]} of ${totalRules} (${Math.round(all[l] / totalRules * 100)}%)"></div>`).join("");
-  $("legend").innerHTML = order.map(l => `<span><i class="${l}"></i>${LEVEL_LABEL[l]} ${all[l]}</span>`).join("");
+  bar.innerHTML = order.map(l => `<div class="seg ${l}" style="flex-grow:${all[l]}" data-tip="${LEVEL_LABEL[l]}: ${all[l]} (${Math.round(all[l] / totalRules * 100)}%)"></div>`).join("");
 }
 $("bar").addEventListener("mousemove", e => {
   const seg = e.target.closest(".seg");
@@ -415,48 +345,32 @@ $("bar").addEventListener("mousemove", e => {
   if (!tip) { tip = document.createElement("div"); tip.className = "tip"; $("bar").appendChild(tip); }
   tip.textContent = seg.dataset.tip;
   const box = $("bar").getBoundingClientRect();
-  tip.style.left = Math.min(Math.max(e.clientX - box.left, 90), box.width - 90) + "px";
+  tip.style.left = Math.min(Math.max(e.clientX - box.left, 70), box.width - 70) + "px";
 });
 $("bar").addEventListener("mouseleave", () => { const t = $("bar").querySelector(".tip"); if (t) t.remove(); });
 
-/* Industry rail */
+/* Industry list, searchable by industry or by any rule */
 const query = () => $("q").value.trim().toLowerCase();
 const ruleMatches = (r, q) => !!q && `${r.title} ${r.citation} ${r.input}`.toLowerCase().includes(q);
 function renderRail() {
   const q = query();
   const hits = i => i.rules.filter(r => ruleMatches(r, q)).length;
-  const list = INDUSTRIES.filter(i => !q || `${i.brand} ${i.sector}`.toLowerCase().includes(q) || hits(i) > 0)
-    .filter(i => railFilter === "all" || tally(levelsFor(i)).BLOCKED + tally(levelsFor(i)).WARNING > 0);
-  $("rail-count").textContent = `${list.length} shown`;
+  const list = INDUSTRIES.filter(i => !q || `${i.brand} ${i.sector}`.toLowerCase().includes(q) || hits(i) > 0);
   $("ind-list").innerHTML = list.length ? list.map(i => {
     const t = tally(levelsFor(i));
-    const counts = (t.BLOCKED ? `<span class="count BLOCKED">${t.BLOCKED}</span>` : "")
-      + (t.WARNING ? `<span class="count WARNING">${t.WARNING}</span>` : "")
-      + (!t.BLOCKED && !t.WARNING ? `<span class="count clean">${ICONS.CLEARED.replace('aria-hidden="true"', 'width="14" height="14" aria-hidden="true"')}</span>` : "");
-    const label = `${i.brand}, ${i.sector}: ${t.BLOCKED} blocked, ${t.WARNING} warnings`;
-    return `<li><button class="ind" type="button" data-id="${i.id}" aria-current="${i.id === selectedId}" aria-label="${esc(label)}">
+    const label = `${i.brand}, ${i.sector}: ${plural(t.BLOCKED, "blocked check", "blocked checks")}, ${plural(t.WARNING, "warning", "warnings")}`;
+    return `<li><button class="ind" type="button" data-id="${i.id}" aria-current="${i.id === selectedId}" aria-label="${esc(label)}" title="${esc(i.sector)}">
       <span class="code">${code(i.id)}</span>
-      <span class="ind-name"><strong>${esc(i.brand)}</strong><small>${esc(i.sector)}</small>${q && hits(i) ? `<small class="match-note">${hits(i)} matching ${hits(i) === 1 ? "rule" : "rules"}</small>` : ""}</span>
-      <span class="counts" aria-hidden="true">${counts}</span></button></li>`;
-  }).join("") : `<li class="empty">No industry matches.</li>`;
+      <span class="ind-name"><strong>${esc(i.brand)}</strong>${q && hits(i) ? `<span class="match-note">${plural(hits(i), "match", "matches")}</span>` : ""}</span>
+      ${t.BLOCKED ? `<span class="blk" aria-hidden="true">${t.BLOCKED}</span>` : "<span></span>"}</button></li>`;
+  }).join("") : `<li class="empty">No matches.</li>`;
 }
 $("ind-list").addEventListener("click", e => {
   const b = e.target.closest(".ind");
   if (b) select(Number(b.dataset.id));
 });
 $("q").addEventListener("input", () => { renderRail(); renderIndustry(false); });
-document.querySelectorAll(".fbtn").forEach(b => b.addEventListener("click", () => {
-  railFilter = b.dataset.filter;
-  document.querySelectorAll(".fbtn").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-  renderRail();
-}));
 
-/* Selected industry */
-function limitText(r) {
-  if (r.kind === "max") return `Limit ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns from ${fmt(r.warn, r.unit)}` : "");
-  if (r.kind === "min") return `Minimum ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns at ${fmt(r.warn, r.unit)} or less` : "");
-  return "";
-}
 /* Day counts can be entered as a date: "days since" counts up to today, "days until" counts down from it. */
 function dateMode(r) {
   if (r.unit !== "days" && r.unit !== "calendar days") return null;
@@ -472,14 +386,21 @@ function daysFromDate(value, mode) {
   const picked = new Date(y, m - 1, d);
   return Math.round((mode === "since" ? todayStart() - picked : picked - todayStart()) / MS_DAY);
 }
+function limitText(r) {
+  if (r.kind === "max") return `Limit ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns from ${fmt(r.warn, r.unit)}` : "");
+  if (r.kind === "min") return `Minimum ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns at ${fmt(r.warn, r.unit)} or less` : "");
+  return "";
+}
 function inputHtml(ind, r) {
   const id = `in-${ind.id}-${r.key}`;
   const v = readings[ind.id][r.key];
   if (r.kind === "max" || r.kind === "min") {
     const mode = dateMode(r);
     return `<label class="q" for="${id}">${esc(r.input)}</label>
-      <div class="num"><input id="${id}" type="number" inputmode="decimal" step="any" value="${v === null ? "" : v}" data-key="${r.key}">${r.unit ? `<span class="unit">${esc(r.unit)}</span>` : ""}</div>
-      ${mode ? `<label class="date-pick" for="${id}-date">Or pick the ${mode === "since" ? "date it happened" : "due date"} <input type="date" id="${id}-date" data-date-for="${r.key}" data-mode="${mode}"></label>` : ""}
+      <div class="field-row">
+        <div class="num"><input id="${id}" type="number" inputmode="decimal" step="any" value="${v === null ? "" : v}" data-key="${r.key}">${r.unit ? `<span class="unit">${esc(r.unit)}</span>` : ""}</div>
+        ${mode ? `<input class="date" type="date" id="${id}-date" data-date-for="${r.key}" data-mode="${mode}" aria-label="Or pick the ${mode === "since" ? "date it happened" : "due date"}" title="Pick a date instead">` : ""}
+      </div>
       <span class="limit">${esc(limitText(r))}</span>`;
   }
   return `<span class="q" id="${id}-q">${esc(r.input)}</span>
@@ -489,41 +410,42 @@ function inputHtml(ind, r) {
     </div>`;
 }
 const tagHtml = level => `<span class="tag ${level}">${ICONS[level]}${LEVEL_LABEL[level]}</span>`;
-function replay(el, cls) {
-  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
-}
+/* Cleared results stay readable to screen readers but are not shown, to keep the list quiet. */
+const msgClass = level => `msg ${level}${level === "CLEARED" ? " sr" : ""}`;
+function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
 function renderIndustry(animate = true) {
-  const ind = INDUSTRIES.find(i => i.id === selectedId);
+  const ind = current();
   if (!ind) return;
-  $("ind-code").textContent = code(ind.id);
-  if (animate) { replay($("ind-code"), "roll"); replay(document.querySelector(".title-block"), "roll"); }
-  $("ind-eyebrow").textContent = `Industry ${code(ind.id)} of ${INDUSTRIES.length} · 10 costliest risks`;
+  if (animate) replay(document.querySelector(".title-block"), "roll");
+  $("ind-eyebrow").textContent = `${code(ind.id)} / ${INDUSTRIES.length} · ${ind.sector}`;
   $("ind-title").textContent = ind.brand;
-  $("ind-sector").textContent = ind.sector;
-  const only = $("only-problems").checked;
   const rank = {BLOCKED: 0, WARNING: 1, NONE: 2, CLEARED: 3};
   const q = query();
-  let rows = ind.rules.map((r, n) => ({r, n, res: evaluate(r, readings[ind.id][r.key])}))
-    .filter(({res}) => !only || res[0] === "BLOCKED" || res[0] === "WARNING");
-  if ($("problems-first").checked) rows = rows.sort((a, b) => rank[a.res[0]] - rank[b.res[0]] || a.n - b.n);
+  const rows = ind.rules.map((r, n) => ({r, n, res: evaluate(r, readings[ind.id][r.key])}))
+    .filter(({res}) => !$("only-problems").checked || res[0] === "BLOCKED" || res[0] === "WARNING")
+    .sort((a, b) => rank[a.res[0]] - rank[b.res[0]] || a.n - b.n);
   $("rules").innerHTML = rows.length ? rows.map(({r, res}, idx) => `
     <li class="rule${animate ? " enter" : ""}${ruleMatches(r, q) ? " match" : ""}" style="--i:${idx}" data-level="${res[0]}" data-key="${r.key}">
       <div class="rule-main">
         <div class="rule-top"><h2><span>${esc(r.title)}</span></h2><span class="status">${tagHtml(res[0])}</span></div>
-        <p class="cost">${esc(r.cost)}</p>
-        <p class="cite"><span>${esc(r.citation)}</span>${r.policy ? '<span class="policy">Policy</span>' : ""}</p>
+        <p class="${msgClass(res[0])}" aria-live="polite">${esc(res[2])}</p>
+        <details>
+          <summary>Why it matters</summary>
+          <div class="why">
+            <p>${esc(r.cost)}</p>
+            <p class="cite">${esc(r.citation)}${r.policy ? " · policy setting, adjust to yours" : ""}</p>
+          </div>
+        </details>
       </div>
-      <div class="rule-input">
-        ${inputHtml(ind, r)}
-        <p class="msg ${res[0]}" aria-live="polite">${esc(res[2])}</p>
-      </div>
+      <div class="rule-input">${inputHtml(ind, r)}</div>
     </li>`).join("") : `<li class="no-rows">No problems in ${esc(ind.brand)} with the current readings.</li>`;
   renderIndustrySummary(ind);
 }
 function renderIndustrySummary(ind) {
   const t = tally(levelsFor(ind));
-  $("ind-summary").innerHTML = `<span><b>${t.BLOCKED}</b> blocked</span><span><b>${t.WARNING}</b> ${t.WARNING === 1 ? "warning" : "warnings"}</span><span><b>${t.CLEARED}</b> cleared</span>`
-    + (t.NONE ? `<span><b>${t.NONE}</b> without a reading</span>` : "");
+  $("ind-sub").innerHTML = `<b>${t.BLOCKED}</b> blocked · <b>${t.WARNING}</b> ${t.WARNING === 1 ? "warning" : "warnings"} · <b>${t.CLEARED}</b> cleared`
+    + (t.NONE ? ` · <b>${t.NONE}</b> without a reading` : "");
 }
 /* Update one row in place so typing keeps focus. */
 function updateRow(ind, key) {
@@ -536,10 +458,10 @@ function updateRow(ind, key) {
     row.classList.remove("enter");
     if (changed) {
       row.querySelector(".status").innerHTML = tagHtml(res[0]);
-      row.querySelector(".tag").classList.add("stamp");
+      if (!reduceMotion) row.querySelector(".tag").classList.add("stamp");
     }
     const msg = row.querySelector(".msg");
-    msg.className = `msg ${res[0]}`;
+    msg.className = msgClass(res[0]);
     msg.textContent = res[2];
   }
   renderIndustrySummary(ind);
@@ -548,7 +470,7 @@ function updateRow(ind, key) {
 }
 $("rules").addEventListener("input", e => {
   const el = e.target;
-  const ind = INDUSTRIES.find(i => i.id === selectedId);
+  const ind = current();
   if (el.dataset.dateFor) {
     const days = daysFromDate(el.value, el.dataset.mode);
     if (days === null) return;
@@ -571,13 +493,20 @@ $("rules").addEventListener("input", e => {
   save();
 });
 $("only-problems").addEventListener("change", () => renderIndustry());
-$("problems-first").addEventListener("change", () => renderIndustry());
+$("reset").addEventListener("click", () => {
+  const ind = current();
+  for (const r of ind.rules) readings[ind.id][r.key] = r.sample;
+  save();
+  renderAll();
+  toast(`${ind.brand} readings reset to examples`);
+});
 
+/* Plain-text report for the selected industry */
 function reportText(ind) {
   const t = tally(levelsFor(ind));
   const date = new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
   const lines = [`OmniArmor.ai compliance report`, `${ind.brand} (${ind.sector}), ${date}`,
-    `${t.BLOCKED} blocked, ${t.WARNING} ${t.WARNING === 1 ? "warning" : "warnings"}, ${t.CLEARED} cleared` + (t.NONE ? `, ${t.NONE} without a reading` : ""), ""];
+    `${t.BLOCKED} blocked, ${plural(t.WARNING, "warning", "warnings")}, ${t.CLEARED} cleared` + (t.NONE ? `, ${t.NONE} without a reading` : ""), ""];
   for (const level of ["BLOCKED", "WARNING", "NONE", "CLEARED"]) {
     const rules = ind.rules.filter(r => evaluate(r, readings[ind.id][r.key])[0] === level);
     if (!rules.length) continue;
@@ -599,7 +528,7 @@ function toast(text) {
   setTimeout(() => el.remove(), 2400);
 }
 $("copy").addEventListener("click", () => {
-  const ind = INDUSTRIES.find(i => i.id === selectedId);
+  const ind = current();
   const text = reportText(ind);
   const fallback = () => {
     $("report-box").hidden = false;
@@ -612,22 +541,15 @@ $("copy").addEventListener("click", () => {
     navigator.clipboard.writeText(text).then(() => { $("report-box").hidden = true; toast(`Report for ${ind.brand} copied`); }, fallback);
   } catch (e) { fallback(); }
 });
-$("reset").addEventListener("click", () => {
-  const ind = INDUSTRIES.find(i => i.id === selectedId);
-  for (const r of ind.rules) readings[ind.id][r.key] = r.sample;
-  save();
-  renderAll();
-});
 
 function select(id) {
   selectedId = id;
   $("report-box").hidden = true;
-  const ind = INDUSTRIES.find(i => i.id === id);
-  try { history.replaceState(null, "", "#" + slug(ind)); } catch (e) {}
+  try { history.replaceState(null, "", "#" + slug(current())); } catch (e) {}
   save();
   renderRail();
   renderIndustry();
-  if (window.matchMedia("(max-width: 980px)").matches) $("panel").scrollIntoView({behavior: "smooth", block: "start"});
+  if (window.matchMedia("(max-width: 900px)").matches) $("panel").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "start"});
 }
 function renderAll() {
   renderSummary();
