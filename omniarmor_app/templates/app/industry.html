@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ info.brand }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ '%02d' % info.id }} · {{ info.sector }} · 10 costliest risks</p>
+    <h1>{{ info.brand }}</h1>
+  </div>
+  <div class="tools">
+    {% if only %}
+      <a class="btn quiet" href="{{ url_for('app.industry', industry_id=info.id) }}">Show all checks</a>
+    {% else %}
+      <a class="btn quiet" href="{{ url_for('app.industry', industry_id=info.id, only='problems') }}">Only problems</a>
+    {% endif %}
+  </div>
+</div>
+{% set total = 10 %}
+{% include "app/_totals.html" %}
+
+<ul class="list mt">
+{% for s in states %}
+  {% set r = s.rule %}
+  {% set fid = 'f-' ~ r.key %}
+  <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}">
+    <div class="rule-main">
+      <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span></div>
+      {% if s.level != 'CLEARED' %}<p class="msg {{ s.level }}">{{ s.message }}</p>{% else %}<p class="sr">{{ s.message }}</p>{% endif %}
+      {% if s.due_date %}
+        <p class="due mono">{% if s.days_left < 0 %}{{ -s.days_left }} day{{ 's' if s.days_left != -1 }} overdue{% elif s.days_left == 0 %}Due today{% else %}Due in {{ s.days_left }} day{{ 's' if s.days_left != 1 }}{% endif %} · {{ s.due_date.isoformat() }}</p>
+      {% endif %}
+      <details>
+        <summary>Why it matters</summary>
+        <div class="why">
+          <p>{{ r.cost }}</p>
+          <p class="mono">{{ r.citation }}</p>
+          {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at[:10] }}{{ ' by ' ~ s.updated_by if s.updated_by }}</p>{% endif %}
+        </div>
+      </details>
+      {% if can_override(r) %}
+        <details>
+          <summary>{{ 'Your limit' if s.overridden else 'Set your own limit' }}</summary>
+          <form class="limit-form" method="post" action="{{ url_for('app.change', industry_id=info.id, rule_key=r.key) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
+            <p class="hint">This limit comes from common practice, not one fixed law. Default: {{ r.limit|qty(r.unit) }}{% if r.warn is not none %}, warns at {{ r.warn|qty(r.unit) }}{% endif %}.</p>
+            <div class="inline">
+              <label><span class="sr">Your limit</span><input type="number" step="any" name="limit" value="{{ '%g' % s.effective.limit }}" placeholder="Limit"></label>
+              <label><span class="sr">Warn at</span><input type="number" step="any" name="warn" value="{{ '%g' % s.effective.warn if s.effective.warn is not none else '' }}" placeholder="Warn at"></label>
+              <button class="btn quiet" type="submit" name="action" value="override">Save limit</button>
+              {% if s.overridden %}<button class="linkbtn" type="submit" name="action" value="reset_override">Use default</button>{% endif %}
+            </div>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+    <form method="post" action="{{ url_for('app.change', industry_id=info.id, rule_key=r.key) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
+      {% if r.kind in ('required', 'forbidden') %}
+        <span class="q" id="{{ fid }}-q">{{ r.input }}</span>
+        <div class="yn" role="radiogroup" aria-labelledby="{{ fid }}-q">
+          <input type="radio" name="answer" id="{{ fid }}-y" value="yes" {% if s.value is sameas true %}checked{% endif %}><label for="{{ fid }}-y">Yes</label>
+          <input type="radio" name="answer" id="{{ fid }}-n" value="no" {% if s.value is sameas false %}checked{% endif %}><label for="{{ fid }}-n">No</label>
+        </div>
+        <div class="inline"><button class="btn quiet" type="submit" name="action" value="save">Save</button></div>
+      {% else %}
+        <label class="q" for="{{ fid }}-v">{{ r.input }}</label>
+        <div class="inline">
+          <input type="number" step="any" inputmode="decimal" id="{{ fid }}-v" name="value"
+                 value="{{ '' if s.value is none or s.value_date else s.value }}" placeholder="{{ s.value if s.value_date and s.value is not none else '' }}"
+                 aria-describedby="{{ fid }}-l"><span class="faint">{{ r.unit }}</span>
+        </div>
+        {% if s.mode %}
+          <label class="hint" for="{{ fid }}-d">{{ 'Or the date it last happened' if s.mode == 'since' else 'Or the due or expiry date' }}</label>
+          <div class="inline">
+            <input type="date" id="{{ fid }}-d" name="date" value="{{ s.value_date.isoformat() if s.value_date else '' }}"{% if s.mode == 'since' %} max="{{ today.isoformat() }}"{% endif %}>
+          </div>
+        {% endif %}
+        <span class="limits" id="{{ fid }}-l">{% if r.kind == 'max' %}Limit {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns from {{ s.effective.warn|qty(r.unit) }}{% endif %}{% else %}Minimum {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns at {{ s.effective.warn|qty(r.unit) }} or less{% endif %}{% endif %}{% if s.overridden %} · your setting{% endif %}</span>
+        <div class="inline">
+          <button class="btn quiet" type="submit" name="action" value="save">Save</button>
+          {% if s.mode == 'since' %}<button class="btn" type="submit" name="action" value="done_today">Done today</button>{% endif %}
+          {% if s.value is not none %}<button class="linkbtn" type="submit" name="action" value="clear">Clear</button>{% endif %}
+        </div>
+      {% endif %}
+    </form>
+  </li>
+{% else %}
+  <li class="empty">No problems in {{ info.brand }} right now.</li>
+{% endfor %}
+</ul>
+{% endblock %}

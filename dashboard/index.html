@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Black, orange and red. One dark theme on every device, by design: few
+/* Black with a red-orange blend. One dark theme on every device, by design: few
    surfaces, thin dividers, orange as the accent, red for anything blocked. */
 :root{
   color-scheme:dark;
@@ -15,7 +15,8 @@
   --faint:#958B80;
   --line:#2A2622;
   --field:#776D63;
-  --accent:#F08A2E; --accent-text:#F7A85A; --on-accent:#0F0E0D;
+  --accent:#F7743A; --accent-text:#FF9A66; --on-accent:#0F0E0D;
+  --blend:linear-gradient(100deg,#FF4D3D 0%,#FF6A36 45%,#F59234 100%);
   --block:#FF5A45; --block-text:#FF8572; --block-tint:rgba(255,90,69,.07); --on-block:#0F0E0D;
   --warn:#F08A2E;  --warn-text:#F7A85A; --warn-tint:rgba(240,138,46,.07);
   --clear-seg:#4A433C;
@@ -42,7 +43,7 @@ button,input{font:inherit;color:inherit}
 .lockup svg{flex:none}
 .wordmark{font-family:var(--display);font-weight:800;font-size:32px;line-height:.9;letter-spacing:.03em;text-transform:uppercase}
 .wordmark .dim{color:var(--faint)}
-.slogan{margin:0;color:var(--accent-text);font-size:15px;font-weight:500;letter-spacing:.01em}
+.slogan{margin:0;background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:15px;font-weight:500;letter-spacing:.01em}
 .totals{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:15px;color:var(--muted)}
 .totals b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:6px}
 .totals .t-BLOCKED b{color:var(--block-text)}
@@ -81,10 +82,10 @@ button,input{font:inherit;color:inherit}
 .switch{display:inline-flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;min-height:44px}
 .switch input{appearance:none;-webkit-appearance:none;margin:0;width:38px;height:22px;border-radius:11px;background:var(--line);box-shadow:inset 0 0 0 1px var(--field);position:relative;cursor:pointer;transition:background-color .2s ease}
 .switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:transform .2s ease,background-color .2s ease}
-.switch input:checked{background:var(--accent);box-shadow:none}
+.switch input:checked{background:var(--blend);box-shadow:none}
 .switch input:checked::after{transform:translateX(16px);background:var(--on-accent)}
-.btn{height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent-text);cursor:pointer;font-size:15px;font-weight:500;transition:background-color .15s ease,color .15s ease}
-.btn:hover{background:var(--accent);color:var(--on-accent)}
+.btn{height:44px;padding:0 18px;border-radius:8px;border:0;background:var(--blend);color:var(--on-accent);font-weight:600;cursor:pointer;font-size:15px;transition:filter .15s ease}
+.btn:hover{filter:brightness(1.08)}
 .link{height:44px;padding:0 4px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;text-decoration:underline;text-decoration-color:var(--field);text-underline-offset:3px}
 .link:hover{color:var(--ink)}
 .report-box{margin-top:16px;display:flex;flex-direction:column;gap:8px}
@@ -132,7 +133,7 @@ summary:hover{color:var(--ink)}
 .yn input{position:absolute;opacity:0;pointer-events:none}
 .yn label{min-width:84px;height:44px;display:flex;align-items:center;justify-content:center;padding:0 16px;cursor:pointer;font-size:15px;color:var(--muted);transition:background-color .15s ease,color .15s ease}
 .yn label+input+label{border-left:1px solid var(--field)}
-.yn input:checked+label{background:var(--accent);color:var(--on-accent);font-weight:600}
+.yn input:checked+label{background:var(--blend);color:var(--on-accent);font-weight:600}
 .yn input:focus-visible+label{outline:2px solid var(--accent);outline-offset:-3px}
 .no-rows{padding:32px 0;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--raise);color:var(--ink);border:1px solid var(--line);padding:10px 16px;border-radius:8px;font-size:14px;z-index:10;box-shadow:0 12px 32px rgba(0,0,0,.4);animation:fadeUp .3s both}
@@ -180,7 +181,8 @@ footer{color:var(--faint);font-size:13.5px;padding-top:8px;border-top:1px solid 
         <div class="lockup">
           <svg viewBox="0 0 40 46" width="28" height="32" aria-hidden="true">
             <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path>
-            <circle class="mark-ring" cx="20" cy="22.5" r="7" fill="none" stroke="var(--accent)" stroke-width="3.5"></circle>
+            <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#FF4D3D"></stop><stop offset="1" stop-color="#F59234"></stop></linearGradient></defs>
+            <circle class="mark-ring" cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"></circle>
           </svg>
           <div class="wordmark" aria-label="OmniArmor.ai"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
         </div>

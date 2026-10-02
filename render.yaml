@@ -1,0 +1,29 @@
+# One-click deploy on Render (https://render.com): New > Blueprint > pick this repo.
+# The disk keeps the database and backups between deploys.
+services:
+  - type: web
+    name: omniarmor
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    disk:
+      name: omniarmor-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: BASE_URL
+        sync: false   # set to your public address, e.g. https://app.omniarmor.ai
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false   # e.g. OmniArmor <reminders@omniarmor.ai>
+      - key: DAILY_JOB_HOUR_UTC
+        value: "11"

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Compliance checks for 50 industries{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">50 industries · 500 checks · daily reminders</p>
+  <h1><span class="blend-text">Catch the fine</span> before it catches you.</h1>
+  <p class="lead">OmniArmor tracks the ten compliance failures that cost your industry the most: inspection dates, filing deadlines, limits and sign-offs. Enter a date once and it counts the days, warns your team before anything is due, and keeps the record an inspector asks for.</p>
+  <div class="cta">
+    <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
+    <a class="btn ghost" href="{{ url_for('public.industries') }}">Find your industry</a>
+  </div>
+</section>
+
+<section class="features" aria-label="What OmniArmor does">
+  <div>
+    <h3>Deadlines that count themselves</h3>
+    <p>Enter when something was last done or when it expires. OmniArmor works out the days left every morning.</p>
+  </div>
+  <div>
+    <h3>Reminders before it's late</h3>
+    <p>Your team gets one email 30, 7 and 1 day before a deadline, on the day, and every week it stays overdue.</p>
+  </div>
+  <div>
+    <h3>Cycles that restart</h3>
+    <p>Press Done today on a yearly, quarterly or monthly duty and the next due date is set for you.</p>
+  </div>
+  <div>
+    <h3>A record for inspectors</h3>
+    <p>Every change is saved with who made it and when. Print the report or export it to a spreadsheet.</p>
+  </div>
+</section>
+
+<h2>Built for your industry</h2>
+<div class="grid-ind">
+  {% for ind in industries.values() %}
+    <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">
+      <span><span class="title">{{ ind.brand }}</span><br><span class="meta">{{ ind.sector }}</span></span>
+      <span class="faint mono" aria-hidden="true">{{ '%02d' % ind.id }}</span>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

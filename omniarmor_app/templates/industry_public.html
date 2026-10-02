@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ info.brand }}: compliance for {{ info.sector }}{% endblock %}
+{% block description %}The ten compliance failures that cost {{ info.sector|lower }} the most, tracked automatically with deadlines and reminders. {{ SLOGAN }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">{{ info.sector }}</p>
+  <h1><span class="blend-text">{{ info.brand }}</span></h1>
+  <p class="lead">The ten compliance failures that cost {{ info.sector|lower }} the most, tracked for you. Enter each date or reading once; OmniArmor counts down every deadline and warns your team before anything slips.</p>
+  <div class="cta">
+    <a class="btn" href="{{ url_for('auth.signup', industry=info.id) }}">Start free with {{ info.brand }}</a>
+  </div>
+</section>
+<h2>What {{ info.brand }} checks</h2>
+<ul class="rule-list">
+  {% for r in rules %}
+    <li>
+      <strong>{{ r.title }}</strong>
+      <span>{{ r.cost }}</span><br>
+      <span class="mono faint">{{ r.citation }}</span>
+    </li>
+  {% endfor %}
+</ul>
+<p class="hint">Decision support, not legal advice. Limits marked as policy follow common practice where the law varies; each company can set its own.</p>
+{% endblock %}

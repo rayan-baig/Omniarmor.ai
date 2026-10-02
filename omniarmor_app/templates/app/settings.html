@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }}</p>
+    <h1>Settings</h1>
+  </div>
+</div>
+
+<h2>Your reminders</h2>
+<form method="post" action="{{ url_for('app.settings_reminders') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Email me the daily reminder digest ({{ g.user.email }})</label>
+  <button class="btn quiet mt-s" type="submit">Save</button>
+</form>
+
+{% if g.role == 'owner' %}
+  <h2>Company</h2>
+  <form method="post" action="{{ url_for('app.settings_company') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="narrow">
+      <label class="field"><span>Company name</span><input type="text" name="name" value="{{ g.org.name }}" required maxlength="120"></label>
+      <label class="field"><span>Timezone</span>
+        <select name="timezone">
+          {% set tzs = timezones if g.org.timezone in timezones else [g.org.timezone] + timezones %}
+          {% for tz in tzs %}<option value="{{ tz }}" {% if tz == g.org.timezone %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <fieldset class="plain">
+      <legend class="plain">Industries</legend>
+      <div class="checks">
+        {% for ind in industries.values() %}
+          <label class="check"><input type="checkbox" name="industries" value="{{ ind.id }}" {% if ind.id in picked %}checked{% endif %}> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <button class="btn quiet" type="submit">Save company settings</button>
+  </form>
+{% endif %}
+
+<h2>Team</h2>
+<ul class="list">
+  {% for m in members %}
+    <li class="row">
+      <span><span class="title">{{ m.name }}</span><span class="meta"> · {{ m.email }} · {{ m.role }}</span></span>
+      {% if g.role == 'owner' and m.id != g.user.id %}
+        <form method="post" action="{{ url_for('app.remove_member', user_id=m.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="linkbtn" type="submit">Remove</button>
+        </form>
+      {% else %}<span></span>{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% if g.role == 'owner' %}
+  <form method="post" action="{{ url_for('app.settings_invite') }}" class="mt-s">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn ghost" type="submit">Create invite link</button>
+    {% if open_invites %}<span class="hint">{{ open_invites }} unused invite link{{ 's' if open_invites != 1 }} still open.</span>{% endif %}
+  </form>
+
+  <h2>Delete workspace</h2>
+  <form method="post" action="{{ url_for('app.delete_workspace') }}" class="narrow">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p class="muted">This permanently deletes {{ g.org.name }}, every reading, the audit trail and all team accounts that aren't part of another workspace. Export your report and audit trail first if you need them.</p>
+    <label class="field"><span>Type <strong>{{ g.org.name }}</strong> to confirm</span><input type="text" name="confirm" autocomplete="off" required></label>
+    <button class="btn danger" type="submit">Delete workspace</button>
+  </form>
+{% endif %}
+{% endblock %}

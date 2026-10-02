@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create your account{% endblock %}
+{% block content %}
+<div class="narrow">
+  <p class="eyebrow">{{ 'Join ' ~ invite.org_name if invite else 'Start free' }}</p>
+  <h1>{{ 'Join your team' if invite else 'Create your workspace' }}</h1>
+  <p class="sub">{{ 'You were invited to ' ~ invite.org_name ~ '.' if invite else 'Pick your industries and start tracking in minutes.' }}</p>
+  <form class="card mt" method="post" action="{{ url_for('auth.signup') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if invite %}<input type="hidden" name="invite" value="{{ token }}">{% endif %}
+    <label class="field"><span>Your name</span>
+      <input type="text" name="name" value="{{ form.get('name', '') }}" autocomplete="name" required maxlength="100"></label>
+    <label class="field"><span>Work email</span>
+      <input type="email" name="email" value="{{ form.get('email', '') }}" autocomplete="email" required></label>
+    <label class="field"><span>Password</span>
+      <input type="password" name="password" autocomplete="new-password" required minlength="10" aria-describedby="pw-hint">
+      <span class="hint" id="pw-hint">At least 10 characters.</span></label>
+    {% if not invite %}
+      <label class="field"><span>Company name</span>
+        <input type="text" name="org_name" value="{{ form.get('org_name', '') }}" autocomplete="organization" required maxlength="120"></label>
+      <label class="field"><span>Timezone</span>
+        <select name="timezone">
+          {% set chosen = form.get('timezone', 'America/New_York') %}
+          {% for tz in timezones %}<option value="{{ tz }}" {% if tz == chosen %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+        <span class="hint">Deadlines roll over at midnight in this timezone.</span></label>
+      <fieldset class="plain">
+        <legend class="plain"><span class="muted">Your industries</span></legend>
+        <div class="checks">
+          {% for ind in industries.values() %}
+            <label class="check"><input type="checkbox" name="industries" value="{{ ind.id }}" {% if ind.id in picked %}checked{% endif %}> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    {% endif %}
+    <button class="btn" type="submit">{{ 'Join the team' if invite else 'Create workspace' }}</button>
+    <p class="hint mt-s">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+  </form>
+</div>
+{% endblock %}

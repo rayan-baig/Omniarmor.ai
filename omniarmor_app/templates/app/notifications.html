@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Reminders{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }}</p>
+    <h1>Reminders</h1>
+    <p class="sub">Every reminder and account email OmniArmor has sent your team. Reminders go out each morning when something is 30, 7 or 1 day from due, due today, or overdue.</p>
+  </div>
+</div>
+{% if not config.SMTP_HOST %}
+  <p class="flash">Email sending isn't set up on this server yet, so reminders are saved here instead of emailed.</p>
+{% endif %}
+{% if rows %}
+  <ul class="list">
+    {% for n in rows %}
+      <li>
+        <details class="note">
+          <summary><span class="title">{{ n.subject }}</span></summary>
+          <p class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC · to {{ n.recipient }} · {{ {'sent': 'Sent', 'logged': 'Saved (email not set up)', 'failed': 'Failed: ' ~ (n.error or '')}[n.status] }}</p>
+          <pre class="mono note-body">{{ n.body }}</pre>
+        </details>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="empty">No reminders yet. They start once checks have dates.</p>
+{% endif %}
+{% endblock %}

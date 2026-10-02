@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Compliance report{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · {{ today.isoformat() }}</p>
+    <h1>Compliance report</h1>
+    <p class="sub">Current status of every check. Print this page or export it for an inspector, auditor or insurer.</p>
+  </div>
+  <div class="tools no-print"><a class="btn quiet" href="{{ url_for('app.report_csv') }}">Export CSV</a></div>
+</div>
+{% set total = counts.BLOCKED + counts.WARNING + counts.CLEARED + counts.NONE %}
+{% include "app/_totals.html" %}
+{% for group in groups %}
+  <h2>{{ group.industry.brand }} <span class="muted">· {{ group.industry.sector }}</span></h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Check</th><th scope="col">Status</th><th scope="col">Reading</th><th scope="col">Due</th><th scope="col">Rule</th><th scope="col">Last updated</th></tr></thead>
+      <tbody>
+        {% for s in group.states %}
+          <tr>
+            <td>{{ s.rule.title }}</td>
+            <td><span class="tag {{ s.level }}">{{ s.label }}</span></td>
+            <td class="num">{{ s.shown_value or '—' }}</td>
+            <td class="num mono">{{ s.due_date.isoformat() if s.due_date else '—' }}</td>
+            <td class="mono">{{ s.rule.citation }}</td>
+            <td class="num">{{ s.updated_at[:10] if s.updated_at else '—' }}{{ ' · ' ~ s.updated_by if s.updated_by }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endfor %}
+<p class="hint mt">Readings are entered by the company. Decision support, not legal advice.</p>
+{% endblock %}

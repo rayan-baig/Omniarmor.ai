@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <p class="eyebrow">Error {{ code }}</p>
+  <h1>{{ title }}</h1>
+  {% if description %}<p class="sub">{{ description }}</p>{% endif %}
+  <p class="sub"><a href="{{ url_for('app.overview') if g.user else url_for('public.home') }}">Go back to the start</a></p>
+</div>
+{% endblock %}

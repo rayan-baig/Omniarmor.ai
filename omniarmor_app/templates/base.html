@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
+  <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 50 regulated industries.{% endblock %}">
+  <meta name="theme-color" content="#0F0E0D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="lockup" href="{{ url_for('app.overview') if g.user else url_for('public.home') }}" aria-label="OmniArmor.ai home">
+      <svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
+        <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#FF4D3D"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>
+        <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"/>
+      </svg>
+      <span class="wordmark">OmniArmor<span class="dim">.ai</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      {% if g.user %}
+        {% set ep = request.endpoint or '' %}
+        <a href="{{ url_for('app.overview') }}" {% if ep == 'app.overview' %}aria-current="page"{% endif %}>Overview</a>
+        {% for ind in nav_industries or [] %}
+          <a href="{{ url_for('app.industry', industry_id=ind.id) }}" {% if ep == 'app.industry' and request.view_args.industry_id == ind.id %}aria-current="page"{% endif %}>{{ ind.brand }}</a>
+        {% endfor %}
+        <a href="{{ url_for('app.report') }}" {% if ep == 'app.report' %}aria-current="page"{% endif %}>Report</a>
+        <a href="{{ url_for('app.audit') }}" {% if ep == 'app.audit' %}aria-current="page"{% endif %}>Audit trail</a>
+        <a href="{{ url_for('app.notifications') }}" {% if ep == 'app.notifications' %}aria-current="page"{% endif %}>Reminders</a>
+        <a href="{{ url_for('app.settings') }}" {% if ep == 'app.settings' %}aria-current="page"{% endif %}>Settings</a>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('public.industries') }}">Industries</a>
+        <a href="{{ url_for('auth.login') }}">Sign in</a>
+        <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes" role="status">
+          {% for category, message in messages %}<li class="flash {{ category }}">{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <span>OmniArmor.ai · {{ SLOGAN }}</span>
+    <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
+  </div>
+</footer>
+</body>
+</html>

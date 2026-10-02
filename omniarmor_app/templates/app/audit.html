@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Audit trail{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }}</p>
+    <h1>Audit trail</h1>
+    <p class="sub">Every reading, limit and team change, with who made it and when.</p>
+  </div>
+  <div class="tools"><a class="btn quiet" href="{{ url_for('app.audit_csv') }}">Export CSV</a></div>
+</div>
+{% if rows %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">When (UTC)</th><th scope="col">Who</th><th scope="col">Industry</th><th scope="col">Change</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="num mono">{{ r.at[:16].replace('T', ' ') }}</td>
+          <td>{{ r.user_name or 'System' }}</td>
+          <td>{{ r.industry }}</td>
+          <td>{{ r.summary }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="pager">
+  {% if page > 1 %}<a href="{{ url_for('app.audit', page=page - 1) }}">Newer</a>{% endif %}
+  {% if more %}<a href="{{ url_for('app.audit', page=page + 1) }}">Older</a>{% endif %}
+</div>
+{% else %}
+  <p class="empty">No changes yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · {{ today.strftime('%B') }} {{ today.day }}, {{ today.year }}</p>
+    <h1>Overview</h1>
+  </div>
+</div>
+{% set total = total %}
+{% include "app/_totals.html" %}
+
+{% if missing == total %}
+  <h2>Start here</h2>
+  <p class="muted">Open an industry and enter each check's date or reading once. From then on OmniArmor counts the days and sends reminders by itself.</p>
+{% elif missing %}
+  <p class="hint mt-s">{{ missing }} check{{ 's' if missing != 1 }} still need a first reading.</p>
+{% endif %}
+
+<h2>Needs attention</h2>
+{% if problems %}
+  <ul class="list">
+    {% for s in problems %}
+      <li><a class="row" data-level="{{ s.level }}" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
+        <span>
+          <span class="title">{{ s.rule.title }}</span>
+          <span class="meta"> · {{ s.industry.brand }}</span><br>
+          <span class="meta">{{ s.message }}</span>
+        </span>
+        <span class="tag {{ s.level }}">{{ s.label }}</span>
+      </a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="empty">Nothing blocked or close to a limit. Nice work.</p>
+{% endif %}
+
+<h2>Coming due in the next 60 days</h2>
+{% if upcoming %}
+  <ul class="list">
+    {% for s in upcoming %}
+      <li><a class="row" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
+        <span><span class="title">{{ s.rule.title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
+        <span class="meta mono">{{ 'today' if s.days_left == 0 else 'in ' ~ s.days_left ~ ' day' ~ ('s' if s.days_left != 1 else '') }} · {{ s.due_date.isoformat() }}</span>
+      </a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="empty">No tracked deadlines in the next 60 days.</p>
+{% endif %}
+
+<h2>Your industries</h2>
+<ul class="list">
+  {% for item in by_industry %}
+    <li><a class="row" href="{{ url_for('app.industry', industry_id=item.industry.id) }}">
+      <span><span class="title">{{ item.industry.brand }}</span><span class="meta"> · {{ item.industry.sector }}</span></span>
+      <span class="meta">{{ item.counts.BLOCKED }} blocked · {{ item.counts.WARNING }} {{ 'warning' if item.counts.WARNING == 1 else 'warnings' }} · {{ item.counts.NONE }} unread</span>
+    </a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

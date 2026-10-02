@@ -1,0 +1,12 @@
+{# Shared status totals with a thin bar. Needs: counts, total #}
+<div class="totals" aria-label="Status totals">
+  <span class="BLOCKED"><b>{{ counts.BLOCKED }}</b>blocked</span>
+  <span class="WARNING"><b>{{ counts.WARNING }}</b>{{ 'warning' if counts.WARNING == 1 else 'warnings' }}</span>
+  <span><b>{{ counts.CLEARED }}</b>cleared</span>
+  {% if counts.NONE %}<span><b>{{ counts.NONE }}</b>without a reading</span>{% endif %}
+</div>
+{% if total %}
+<div class="bar" role="img" aria-label="{{ counts.BLOCKED }} blocked, {{ counts.WARNING }} warnings, {{ counts.CLEARED }} cleared, {{ counts.NONE }} without a reading, of {{ total }} checks">
+  {% for level in ['BLOCKED', 'WARNING', 'CLEARED', 'NONE'] %}{% if counts[level] %}<span class="{{ level }}" style="flex-grow: {{ counts[level] }}"></span>{% endif %}{% endfor %}
+</div>
+{% endif %}
