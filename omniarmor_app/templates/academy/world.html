@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, level_icon, stars %}
+{% block title %}{{ world.title }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
+  <header class="ac-level-head">
+    <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
+    <div>
+      <p class="ac-kicker">{% if world.kind == 'topic' %}World {{ world.number }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
+      <h1 class="ac-title">{{ world.title }}</h1>
+      <p class="ac-lead">{{ card.done }} of {{ world.stages }} stages done · {{ card.stars }} of {{ world.stages * 3 }} stars</p>
+    </div>
+  </header>
+
+  {% if current %}
+    <div class="ac-speech">
+      {{ armo(64, 'happy') }}
+      <p>{% if current.stage == 1 %}Start with stage 1 to learn the lesson.{% else %}Stage {{ current.stage }} is waiting for you!{% endif %}
+        <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=current.stage) }}">{{ 'Start' if current.stage == 1 else 'Continue' }}</a></p>
+    </div>
+  {% else %}
+    <div class="ac-speech">
+      {{ armo(64, 'cheer') }}
+      <p>You cleared every stage in this world! Replay any stage to win more stars.</p>
+    </div>
+  {% endif %}
+
+  <ol class="ac-stages" aria-label="Stages">
+    {% for st in stages %}
+      {% set cls = 'done' if st.stars else ('open' if st.open else 'locked') %}
+      <li class="ac-stage {{ cls }}{{ ' current' if current and current.stage == st.stage else '' }}{{ ' boss' if st.stage % 10 == 0 else '' }}">
+        {% if st.open %}
+          <a href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=st.stage) }}" aria-label="Stage {{ st.stage }}, {{ st.stars }} of 3 stars">
+        {% else %}
+          <span aria-label="Stage {{ st.stage }}, locked">
+        {% endif %}
+            <span class="ac-stage-num">{{ st.stage }}</span>
+            {{ stars(st.stars, 13) }}
+        {% if st.open %}</a>{% else %}</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+  <p class="hint mt">Every 10th stage is a bonus round. Stages get harder as you go: more questions and a higher pass mark.</p>
+</div>
+{% endblock %}

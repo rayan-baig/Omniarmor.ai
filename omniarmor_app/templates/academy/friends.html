@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar, level_icon, star %}
+{% block title %}{{ learner.nickname }}'s friends{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
+  <section class="ac-player">
+    {{ avatar(learner.avatar, avatars, 72) }}
+    <div>
+      <p class="ac-kicker">Multiplayer</p>
+      <h1 class="ac-title">Friends &amp; duels</h1>
+      <p class="ac-lead">Learn with friends whose families also use OmniArmor. Challenge them to a duel: you both answer the same 5 questions, and the most right answers wins.</p>
+    </div>
+  </section>
+
+  <h2 class="ac-h2">Duels</h2>
+  {% if duels %}
+    <ul class="ac-duels">
+      {% for d in duels %}
+        <li class="ac-duel {{ d.status }}">
+          {{ avatar(d.other.avatar, avatars, 44) }}
+          <span class="ac-duel-text">
+            <span class="ac-duel-title">{{ 'You vs ' if d.challenger else '' }}{{ d.other.nickname }}{{ '' if d.challenger else ' vs you' }}</span>
+            <span class="ac-duel-meta">{{ d.world.title }}{% if d.me is not none and d.them is not none %} · {{ d.me }}–{{ d.them }}{% endif %}</span>
+          </span>
+          {% if d.status == 'your-turn' %}
+            <a class="btn ac-btn ac-duel-go" href="{{ url_for('academy.duel', learner_id=learner.id, duel_id=d.duel.id) }}">Play</a>
+          {% else %}
+            <a class="ac-duel-badge" href="{{ url_for('academy.duel', learner_id=learner.id, duel_id=d.duel.id) }}">{{ {'waiting': 'Waiting for ' ~ d.other.nickname, 'won': 'You won', 'lost': d.other.nickname ~ ' won', 'tie': 'Tie'}[d.status] }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="ac-empty">No duels yet.{% if board|length > 1 %} Challenge a friend below!{% endif %}</p>
+  {% endif %}
+
+  <h2 class="ac-h2">Leaderboard</h2>
+  {% if board|length > 1 %}
+    <ol class="ac-board">
+      {% for s in board %}
+        <li class="{{ 'me' if s.learner.id == learner.id else '' }}">
+          <span class="ac-board-place">{{ loop.index }}</span>
+          {{ avatar(s.learner.avatar, avatars, 44) }}
+          <span class="ac-board-text">
+            <span class="ac-board-name">{{ s.learner.nickname }}{% if s.learner.id == learner.id %} (you){% endif %}</span>
+            <span class="ac-board-meta">{{ s.rank }} · {{ s.done }} levels · {{ star(true, 13) }} {{ s.stars }}</span>
+          </span>
+          {% if s.learner.id != learner.id %}
+            <form class="ac-challenge" method="post" action="{{ url_for('academy.new_duel', learner_id=learner.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="friend" value="{{ s.learner.id }}">
+              <label class="sr" for="world-{{ s.learner.id }}">World for the duel</label>
+              <select id="world-{{ s.learner.id }}" name="world">
+                {% for w in duel_worlds %}<option value="{{ w.number }}">{{ w.title }}</option>{% endfor %}
+              </select>
+              <button class="btn" type="submit">Challenge</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="ac-speech">{{ armo(64, 'think') }}<p>No friends yet. Ask a grown-up to swap friend codes with a friend's family.</p></div>
+  {% endif %}
+
+  <section class="ac-card ac-grownups">
+    <h2 class="ac-h3">For grown-ups: add a friend</h2>
+    <p class="hint">Friends must be added by a parent. Friends only see each other's nickname, picture, rank and stars. There is no chat, and nothing about your company is shared.</p>
+    <div class="ac-code-grid">
+      <div>
+        <h3 class="ac-label">Share {{ learner.nickname }}'s code</h3>
+        {% if code %}
+          <p class="ac-code" aria-label="Friend code">{{ code.code }}</p>
+          <p class="hint">Works once, until {{ code.expires_at[:10] }}.</p>
+        {% else %}
+          <p class="hint">Codes work once and last {{ code_days }} days.</p>
+        {% endif %}
+        <form method="post" action="{{ url_for('academy.friend_code', learner_id=learner.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn quiet" type="submit">{{ 'Make a new code' if code else 'Make a friend code' }}</button>
+        </form>
+      </div>
+      <form method="post" action="{{ url_for('academy.add_friend', learner_id=learner.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h3 class="ac-label">Enter a friend's code</h3>
+        <label class="field"><span class="sr">Friend code</span>
+          <input type="text" name="code" required maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ARMO-XXXXXXXX"></label>
+        <button class="btn" type="submit">Add friend</button>
+      </form>
+    </div>
+    {% if board|length > 1 %}
+      <details class="mt">
+        <summary>Remove a friend</summary>
+        <ul class="list">
+          {% for s in board if s.learner.id != learner.id %}
+            <li class="row"><span>{{ s.learner.nickname }}</span>
+              <form method="post" action="{{ url_for('academy.remove_friend', learner_id=learner.id, friend_id=s.learner.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="linkbtn" type="submit">Remove {{ s.learner.nickname }}</button>
+              </form></li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

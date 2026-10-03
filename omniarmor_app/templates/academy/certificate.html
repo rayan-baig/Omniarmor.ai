@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar %}
+{% block title %}{{ summary.certificate }} Certificate{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <article class="ac-cert">
+    <div class="ac-cert-art">{{ armo(110, 'cheer') }}{{ avatar(summary.learner.avatar, avatars, 84) }}</div>
+    <p class="ac-kicker">OmniArmor Future Owner Academy</p>
+    <h1 class="ac-cert-title">Certificate of Achievement</h1>
+    <p class="ac-cert-line">This certifies that</p>
+    <p class="ac-cert-name">{{ summary.learner.nickname }}</p>
+    <p class="ac-cert-line">passed the Owner's Challenge, completed {{ summary.done }} of {{ "{:,}".format(summary.total) }} levels, and is a</p>
+    <p class="ac-cert-rank">{{ summary.certificate }} of {{ g.org.name }}</p>
+    <p class="ac-cert-meta">{{ summary.stars }} stars earned · Rank: {{ summary.rank }} · First earned {{ earned or today.isoformat() }}</p>
+  </article>
+  <p class="mt no-print"><a href="{{ url_for('academy.level_map', learner_id=summary.learner.id) }}">← Back to the map</a> · Use your browser's Print to print it out.</p>
+</div>
+{% endblock %}

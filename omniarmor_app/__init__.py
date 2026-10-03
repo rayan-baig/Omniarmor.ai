@@ -10,7 +10,7 @@ import os
 from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import auth, views
+from . import academy_views, auth, views
 from .catalog import INDUSTRIES, rules_for
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate
@@ -92,6 +92,7 @@ def create_app(**overrides):
     app.register_blueprint(public)
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
+    app.register_blueprint(academy_views.bp)
     register_cli(app)
 
     @app.errorhandler(400)

@@ -1,0 +1,38 @@
+{# The quiz form, shared by levels and duels. Needs questions; needed and attempt are optional. #}
+{% from "academy/_art.html" import armo %}
+  <form class="ac-quiz" id="quiz" method="post" data-quiz>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if attempt %}<input type="hidden" name="attempt" value="{{ attempt }}">{% endif %}
+    <div class="ac-quiz-head">
+      <h2 class="ac-h2">Quiz time!</h2>
+      <p class="muted ac-count"><span data-count>{{ questions|length }} questions</span>{% if needed %} · get {{ needed }} right to pass{% endif %}</p>
+    </div>
+    <div class="ac-hud" data-hud hidden>
+      <span class="ac-hud-armo" data-armo>{{ armo(52, 'happy') }}</span>
+      <div class="ac-hud-main">
+        <div class="ac-meter ac-meter-big"><span class="ac-meter-fill" data-progress></span></div>
+        <p class="ac-hud-line"><span data-right>0</span> right · streak <span data-streak>0</span></p>
+      </div>
+      <p class="ac-toast" data-toast aria-live="polite"></p>
+    </div>
+    {% for q in questions %}
+      {% set qi = loop.index0 %}
+      <fieldset class="ac-q ac-q-{{ q.kind }}" data-answer="{{ q.answer }}">
+        <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %} {{ q.prompt }}</legend>
+        <div class="ac-options">
+          {% for opt in q.options %}
+            <label class="ac-opt{% if q.kind == 'light' %} ac-light-{{ loop.index0 }}{% endif %}">
+              <input type="radio" name="q{{ qi }}" value="{{ loop.index0 }}" required>
+              <span>{{ opt }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        <p class="ac-explain" data-explain hidden aria-live="polite">{{ q.explain }}</p>
+      </fieldset>
+    {% endfor %}
+    <button class="btn ac-btn ac-submit" type="submit">Check my answers</button>
+  </form>
+  {# Armo's other faces, swapped in by academy.js as answers come in. #}
+  <template id="armo-cheer">{{ armo(52, 'cheer') }}</template>
+  <template id="armo-think">{{ armo(52, 'think') }}</template>
+  <template id="armo-happy">{{ armo(52, 'happy') }}</template>

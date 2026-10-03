@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, stars %}
+{% block title %}{{ world.title }}, stage {{ stage }} results{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
+    {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
+    {{ armo(120, 'cheer' if passed else 'think') }}
+    <p class="ac-kicker">{{ world.title }} · stage {{ stage }}</p>
+    <h1 class="ac-title">{% if earned_stars == 3 %}Perfect score!{% elif passed %}Stage complete!{% else %}So close! Try again{% endif %}</h1>
+    <p class="ac-lead">{{ learner.nickname }} got {{ score }} of {{ total }} right.</p>
+    <div class="ac-big-stars">{{ stars(earned_stars, 52) }}</div>
+    {% if new_rank %}<p class="ac-unlock ac-rankup">Rank up! You're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!</p>{% endif %}
+    {% if new_certificate %}
+      <p class="ac-unlock">You earned the {{ new_certificate }} certificate!</p>
+      <a class="btn ac-btn" href="{{ url_for('academy.certificate', learner_id=learner.id) }}">See your certificate</a>
+    {% endif %}
+    {% if first_clear and next_stage %}
+      <p class="ac-unlock">Stage {{ next_stage }} unlocked!</p>
+    {% elif first_clear and not next_stage %}
+      <p class="ac-unlock">You cleared all of {{ world.title }}!</p>
+    {% elif not passed %}
+      <p class="ac-lead">Get at least {{ needed }} right to pass. Read Armo's tips below, then try again. Every try teaches you something!</p>
+    {% endif %}
+    <div class="ac-actions">
+      {% if passed and next_stage %}
+        <a class="btn ac-btn" href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=next_stage) }}">Play stage {{ next_stage }}</a>
+      {% endif %}
+      <a class="btn {{ 'quiet' if passed else 'ac-btn' }}" href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=stage) }}">{{ 'Play again' if passed else 'Try again' }}</a>
+      <a class="btn quiet" href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">All stages</a>
+      <a class="btn quiet" href="{{ url_for('academy.level_map', learner_id=learner.id) }}">Map</a>
+    </div>
+  </section>
+
+  <h2 class="ac-h2">Your answers</h2>
+  <ol class="ac-review">
+    {% for r in results %}
+      <li class="{{ 'right' if r.right else 'wrong' }}">
+        <p class="ac-review-q">{% if r.question.review %}<span class="ac-tag">Review</span> {% endif %}{{ r.question.prompt }}</p>
+        <p class="ac-review-a">
+          {% if r.right %}
+            <strong>Correct:</strong> {{ r.question.options[r.question.answer] }}
+          {% else %}
+            {% if r.chosen is not none %}<span>You picked: {{ r.question.options[r.chosen] }}</span><br>{% else %}<span>Skipped.</span><br>{% endif %}
+            <strong>Right answer:</strong> {{ r.question.options[r.question.answer] }}
+          {% endif %}
+        </p>
+        <p class="ac-review-why">{{ r.question.explain }}</p>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

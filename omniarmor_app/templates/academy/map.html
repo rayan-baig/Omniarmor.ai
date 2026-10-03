@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar, level_icon, star %}
+{% block title %}{{ summary.learner.nickname }}'s adventure{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% macro world_card(card, learner_id) -%}
+{% set w = card.world %}
+{% set state = 'done' if card.done == w.stages else ('open' if card.open else 'locked') %}
+<li class="ac-world {{ state }}{{ ' started' if card.done and card.done < w.stages else '' }}">
+  {% if card.open %}<a href="{{ url_for('academy.world_page', learner_id=learner_id, world_number=w.number) }}">{% else %}<span aria-disabled="true">{% endif %}
+    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}</span>
+    <span class="ac-world-text">
+      <span class="ac-world-num">{% if w.kind == 'topic' %}World {{ w.number }}{% elif w.kind == 'final' %}Boss world{% else %}Rule Quest{% endif %}{% if not card.open %} · locked{% endif %}</span>
+      <span class="ac-world-title">{{ w.title }}</span>
+      <span class="ac-world-tag">{{ w.tagline }}</span>
+    </span>
+    <span class="ac-world-meter" role="img" aria-label="{{ card.done }} of {{ w.stages }} stages done">
+      <span class="ac-meter"><span class="ac-meter-fill" style="width: {{ (100 * card.done / w.stages)|round|int }}%"></span></span>
+      <span class="ac-world-count">{{ card.done }}/{{ w.stages }} · {{ star(true, 14) }} {{ card.stars }}</span>
+    </span>
+  {% if card.open %}</a>{% else %}</span>{% endif %}
+</li>
+{%- endmacro %}
+{% block content %}
+{% set lid = summary.learner.id %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← All learners</a></p>
+  <section class="ac-player">
+    {{ avatar(summary.learner.avatar, avatars, 72) }}
+    <div class="ac-player-text">
+      <p class="ac-kicker">{{ summary.rank }}{% if summary.certificate %} · {{ summary.certificate }}{% endif %}</p>
+      <h1 class="ac-title">{{ summary.learner.nickname }}'s adventure</h1>
+      <div class="ac-xp" role="img" aria-label="{{ summary.done }} of {{ summary.total }} levels done">
+        <span class="ac-xp-fill" style="width: {{ [100 * summary.done / summary.total, 1 if summary.done else 0]|max|round(1) }}%"></span>
+      </div>
+      <p class="ac-xp-label">{{ summary.done }} / {{ "{:,}".format(summary.total) }} levels · {{ summary.stars }} stars</p>
+    </div>
+  </section>
+
+  <ul class="ac-stats" aria-label="Your stats">
+    <li><span class="ac-stat-num">{{ summary.done }}</span><span class="ac-stat-label">levels done</span></li>
+    <li><span class="ac-stat-num">{{ summary.stars }}</span><span class="ac-stat-label">stars</span></li>
+    <li><span class="ac-stat-num">{{ topics|selectattr('done')|list|length }}/{{ topics|length }}</span><span class="ac-stat-label">worlds started</span></li>
+  </ul>
+
+  {% if up_next %}
+    <div class="ac-speech">
+      {{ armo(64) }}
+      <p>Up next: <strong>{{ up_next.world.title }}, stage {{ up_next.next }}</strong>. You've got this!
+        <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=lid, world_number=up_next.world.number, stage=up_next.next) }}">Continue</a></p>
+    </div>
+  {% endif %}
+  {% set turns = academy_turns(lid) %}
+  <p class="ac-callout"><a class="btn quiet ac-friends-link" href="{{ url_for('academy.friends', learner_id=lid) }}">Friends &amp; duels{% if turns %} <span class="ac-dot">{{ turns }}</span>{% endif %}</a></p>
+  {% if summary.certificate %}
+    <p class="ac-callout"><a class="btn quiet" href="{{ url_for('academy.certificate', learner_id=lid) }}">See your {{ summary.certificate }} certificate</a></p>
+  {% endif %}
+
+  <h2 class="ac-h2">Business worlds</h2>
+  <p class="ac-lead">Pass stage 1 of a world to open the next one. Each world has {{ topics[0].world.stages }} stages that get harder as you go.</p>
+  <ol class="ac-worlds">
+    {% for card in topics %}{{ world_card(card, lid) }}{% endfor %}
+    {{ world_card(final, lid) }}
+  </ol>
+
+  {% if mine %}
+    <h2 class="ac-h2">{{ g.org.name }}'s Rule Quests</h2>
+    <p class="ac-lead">The real rules your family's company follows.{% if not mine[0].open %} They open after stage 1 of {{ unlock_world.title }}.{% endif %}</p>
+    <ol class="ac-worlds">
+      {% for card in mine %}{{ world_card(card, lid) }}{% endfor %}
+    </ol>
+  {% endif %}
+
+  <details class="ac-card ac-explore">
+    <summary><span class="ac-h3">Explore other industries</span> <span class="muted">· {{ explore|length }} Rule Quests</span></summary>
+    <p class="muted">See how other kinds of companies stay safe.{% if explore and not explore[0].open %} These open after stage 1 of {{ unlock_world.title }}.{% endif %}</p>
+    <ol class="ac-worlds">
+      {% for card in explore %}{{ world_card(card, lid) }}{% endfor %}
+    </ol>
+  </details>
+
+  <details class="ac-card ac-words" id="word-bank">
+    <summary><span class="ac-h3">Word Bank</span> <span class="muted">· {{ glossary|length }} business words</span></summary>
+    <dl>
+      {% for word, meaning in glossary %}
+        <div><dt>{{ word }}</dt><dd>{{ meaning }}</dd></div>
+      {% endfor %}
+    </dl>
+  </details>
+</div>
+{% endblock %}

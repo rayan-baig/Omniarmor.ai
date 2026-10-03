@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, level_icon %}
+{% block title %}{{ world.title }}, stage {{ stage }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+<script src="{{ url_for('static', filename='academy.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">← {{ world.title }}</a></p>
+  <header class="ac-level-head">
+    <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
+    <div>
+      <p class="ac-kicker">Stage {{ stage }} of {{ world.stages }}{% if stage % 10 == 0 %} · Bonus round{% endif %}</p>
+      <h1 class="ac-title">{{ world.title }}</h1>
+    </div>
+  </header>
+
+  <section class="ac-story" aria-label="Lesson" data-story>
+    {% for title, text in cards %}
+      <article class="ac-story-card" data-card>
+        {{ armo(72, 'happy' if loop.index is odd else 'think') }}
+        <div class="ac-bubble">
+          <h2>{{ title }}</h2>
+          <p>{{ text }}</p>
+        </div>
+        {% if loop.length > 1 %}<p class="ac-step">{{ loop.index }} / {{ loop.length }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  {% include "academy/_quiz.html" %}
+</div>
+{% endblock %}

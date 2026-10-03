@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from omniarmor_app import create_app  # noqa: E402
 from omniarmor_app.catalog import date_mode, find_rule, rules_for  # noqa: E402
-from omniarmor_app.db import connect, migrate  # noqa: E402
+from omniarmor_app.db import MIGRATIONS, connect, migrate  # noqa: E402
 from omniarmor_app.jobs import backup_database, claim_run, release_run, run_daily  # noqa: E402
 from omniarmor_app.reminders import reminder_window, run_reminders  # noqa: E402
 from omniarmor_app.tracking import compute_state, org_today  # noqa: E402
@@ -514,7 +514,7 @@ class TestJobs(AppTestCase):
         path = os.path.join(self.tmp.name, "fresh.db")
         a, b = connect(path), connect(path)
         self.assertEqual(migrate(a), migrate(b))
-        self.assertEqual(b.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0], 1)
+        self.assertEqual(b.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0], len(MIGRATIONS))
 
     def test_run_daily_force_and_backup_pruning(self):
         cfg = dict(self.app.config, BACKUP_KEEP=2)

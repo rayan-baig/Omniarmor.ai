@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar, stars %}
+{% block title %}Future Owner Academy{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <section class="ac-hero">
+    {{ armo(120, 'cheer') }}
+    <div>
+      <p class="ac-kicker">Future Owner Academy</p>
+      <h1 class="ac-title">Learn the family business!</h1>
+      <p class="ac-lead">{{ "{:,}".format(total) }} fun levels in {{ world_count }} worlds about {{ g.org.name }} and how to run a great business: business words, talking like a pro, money, leading a team, hiring, tough calls, winning customers, beating rivals fair and square, and never giving up. Earn stars, climb the ranks and win your Future Owner Certificate.</p>
+    </div>
+  </section>
+
+  <h2 class="ac-h2">Who's learning today?</h2>
+  {% if summaries %}
+    <ul class="ac-learners">
+      {% for s in summaries %}
+        <li>
+          <a class="ac-learner" href="{{ url_for('academy.level_map', learner_id=s.learner.id) }}">
+            {{ avatar(s.learner.avatar, avatars, 64) }}
+            <span class="ac-learner-name">{{ s.learner.nickname }}</span>
+            <span class="ac-learner-meta">{{ s.rank }} · {{ s.stars }} stars · {{ s.done }}/{{ "{:,}".format(total) }} levels</span>
+            {% if s.certificate %}<span class="ac-badge">{{ s.certificate }}</span>{% endif %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="ac-empty">No learners yet. Add one below to start the adventure!</p>
+  {% endif %}
+
+  {% if summaries|length < max_learners %}
+  <form class="ac-card ac-add" method="post" action="{{ url_for('academy.add_learner') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 class="ac-h3">Add a learner</h2>
+    <label class="field"><span>Nickname</span>
+      <input type="text" name="nickname" maxlength="30" required autocomplete="off" placeholder="For example: Captain Sam"></label>
+    <fieldset class="plain">
+      <legend class="plain">Pick a picture</legend>
+      <div class="ac-avatars">
+        {% for key, (label, color) in avatars.items() %}
+          <label class="ac-avatar-pick">
+            <input type="radio" name="avatar" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+            {{ avatar(key, avatars, 56) }}<span>{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <button class="btn ac-btn" type="submit">Start learning</button>
+    <p class="hint mt-s">For grown-ups: kids learn inside your account and don't need their own email or password. We only save the nickname and picture you choose, plus their progress.</p>
+  </form>
+  {% endif %}
+
+  {% if summaries %}
+  <details class="ac-manage">
+    <summary>Manage learners</summary>
+    <ul class="list">
+      {% for s in summaries %}
+        <li class="row">
+          <span>{{ s.learner.nickname }}</span>
+          <form method="post" action="{{ url_for('academy.delete_learner', learner_id=s.learner.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="linkbtn" type="submit">Remove {{ s.learner.nickname }} and their progress</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

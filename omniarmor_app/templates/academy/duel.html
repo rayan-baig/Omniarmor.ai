@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar, level_icon %}
+{% block title %}Duel: {{ learner.nickname }} vs {{ view.other.nickname }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% if view.me is none %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.friends', learner_id=learner.id) }}">← Friends &amp; duels</a></p>
+  <section class="ac-versus {{ view.status }}" aria-label="Scoreboard">
+    <div class="ac-vs-side">
+      {{ avatar(learner.avatar, avatars, 72) }}
+      <span class="ac-vs-name">{{ learner.nickname }}</span>
+      <span class="ac-vs-score">{{ '–' if view.me is none else view.me }}</span>
+    </div>
+    <div class="ac-vs-mid">
+      <span class="ac-vs">VS</span>
+      <span class="ac-vs-world">{{ level_icon(view.world.icon, 22) }} {{ view.world.title }}</span>
+    </div>
+    <div class="ac-vs-side">
+      {{ avatar(view.other.avatar, avatars, 72) }}
+      <span class="ac-vs-name">{{ view.other.nickname }}</span>
+      <span class="ac-vs-score">{{ '?' if view.them is none or view.me is none else view.them }}</span>
+    </div>
+  </section>
+
+  {% if view.me is none %}
+    {% set needed = none %}{% set attempt = none %}
+    {% include "academy/_quiz.html" %}
+  {% else %}
+    <section class="ac-result {{ 'win' if view.status == 'won' else '' }}" aria-live="polite">
+      {% if view.status == 'won' %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
+      {{ armo(96, 'cheer' if view.status in ('won', 'tie') else ('think' if view.status == 'lost' else 'happy')) }}
+      <h1 class="ac-title">{% if view.status == 'won' %}You won the duel!{% elif view.status == 'lost' %}{{ view.other.nickname }} won this one{% elif view.status == 'tie' %}It's a tie!{% else %}Nice! Your score is in{% endif %}</h1>
+      <p class="ac-lead">{% if view.status == 'waiting' %}You got {{ view.me }} of {{ total }}. Now it's {{ view.other.nickname }}'s turn. Check back later!{% elif view.status == 'lost' %}Good effort. Champions lose sometimes. They learn and come back stronger.{% elif view.status == 'won' %}Great job! Be a good sport: winners stay humble.{% else %}Great minds think alike.{% endif %}</p>
+      <div class="ac-actions">
+        <a class="btn ac-btn" href="{{ url_for('academy.friends', learner_id=learner.id) }}">Back to friends</a>
+      </div>
+    </section>
+    {% if results %}
+      <h2 class="ac-h2">Your answers</h2>
+      <ol class="ac-review">
+        {% for r in results %}
+          <li class="{{ 'right' if r.right else 'wrong' }}">
+            <p class="ac-review-q">{{ r.question.prompt }}</p>
+            <p class="ac-review-a">{% if not r.right %}{% if r.chosen is not none %}You picked: {{ r.question.options[r.chosen] }}<br>{% endif %}{% endif %}<strong>{{ 'Correct' if r.right else 'Right answer' }}:</strong> {{ r.question.options[r.question.answer] }}</p>
+            <p class="ac-review-why">{{ r.question.explain }}</p>
+          </li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

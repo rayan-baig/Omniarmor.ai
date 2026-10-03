@@ -113,6 +113,54 @@ MIGRATIONS = [
         PRIMARY KEY (job, run_date)
     );
     """),
+    (2, """
+    CREATE TABLE learners (
+        id INTEGER PRIMARY KEY,
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        nickname TEXT NOT NULL,
+        avatar TEXT NOT NULL,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX learners_org ON learners (org_id);
+    CREATE TABLE learner_progress (
+        learner_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        level INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        best_score INTEGER NOT NULL DEFAULT 0,
+        best_stars INTEGER NOT NULL DEFAULT 0,
+        completed_at TEXT,
+        PRIMARY KEY (learner_id, level)
+    );
+    """),
+    (3, """
+    CREATE TABLE friend_codes (
+        learner_id INTEGER PRIMARY KEY REFERENCES learners(id) ON DELETE CASCADE,
+        code TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL
+    );
+    CREATE TABLE learner_friends (
+        learner_a INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        learner_b INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (learner_a, learner_b),
+        CHECK (learner_a < learner_b)
+    );
+    CREATE INDEX learner_friends_b ON learner_friends (learner_b);
+    CREATE TABLE duels (
+        id INTEGER PRIMARY KEY,
+        challenger_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        opponent_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        world INTEGER NOT NULL,
+        stage INTEGER NOT NULL,
+        seed TEXT NOT NULL,
+        challenger_score INTEGER,
+        opponent_score INTEGER,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX duels_challenger ON duels (challenger_id);
+    CREATE INDEX duels_opponent ON duels (opponent_id);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

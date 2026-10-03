@@ -11,13 +11,13 @@
   --faint:#958B80;
   --line:#2A2622;
   --field:#776D63;
-  --red:#FF5A45;
+  --red:#F0301F;
   --orange:#F08A2E;
-  --blend:linear-gradient(100deg,#FF4D3D 0%,#FF6A36 45%,#F59234 100%);
+  --blend:linear-gradient(100deg,#E5261C 0%,#FF6A36 45%,#F59234 100%);
   --accent:#F7743A;
   --accent-text:#FF9A66;
   --on-accent:#0F0E0D;
-  --block:#FF5A45; --block-text:#FF8572; --block-tint:rgba(255,90,69,.07);
+  --block:#F0301F; --block-text:#FF4530; --block-tint:rgba(240,48,31,.08);
   --warn:#F08A2E; --warn-text:#F7A85A; --warn-tint:rgba(240,138,46,.07);
   --ok-text:#ABA297;
   --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -176,10 +176,21 @@ footer.site{border-top:1px solid var(--line);color:var(--faint);font-size:14px}
 footer.site .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;padding-block:20px}
 
 /* Report: prints cleanly on paper */
+
+/* Bottom tab bar for signed-in pages */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;gap:2px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:rgba(15,14,13,.92);border-top:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab{position:relative;flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;padding:4px 2px;border-radius:10px;color:var(--muted);text-decoration:none;font-size:12px;font-weight:500;letter-spacing:.01em;transition:color .15s ease,background-color .15s ease}
+.tab:hover{color:var(--ink);background:var(--hover)}
+.tab[aria-current="page"]{color:var(--ink)}
+.tab[aria-current="page"]::before{content:"";position:absolute;top:-7px;left:28%;right:28%;height:2px;border-radius:2px;background:var(--blend)}
+.tab[aria-current="page"] svg{stroke:url(#blend);color:var(--accent-text)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+body.has-tabs{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+
 @media print{
   :root{color-scheme:light}
   body{background:#fff;color:#000}
-  .topbar,.no-print,footer.site,.flashes{display:none!important}
+  .topbar,.no-print,footer.site,.flashes,.tabbar{display:none!important}
   .tag.BLOCKED{background:none;color:#000;box-shadow:inset 0 0 0 1px #000}
   th,td{border-color:#999}
   a{color:#000}

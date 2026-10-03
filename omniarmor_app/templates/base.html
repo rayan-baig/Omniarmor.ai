@@ -10,14 +10,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  {% block head %}{% endblock %}
 </head>
-<body>
+<body{% if g.user %} class="has-tabs"{% endif %}>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap">
     <a class="lockup" href="{{ url_for('app.overview') if g.user else url_for('public.home') }}" aria-label="OmniArmor.ai home">
       <svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
-        <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#FF4D3D"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>
+        <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>
         <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
         <circle cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"/>
       </svg>
@@ -26,14 +27,9 @@
     <nav class="nav" aria-label="Main">
       {% if g.user %}
         {% set ep = request.endpoint or '' %}
-        <a href="{{ url_for('app.overview') }}" {% if ep == 'app.overview' %}aria-current="page"{% endif %}>Overview</a>
         {% for ind in nav_industries or [] %}
           <a href="{{ url_for('app.industry', industry_id=ind.id) }}" {% if ep == 'app.industry' and request.view_args.industry_id == ind.id %}aria-current="page"{% endif %}>{{ ind.brand }}</a>
         {% endfor %}
-        <a href="{{ url_for('app.report') }}" {% if ep == 'app.report' %}aria-current="page"{% endif %}>Report</a>
-        <a href="{{ url_for('app.audit') }}" {% if ep == 'app.audit' %}aria-current="page"{% endif %}>Audit trail</a>
-        <a href="{{ url_for('app.notifications') }}" {% if ep == 'app.notifications' %}aria-current="page"{% endif %}>Reminders</a>
-        <a href="{{ url_for('app.settings') }}" {% if ep == 'app.settings' %}aria-current="page"{% endif %}>Settings</a>
         <form method="post" action="{{ url_for('auth.logout') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit">Sign out</button>
@@ -64,5 +60,30 @@
     <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
   </div>
 </footer>
+{% if g.user %}
+{% set ep = request.endpoint or '' %}
+<nav class="tabbar no-print" aria-label="Sections">
+  {% for endpoint, label, meaning, icon, active in [
+      ('app.overview', 'HQ', 'Overview', 'home', ep in ('app.overview', 'app.industry')),
+      ('app.report', 'Intel', 'Compliance report', 'report', ep == 'app.report'),
+      ('app.audit', 'Vault', 'Audit trail', 'audit', ep == 'app.audit'),
+      ('app.notifications', 'Radar', 'Reminders and deadlines', 'bell', ep == 'app.notifications'),
+      ('academy.home', 'Academy', 'Future Owner Academy', 'academy', ep.startswith('academy.')),
+      ('app.settings', 'Armory', 'Settings', 'settings', ep == 'app.settings')] %}
+    <a class="tab" href="{{ url_for(endpoint) }}" title="{{ meaning }}" {% if active %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      {% if icon == 'home' %}<path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/>
+      {% elif icon == 'report' %}<path d="M5 20V10M10 20V4M15 20v-7M20 20v-4"/>
+      {% elif icon == 'audit' %}<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>
+      {% elif icon == 'bell' %}<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>
+      {% elif icon == 'academy' %}<path d="M2.5 9 12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v5c1.5 1.5 3.5 2.3 5.5 2.3s4-.8 5.5-2.3v-5M21.5 9v5"/>
+      {% else %}<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>
+      {% endif %}
+      </svg>
+      <span>{{ label }}</span>
+    </a>
+  {% endfor %}
+</nav>
+{% endif %}
 </body>
 </html>
