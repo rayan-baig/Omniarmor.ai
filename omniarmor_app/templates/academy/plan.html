@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, emblem %}
+{% block title %}Academy plan{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Academy</a></p>
+  <section class="ac-hero">
+    {{ armo(110, 'cheer' if plan.access == 'paid' else 'happy', 'bowtie') }}
+    <div>
+      <p class="ac-kicker">Future Owner Academy plan</p>
+      <h1 class="ac-title">{% if plan.access == 'paid' %}You have the Academy plan{% elif plan.access == 'trial' %}Your free trial is on{% else %}Unlock the whole Academy{% endif %}</h1>
+      <p class="ac-lead">A separate subscription from your compliance service. One plan covers every learner in {{ g.org.name }}: up to 12 kids, every track and every world, with their own devices.</p>
+    </div>
+  </section>
+
+  <div class="ac-plan-grid">
+    <section class="ac-card">
+      <h2 class="ac-h3">Free</h2>
+      <ul class="ac-plan-list">
+        <li>Launchpad: {% for w in free_worlds %}{{ w.title }}{{ ', ' if not loop.last }}{% endfor %}</li>
+        <li>Friends, duels and Armo</li>
+        <li>A {{ trial_days }}-day free trial of everything when you add your first learner</li>
+      </ul>
+    </section>
+    <section class="ac-card ac-plan-paid">
+      <h2 class="ac-h3">Academy plan{% if price %} <span class="ac-price">{{ price }}</span>{% endif %}</h2>
+      <ul class="ac-plan-list">
+        {% for t in tracks %}<li>{{ emblem(t.key, 26) }} {{ t.name }}: {{ "{:,}".format(t.total) }} levels</li>{% endfor %}
+        <li>Practice mode, streaks, certificates and every Rule Quest</li>
+        <li>Cancel anytime</li>
+      </ul>
+      {% if plan.access == 'paid' %}
+        <p><strong>Status:</strong> {{ plan.state|replace('_', ' ')|title }}{% if plan.renews_at %} · renews {{ plan.renews_at[:10] }}{% endif %}</p>
+        {% if plan.state == 'past_due' %}<p class="hint">Your last payment didn't go through. Update your card to keep access.</p>{% endif %}
+      {% elif plan.access == 'trial' %}
+        <p><strong>{{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }}</strong> of the free trial left.</p>
+      {% endif %}
+      {% if g.role == 'owner' %}
+        {% if plan.access == 'paid' and has_customer %}
+          <form method="post" action="{{ url_for('academy.plan_manage') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn quiet" type="submit">Manage or cancel</button>
+          </form>
+        {% elif plan.access != 'paid' %}
+          {% if stripe %}
+            <form method="post" action="{{ url_for('academy.plan_checkout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn ac-btn" type="submit">Start the Academy plan</button>
+            </form>
+            <p class="hint mt-s">Secure checkout by Stripe. We never see your card number.</p>
+          {% else %}
+            <p class="hint">Online sign-up is coming soon. Contact us to start the Academy plan.</p>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p class="hint">Only the workspace owner can change the plan.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

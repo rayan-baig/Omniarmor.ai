@@ -61,8 +61,11 @@ def csrf_token():
     return session["_csrf"]
 
 
+CSRF_EXEMPT = {"plan.stripe_webhook"}  # signed by Stripe instead
+
+
 def check_csrf():
-    if request.method != "POST":
+    if request.method != "POST" or request.endpoint in CSRF_EXEMPT:
         return
     sent = request.form.get("csrf_token", "")
     expected = session.get("_csrf", "")
@@ -81,10 +84,14 @@ def start_session(user):
 
 
 def load_user():
-    """Sets g.user, g.org and g.role from the session, or leaves them None."""
-    g.user = g.org = g.role = None
+    """Sets g.user, g.org and g.role from the session, or leaves them None.
+    A kid who joined with a join code gets g.kid (their learner) and g.org
+    instead, and can only use the Academy."""
+    g.user = g.org = g.role = g.kid = None
     user_id = session.get("user_id")
     if user_id is None:
+        if session.get("kid") is not None:
+            load_kid()
         return
     conn = get_db()
     user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -100,6 +107,24 @@ def load_user():
         session.clear()
         return
     g.user, g.org, g.role = user, membership, membership["role"]
+
+
+def load_kid():
+    conn = get_db()
+    kid = conn.execute("SELECT * FROM learners WHERE id = ?", (session.get("kid"),)).fetchone()
+    if kid is None or kid["device_epoch"] != session.get("kid_epoch"):
+        session.clear()
+        return
+    g.kid = kid
+    g.org = conn.execute("SELECT * FROM orgs WHERE id = ?", (kid["org_id"],)).fetchone()
+
+
+def start_kid_session(learner):
+    session.clear()
+    session.permanent = True
+    session["kid"] = learner["id"]
+    session["kid_epoch"] = learner["device_epoch"]
+    csrf_token()
 
 
 def login_required(view):

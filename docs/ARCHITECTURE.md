@@ -55,6 +55,7 @@ SQLite database (one file on a persistent disk) + daily backups
 | `job_runs` | One row per day of the daily job, so it runs once |
 | `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
 | `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
+| `join_codes`, `learner_days`, `learner_mistakes` | Kid device codes, daily streaks, and missed questions for spaced practice |
 
 ## Armo, the helper
 
@@ -69,12 +70,38 @@ each Academy learner picks their own (`learners.armo`).
 
 ## The Future Owner Academy
 
-`academy.py` holds the course. Nothing about a level is stored: each quiz is
-generated from a seed (learner, world, stage and attempt number), so the server
-can rebuild the exact questions when grading, and a new attempt gets new
-questions. There are 16 topic worlds of 50 stages, the Owner's Challenge, and a
-Rule Quest for each industry built from that industry's real rules: 1,350
-levels. A level is stored as `world * 1000 + stage`.
+`academy.py` holds the course engine and `academy_bank/` holds the question
+banks for the 25 newer worlds (questions graded easy to hard, true-or-false
+facts and lesson cards), checked entry by entry by `tests/test_academy_bank.py`.
+Nothing about a level is stored: each quiz is generated from a seed (learner,
+track, world, stage and attempt), so the server can rebuild the exact
+questions when grading, and a new attempt gets new questions.
+
+Four tracks share the worlds but keep separate progress, stored as
+`track index * 1,000,000 + world * 1000 + stage`:
+
+| Track | Worlds x stages | Owner's Challenge | Rule Quests | Levels |
+|---|---|---|---|---|
+| Launchpad (Basic) | 16 x 50 | 50 | 50 x 10 | 1,350 |
+| Trailblazer (Intermediate) | 41 x 50 | 50 | 50 x 10 | 2,600 |
+| Summit (Advanced) | 41 x 100 | 100 | 50 x 20 | 5,200 |
+| Titan Mastery | 41 x 300 | 300 | 50 x 50 | 15,100 |
+
+Deeper stages ask more questions, draw harder ones from the banks, raise the
+pass mark and mix in review from earlier worlds; every tenth stage is a boss
+round. Missed questions go into `learner_mistakes` for spaced practice (they
+come back after 1, 3 and 7 days until mastered), `learner_days` drives the
+daily streak and goal, and ranks (scaled to the track's size) level up the
+learner's picture.
+
+A grown-up can make a single-use join code (`join_codes`) for a kid's own
+device. The kid gets an Academy-only session (`g.kid`) limited to their own
+profile; bumping `learners.device_epoch` signs them out everywhere.
+
+The Academy plan (`academy_plan.py`) is separate from the compliance
+service: a free trial when the first learner is added, then the first three
+Launchpad worlds stay free. Stripe Checkout handles payment and a signed
+webhook (`/billing/stripe/webhook`) keeps `orgs.academy_status` current.
 
 Friends come from different companies, so duels never use a company's name or
 rules. They draw only from the general business worlds, and both players get

@@ -27,6 +27,8 @@ public = Blueprint("public", __name__)
 def home():
     if g.get("user") is not None:
         return redirect(url_for("app.overview"))
+    if g.get("kid") is not None:
+        return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
     return render_template("home.html", industries=INDUSTRIES)
 
 
@@ -116,6 +118,8 @@ def create_app(**overrides):
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(academy_views.bp)
+    app.register_blueprint(academy_views.kids)
+    app.register_blueprint(academy_views.plan)
     app.register_blueprint(armo_views.bp)
     register_cli(app)
 

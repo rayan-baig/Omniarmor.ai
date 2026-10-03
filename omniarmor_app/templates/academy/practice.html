@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo %}
+{% block title %}Practice my mistakes{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% if questions %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
+{% endblock %}
+{% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
+  <header class="ac-level-head">
+    {{ armo(80, 'think' if not results else 'cheer', buddy.accessory) }}
+    <div>
+      <p class="ac-kicker">Spaced practice</p>
+      <h1 class="ac-title">Practice my mistakes</h1>
+      <p class="ac-lead">Questions you missed come back here. Get one right and it returns in 1 day, then 3, then 7. Get it right every time and it's mastered for good.</p>
+    </div>
+  </header>
+
+  {% if results %}
+    <section class="ac-result {{ 'win' if score == total else '' }}" aria-live="polite">
+      <h2 class="ac-title">{{ score }} of {{ total }} fixed!</h2>
+      <p class="ac-lead">{% if left %}{{ left }} more ready to practice.{% else %}Nothing left to practice right now. Come back tomorrow for your reviews!{% endif %}</p>
+      <div class="ac-actions">
+        {% if left %}<a class="btn ac-btn" href="{{ url_for('academy.practice', learner_id=learner.id) }}">Practice more</a>{% endif %}
+        <a class="btn quiet" href="{{ url_for('academy.level_map', learner_id=learner.id) }}">Back to the map</a>
+      </div>
+    </section>
+    <ol class="ac-review">
+      {% for r in results %}
+        <li class="{{ 'right' if r.right else 'wrong' }}">
+          <p class="ac-review-q">{{ r.question.prompt }}</p>
+          <p class="ac-review-a"><strong>{{ 'Correct' if r.right else 'Right answer' }}:</strong> {{ r.question.options[r.question.answer] }}</p>
+          <p class="ac-review-why">{{ r.question.explain }}</p>
+        </li>
+      {% endfor %}
+    </ol>
+  {% elif questions %}
+    {% set needed = none %}{% set attempt = none %}
+    {% include "academy/_quiz.html" %}
+  {% else %}
+    <div class="ac-speech">
+      {{ armo(64, 'cheer', buddy.accessory) }}
+      <p>{% if upcoming %}Nice! Your {{ upcoming }} practice question{{ 's' if upcoming != 1 }} {{ 'are' if upcoming != 1 else 'is' }} scheduled for later. Come back soon!{% else %}No mistakes to practice. Keep playing, and anything you miss will show up here.{% endif %}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

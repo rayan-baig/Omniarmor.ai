@@ -4,6 +4,7 @@
   <form class="ac-quiz" id="quiz" method="post" data-quiz data-voice='{{ armo_voice(learner.armo)|tojson }}'>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% if attempt %}<input type="hidden" name="attempt" value="{{ attempt }}">{% endif %}
+    {% if deck %}<input type="hidden" name="deck" value="{{ deck }}">{% endif %}
     <div class="ac-quiz-head">
       <h2 class="ac-h2">Quiz time!</h2>
       <p class="muted ac-count"><span data-count>{{ questions|length }} questions</span>{% if needed %} · get {{ needed }} right to pass{% endif %}</p>

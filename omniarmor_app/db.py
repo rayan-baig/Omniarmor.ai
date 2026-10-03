@@ -165,6 +165,38 @@ MIGRATIONS = [
     ALTER TABLE users ADD COLUMN armo TEXT NOT NULL DEFAULT 'chief';
     ALTER TABLE learners ADD COLUMN armo TEXT NOT NULL DEFAULT 'sweet';
     """),
+    (5, """
+    ALTER TABLE learners ADD COLUMN track TEXT NOT NULL DEFAULT 'launchpad';
+    ALTER TABLE learners ADD COLUMN track_chosen INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE learners ADD COLUMN device_epoch INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE join_codes (
+        learner_id INTEGER PRIMARY KEY REFERENCES learners(id) ON DELETE CASCADE,
+        code TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL
+    );
+    CREATE TABLE learner_days (
+        learner_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        day TEXT NOT NULL,
+        levels INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (learner_id, day)
+    );
+    CREATE TABLE learner_mistakes (
+        id INTEGER PRIMARY KEY,
+        learner_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        qkey TEXT NOT NULL,
+        question TEXT NOT NULL,
+        misses INTEGER NOT NULL DEFAULT 1,
+        streak INTEGER NOT NULL DEFAULT 0,
+        due_at TEXT NOT NULL,
+        UNIQUE (learner_id, qkey)
+    );
+    CREATE INDEX learner_mistakes_due ON learner_mistakes (learner_id, due_at);
+    ALTER TABLE orgs ADD COLUMN academy_status TEXT NOT NULL DEFAULT 'none';
+    ALTER TABLE orgs ADD COLUMN academy_trial_ends TEXT;
+    ALTER TABLE orgs ADD COLUMN academy_renews_at TEXT;
+    ALTER TABLE orgs ADD COLUMN stripe_customer_id TEXT;
+    ALTER TABLE orgs ADD COLUMN stripe_subscription_id TEXT;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

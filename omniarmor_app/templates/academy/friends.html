@@ -46,10 +46,10 @@
       {% for s in board %}
         <li class="{{ 'me' if s.learner.id == learner.id else '' }}">
           <span class="ac-board-place">{{ loop.index }}</span>
-          {{ avatar(s.learner.avatar, avatars, 44) }}
+          {{ avatar(s.learner.avatar, avatars, 52, s.tier) }}
           <span class="ac-board-text">
             <span class="ac-board-name">{{ s.learner.nickname }}{% if s.learner.id == learner.id %} (you){% endif %}</span>
-            <span class="ac-board-meta">{{ s.rank }} · {{ s.done }} levels · {{ star(true, 13) }} {{ s.stars }}</span>
+            <span class="ac-board-meta">{{ s.track.name }} · {{ s.rank }} · {{ s.done }} levels · {{ star(true, 13) }} {{ s.stars }}</span>
           </span>
           {% if s.learner.id != learner.id %}
             <form class="ac-challenge" method="post" action="{{ url_for('academy.new_duel', learner_id=learner.id) }}">
@@ -69,6 +69,7 @@
     <div class="ac-speech">{{ armo(64, 'think', buddy.accessory) }}<p>No friends yet. Ask a grown-up to swap friend codes with a friend's family.</p></div>
   {% endif %}
 
+  {% if not g.kid %}
   <section class="ac-card ac-grownups">
     <h2 class="ac-h3">For grown-ups: add a friend</h2>
     <p class="hint">Friends must be added by a parent. Friends only see each other's nickname, picture, rank and stars. There is no chat, and nothing about your company is shared.</p>
@@ -109,5 +110,6 @@
       </details>
     {% endif %}
   </section>
+  {% endif %}
 </div>
 {% endblock %}

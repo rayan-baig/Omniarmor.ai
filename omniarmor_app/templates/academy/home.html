@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, avatar, stars %}
+{% from "academy/_art.html" import armo, avatar, emblem, stars %}
 {% block title %}Future Owner Academy{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -12,9 +12,21 @@
     <div>
       <p class="ac-kicker">Future Owner Academy</p>
       <h1 class="ac-title">Learn the family business!</h1>
-      <p class="ac-lead">{{ "{:,}".format(total) }} fun levels in {{ world_count }} worlds about {{ g.org.name }} and how to run a great business: business words, talking like a pro, money, leading a team, hiring, tough calls, winning customers, beating rivals fair and square, and never giving up. Earn stars, climb the ranks and win your Future Owner Certificate.</p>
+      <p class="ac-lead">Up to {{ "{:,}".format(tracks[-1].total) }} levels in {{ world_count }} worlds about {{ g.org.name }} and how to run a great business: money, marketing, sales, leading a team, hiring, tough calls, safety, ethics, taxes, staying calm and never giving up. Earn stars, level up your picture and win your Future Owner Certificate.</p>
     </div>
   </section>
+
+  {% if plan.access == 'trial' %}
+    <p class="ac-banner">Free trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} of the full Academy left. <a href="{{ url_for('academy.plan_page') }}">See the Academy plan</a></p>
+  {% elif plan.access == 'free' %}
+    <p class="ac-banner">You're on the free Academy: the first 3 worlds of Launchpad. <a href="{{ url_for('academy.plan_page') }}">Unlock every track</a></p>
+  {% endif %}
+
+  <ul class="ac-tracks-mini" aria-label="Tracks">
+    {% for t in tracks %}
+      <li>{{ emblem(t.key, 44) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.total) }} levels</small></span></li>
+    {% endfor %}
+  </ul>
 
   <h2 class="ac-h2">Who's learning today?</h2>
   {% if summaries %}
@@ -22,9 +34,10 @@
       {% for s in summaries %}
         <li>
           <a class="ac-learner" href="{{ url_for('academy.level_map', learner_id=s.learner.id) }}">
-            {{ avatar(s.learner.avatar, avatars, 64) }}
+            {{ avatar(s.learner.avatar, avatars, 76, s.tier) }}
             <span class="ac-learner-name">{{ s.learner.nickname }}</span>
-            <span class="ac-learner-meta">{{ s.rank }} · {{ s.stars }} stars · {{ s.done }}/{{ "{:,}".format(total) }} levels</span>
+            <span class="ac-learner-meta">{{ s.track.name }} · {{ s.rank }}</span>
+            <span class="ac-learner-meta">{{ s.done }}/{{ "{:,}".format(s.total) }} levels · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
             {% if s.certificate %}<span class="ac-badge">{{ s.certificate }}</span>{% endif %}
           </a>
         </li>

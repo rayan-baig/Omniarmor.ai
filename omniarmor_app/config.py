@@ -33,6 +33,12 @@ def load_config(**overrides):
         "MAIL_FROM": env.get("MAIL_FROM", "OmniArmor <no-reply@localhost>"),
         "DAILY_JOB_HOUR_UTC": int(env.get("DAILY_JOB_HOUR_UTC", "11")),
         "SCHEDULER_ENABLED": _flag("SCHEDULER_ENABLED", True),
+        # The Academy's own subscription (separate from the compliance service).
+        "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
+        "ACADEMY_PRICE_LABEL": env.get("ACADEMY_PRICE_LABEL", ""),
+        "ACADEMY_STRIPE_PRICE": env.get("ACADEMY_STRIPE_PRICE", ""),
+        "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
+        "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
         # Number of reverse proxies in front of the app (Render, nginx, Caddy add one each).
         "TRUSTED_PROXIES": int(env.get("TRUSTED_PROXIES", "1" if production else "0")),
         "TESTING": False,

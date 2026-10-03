@@ -12,9 +12,9 @@
   <header class="ac-level-head">
     <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
     <div>
-      <p class="ac-kicker">{% if world.kind == 'topic' %}World {{ world.number }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
+      <p class="ac-kicker">{{ track.name }} · {% if world.kind == 'topic' %}{{ world.unit|replace('bigpicture', 'big picture')|title }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
       <h1 class="ac-title">{{ world.title }}</h1>
-      <p class="ac-lead">{{ card.done }} of {{ world.stages }} stages done · {{ card.stars }} of {{ world.stages * 3 }} stars</p>
+      <p class="ac-lead">{{ card.done }} of {{ card.stages }} stages done · {{ card.stars }} of {{ card.stages * 3 }} stars</p>
     </div>
   </header>
 
@@ -31,10 +31,17 @@
     </div>
   {% endif %}
 
+  {% if chapters > 1 %}
+    <nav class="ac-chapters" aria-label="Chapters">
+      {% for c in range(1, chapters + 1) %}
+        <a href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number, chapter=c) }}"{% if c == chapter %} aria-current="page"{% endif %}>{{ (c - 1) * 50 + 1 }}-{{ [c * 50, card.stages]|min }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
   <ol class="ac-stages" aria-label="Stages">
     {% for st in stages %}
       {% set cls = 'done' if st.stars else ('open' if st.open else 'locked') %}
-      <li class="ac-stage {{ cls }}{{ ' current' if current and current.stage == st.stage else '' }}{{ ' boss' if st.stage % 10 == 0 else '' }}">
+      <li class="ac-stage {{ cls }}{{ ' current' if current and current.stage == st.stage else '' }}{{ ' boss' if st.boss else '' }}">
         {% if st.open %}
           <a href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=st.stage) }}" aria-label="Stage {{ st.stage }}, {{ st.stars }} of 3 stars">
         {% else %}
@@ -46,6 +53,6 @@
       </li>
     {% endfor %}
   </ol>
-  <p class="hint mt">Every 10th stage is a bonus round. Stages get harder as you go: more questions and a higher pass mark.</p>
+  <p class="hint mt">{% if world.kind == 'topic' %}Every 10th stage is a boss round with extra review questions. {% endif %}Stages get harder as you go: more questions, tougher questions and a higher pass mark.</p>
 </div>
 {% endblock %}

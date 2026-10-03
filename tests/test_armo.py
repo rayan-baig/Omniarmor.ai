@@ -145,6 +145,7 @@ class TestCompanion(AppTestCase):
         with self.db() as conn:
             lid, buddy = conn.execute("SELECT id, armo FROM learners").fetchone()
         self.assertEqual(buddy, "funny")
+        self.post(f"/app/academy/{lid}/track", {"track": "launchpad"})
         self.assertIn("Jokester", self.client.get(f"/app/academy/{lid}").data.decode())
         level = self.client.get(f"/app/academy/{lid}/world/1/stage/1").data.decode()
         self.assertIn("data-voice=", level)

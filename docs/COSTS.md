@@ -18,7 +18,7 @@ pricing page before you pick one.
 | Email | Optional | A free sending tier (Brevo, Mailjet, SMTP2GO, Resend and others have one), or Amazon SES's low per-email price. Without email, reminders show in the app. |
 | Domain name | Recommended | The one yearly cost most setups can't avoid |
 | Off-server backup copies | Recommended | A free object-storage tier (Cloudflare R2 and Backblaze B2 have one) |
-| Taking payments | When you charge | Payment processors such as Stripe charge per payment, with no monthly fee |
+| Taking payments | When you charge | Stripe charges a fee per payment, with no monthly fee. The Academy plan uses Stripe Checkout, so you never store or secure card numbers yourself. |
 
 ## The near-zero setup (about 20 minutes)
 
@@ -46,8 +46,13 @@ services that sleep or lose their disk aren't suitable.
   Caddy also compresses every response.
 - **No image files.** Logos, the Academy mascot, icons and avatars are inline
   SVG.
-- **Generated, not stored, lessons.** The Academy's 1,350 levels are generated
-  from code on demand. Only each learner's progress is saved.
+- **Generated, not stored, lessons.** All 15,100 Academy levels are generated
+  from code and question banks on demand, in a few milliseconds each. Only each
+  learner's progress is saved, so even the Mastery track adds almost nothing to
+  the database.
+- **No extra services for the Academy.** Join codes, streaks, practice and the
+  plan all run in the same app and database. Payments talk to Stripe's API
+  directly, with no extra library or service.
 - **One email per company per day at most.** Reminders go out as a daily digest
   and are never repeated for the same due date. That keeps volume inside free
   email tiers for a long time.

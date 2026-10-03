@@ -9,12 +9,12 @@
 {% set buddy = armo_personality(summary.learner.armo, 'sweet') %}
 <div class="ac">
   <article class="ac-cert">
-    <div class="ac-cert-art">{{ armo(110, 'cheer', buddy.accessory) }}{{ avatar(summary.learner.avatar, avatars, 84) }}</div>
+    <div class="ac-cert-art">{{ armo(110, 'cheer', buddy.accessory) }}{{ avatar(summary.learner.avatar, avatars, 96, summary.tier) }}</div>
     <p class="ac-kicker">OmniArmor Future Owner Academy</p>
     <h1 class="ac-cert-title">Certificate of Achievement</h1>
     <p class="ac-cert-line">This certifies that</p>
     <p class="ac-cert-name">{{ summary.learner.nickname }}</p>
-    <p class="ac-cert-line">passed the Owner's Challenge, completed {{ summary.done }} of {{ "{:,}".format(summary.total) }} levels, and is a</p>
+    <p class="ac-cert-line">passed the Owner's Challenge on the {{ summary.track.name }} track, completed {{ "{:,}".format(summary.done) }} of {{ "{:,}".format(summary.total) }} levels, and is a</p>
     <p class="ac-cert-rank">{{ summary.certificate }} of {{ g.org.name }}</p>
     <p class="ac-cert-meta">{{ summary.stars }} stars earned · Rank: {{ summary.rank }} · First earned {{ earned or today.isoformat() }}</p>
   </article>

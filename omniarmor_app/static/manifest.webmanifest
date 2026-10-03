@@ -1,0 +1,11 @@
+{
+  "name": "OmniArmor",
+  "short_name": "OmniArmor",
+  "description": "Catch the fine before it catches you. Compliance checks, reminders and the Future Owner Academy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F0E0D",
+  "theme_color": "#0F0E0D",
+  "icons": [{"src": "/static/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}

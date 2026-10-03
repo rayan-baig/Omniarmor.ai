@@ -1,26 +1,27 @@
 # -*- coding: utf-8 -*-
-"""Future Owner Academy: a short, game-like course for the kids who may one
-day run the family company.
+"""Future Owner Academy: a game-like course for the kids who may one day run
+the family company.
 
-1,350 levels in 67 worlds:
-    - 16 topic worlds of 50 stages each: the company, business words, rules,
-      traffic lights, deadlines, money, speaking like a pro, leadership,
-      responsibility, perseverance, earning respect, hiring, tough calls,
-      customers, competing fairly and professional business moves. Stage 1
-      teaches the lesson; later stages add questions, bigger numbers, a
-      higher pass mark and review questions from other worlds.
-    - 50 industry worlds with one level per real compliance rule (500 levels).
-    - The Owner's Challenge (50 stages), which awards and upgrades the
-      Future Owner Certificate. Lessons are built from the
-company's own name, industries and compliance rules, so a child learns about
-the business they may inherit, not a made-up one. Quizzes are generated from a
-seed, so the same attempt always shows the same questions and can be checked
-on the server without storing the answers.
+Four tracks, each with its own progress:
+    Launchpad (Basic)          1,350 levels: 16 core worlds x 50 stages, the
+                               Owner's Challenge (50) and 50 industry Rule Quests x 10.
+    Trailblazer (Intermediate) 2,600 levels: all 41 worlds x 50, plus the same.
+    Summit (Advanced)          5,200 levels: 41 x 100, Challenge 100, Rule Quests x 20.
+    Titan Mastery              15,100 levels: 41 x 300, Challenge 300, Rule Quests x 50.
+
+Stage 1 of a world teaches the lesson; later stages add questions, harder
+questions, a higher pass mark and review from other worlds, and every tenth
+stage is a boss round. Lessons are built from the company's own name,
+industries and compliance rules, so a child learns about the business they
+may inherit. The newer worlds draw on the question banks in academy_bank.
+Quizzes are generated from a seed, so the same attempt always shows the same
+questions and can be checked on the server without storing the answers.
 
 Children don't get accounts: a family member adds a learner profile with only
 a nickname and a picture, so no child's personal information is collected.
 """
 
+import math
 import random
 import secrets
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ from dataclasses import dataclass
 from omni_armor_rules import CATALOG, evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
+from .academy_bank import load_expansions, load_worlds
 from .catalog import INDUSTRIES, date_mode
 
 PASS_RATE = 0.6
@@ -40,6 +42,9 @@ AVATARS = {
     "crown": ("Crown", "#4FD1A5"),
     "gem": ("Gem", "#5AB0F0"),
     "shield": ("Shield", "#C8231A"),
+    "paw": ("Paw", "#E8B98A"),
+    "leaf": ("Leaf", "#4FD1A5"),
+    "planet": ("Planet", "#B79CFF"),
 }
 
 LIGHTS = ["Green: all good", "Yellow: careful, it's getting close", "Red: stop and fix it"]
@@ -294,69 +299,162 @@ class World:
     title: str
     tagline: str
     icon: str
-    stages: int
     kind: str = "topic"  # "topic", "final" or "industry"
     industry_id: int = 0
+    unit: str = ""
 
 
-STAGES_PER_TOPIC = 50
-TOPIC_WORLDS = [
-    World(1, "company", "Meet Your Company", "What the family business does", "building", STAGES_PER_TOPIC),
-    World(2, "words", "Business Words", "The words grown-ups use at work", "book", STAGES_PER_TOPIC),
-    World(3, "rules", "Why Rules Matter", "Rules keep people safe", "scale", STAGES_PER_TOPIC),
-    World(4, "lights", "Stop, Careful, Go", "Read the company's signals", "light", STAGES_PER_TOPIC),
-    World(5, "calendar", "Countdown Calendar", "Deadlines and reminders", "calendar", STAGES_PER_TOPIC),
-    World(6, "money", "Money Smarts", "Revenue, costs and profit", "coin", STAGES_PER_TOPIC),
-    World(7, "talk", "Talk Like a Pro", "Speak and write professionally", "chat", STAGES_PER_TOPIC),
-    World(8, "team", "Lead the Team", "How good owners lead", "team", STAGES_PER_TOPIC),
-    World(9, "ownit", "Own It", "Taking responsibility", "shield", STAGES_PER_TOPIC),
-    World(10, "grit", "Never Give Up", "Perseverance", "mountain", STAGES_PER_TOPIC),
-    World(11, "respect", "Earn Instant Respect", "Confidence people trust", "star", STAGES_PER_TOPIC),
-    World(12, "hiring", "Build Your Dream Team", "When and how to hire", "plus", STAGES_PER_TOPIC),
-    World(13, "toughcalls", "Tough Calls", "When to let someone go", "door", STAGES_PER_TOPIC),
-    World(14, "customers", "Win Customers", "Make people want to come back", "heart", STAGES_PER_TOPIC),
-    World(15, "compete", "Beat the Competition", "Win your field, fair and square", "rocket", STAGES_PER_TOPIC),
-    World(16, "moves", "Pro Business Moves", "Negotiate, plan and decide", "chess", STAGES_PER_TOPIC),
+# Units group the topic worlds on the map, in teaching order.
+UNITS = [
+    ("foundations", "Foundations"), ("leadership", "Leadership"), ("money", "Money and Finance"),
+    ("growth", "Growth"), ("operations", "Operations"), ("mindset", "Mindset"),
+    ("trust", "Rules and Trust"), ("bigpicture", "The Big Picture"),
 ]
-FINAL_WORLD = World(17, "final", "Owner's Challenge", "Earn and upgrade your certificate", "trophy", STAGES_PER_TOPIC, "final")
+UNIT_NAMES = dict(UNITS)
+
+ORIGINAL_WORLDS = [
+    World(1, "company", "Meet Your Company", "What the family business does", "building", unit="foundations"),
+    World(2, "words", "Business Words", "The words grown-ups use at work", "book", unit="foundations"),
+    World(3, "rules", "Why Rules Matter", "Rules keep people safe", "scale", unit="foundations"),
+    World(4, "lights", "Stop, Careful, Go", "Read the company's signals", "light", unit="foundations"),
+    World(5, "calendar", "Countdown Calendar", "Deadlines and reminders", "calendar", unit="foundations"),
+    World(6, "money", "Money Smarts", "Revenue, costs and profit", "coin", unit="foundations"),
+    World(7, "talk", "Talk Like a Pro", "Speak and write professionally", "chat", unit="foundations"),
+    World(8, "team", "Lead the Team", "How good owners lead", "team", unit="foundations"),
+    World(9, "ownit", "Own It", "Taking responsibility", "shield", unit="leadership"),
+    World(10, "grit", "Never Give Up", "Perseverance", "mountain", unit="leadership"),
+    World(11, "respect", "Earn Instant Respect", "Confidence people trust", "star", unit="leadership"),
+    World(12, "hiring", "Build Your Dream Team", "When and how to hire", "plus", unit="leadership"),
+    World(13, "toughcalls", "Tough Calls", "When to let someone go", "door", unit="leadership"),
+    World(14, "customers", "Win Customers", "Make people want to come back", "heart", unit="leadership"),
+    World(15, "compete", "Beat the Competition", "Win your field, fair and square", "rocket", unit="leadership"),
+    World(16, "moves", "Pro Business Moves", "Negotiate, plan and decide", "chess", unit="leadership"),
+]
+FINAL_WORLD = World(17, "final", "Owner's Challenge", "Earn and upgrade your certificate", "trophy", "final")
+BANK_WORLD_BASE = 18  # worlds from academy_bank are numbered from here
+_BANK = {}             # world key -> its bank entry (cards, questions, facts)
+BANK_WORLDS = []
+for _n, _entry in enumerate(load_worlds()):
+    _BANK[_entry["key"]] = _entry
+    BANK_WORLDS.append(World(BANK_WORLD_BASE + _n, _entry["key"], _entry["title"], _entry["tagline"],
+                             _entry["icon"], unit=_entry["unit"]))
+TOPIC_WORLDS = ORIGINAL_WORLDS + BANK_WORLDS
 INDUSTRY_WORLD_BASE = 100
 INDUSTRY_WORLDS = [
     World(INDUSTRY_WORLD_BASE + i, f"industry-{i}", f"{info['brand']} Rule Quest", info["sector"], "scale",
-          len(CATALOG[i]), "industry", i)
+          "industry", i)
     for i, info in INDUSTRIES.items()
 ]
 ALL_WORLDS = TOPIC_WORLDS + [FINAL_WORLD] + INDUSTRY_WORLDS
 WORLDS = {w.number: w for w in ALL_WORLDS}
-TOTAL_LEVELS = sum(w.stages for w in ALL_WORLDS)
-FINAL_QUESTIONS = 10
 INDUSTRY_UNLOCK_WORLD = 4  # industry worlds open after the traffic-light lesson
+
+
+@dataclass(frozen=True)
+class Track:
+    """A path through the Academy. Bigger tracks add worlds, stages and
+    harder quizzes; each keeps its own progress."""
+    key: str
+    index: int
+    name: str
+    level: str          # Basic, Intermediate, Advanced or Mastery
+    tagline: str
+    emblem: str
+    topics: tuple       # topic world numbers, in unlock order
+    topic_stages: int
+    final_stages: int
+    industry_stages: int
+    min_questions: int
+    max_questions: int
+    pass_low: float     # pass rate early in a world
+    pass_high: float    # pass rate late in a world
+    final_questions: int
+    industry_questions: int
+    mix: tuple          # ((progress up to, {difficulty: weight}), ...) for question banks
+
+    @property
+    def topic_worlds(self):
+        return [WORLDS[n] for n in self.topics]
+
+    @property
+    def worlds(self):
+        return self.topic_worlds + [FINAL_WORLD] + INDUSTRY_WORLDS
+
+    @property
+    def total(self):
+        return (len(self.topics) * self.topic_stages + self.final_stages
+                + len(INDUSTRY_WORLDS) * self.industry_stages)
+
+    def stages(self, w):
+        if w.kind == "final":
+            return self.final_stages
+        if w.kind == "industry":
+            return self.industry_stages
+        return self.topic_stages
+
+    def has(self, w):
+        return w.kind != "topic" or w.number in self.topics
+
+
+_ALL_TOPICS = tuple(w.number for w in TOPIC_WORLDS)
+_EASY_MIX = ((0.3, {1: 3, 2: 2, 3: 0}), (0.7, {1: 1, 2: 2, 3: 1}), (1.01, {1: 0, 2: 2, 3: 2}))
+TRACK_LIST = [
+    Track("launchpad", 0, "Launchpad", "Basic", "Blast off with the basics", "rocket",
+          tuple(w.number for w in ORIGINAL_WORLDS), 50, 50, 10, 5, 8, 0.6, 0.8, 10, 5, _EASY_MIX),
+    Track("trailblazer", 1, "Trailblazer", "Intermediate", "Every world of business", "flame",
+          _ALL_TOPICS, 50, 50, 10, 5, 8, 0.6, 0.8, 10, 5, _EASY_MIX),
+    Track("summit", 2, "Summit", "Advanced", "Twice the stages, tougher questions", "peak",
+          _ALL_TOPICS, 100, 100, 20, 6, 10, 0.7, 0.85, 12, 6,
+          ((0.25, {1: 2, 2: 2, 3: 1}), (0.6, {1: 0, 2: 2, 3: 2}), (1.01, {1: 0, 2: 1, 3: 3}))),
+    Track("titan", 3, "Titan Mastery", "Mastery", "The ultimate mastery program", "titan",
+          _ALL_TOPICS, 300, 300, 50, 8, 12, 0.75, 0.9, 15, 8,
+          ((0.1, {1: 1, 2: 2, 3: 2}), (1.01, {1: 0, 2: 1, 3: 3}))),
+]
+TRACKS = {t.key: t for t in TRACK_LIST}
+DEFAULT_TRACK = "launchpad"
+TOTAL_LEVELS = TRACKS[DEFAULT_TRACK].total  # the basic track; see Track.total for the others
 RANKS = [(0, "Rookie"), (5, "Apprentice"), (15, "Team Captain"), (40, "Manager"), (100, "Executive"),
          (250, "Future Owner"), (600, "Business Legend"), (1000, "Tycoon")]
 CERTIFICATES = [(1, "Future Owner"), (100, "Silver Future Owner"), (500, "Gold Future Owner"),
-                (TOTAL_LEVELS, "Platinum Business Legend")]
+                (None, "Platinum Business Legend")]
+
+
+def track(key):
+    return TRACKS.get(key) or TRACKS[DEFAULT_TRACK]
 
 
 def world(number):
     return WORLDS.get(number)
 
 
-def level_id(world_number, stage):
-    """One number per level, for storing progress."""
-    return world_number * 1000 + stage
+def level_id(t, world_number, stage):
+    """One number per level, for storing progress. Each track has its own range."""
+    return t.index * 1_000_000 + world_number * 1000 + stage
 
 
-def question_count(w, stage):
+def is_boss(w, stage):
+    return w.kind == "topic" and stage % 10 == 0
+
+
+def question_count(t, w, stage):
     if w.kind == "final":
-        return FINAL_QUESTIONS
+        return t.final_questions
     if w.kind == "industry":
-        return 5
-    return 5 + min(3, (stage - 1) // 10)
+        return t.industry_questions
+    steps = t.max_questions - t.min_questions
+    count = t.min_questions + min(steps, (stage - 1) * 5 // t.topic_stages)
+    return count + (2 if is_boss(w, stage) else 0)
 
 
-def pass_rate(w, stage):
-    if w.kind == "industry" or stage <= 10:
-        return PASS_RATE
-    return 0.7 if stage <= 30 else 0.8
+def pass_rate(t, w, stage):
+    if w.kind == "industry":
+        return t.pass_low
+    share = stage / t.stages(w)
+    if share <= 0.2:
+        return t.pass_low
+    if share <= 0.6:
+        return round((t.pass_low + t.pass_high) / 2, 4)
+    return t.pass_high
 
 
 def stars_for(score, total, needed=PASS_RATE):
@@ -372,24 +470,23 @@ def stars_for(score, total, needed=PASS_RATE):
     return 0
 
 
-def pass_mark(w, stage):
+def pass_mark(t, w, stage):
     """Right answers needed to pass."""
-    total = question_count(w, stage)
-    needed = pass_rate(w, stage) * total
-    return int(needed) if needed == int(needed) else int(needed) + 1
+    return math.ceil(round(pass_rate(t, w, stage) * question_count(t, w, stage), 6))
 
 
-def unlocked(w, stage, passed):
+def unlocked(t, w, stage, passed):
     """passed is the set of level ids with at least one star."""
-    if not 1 <= stage <= w.stages:
+    if not t.has(w) or not 1 <= stage <= t.stages(w):
         return False
     if stage > 1:
-        return level_id(w.number, stage - 1) in passed
+        return level_id(t, w.number, stage - 1) in passed
     if w.kind == "topic":
-        return w.number == 1 or level_id(w.number - 1, 1) in passed
+        position = t.topics.index(w.number)
+        return position == 0 or level_id(t, t.topics[position - 1], 1) in passed
     if w.kind == "final":
-        return all(level_id(t.number, 1) in passed for t in TOPIC_WORLDS)
-    return level_id(INDUSTRY_UNLOCK_WORLD, 1) in passed
+        return all(level_id(t, n, 1) in passed for n in t.topics)
+    return level_id(t, INDUSTRY_UNLOCK_WORLD, 1) in passed
 
 
 def _title_for(table, count):
@@ -400,12 +497,38 @@ def _title_for(table, count):
     return name
 
 
-def rank_for(levels_done):
-    return _title_for(RANKS, levels_done)
+def _scaled(t, table):
+    """Rank and certificate goals grow with the track's size."""
+    scale = t.total / TRACKS[DEFAULT_TRACK].total
+    return [(t.total if needed is None else (needed if needed <= 1 else round(needed * scale)), title)
+            for needed, title in table]
 
 
-def certificate_for(levels_done, final_passed):
-    return _title_for(CERTIFICATES, levels_done) if final_passed else None
+RANK_TIERS = [title for _, title in RANKS]
+
+
+def rank_for(levels_done, t=None):
+    return _title_for(_scaled(t or TRACKS[DEFAULT_TRACK], RANKS), levels_done)
+
+
+def rank_tier(levels_done, t=None):
+    """0 for Rookie up to 7 for Tycoon: how fancy the learner's picture gets."""
+    return RANK_TIERS.index(rank_for(levels_done, t))
+
+
+def next_rank(levels_done, t=None):
+    for needed, title in _scaled(t or TRACKS[DEFAULT_TRACK], RANKS):
+        if levels_done < needed:
+            return needed, title
+    return None
+
+
+def certificate_for(levels_done, final_passed, t=None):
+    t = t or TRACKS[DEFAULT_TRACK]
+    if not final_passed:
+        return None
+    title = _title_for(_scaled(t, CERTIFICATES), levels_done)
+    return title if t.key == DEFAULT_TRACK else f"{t.name} {title}"
 
 
 def money(n):
@@ -744,6 +867,16 @@ def _team_story(company, industry_ids):
     ]
 
 
+# --- More words, situations and scenarios from academy_bank/expansions.py ---
+
+_more = load_expansions()
+if _more is not None:
+    GLOSSARY.extend(_more.GLOSSARY_MORE)
+    PRO_TALK.extend(_more.PRO_TALK_MORE)
+    for _name in ("OWN_IT", "GRIT", "RESPECT", "HIRING", "TOUGH_CALLS", "CUSTOMERS", "COMPETE", "MOVES"):
+        globals()[_name].extend(getattr(_more, f"{_name}_MORE", []))
+
+
 # --- Levels 9 to 16: leadership --------------------------------------------
 
 def _scenarios(pool):
@@ -863,22 +996,157 @@ def _rule_story(industry_id, index):
     ]
 
 
+# --- Question-bank worlds ------------------------------------------------------
+
+def _weights_for(t, progress):
+    for limit, weights in t.mix:
+        if progress <= limit:
+            return weights
+    return t.mix[-1][1]
+
+
+def _bank_questions(rng, key, count, progress, t):
+    """count questions from a world's bank, harder as the learner goes deeper.
+    About one in four is a quick true-or-false fact."""
+    bank = _BANK[key]
+    weights = _weights_for(t, progress)
+    pool = [q for q in bank["questions"] if weights.get(q[5], 0) > 0] or list(bank["questions"])
+    facts = list(bank["facts"])
+    rng.shuffle(facts)
+    picked = []
+    while len(picked) < count and pool:
+        if facts and rng.random() < 0.25:
+            statement, truth, why = facts.pop()
+            picked.append(_truefalse(statement, truth, why))
+            continue
+        total = sum(weights.get(q[5], 1) for q in pool)
+        roll = rng.uniform(0, total)
+        for i, q in enumerate(pool):
+            roll -= weights.get(q[5], 1)
+            if roll <= 0:
+                break
+        prompt, best, wrong1, wrong2, why, _level = pool.pop(i)
+        picked.append(_choice(rng, prompt, best, [wrong1, wrong2], why))
+    if key in _MATH_WORLDS and picked:
+        picked[rng.randrange(len(picked))] = _money_math(rng, progress)
+    return picked
+
+
+def _bank_story(key):
+    return list(_BANK[key]["cards"])
+
+
+# Worlds that get a freshly generated math question in every quiz.
+_MATH_WORLDS = {"pricing", "budget", "saving", "credit"}
+
+
+def _distinct(rng, correct, wrong, money=True):
+    """Two wrong answers that differ from the right one and from each other."""
+    fmt = (lambda n: f"${n}") if money else str
+    value = int(correct.lstrip("$"))
+    picked = []
+    for w in list(wrong) + [fmt(value + d) for d in (1, -1, 2, 5, 10, -5)]:
+        if w != correct and w not in picked and not w.lstrip("$").startswith("-"):
+            picked.append(w)
+        if len(picked) == 2:
+            break
+    return picked
+
+
+def _money_math(rng, progress):
+    """An exact, generated money problem; bigger numbers as the learner goes deeper."""
+    question = _money_problem(rng, progress)
+    correct = question.options[question.answer]
+    if len(question.options) == 3:
+        return question
+    prompt, explain = question.prompt, question.explain
+    others = [o for o in question.options if o != correct]
+    return _choice(rng, prompt, correct, _distinct(rng, correct, others, correct.startswith("$")), explain)
+
+
+def _money_problem(rng, progress):
+    big = 1 + int(progress * 4)
+    kind = rng.choice(["profit", "discount", "markup", "budget", "save", "interest", "break-even"])
+    if kind == "profit":
+        cost = rng.randint(1, 5 * big)
+        price = cost + rng.randint(1, 5 * big)
+        n = rng.randint(2, 10 * big)
+        answer = (price - cost) * n
+        return _choice(rng, f"Each item costs ${cost} to make and sells for ${price}. What is the profit on {n} items?",
+                       f"${answer}", [f"${price * n}", f"${answer + n}"],
+                       f"Profit per item is ${price} - ${cost} = ${price - cost}. Times {n} items is ${answer}.")
+    if kind == "discount":
+        price = rng.choice([20, 40, 50, 60, 80, 100, 120, 200]) * big
+        off = rng.choice([10, 20, 25, 50])
+        answer = price - price * off // 100
+        return _choice(rng, f"A ${price} jacket is {off}% off. What is the sale price?", f"${answer}",
+                       [f"${price - off}", f"${price * off // 100}"],
+                       f"{off}% of ${price} is ${price * off // 100}, so the sale price is ${answer}.")
+    if kind == "markup":
+        cost = rng.choice([10, 20, 30, 40, 50]) * big
+        up = rng.choice([25, 50, 100])
+        answer = cost + cost * up // 100
+        return _choice(rng, f"A shop buys a game for ${cost} and adds a {up}% markup. What is the price?", f"${answer}",
+                       [f"${cost + up}", f"${cost * up // 100}"],
+                       f"{up}% of ${cost} is ${cost * up // 100}. Add it to the cost: ${answer}.")
+    if kind == "budget":
+        budget = rng.choice([100, 200, 250, 500]) * big
+        spent = [rng.randint(5, budget // 5) for _ in range(3)]
+        answer = budget - sum(spent)
+        return _choice(rng, f"Your monthly budget is ${budget}. You spent ${spent[0]}, ${spent[1]} and ${spent[2]}. "
+                            "How much is left?", f"${answer}", [f"${answer + spent[0]}", f"${sum(spent)}"],
+                       f"Add what you spent (${sum(spent)}) and subtract it from ${budget}: ${answer} left.")
+    if kind == "save":
+        weekly = rng.randint(2, 10 * big)
+        weeks = rng.randint(3, 12)
+        return _choice(rng, f"You save ${weekly} every week. How much do you have after {weeks} weeks?",
+                       f"${weekly * weeks}", [f"${weekly + weeks}", f"${weekly * (weeks - 1)}"],
+                       f"${weekly} x {weeks} weeks = ${weekly * weeks}. Small steady savings add up.")
+    if kind == "interest":
+        amount = rng.choice([100, 200, 500, 1000]) * big
+        rate = rng.choice([2, 5, 10])
+        return _choice(rng, f"A bank pays {rate}% interest a year. How much interest does ${amount} earn in one year?",
+                       f"${amount * rate // 100}", [f"${rate}", f"${amount + rate}"],
+                       f"{rate}% of ${amount} is ${amount * rate // 100}. That's money your savings earn for you.")
+    cost = rng.choice([50, 100, 150, 200, 300]) * big
+    per = rng.choice([2, 5, 10, 25])
+    answer = -(-cost // per)
+    return _choice(rng, f"A new machine costs ${cost}. You earn ${per} profit per item. "
+                        "How many items must you sell to pay it back?", str(answer), [str(answer * 2), str(answer + per)],
+                   f"${cost} / ${per} = {answer} items. After that, the machine is making you money.")
+
+
 # --- Owner's Challenge -------------------------------------------------------
 
-def _final_questions(rng, company, industry_ids, stage=1):
-    """One question each from a random set of topic worlds, at this stage's difficulty."""
-    makers = [_CONTENT[w.key][1] for w in TOPIC_WORLDS]
-    questions = []
-    for make in rng.sample(makers, FINAL_QUESTIONS):
+def _topic_questions(t, w, rng, company, industry_ids, stage, count, progress):
+    if w.key in _BANK:
+        return _bank_questions(rng, w.key, count, progress, t)
+    return _CONTENT[w.key][1](rng, company, industry_ids, stage)[:count]
+
+
+def _final_questions(t, rng, company, industry_ids, stage):
+    """One question each from a random set of the track's topic worlds."""
+    progress = (stage - 1) / max(1, t.final_stages - 1)
+    questions, prompts = [], set()
+    worlds = t.topic_worlds
+    tries = 0
+    while len(questions) < t.final_questions and tries < 200:
+        tries += 1
+        w = rng.choice(worlds)
         sub = random.Random(rng.random())
-        questions.append(sub.choice(make(sub, company, industry_ids, stage)))
+        options = _topic_questions(t, w, sub, company, industry_ids, max(1, int(progress * t.topic_stages)), 3, progress)
+        fresh = [q for q in options if q.prompt not in prompts]
+        if fresh:
+            q = sub.choice(fresh)
+            prompts.add(q.prompt)
+            questions.append(q)
     return questions
 
 
-def _final_story(company, industry_ids):
+def _final_story(t, company):
     return [
-        ("The Owner's Challenge", f"{FINAL_QUESTIONS} questions from across the whole course. Answer at least 6 to pass."),
-        ("Your prize", f"Pass to earn your Future Owner Certificate for {company}!"),
+        ("The Owner's Challenge", f"{t.final_questions} questions from across the whole {t.name} track."),
+        ("Your prize", f"Pass to earn your Future Owner Certificate for {company}, and keep going to upgrade it!"),
     ]
 
 
@@ -899,52 +1167,113 @@ _CONTENT = {
     "customers": (_customers_story, _scenarios(CUSTOMERS)),
     "compete": (_compete_story, _scenarios(COMPETE)),
     "moves": (_moves_story, _scenarios(MOVES)),
-    "final": (_final_story, _final_questions),
 }
 
 
-def story(world_number, stage, company, industry_ids):
+def _rule_index(industry_id, stage):
+    return (stage - 1) % len(CATALOG[industry_id]) + 1
+
+
+def story(t, world_number, stage, company, industry_ids):
     """The lesson cards. Stage 1 teaches the whole lesson; later stages show one
     reminder card so kids get straight to the challenge."""
     w = WORLDS[world_number]
     if w.kind == "industry":
-        return _rule_story(w.industry_id, stage)
-    cards = _CONTENT[w.key][0](company, list(industry_ids))
+        if stage > len(CATALOG[w.industry_id]):
+            brand = INDUSTRIES[w.industry_id]["brand"]
+            return [(f"{brand} review", "This stage mixes questions from several of the industry's rules. "
+                                        "Remember the lights, the costs and the fixes!")]
+        return _rule_story(w.industry_id, _rule_index(w.industry_id, stage))
+    if w.kind == "final":
+        cards = _final_story(t, company)
+    elif w.key in _BANK:
+        cards = _bank_story(w.key)
+    else:
+        cards = _CONTENT[w.key][0](company, list(industry_ids))
     if stage == 1:
         return cards
+    if is_boss(w, stage):
+        return [(f"Stage {stage}: boss round!", "More questions than usual, mixed from this world and the ones before. "
+                                                "Take your time and read carefully.")]
     reminder = cards[(stage - 2) % len(cards)]
     return [(f"Stage {stage}: remember", f"{reminder[0]}: {reminder[1]}")]
 
 
-def quiz(world_number, stage, company, industry_ids, seed):
+def _industry_quiz(t, rng, w, stage):
+    rules = len(CATALOG[w.industry_id])
+    wanted = t.industry_questions
+    if stage <= rules:
+        questions = _rule_questions(rng, w.industry_id, stage)[:wanted]
+        order = [i for i in range(1, rules + 1) if i != stage]
+    else:
+        # Review stages: questions from several of the industry's rules.
+        questions = []
+        order = list(range(1, rules + 1))
+    rng.shuffle(order)
+    prompts = {q.prompt for q in questions}
+    for index in order * 2:
+        if len(questions) >= wanted:
+            break
+        options = [q for q in _rule_questions(random.Random(rng.random()), w.industry_id, index)
+                   if q.prompt not in prompts]
+        if options:
+            q = rng.choice(options)
+            q.review = stage <= rules
+            prompts.add(q.prompt)
+            questions.append(q)
+    rng.shuffle(questions)
+    return questions
+
+
+def _fill(questions, prompts, wanted, source, tries=60):
+    """Adds questions from source() until there are enough, skipping repeats."""
+    while len(questions) < wanted and tries > 0:
+        tries -= 1
+        for q in source():
+            if len(questions) >= wanted:
+                break
+            if q.prompt not in prompts:
+                prompts.add(q.prompt)
+                questions.append(q)
+
+
+def quiz(t, world_number, stage, company, industry_ids, seed):
     """The questions for one attempt. The same seed always gives the same quiz.
-    Higher stages add review questions from other worlds."""
+    Deeper stages ask more and harder questions and mix in review from earlier
+    worlds; every tenth stage is a boss round with extra review."""
     w = WORLDS[world_number]
     rng = random.Random(seed)
     ids = list(industry_ids)
     if w.kind == "industry":
-        return _rule_questions(rng, w.industry_id, stage)
+        return _industry_quiz(t, rng, w, stage)
     if w.kind == "final":
-        return _final_questions(rng, company, ids, stage)
-    questions = _CONTENT[w.key][1](rng, company, ids, stage)[:5]
-    wanted = question_count(w, stage)
-    review_from = [t for t in TOPIC_WORLDS if t.number != w.number and (t.number < w.number or w.number == 1)]
-    prompts = {q.prompt for q in questions}
-    tries = 0
-    while len(questions) < wanted and tries < 50:
-        tries += 1
+        return _final_questions(t, rng, company, ids, stage)
+    wanted = question_count(t, w, stage)
+    progress = (stage - 1) / max(1, t.topic_stages - 1)
+    reviews = 3 if is_boss(w, stage) else (1 if wanted > 5 else 0)
+    questions, prompts = [], set()
+    _fill(questions, prompts, wanted - reviews,
+          lambda: _topic_questions(t, w, random.Random(rng.random()), company, ids, stage, 5, progress))
+    position = t.topics.index(w.number)
+    earlier = [WORLDS[n] for n in t.topics[:position]]
+    review_from = earlier if len(earlier) >= 3 else [WORLDS[n] for n in t.topics if n != w.number]
+    start = len(questions)
+
+    def review():
         source = rng.choice(review_from)
-        sub = random.Random(rng.random())
-        candidate = sub.choice(_CONTENT[source.key][1](sub, company, ids, stage))
-        if candidate.prompt not in prompts:
-            candidate.review = True
-            prompts.add(candidate.prompt)
-            questions.append(candidate)
+        return _topic_questions(t, source, random.Random(rng.random()), company, ids, stage, 2, progress)
+    _fill(questions, prompts, wanted, review)
+    for q in questions[start:]:
+        q.review = True
+    # A world with few distinct questions tops up from its own pool again.
+    _fill(questions, prompts, wanted,
+          lambda: _topic_questions(t, w, random.Random(rng.random()), company, ids, stage, 5, progress))
     return questions
 
 
-def attempt_seed(learner_id, world_number, stage, attempt):
-    return f"omniarmor-academy:{learner_id}:{world_number}:{stage}:{attempt}"
+def attempt_seed(learner_id, track_key, world_number, stage, attempt):
+    base = f"omniarmor-academy:{learner_id}:{world_number}:{stage}:{attempt}"
+    return base if track_key == DEFAULT_TRACK else f"{base}:{track_key}"
 
 
 def grade(questions, answers):
@@ -960,7 +1289,7 @@ def grade(questions, answers):
 # name or rules. Duels use the worlds about running any business, and both
 # players get the exact same questions from a shared seed.
 
-DUEL_WORLDS = [2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+DUEL_WORLDS = [2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] + [w.number for w in BANK_WORLDS]
 DUEL_QUESTIONS = 5
 DUEL_COMPANY = "the company"
 MAX_FRIENDS = 30
@@ -984,4 +1313,20 @@ def clean_friend_code(text):
 def duel_quiz(world_number, stage, seed):
     w = WORLDS[world_number]
     rng = random.Random(seed)
-    return _CONTENT[w.key][1](rng, DUEL_COMPANY, [], stage)[:DUEL_QUESTIONS]
+    progress = (stage - 1) / 49
+    return _topic_questions(TRACKS["trailblazer"], w, rng, DUEL_COMPANY, [], stage, DUEL_QUESTIONS, progress)
+
+
+# --- Join codes: a kid's own device ----------------------------------------------
+
+def new_join_code():
+    return "KID-" + "".join(secrets.choice(_CODE_LETTERS) for _ in range(8))
+
+
+def clean_join_code(text):
+    letters = "".join(ch for ch in (text or "").upper() if ch.isalnum())
+    if letters.startswith("KID"):
+        letters = letters[3:]
+    if len(letters) != 8 or any(ch not in _CODE_LETTERS for ch in letters):
+        return None
+    return "KID-" + letters

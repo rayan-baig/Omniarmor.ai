@@ -8,6 +8,7 @@
   <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 50 regulated industries.{% endblock %}">
   <meta name="theme-color" content="#0F0E0D">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -18,7 +19,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap">
-    <a class="lockup" href="{{ url_for('app.overview') if g.user else url_for('public.home') }}" aria-label="OmniArmor.ai home">
+    <a class="lockup" href="{{ url_for('app.overview') if g.user else (url_for('academy.level_map', learner_id=g.kid.id) if g.kid else url_for('public.home')) }}" aria-label="OmniArmor.ai home">
       <svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
         <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>
         <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
@@ -36,8 +37,15 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit">Sign out</button>
         </form>
+      {% elif g.kid %}
+        <a href="{{ url_for('academy.level_map', learner_id=g.kid.id) }}" aria-current="page">{{ g.kid.nickname }}'s Academy</a>
+        <form method="post" action="{{ url_for('kids.leave') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Leave</button>
+        </form>
       {% else %}
         <a href="{{ url_for('public.industries') }}">Industries</a>
+        <a href="{{ url_for('kids.join') }}">Kids</a>
         <a href="{{ url_for('auth.login') }}">Sign in</a>
         <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
       {% endif %}

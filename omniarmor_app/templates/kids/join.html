@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo %}
+{% block title %}Join the Academy{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac ac-join">
+  <section class="ac-hero">
+    {{ armo(130, 'cheer', 'flower') }}
+    <div>
+      <p class="ac-kicker">Future Owner Academy</p>
+      <h1 class="ac-title">Hi! Type your join code</h1>
+      <p class="ac-lead">Ask a grown-up for your code. It looks like <strong>KID-ABCD2345</strong>.</p>
+    </div>
+  </section>
+  <form class="ac-card ac-join-form" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="field"><span>Join code</span>
+      <input type="text" name="code" required maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KID-XXXXXXXX" autofocus></label>
+    <button class="btn ac-btn" type="submit">Join the Academy</button>
+    <p class="hint mt-s">Grown-ups: make a code from your child's Academy map, under "For grown-ups". This device will only open the Academy.</p>
+  </form>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, stars %}
+{% from "academy/_art.html" import armo, avatar, stars %}
 {% block title %}{{ world.title }}, stage {{ stage }} results{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -16,6 +16,8 @@
     <p class="ac-lead">{{ learner.nickname }} got {{ score }} of {{ total }} right.</p>
     <div class="ac-big-stars">{{ stars(earned_stars, 52) }}</div>
     <p class="ac-armo-says">{{ buddy.name }} Armo: &ldquo;{{ (buddy.win if passed else buddy.retry)|random }}&rdquo;</p>
+    {% if goal_hit %}<p class="ac-unlock">Daily goal reached: {{ daily_goal }} levels today! Streak: {{ summary.streak }} day{{ 's' if summary.streak != 1 }}.</p>{% endif %}
+    {% if new_rank %}<p class="ac-rankup-art">{{ avatar(learner.avatar, avatars, 96, summary.tier) }}</p>{% endif %}
     {% if new_rank %}<p class="ac-unlock ac-rankup">Rank up! You're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!</p>{% endif %}
     {% if new_certificate %}
       <p class="ac-unlock">You earned the {{ new_certificate }} certificate!</p>
@@ -35,6 +37,7 @@
       <a class="btn {{ 'quiet' if passed else 'ac-btn' }}" href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=stage) }}">{{ 'Play again' if passed else 'Try again' }}</a>
       <a class="btn quiet" href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">All stages</a>
       <a class="btn quiet" href="{{ url_for('academy.level_map', learner_id=learner.id) }}">Map</a>
+      {% if missed %}<a class="btn quiet" href="{{ url_for('academy.practice', learner_id=learner.id) }}">Practice the {{ missed }} I missed</a>{% endif %}
     </div>
   </section>
 

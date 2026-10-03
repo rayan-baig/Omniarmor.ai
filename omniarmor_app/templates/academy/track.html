@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, emblem %}
+{% block title %}Choose your track{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
+<div class="ac">
+  {% if not first_time %}<p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>{% endif %}
+  <section class="ac-hero">
+    {{ armo(110, 'cheer', buddy.accessory) }}
+    <div>
+      <p class="ac-kicker">{{ 'Welcome, ' ~ learner.nickname ~ '!' if first_time else 'Change track' }}</p>
+      <h1 class="ac-title">How deep do you want to go?</h1>
+      <p class="ac-lead">Pick a track. You can switch anytime, and each track keeps its own progress.</p>
+    </div>
+  </section>
+  <form method="post" class="ac-track-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="ac-track-grid">
+      {% for t in tracks %}
+        <label class="ac-track ac-track-{{ t.key }}">
+          <input type="radio" name="track" value="{{ t.key }}" {% if learner.track == t.key %}checked{% endif %}>
+          {{ emblem(t.key, 88) }}
+          <span class="ac-track-level">{{ t.level }}</span>
+          <strong class="ac-track-name">{{ t.name }}</strong>
+          <span class="ac-track-total">{{ "{:,}".format(t.total) }} levels</span>
+          <span class="ac-track-tag">{{ t.tagline }}</span>
+          <ul class="ac-track-facts">
+            <li>{{ t.topics|length }} business worlds × {{ t.topic_stages }} stages</li>
+            <li>{{ t.industry_stages }} stages in each of the 50 industry Rule Quests</li>
+            <li>{{ t.min_questions }} to {{ t.max_questions }} questions, pass at {{ (t.pass_low * 100)|int }}% to {{ (t.pass_high * 100)|int }}%</li>
+          </ul>
+          {% if done[t.key] %}<span class="ac-track-done">{{ "{:,}".format(done[t.key]) }} done</span>{% endif %}
+          {% if plan.access == 'free' and t.key != 'launchpad' %}<span class="ac-track-lock">Academy plan</span>{% endif %}
+        </label>
+      {% endfor %}
+    </div>
+    <button class="btn ac-btn" type="submit">{{ "Let's go!" if first_time else 'Switch track' }}</button>
+  </form>
+</div>
+{% endblock %}

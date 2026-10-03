@@ -73,6 +73,7 @@ def cleanup(conn):
     conn.execute("DELETE FROM password_resets WHERE expires_at < ? OR used_at IS NOT NULL", (cutoff,))
     conn.execute("DELETE FROM invites WHERE expires_at < ?", (iso(utcnow() - timedelta(days=30)),))
     conn.execute("DELETE FROM friend_codes WHERE expires_at < ?", (iso(utcnow()),))
+    conn.execute("DELETE FROM join_codes WHERE expires_at < ?", (iso(utcnow()),))
     conn.commit()
 
 
@@ -148,6 +149,20 @@ def register_cli(app):
     def run_daily_command(force):
         """Send reminders, back up the database and clean up."""
         click.echo(run_daily(dict(app.config), force=force) or "Not due yet, or already done today.")
+
+    @app.cli.command("academy-plan")
+    @click.argument("org_id", type=int)
+    @click.argument("status", type=click.Choice(["active", "none", "canceled"]))
+    def academy_plan_command(org_id, status):
+        """Turn a workspace's Academy plan on or off by hand (no Stripe needed)."""
+        from .academy_plan import set_status
+        conn = connect(app.config["DATABASE"])
+        if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
+            raise click.ClickException(f"No workspace with id {org_id}.")
+        set_status(conn, org_id, status)
+        conn.commit()
+        conn.close()
+        click.echo(f"Workspace {org_id}: Academy plan {status}.")
 
     @app.cli.command("backup")
     def backup_command():

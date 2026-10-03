@@ -13,7 +13,7 @@
   <header class="ac-level-head">
     <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
     <div>
-      <p class="ac-kicker">Stage {{ stage }} of {{ world.stages }}{% if stage % 10 == 0 %} · Bonus round{% endif %}</p>
+      <p class="ac-kicker">{{ track.name }} · Stage {{ stage }} of {{ stage_count }}{% if boss %} · Boss round{% endif %}</p>
       <h1 class="ac-title">{{ world.title }}</h1>
     </div>
   </header>
