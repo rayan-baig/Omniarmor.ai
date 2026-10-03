@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from omniarmor_app import armo  # noqa: E402
+from omniarmor_app.catalog import date_mode, rules_for  # noqa: E402
 from test_webapp import AppTestCase, first_rule  # noqa: E402
 
 
@@ -73,6 +74,34 @@ class TestCompanion(AppTestCase):
         self.assertIn(rule.title, page)
         self.assertIn("What to do", page)
         self.assertIn('data-needs="1"', self.client.get("/app").data.decode())
+
+    def test_walks_through_every_issue_with_what_to_do(self):
+        first = self.block_a_rule()
+        second = next(r for r in rules_for(1) if r.kind == "max" and r.key != first.key and date_mode(r) is None)
+        self.change(1, second.key, value=str(second.limit + 1))
+        status = self.client.get("/app/armo/status").get_json()
+        self.assertEqual(len(status["issues"]), 2)
+        for issue in status["issues"]:
+            self.assertTrue(issue["action"] and issue["url"] and issue["title"])
+        self.assertIn(first.action, [i["action"] for i in status["issues"]])
+
+    def test_tips_come_from_real_data(self):
+        status = self.client.get("/app/armo/status").get_json()
+        tips = " ".join(t["text"] for t in status["tips"])
+        self.assertIn("no reading yet", tips)          # nothing entered yet
+        self.assertIn("only one here", tips)            # solo workspace
+        self.assertIn("Academy", tips)                  # no learners yet
+        self.assertIn("Email isn't set up", tips)       # no SMTP in tests
+        self.assertTrue(all(t["url"].startswith("/") for t in status["tips"]))
+        self.post("/app/settings/reminders", {})        # turn email reminders off
+        tips = " ".join(t["text"] for t in self.client.get("/app/armo/status").get_json()["tips"])
+        self.assertIn("reminders are off", tips)
+
+    def test_armo_explains_each_page(self):
+        for path, words in [("/app", "This is HQ"), ("/app/report", "This is Intel"), ("/app/audit", "This is the Vault"),
+                            ("/app/notifications", "This is Radar"), ("/app/settings", "This is the Armory"),
+                            ("/app/industry/1", "Done today")]:
+            self.assertIn(words, self.client.get(path).data.decode(), path)
 
     def test_missing_readings_are_a_heads_up(self):
         page = self.client.get("/app/armo").data.decode()

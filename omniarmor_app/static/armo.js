@@ -13,6 +13,8 @@
   var bubble = root.querySelector("[data-bubble]");
   var text = root.querySelector("[data-bubble-text]");
   var fix = root.querySelector("[data-bubble-fix]");
+  var detail = root.querySelector("[data-bubble-detail]");
+  var next = root.querySelector("[data-bubble-next]");
   var close = root.querySelector("[data-bubble-close]");
   var count = root.querySelector("[data-count]");
 
@@ -20,11 +22,14 @@
     idle: parse("data-idle"), alert: parse("data-alert"), clear: parse("data-clear"), acts: parse("data-acts"),
     fixed: parse("data-fixed"), poke: parse("data-poke")
   };
+  var pageHelp = root.getAttribute("data-page-help") || "";
+  var helpedHere = false;
   var state = {
     needs: parseInt(root.getAttribute("data-needs"), 10) || 0,
     signature: root.getAttribute("data-signature") || "",
-    title: root.getAttribute("data-top-title") || "",
-    url: root.getAttribute("data-top-url") || ""
+    issues: parse("data-issues"),   // every pressing issue: title, url, action, where
+    tips: parse("data-tips"),       // useful suggestions from the company's real data
+    index: 0                        // which issue Armo is showing
   };
   var alerting = false;
   var hideTimer = null;
@@ -57,16 +62,22 @@
     root.setAttribute("data-pose-now", name);
   }
 
+  // options: url and label for the action link, detail for a second line,
+  // next to show a "Next" button, sticky to keep the bubble open.
   function say(message, options) {
     options = options || {};
     text.textContent = message;
+    detail.textContent = options.detail || "";
+    detail.hidden = !options.detail;
     if (options.url) {
       fix.href = options.url;
-      fix.textContent = root.getAttribute("data-fix") || "Fix it";
+      fix.textContent = options.label || root.getAttribute("data-fix") || "Fix it";
       fix.hidden = false;
     } else {
       fix.hidden = true;
     }
+    next.textContent = options.next || "";
+    next.hidden = !options.next;
     bubble.hidden = false;
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // restart the pop animation
@@ -86,13 +97,35 @@
     root.classList.add("jump");
   }
 
+  // Show one issue: what's wrong, what to do, a link to fix it, and a way
+  // to step through the rest.
+  function showIssue(i) {
+    var total = state.issues.length;
+    if (!total) return;
+    state.index = (i + total) % total;
+    var issue = state.issues[state.index];
+    say(pick(lines.alert).replace("{title}", issue.title), {
+      detail: issue.action ? "What to do: " + issue.action : "",
+      url: issue.url,
+      next: total > 1 ? "Next (" + (state.index + 1) + " of " + total + ")" : "",
+      sticky: true
+    });
+  }
+
   function soundTheAlarm() {
-    if (!state.needs || !state.title) return;
+    if (!state.needs || !state.issues.length) return;
     alerting = true;
     clearTimeout(restTimer);
     pose("alert");
     jump();
-    say(pick(lines.alert).replace("{title}", state.title), { url: state.url, sticky: true });
+    showIssue(0);
+  }
+
+  function giveTip() {
+    var tip = state.tips.length ? state.tips[Math.floor(Math.random() * state.tips.length)] : null;
+    if (!tip) return false;
+    say(tip.text, { url: tip.url, label: "Show me" });
+    return true;
   }
 
   function standDown() {
@@ -115,9 +148,16 @@
     if (!bubble.hidden) { hide(); return; }
     if (state.needs) { soundTheAlarm(); return; }
     jump();
+    if (pageHelp && !helpedHere) {   // first click on a page: explain the page
+      helpedHere = true;
+      say(pick(lines.poke), { detail: pageHelp });
+      return;
+    }
     var roll = Math.random();
-    say(pick(roll < 0.45 ? lines.poke : roll < 0.7 ? lines.clear : lines.idle));
+    if (roll < 0.4 && giveTip()) return;
+    say(pick(roll < 0.7 ? lines.poke : roll < 0.85 ? lines.clear : lines.idle));
   });
+  next.addEventListener("click", function () { showIssue(state.index + 1); });
   close.addEventListener("click", function () {
     if (alerting) store("armo-dismissed", state.signature);
     standDown();
@@ -140,7 +180,15 @@
         } else {
           pose(act);
         }
-        if (Math.random() < 0.65) setTimeout(function () { if (!alerting) say(pick(lines.idle)); }, 1200);
+        // Half the time Armo shares something useful; otherwise he chats.
+        var roll = Math.random();
+        if (roll < 0.75) {
+          setTimeout(function () {
+            if (alerting) return;
+            if (roll < 0.35 && giveTip()) return;
+            say(pick(lines.idle));
+          }, 1200);
+        }
         clearTimeout(restTimer);
         restTimer = setTimeout(function () { if (!alerting) pose("idle"); }, 14000);
       }
@@ -159,8 +207,8 @@
         var changed = data.signature !== state.signature;
         state.needs = data.needs;
         state.signature = data.signature;
-        state.title = data.top ? data.top.title : "";
-        state.url = data.top ? data.top.url : "";
+        state.issues = data.issues || [];
+        state.tips = data.tips || state.tips;
         updateBadge();
         if (state.needs && changed && store("armo-dismissed") !== state.signature) {
           soundTheAlarm();

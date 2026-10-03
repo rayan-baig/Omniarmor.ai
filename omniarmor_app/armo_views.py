@@ -15,7 +15,12 @@ def current_state():
     """Armo's view of the signed-in company, worked out once per request."""
     if "armo_state" not in g:
         try:
-            g.armo_state = armo.summary(get_db(), g.org) if g.get("org") is not None else None
+            state = None
+            if g.get("org") is not None:
+                conn = get_db()
+                state = armo.summary(conn, g.org)
+                state["tips"] = armo.tips(conn, g.org, g.user, state, bool(current_app.config.get("SMTP_HOST")))
+            g.armo_state = state
         except Exception:  # never let the helper break a page, including error pages
             current_app.logger.exception("Armo could not check this workspace")
             g.armo_state = None
@@ -24,7 +29,7 @@ def current_state():
 
 @bp.app_context_processor
 def armo_context():
-    return {"armo_state": current_state, "armo_personality": armo.personality,
+    return {"armo_state": current_state, "armo_personality": armo.personality, "armo_page_help": armo.page_help,
             "armo_personalities": armo.PERSONALITIES, "armo_voice": armo.voice}
 
 
@@ -45,7 +50,8 @@ def status():
         return jsonify(error="unavailable"), 503
     top = state["top"]
     return jsonify(needs=state["needs"], urgent=state["urgent"], signature=state["signature"], mood=state["mood"],
-                   top={"title": top["title"], "url": top["url"]} if top else None)
+                   top={"title": top["title"], "url": top["url"]} if top else None,
+                   issues=state["pressing"], tips=state["tips"])
 
 
 @bp.route("/personality", methods=["POST"])

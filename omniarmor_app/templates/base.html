@@ -67,13 +67,18 @@
 {% set buddy = armo_personality(g.user.armo) %}
 <aside class="companion no-print" aria-label="Armo, your helper" data-companion
   data-status="{{ url_for('armo.status') }}" data-needs="{{ state.needs }}" data-signature="{{ state.signature }}"
-  data-top-title="{{ state.top.title if state.top else '' }}" data-top-url="{{ state.top.url if state.top else '' }}"
+  data-issues='{{ state.pressing|tojson }}' data-tips='{{ state.tips|tojson }}' data-page-help="{{ armo_page_help(request.endpoint) }}"
   data-idle='{{ buddy.idle|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ buddy.clear|tojson }}'
   data-fixed='{{ buddy.fixed|tojson }}' data-poke='{{ buddy.poke|tojson }}'
   data-acts='{{ buddy.activities|tojson }}' data-fix="{{ buddy.fix }}">
   <div class="companion-bubble" data-bubble hidden>
     <p class="companion-text" data-bubble-text aria-live="polite"></p>
-    <p class="companion-links"><a class="companion-fix" data-bubble-fix hidden href="#"></a><a class="companion-more" href="{{ url_for('armo.page') }}">See everything</a></p>
+    <p class="companion-detail" data-bubble-detail hidden></p>
+    <p class="companion-links">
+      <a class="companion-fix" data-bubble-fix hidden href="#"></a>
+      <button type="button" class="companion-next" data-bubble-next hidden></button>
+      <a class="companion-more" href="{{ url_for('armo.page') }}">See everything</a>
+    </p>
     <button type="button" class="companion-close" data-bubble-close aria-label="Close">&times;</button>
   </div>
   <a class="companion-armo" href="{{ url_for('armo.page') }}" data-armo-button

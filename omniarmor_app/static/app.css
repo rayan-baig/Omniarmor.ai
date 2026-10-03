@@ -203,6 +203,10 @@ body.has-tabs:has(> .companion){padding-bottom:calc(160px + env(safe-area-inset-
 .companion-bubble.pop{animation:bubble-pop .25s ease-out}
 .companion-bubble::after{content:"";position:absolute;right:22px;bottom:-7px;width:12px;height:12px;background:var(--raise);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
 .companion-text{margin:0}
+.companion-detail{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
+.companion-detail[hidden],.companion-next[hidden]{display:none}
+.companion-next{min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
+.companion-next:hover{background:var(--hover)}
 .companion-links{margin:10px 0 0;display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;font-size:13.5px}
 .companion-fix{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border-radius:999px;background:var(--blend);color:var(--on-accent);font-weight:600;text-decoration:none}
 .companion-fix:hover{color:var(--on-accent);filter:brightness(1.08)}
