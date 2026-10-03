@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac">
   <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
   <header class="ac-level-head">
@@ -19,13 +20,13 @@
 
   {% if current %}
     <div class="ac-speech">
-      {{ armo(64, 'happy') }}
+      {{ armo(64, 'happy', buddy.accessory) }}
       <p>{% if current.stage == 1 %}Start with stage 1 to learn the lesson.{% else %}Stage {{ current.stage }} is waiting for you!{% endif %}
         <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=learner.id, world_number=world.number, stage=current.stage) }}">{{ 'Start' if current.stage == 1 else 'Continue' }}</a></p>
     </div>
   {% else %}
     <div class="ac-speech">
-      {{ armo(64, 'cheer') }}
+      {{ armo(64, 'cheer', buddy.accessory) }}
       <p>You cleared every stage in this world! Replay any stage to win more stars.</p>
     </div>
   {% endif %}

@@ -57,9 +57,12 @@
     var right = 0;
     var streak = 0;
     var toastTimer = null;
-    var CHEERS = ["Correct", "Well done", "Good thinking", "Sharp answer"];
-    var STREAKS = { 3: "3 in a row", 5: "5 in a row. Excellent work", 8: "8 in a row. Outstanding" };
-    var TRY_AGAIN = ["Not quite. Read the tip", "Good try. Every mistake teaches something", "Keep going"];
+    // Armo's lines come from the personality the learner picked.
+    var voice = {};
+    try { voice = JSON.parse(quiz.getAttribute("data-voice") || "{}"); } catch (e) { voice = {}; }
+    var CHEERS = voice.cheers && voice.cheers.length ? voice.cheers : ["Correct", "Well done", "Good thinking"];
+    var STREAKS = voice.streaks || { 3: "3 in a row", 5: "5 in a row", 8: "8 in a row" };
+    var TRY_AGAIN = voice.oops && voice.oops.length ? voice.oops : ["Not quite. Read the tip", "Keep going"];
 
     var face = function (mood) {
       var tpl = document.getElementById("armo-" + mood);

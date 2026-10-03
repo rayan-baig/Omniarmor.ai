@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo as armo_art %}
+{% block title %}Armo{% endblock %}
+{% block content %}
+<section class="armo-hero">
+  {{ armo_art(120, state.mood if state.needs else 'cheer', me.accessory) }}
+  <div>
+    <p class="eyebrow">{{ me.name }} Armo · {{ g.org.name }}</p>
+    <h1>{% if state.needs %}{{ state.needs }} thing{{ 's' if state.needs != 1 }} need{{ 's' if state.needs == 1 }} you{% else %}All clear{% endif %}</h1>
+    <p class="muted lede">{% if state.needs %}{{ me.alert[0].replace('{title}', state.top.title) }}{% else %}{{ me.clear[0] }}{% endif %}</p>
+  </div>
+</section>
+
+{% if state.issues %}
+  <h2>What Armo found</h2>
+  <ul class="armo-issues">
+    {% for i in state.issues %}
+      <li class="armo-issue {{ i.level }}">
+        <div>
+          <span class="where">{{ {'urgent': 'Now', 'soon': 'Soon', 'info': 'Heads up'}[i.level] }} · {{ i.where }}</span>
+          <h3>{{ i.title }}</h3>
+          {% if i.detail %}<p>{{ i.detail }}</p>{% endif %}
+          <p><strong>What to do:</strong> {{ i.action }}</p>
+        </div>
+        <a class="btn {{ '' if i.level == 'urgent' else 'quiet' }}" href="{{ i.url }}">{{ me.fix }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<h2>Pick Armo's personality</h2>
+<p class="muted">Armo sits above the tabs, keeps you company and jumps up when something needs you. His personality changes how he talks, never what he tells you.</p>
+<form method="post" action="{{ url_for('armo.choose') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="armo-picks">
+    {% for p in armo_personalities.values() %}
+      <label class="armo-pick">
+        <input type="radio" name="armo" value="{{ p.key }}" {% if g.user.armo == p.key %}checked{% endif %}>
+        {{ armo_art(96, 'happy', p.accessory, p.activities[0] if p.activities[0] != 'wave' else 'none') }}
+        <strong>{{ p.name }}</strong>
+        <span class="armo-tagline">{{ p.tagline }}</span>
+        <q>{{ p.idle[0] }}</q>
+      </label>
+    {% endfor %}
+    <label class="armo-pick">
+      <input type="radio" name="armo" value="off" {% if hidden %}checked{% endif %}>
+      {{ armo_art(96, 'sleep', 'none') }}
+      <strong>Hide Armo</strong>
+      <span class="armo-tagline">No companion on screen</span>
+      <q>Okay. I'll be here if you need me.</q>
+    </label>
+  </div>
+  <button class="btn" type="submit">Save</button>
+</form>
+{% endblock %}

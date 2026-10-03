@@ -1,3 +1,4 @@
+{% from "academy/_art.html" import armo as armo_art %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
   <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
   <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 50 regulated industries.{% endblock %}">
   <meta name="theme-color" content="#0F0E0D">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -60,6 +62,31 @@
     <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
   </div>
 </footer>
+{% set state = armo_state() if g.user and g.org and g.user.armo != 'off' and not (request.endpoint or '').startswith('academy.') and request.endpoint != 'armo.page' else none %}
+{% if state %}
+{% set buddy = armo_personality(g.user.armo) %}
+<aside class="companion no-print" aria-label="Armo, your helper" data-companion
+  data-status="{{ url_for('armo.status') }}" data-needs="{{ state.needs }}" data-signature="{{ state.signature }}"
+  data-top-title="{{ state.top.title if state.top else '' }}" data-top-url="{{ state.top.url if state.top else '' }}"
+  data-idle='{{ buddy.idle|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ buddy.clear|tojson }}'
+  data-acts='{{ buddy.activities|tojson }}' data-fix="{{ buddy.fix }}">
+  <div class="companion-bubble" data-bubble hidden>
+    <p class="companion-text" data-bubble-text aria-live="polite"></p>
+    <p class="companion-links"><a class="companion-fix" data-bubble-fix hidden href="#"></a><a class="companion-more" href="{{ url_for('armo.page') }}">See everything</a></p>
+    <button type="button" class="companion-close" data-bubble-close aria-label="Close">&times;</button>
+  </div>
+  <a class="companion-armo" href="{{ url_for('armo.page') }}" data-armo-button
+     aria-label="Armo{% if state.needs %}: {{ state.needs }} thing{{ 's' if state.needs != 1 }} need{{ '' if state.needs != 1 else 's' }} attention{% endif %}">
+    <span class="companion-stage" data-stage>{{ armo_art(76, 'alert' if state.urgent else 'happy', buddy.accessory) }}</span>
+    <span class="companion-badge" data-count{% if not state.needs %} hidden{% endif %}>{{ state.needs }}</span>
+  </a>
+  <template data-pose="idle">{{ armo_art(76, 'happy', buddy.accessory) }}</template>
+  <template data-pose="alert">{{ armo_art(76, 'alert', buddy.accessory) }}</template>
+  <template data-pose="cheer">{{ armo_art(76, 'cheer', buddy.accessory) }}</template>
+  {% for act in buddy.activities if act != 'wave' %}<template data-pose="{{ act }}">{{ armo_art(76, 'happy', buddy.accessory, act) }}</template>{% endfor %}
+</aside>
+<script src="{{ url_for('static', filename='armo.js') }}" defer></script>
+{% endif %}
 {% if g.user %}
 {% set ep = request.endpoint or '' %}
 <nav class="tabbar no-print" aria-label="Sections">

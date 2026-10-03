@@ -1,29 +1,110 @@
 {# Kid-friendly artwork for the Academy, drawn as inline SVG. #}
 
-{% macro armo(size=96, mood='happy') -%}
-<svg class="armo armo-{{ mood }}" viewBox="0 0 120 132" width="{{ size }}" height="{{ (size * 1.1)|int }}" aria-hidden="true">
+{% macro armo(size=96, mood='happy', accessory='none', prop='none') -%}
+{# Armo: a round, friendly shield with big sparkly eyes and little arms.
+   mood: happy, cheer, think, sleep or alert. prop: mug, book, juggle or zzz. #}
+{% set line = '#8E1A10' %}{% set face = '#2A1410' %}{% set limb = '#F47A2E' %}
+{% if prop == 'zzz' %}{% set mood = 'sleep' %}{% endif %}
+<svg class="armo armo-{{ mood }}{% if prop != 'none' %} armo-prop-{{ prop }}{% endif %}" viewBox="-16 -26 160 160" width="{{ size }}" height="{{ size }}" aria-hidden="true">
   <defs>
-    <linearGradient id="armoBody-{{ mood }}" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/>
+    <linearGradient id="armoBody" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#F59234"/><stop offset=".55" stop-color="#F0562A"/><stop offset="1" stop-color="#E5261C"/>
     </linearGradient>
   </defs>
-  <path d="M60 6 L108 24 V62 C108 95 87 117 60 127 C33 117 12 95 12 62 V24 Z" fill="url(#armoBody-{{ mood }})" stroke="#0F0E0D" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M60 15 L100 30 V62 C100 88 83 106 60 116 Z" fill="#FFFFFF" opacity=".14"/>
-  {% if mood == 'cheer' %}
-    <path d="M36 58 Q44 48 52 58" stroke="#0F0E0D" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M68 58 Q76 48 84 58" stroke="#0F0E0D" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M40 76 Q60 102 80 76 Z" fill="#0F0E0D"/>
-    <path d="M50 88 Q60 96 70 88" fill="#FF6A4D"/>
-  {% elif mood == 'think' %}
-    <circle cx="44" cy="58" r="9" fill="#FFF"/><circle cx="76" cy="58" r="9" fill="#FFF"/>
-    <circle cx="47" cy="55" r="4.5" fill="#0F0E0D"/><circle cx="79" cy="55" r="4.5" fill="#0F0E0D"/>
-    <path d="M48 86 H72" stroke="#0F0E0D" stroke-width="5" stroke-linecap="round"/>
-  {% else %}
-    <circle cx="44" cy="58" r="9" fill="#FFF"/><circle cx="76" cy="58" r="9" fill="#FFF"/>
-    <circle cx="46" cy="60" r="4.5" fill="#0F0E0D"/><circle cx="78" cy="60" r="4.5" fill="#0F0E0D"/>
-    <path d="M44 82 Q60 96 76 82" stroke="#0F0E0D" stroke-width="5" fill="none" stroke-linecap="round"/>
+  {% if accessory == 'cloud' %}
+    <g class="armo-cloud">
+      <path d="M38 -2 Q30 -2 30 -9 Q30 -17 39 -16 Q41 -25 52 -24 Q60 -24 63 -17 Q74 -19 75 -10 Q76 -2 68 -2 Z" fill="#776D63" stroke="#4A433D" stroke-width="2"/>
+      <path d="M44 3 L42 9 M54 3 L52 9 M64 3 L62 9" stroke="#5AB0F0" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
   {% endif %}
-  <circle cx="32" cy="76" r="6" fill="#E5261C" opacity=".55"/><circle cx="88" cy="76" r="6" fill="#E5261C" opacity=".55"/>
+  {% if mood in ('cheer', 'alert') or prop == 'juggle' %}
+    {% set arms = ['M18 62 Q4 52 0 36', 'M102 62 Q116 52 120 36'] %}
+  {% elif prop == 'book' %}
+    {% set arms = ['M18 72 Q22 94 40 100', 'M102 72 Q98 94 80 100'] %}
+  {% elif prop == 'mug' %}
+    {% set arms = ['M18 70 Q4 76 2 88', 'M102 72 Q114 78 116 86'] %}
+  {% elif mood in ('think', 'sleep') %}
+    {% set arms = ['M18 70 Q4 76 2 88', 'M102 70 Q116 76 118 88'] %}
+  {% else %}
+    {% set arms = ['M18 70 Q4 76 2 88', 'M102 64 Q118 56 121 40'] %}
+  {% endif %}
+  {% for d in arms %}
+    <path class="armo-arm" d="{{ d }}" stroke="{{ line }}" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path class="armo-arm" d="{{ d }}" stroke="{{ limb }}" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+  {% endfor %}
+  <path d="M60 8 C80 8 97 14 105 20 C108.5 22.5 110 26 110 31 V58 C110 92 88 115 60 126 C32 115 10 92 10 58 V31 C10 26 11.5 22.5 15 20 C23 14 40 8 60 8 Z"
+        fill="url(#armoBody)" stroke="{{ line }}" stroke-width="3.5" stroke-linejoin="round"/>
+  <ellipse cx="38" cy="30" rx="15" ry="7" transform="rotate(-18 38 30)" fill="#FFFFFF" opacity=".3"/>
+  <ellipse cx="31" cy="78" rx="7.5" ry="4.5" fill="#FFD27A" opacity=".75"/>
+  <ellipse cx="89" cy="78" rx="7.5" ry="4.5" fill="#FFD27A" opacity=".75"/>
+  {% if mood == 'cheer' %}
+    <path d="M35 64 Q43 53 51 64" stroke="{{ face }}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M69 64 Q77 53 85 64" stroke="{{ face }}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M46 76 Q60 98 74 76 Z" fill="{{ face }}" stroke="{{ face }}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M52 86 Q60 80 68 86 Q60 93 52 86 Z" fill="#FF8A5C"/>
+  {% elif mood == 'sleep' %}
+    <path d="M36 63 Q44 69 52 63" stroke="{{ face }}" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M68 63 Q76 69 84 63" stroke="{{ face }}" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="60" cy="84" rx="4" ry="5" fill="{{ face }}"/>
+  {% elif mood == 'alert' %}
+    <path d="M33 47 Q42 41 51 45" stroke="{{ face }}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M69 45 Q78 41 87 47" stroke="{{ face }}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="44" cy="62" rx="8.5" ry="10" fill="{{ face }}"/><ellipse cx="76" cy="62" rx="8.5" ry="10" fill="{{ face }}"/>
+    <circle cx="47" cy="57.5" r="3.5" fill="#FFF"/><circle cx="79" cy="57.5" r="3.5" fill="#FFF"/>
+    <ellipse cx="60" cy="85" rx="7" ry="8" fill="{{ face }}"/>
+  {% elif mood == 'think' %}
+    <path d="M35 50 Q43 45 50 49" stroke="{{ face }}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="44" cy="63" rx="7" ry="8.5" fill="{{ face }}"/><ellipse cx="76" cy="63" rx="7" ry="8.5" fill="{{ face }}"/>
+    <circle cx="46.5" cy="58.5" r="3" fill="#FFF"/><circle cx="78.5" cy="58.5" r="3" fill="#FFF"/>
+    <path d="M52 82 Q61 86 69 79" stroke="{{ face }}" stroke-width="4" fill="none" stroke-linecap="round"/>
+  {% else %}
+    <ellipse cx="44" cy="63" rx="7.5" ry="9" fill="{{ face }}"/><ellipse cx="76" cy="63" rx="7.5" ry="9" fill="{{ face }}"/>
+    <circle cx="46.5" cy="59" r="3.2" fill="#FFF"/><circle cx="78.5" cy="59" r="3.2" fill="#FFF"/>
+    <circle cx="42" cy="67" r="1.5" fill="#FFF"/><circle cx="74" cy="67" r="1.5" fill="#FFF"/>
+    <path d="M48 78 Q60 92 72 78 Q60 83 48 78 Z" fill="{{ face }}" stroke="{{ face }}" stroke-width="2.5" stroke-linejoin="round"/>
+  {% endif %}
+  {% if accessory == 'sunglasses' %}
+    <path d="M29 54 H57 V62 Q57 73 46 73 H40 Q29 73 29 62 Z M63 54 H91 V62 Q91 73 80 73 H74 Q63 73 63 62 Z" fill="#141210" stroke="#141210" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M57 57 Q60 55 63 57" stroke="#141210" stroke-width="3" fill="none"/>
+    <path d="M34 58 L40 58 M68 58 L74 58" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="2.5" stroke-linecap="round"/>
+  {% elif accessory == 'flower' %}
+    <g transform="translate(94 18)">
+      <circle cx="0" cy="-7" r="5.5" fill="#FFF4E6"/><circle cx="6.7" cy="-2.2" r="5.5" fill="#FFF4E6"/><circle cx="4.1" cy="5.7" r="5.5" fill="#FFF4E6"/>
+      <circle cx="-4.1" cy="5.7" r="5.5" fill="#FFF4E6"/><circle cx="-6.7" cy="-2.2" r="5.5" fill="#FFF4E6"/><circle r="4.5" fill="#FFC24B"/>
+    </g>
+  {% elif accessory == 'partyhat' %}
+    <path d="M44 14 L66 -20 L80 12 Q62 18 44 14 Z" fill="#FFC24B" stroke="{{ line }}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M50 5 Q62 8 75 1 M56 -5 Q63 -3 70 -9" stroke="#E5261C" stroke-width="3" fill="none"/>
+    <circle cx="66" cy="-21" r="5" fill="#FFF4E6" stroke="{{ line }}" stroke-width="2"/>
+  {% elif accessory == 'nightcap' %}
+    <path d="M18 22 C24 -2 78 -16 102 4 C112 12 118 24 122 38 L104 20 Q62 6 18 22 Z" fill="#3B5B8C" stroke="#1F3557" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M17 23 Q60 6 104 20" stroke="#FFF4E6" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="123" cy="40" r="6.5" fill="#FFF4E6"/>
+  {% elif accessory == 'bowtie' %}
+    <path d="M47 99 L58 105 L47 111 Z M73 99 L62 105 L73 111 Z" fill="#1F1B18" stroke="{{ line }}" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="60" cy="105" r="3.5" fill="#1F1B18" stroke="{{ line }}" stroke-width="2"/>
+  {% endif %}
+  {% if prop == 'mug' %}
+    <g class="armo-mug">
+      <path d="M128 78 Q136 78 136 85 Q136 92 128 92" stroke="#FFF4E6" stroke-width="3" fill="none"/>
+      <rect x="110" y="74" width="19" height="22" rx="3" fill="#FFF4E6" stroke="{{ line }}" stroke-width="2"/>
+      <path d="M113 80 H126" stroke="#E5261C" stroke-width="3"/>
+      <path class="armo-steam" d="M115 68 Q112 63 115 58 Q118 53 115 48 M123 68 Q120 63 123 58 Q126 53 123 48" stroke="#ABA297" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </g>
+  {% elif prop == 'book' %}
+    <g class="armo-book">
+      <path d="M34 94 Q47 89 60 95 Q73 89 86 94 V114 Q73 109 60 115 Q47 109 34 114 Z" fill="#FFF4E6" stroke="{{ line }}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M60 95 V115 M40 98 Q47 96 54 99 M40 103 Q47 101 54 104 M66 99 Q73 96 80 98 M66 104 Q73 101 80 103" stroke="#C9BFB3" stroke-width="1.6" fill="none"/>
+    </g>
+  {% elif prop == 'juggle' %}
+    <circle class="armo-ball b1" cx="20" cy="2" r="7" fill="#FFC24B" stroke="{{ line }}" stroke-width="2"/>
+    <circle class="armo-ball b2" cx="34" cy="-14" r="7" fill="#4FD1A5" stroke="{{ line }}" stroke-width="2"/>
+    <circle class="armo-ball b3" cx="100" cy="2" r="7" fill="#F59234" stroke="{{ line }}" stroke-width="2"/>
+  {% elif prop == 'zzz' %}
+    <g class="armo-zzz" fill="#ABA297" font-family="system-ui, sans-serif" font-weight="800">
+      <text class="z1" x="100" y="14" font-size="14">z</text><text class="z2" x="111" y="0" font-size="18">z</text><text class="z3" x="124" y="-14" font-size="22">Z</text>
+    </g>
+  {% endif %}
 </svg>
 {%- endmacro %}
 

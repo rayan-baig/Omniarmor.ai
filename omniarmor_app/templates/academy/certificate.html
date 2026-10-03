@@ -6,9 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(summary.learner.armo, 'sweet') %}
 <div class="ac">
   <article class="ac-cert">
-    <div class="ac-cert-art">{{ armo(110, 'cheer') }}{{ avatar(summary.learner.avatar, avatars, 84) }}</div>
+    <div class="ac-cert-art">{{ armo(110, 'cheer', buddy.accessory) }}{{ avatar(summary.learner.avatar, avatars, 84) }}</div>
     <p class="ac-kicker">OmniArmor Future Owner Academy</p>
     <h1 class="ac-cert-title">Certificate of Achievement</h1>
     <p class="ac-cert-line">This certifies that</p>

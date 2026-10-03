@@ -161,6 +161,10 @@ MIGRATIONS = [
     CREATE INDEX duels_challenger ON duels (challenger_id);
     CREATE INDEX duels_opponent ON duels (opponent_id);
     """),
+    (4, """
+    ALTER TABLE users ADD COLUMN armo TEXT NOT NULL DEFAULT 'chief';
+    ALTER TABLE learners ADD COLUMN armo TEXT NOT NULL DEFAULT 'sweet';
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

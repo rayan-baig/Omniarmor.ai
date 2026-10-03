@@ -15,6 +15,10 @@
   <button class="btn quiet mt-s" type="submit">Save</button>
 </form>
 
+<h2>Armo</h2>
+<p class="row">{% if g.user.armo == 'off' %}Armo is hidden.{% else %}Armo's personality: {{ armo_personality(g.user.armo).name }}, {{ armo_personality(g.user.armo).tagline|lower }}.{% endif %}
+  <a href="{{ url_for('armo.page') }}">Change</a></p>
+
 {% if g.role == 'owner' %}
   <h2>Company</h2>
   <form method="post" action="{{ url_for('app.settings_company') }}">

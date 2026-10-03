@@ -6,14 +6,16 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac">
   <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
     {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
-    {{ armo(120, 'cheer' if passed else 'think') }}
+    {{ armo(120, 'cheer' if passed else 'think', buddy.accessory) }}
     <p class="ac-kicker">{{ world.title }} · stage {{ stage }}</p>
     <h1 class="ac-title">{% if earned_stars == 3 %}Perfect score!{% elif passed %}Stage complete!{% else %}So close! Try again{% endif %}</h1>
     <p class="ac-lead">{{ learner.nickname }} got {{ score }} of {{ total }} right.</p>
     <div class="ac-big-stars">{{ stars(earned_stars, 52) }}</div>
+    <p class="ac-armo-says">{{ buddy.name }} Armo: &ldquo;{{ buddy.win if passed else buddy.retry }}&rdquo;</p>
     {% if new_rank %}<p class="ac-unlock ac-rankup">Rank up! You're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!</p>{% endif %}
     {% if new_certificate %}
       <p class="ac-unlock">You earned the {{ new_certificate }} certificate!</p>

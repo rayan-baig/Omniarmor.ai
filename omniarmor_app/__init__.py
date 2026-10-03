@@ -10,7 +10,7 @@ import os
 from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, auth, views
+from . import academy_views, armo_views, auth, views
 from .catalog import INDUSTRIES, rules_for
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate
@@ -57,6 +57,11 @@ def sitemap():
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml += [f"<url><loc>{u}</loc></url>" for u in urls] + ["</urlset>"]
     return Response("\n".join(xml), mimetype="application/xml")
+
+
+@public.route("/favicon.ico")
+def favicon():
+    return redirect(url_for("static", filename="favicon.svg"), code=301)
 
 
 @public.route("/healthz")
@@ -111,6 +116,7 @@ def create_app(**overrides):
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(academy_views.bp)
+    app.register_blueprint(armo_views.bp)
     register_cli(app)
 
     @app.errorhandler(400)
@@ -119,11 +125,13 @@ def create_app(**overrides):
     @app.errorhandler(405)
     @app.errorhandler(413)
     @app.errorhandler(500)
+    @app.errorhandler(503)
     def error_page(err):
         code = getattr(err, "code", 500) or 500
         titles = {400: "That request didn't work", 403: "You don't have access to that",
                   404: "Page not found", 405: "That action isn't allowed here",
-                  413: "That upload is too large", 500: "Something went wrong on our side"}
+                  413: "That upload is too large", 500: "Something went wrong on our side",
+                  503: "That's unavailable for a moment"}
         description = getattr(err, "description", None) if code != 500 else None
         return render_template("error.html", code=code, title=titles.get(code, "Error"),
                                description=description), code

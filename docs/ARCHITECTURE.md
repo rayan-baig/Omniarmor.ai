@@ -56,6 +56,17 @@ SQLite database (one file on a persistent disk) + daily backups
 | `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
 | `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
 
+## Armo, the helper
+
+`armo.py` turns a company's current state into a short, prioritized list:
+blocked checks and overdue deadlines first, then warnings and failed emails,
+then upcoming deadlines and checks with no reading. The companion in
+`base.html` shows the count. `static/armo.js` asks `/app/armo/status` for
+changes every minute while the page is visible, and Armo jumps up when the
+list changes. A personality only changes Armo's words and outfit, never the
+facts. People pick one on the Armo page (`users.armo`; `off` hides him), and
+each Academy learner picks their own (`learners.armo`).
+
 ## The Future Owner Academy
 
 `academy.py` holds the course. Nothing about a level is stored: each quiz is

@@ -7,6 +7,7 @@
 {% if view.me is none %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac">
   <p class="ac-crumb"><a href="{{ url_for('academy.friends', learner_id=learner.id) }}">← Friends &amp; duels</a></p>
   <section class="ac-versus {{ view.status }}" aria-label="Scoreboard">
@@ -32,7 +33,7 @@
   {% else %}
     <section class="ac-result {{ 'win' if view.status == 'won' else '' }}" aria-live="polite">
       {% if view.status == 'won' %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
-      {{ armo(96, 'cheer' if view.status in ('won', 'tie') else ('think' if view.status == 'lost' else 'happy')) }}
+      {{ armo(96, 'cheer' if view.status in ('won', 'tie') else ('think' if view.status == 'lost' else 'happy'), buddy.accessory) }}
       <h1 class="ac-title">{% if view.status == 'won' %}You won the duel!{% elif view.status == 'lost' %}{{ view.other.nickname }} won this one{% elif view.status == 'tie' %}It's a tie!{% else %}Nice! Your score is in{% endif %}</h1>
       <p class="ac-lead">{% if view.status == 'waiting' %}You got {{ view.me }} of {{ total }}. Now it's {{ view.other.nickname }}'s turn. Check back later!{% elif view.status == 'lost' %}Good effort. Champions lose sometimes. They learn and come back stronger.{% elif view.status == 'won' %}Great job! Be a good sport: winners stay humble.{% else %}Great minds think alike.{% endif %}</p>
       <div class="ac-actions">

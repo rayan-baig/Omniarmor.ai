@@ -51,6 +51,17 @@
         {% endfor %}
       </div>
     </fieldset>
+    <fieldset class="plain">
+      <legend class="plain">Pick an Armo buddy</legend>
+      <div class="ac-armo-picks">
+        {% for p in armo_personalities.values() %}
+          <label class="ac-armo-pick">
+            <input type="radio" name="armo" value="{{ p.key }}" {% if p.key == 'sweet' %}checked{% endif %}>
+            {{ armo(72, 'happy', p.accessory) }}<strong>{{ p.name }}</strong><span>{{ p.tagline }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
     <button class="btn ac-btn" type="submit">Start learning</button>
     <p class="hint mt-s">For grown-ups: kids learn inside your account and don't need their own email or password. We only save the nickname and picture you choose, plus their progress.</p>
   </form>

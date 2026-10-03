@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import academy
+from . import academy, armo
 from .catalog import INDUSTRIES
 from .db import get_db, iso, now_iso, utcnow
 from .security import clean_text, client_ip, flash_error, login_required, rate_limited, record_event
@@ -83,22 +83,40 @@ def add_learner():
     conn = get_db()
     nickname = clean_text(request.form.get("nickname"), 30)
     avatar = request.form.get("avatar", "")
+    buddy = request.form.get("armo", armo.DEFAULT_KID)
     count = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (g.org["id"],)).fetchone()[0]
     if nickname is None:
         flash_error("Pick a nickname up to 30 characters.")
     elif avatar not in academy.AVATARS:
         flash_error("Pick a picture.")
+    elif buddy not in armo.PERSONALITIES:
+        flash_error("Pick an Armo for your learner.")
     elif count >= academy.MAX_LEARNERS:
         flash_error(f"A workspace can have up to {academy.MAX_LEARNERS} learners.")
     else:
         learner_id = conn.execute(
-            "INSERT INTO learners (org_id, nickname, avatar, created_by, created_at) VALUES (?, ?, ?, ?, ?)",
-            (g.org["id"], nickname, avatar, g.user["id"], now_iso()),
+            "INSERT INTO learners (org_id, nickname, avatar, armo, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (g.org["id"], nickname, avatar, buddy, g.user["id"], now_iso()),
         ).lastrowid
         conn.commit()
         flash(f"Welcome to the Academy, {nickname}!", "ok")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
     return redirect(url_for("academy.home"))
+
+
+@bp.route("/<int:learner_id>/armo", methods=["POST"])
+@login_required
+def change_armo(learner_id):
+    learner = _learner_or_404(learner_id)
+    buddy = request.form.get("armo", "")
+    if buddy not in armo.PERSONALITIES:
+        flash_error("Pick one of Armo's personalities.")
+    else:
+        conn = get_db()
+        conn.execute("UPDATE learners SET armo = ? WHERE id = ?", (buddy, learner_id))
+        conn.commit()
+        flash(f"{learner['nickname']} is now learning with {armo.PERSONALITIES[buddy].name} Armo!", "ok")
+    return redirect(url_for("academy.level_map", learner_id=learner_id))
 
 
 @bp.route("/<int:learner_id>/delete", methods=["POST"])

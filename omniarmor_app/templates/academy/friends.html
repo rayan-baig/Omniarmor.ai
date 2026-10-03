@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac">
   <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
   <section class="ac-player">
@@ -65,7 +66,7 @@
       {% endfor %}
     </ol>
   {% else %}
-    <div class="ac-speech">{{ armo(64, 'think') }}<p>No friends yet. Ask a grown-up to swap friend codes with a friend's family.</p></div>
+    <div class="ac-speech">{{ armo(64, 'think', buddy.accessory) }}<p>No friends yet. Ask a grown-up to swap friend codes with a friend's family.</p></div>
   {% endif %}
 
   <section class="ac-card ac-grownups">

@@ -1,6 +1,7 @@
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 {# The quiz form, shared by levels and duels. Needs questions; needed and attempt are optional. #}
 {% from "academy/_art.html" import armo %}
-  <form class="ac-quiz" id="quiz" method="post" data-quiz>
+  <form class="ac-quiz" id="quiz" method="post" data-quiz data-voice='{{ armo_voice(learner.armo)|tojson }}'>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% if attempt %}<input type="hidden" name="attempt" value="{{ attempt }}">{% endif %}
     <div class="ac-quiz-head">
@@ -8,7 +9,7 @@
       <p class="muted ac-count"><span data-count>{{ questions|length }} questions</span>{% if needed %} · get {{ needed }} right to pass{% endif %}</p>
     </div>
     <div class="ac-hud" data-hud hidden>
-      <span class="ac-hud-armo" data-armo>{{ armo(52, 'happy') }}</span>
+      <span class="ac-hud-armo" data-armo>{{ armo(52, 'happy', buddy.accessory) }}</span>
       <div class="ac-hud-main">
         <div class="ac-meter ac-meter-big"><span class="ac-meter-fill" data-progress></span></div>
         <p class="ac-hud-line"><span data-right>0</span> right · streak <span data-streak>0</span></p>
@@ -33,6 +34,6 @@
     <button class="btn ac-btn ac-submit" type="submit">Check my answers</button>
   </form>
   {# Armo's other faces, swapped in by academy.js as answers come in. #}
-  <template id="armo-cheer">{{ armo(52, 'cheer') }}</template>
-  <template id="armo-think">{{ armo(52, 'think') }}</template>
-  <template id="armo-happy">{{ armo(52, 'happy') }}</template>
+  <template id="armo-cheer">{{ armo(52, 'cheer', buddy.accessory) }}</template>
+  <template id="armo-think">{{ armo(52, 'think', buddy.accessory) }}</template>
+  <template id="armo-happy">{{ armo(52, 'happy', buddy.accessory) }}</template>

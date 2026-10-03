@@ -7,6 +7,7 @@
 <script src="{{ url_for('static', filename='academy.js') }}" defer></script>
 {% endblock %}
 {% block content %}
+{% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac">
   <p class="ac-crumb"><a href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">← {{ world.title }}</a></p>
   <header class="ac-level-head">
@@ -20,7 +21,7 @@
   <section class="ac-story" aria-label="Lesson" data-story>
     {% for title, text in cards %}
       <article class="ac-story-card" data-card>
-        {{ armo(72, 'happy' if loop.index is odd else 'think') }}
+        {{ armo(72, 'happy' if loop.index is odd else 'think', buddy.accessory) }}
         <div class="ac-bubble">
           <h2>{{ title }}</h2>
           <p>{{ text }}</p>
