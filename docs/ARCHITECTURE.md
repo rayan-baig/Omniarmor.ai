@@ -53,6 +53,23 @@ SQLite database (one file on a persistent disk) + daily backups
 | `invites`, `password_resets` | One-time links, stored only as hashes |
 | `login_failures` | Recent failed sign-ins, for rate limiting |
 | `job_runs` | One row per day of the daily job, so it runs once |
+| `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
+| `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
+
+## The Future Owner Academy
+
+`academy.py` holds the course. Nothing about a level is stored: each quiz is
+generated from a seed (learner, world, stage and attempt number), so the server
+can rebuild the exact questions when grading, and a new attempt gets new
+questions. There are 16 topic worlds of 50 stages, the Owner's Challenge, and a
+Rule Quest for each industry built from that industry's real rules: 1,350
+levels. A level is stored as `world * 1000 + stage`.
+
+Friends come from different companies, so duels never use a company's name or
+rules. They draw only from the general business worlds, and both players get
+the same seed. Parents add friends with a single-use code that expires after
+7 days, and guessing codes is rate limited. Friends see only a nickname,
+picture, rank and stars.
 
 ## Rules of the road
 

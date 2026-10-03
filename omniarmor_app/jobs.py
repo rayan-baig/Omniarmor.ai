@@ -72,6 +72,7 @@ def cleanup(conn):
     conn.execute("DELETE FROM login_failures WHERE at < ?", (cutoff,))
     conn.execute("DELETE FROM password_resets WHERE expires_at < ? OR used_at IS NOT NULL", (cutoff,))
     conn.execute("DELETE FROM invites WHERE expires_at < ?", (iso(utcnow() - timedelta(days=30)),))
+    conn.execute("DELETE FROM friend_codes WHERE expires_at < ?", (iso(utcnow()),))
     conn.commit()
 
 

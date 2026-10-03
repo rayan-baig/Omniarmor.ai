@@ -89,6 +89,24 @@ def create_app(**overrides):
     app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
 
+    # Browsers keep CSS, JS and images for a year, so repeat visits cost no
+    # bandwidth. Each link carries the file's change time, so a deploy that
+    # changes a file gives it a new address and browsers fetch the new one.
+    if app.config.get("SEND_FILE_MAX_AGE_DEFAULT") is None:
+        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 365 * 24 * 3600
+    static_versions = {}
+
+    @app.url_defaults
+    def static_version(endpoint, values):
+        if endpoint == "static" and "filename" in values and "v" not in values:
+            name = values["filename"]
+            if name not in static_versions:
+                try:
+                    static_versions[name] = int(os.path.getmtime(os.path.join(app.static_folder, name)))
+                except OSError:
+                    static_versions[name] = 0
+            values["v"] = static_versions[name]
+
     app.register_blueprint(public)
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)

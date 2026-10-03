@@ -75,6 +75,15 @@ class TestPublicPages(AppTestCase):
                      "/forgot", "/robots.txt", "/sitemap.xml"]:
             self.assertEqual(self.client.get(path).status_code, 200, path)
 
+    def test_static_files_are_cached_and_versioned(self):
+        page = self.client.get("/login").data.decode()
+        match = re.search(r'href="(/static/app\.css\?v=\d+)"', page)
+        self.assertIsNotNone(match)
+        response = self.client.get(match.group(1))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
+        response.close()
+
     def test_slogan_and_every_industry_page(self):
         self.assertIn(b"before it catches you", self.client.get("/").data)
         sitemap = self.client.get("/sitemap.xml").data.decode()

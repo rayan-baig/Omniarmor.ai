@@ -1,0 +1,5 @@
+# Caddy serves OmniArmor over HTTPS with a free, auto-renewing certificate.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8000
+}

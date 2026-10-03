@@ -11,6 +11,10 @@ New > Blueprint and pick the repo. `render.yaml` creates the web service, a
 persistent disk for the database, and a random `SECRET_KEY`. Set `BASE_URL`
 to your public address.
 
+**Cheapest (one small server, even a free-tier VM):** set `SECRET_KEY`,
+`BASE_URL` and `DOMAIN` in `.env`, point your domain at the server, and run
+`docker compose up -d`. Caddy adds free HTTPS. See [COSTS.md](COSTS.md).
+
 **Any server with Docker:**
 
 ```sh
