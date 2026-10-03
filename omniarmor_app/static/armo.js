@@ -17,7 +17,8 @@
   var count = root.querySelector("[data-count]");
 
   var lines = {
-    idle: parse("data-idle"), alert: parse("data-alert"), clear: parse("data-clear"), acts: parse("data-acts")
+    idle: parse("data-idle"), alert: parse("data-alert"), clear: parse("data-clear"), acts: parse("data-acts"),
+    fixed: parse("data-fixed"), poke: parse("data-poke")
   };
   var state = {
     needs: parseInt(root.getAttribute("data-needs"), 10) || 0,
@@ -114,7 +115,8 @@
     if (!bubble.hidden) { hide(); return; }
     if (state.needs) { soundTheAlarm(); return; }
     jump();
-    say(pick(Math.random() < 0.5 ? lines.clear : lines.idle));
+    var roll = Math.random();
+    say(pick(roll < 0.45 ? lines.poke : roll < 0.7 ? lines.clear : lines.idle));
   });
   close.addEventListener("click", function () {
     if (alerting) store("armo-dismissed", state.signature);
@@ -166,7 +168,7 @@
           alerting = false;
           pose("cheer");
           jump();
-          say(pick(lines.clear));
+          say(pick(lines.fixed.length ? lines.fixed : lines.clear));
           restTimer = setTimeout(function () { pose("idle"); }, 6000);
         }
       })

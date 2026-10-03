@@ -15,7 +15,7 @@ From then on OmniArmor:
 - **Restarts recurring duties:** pressing Done today starts the next cycle.
 - **Keeps the record:** every change is in the audit trail with who and when. Printable reports and CSV exports are ready for inspectors.
 - **Backs itself up:** daily database backups, with old copies pruned.
-- **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick his personality (Chief, Sweetie, Jokester, Snark, Grumpy or Sleepy) or hide him.
+- **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
 - **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in 1,350 game-style levels. It covers their company and its rules, business words, speaking professionally, money, leadership, hiring, tough calls, winning customers fairly and never giving up. Friends from other subscribing families can be added by a parent, and kids can then duel on the same questions.
 
 Every check answers **Cleared**, **Warning** or **Blocked** and names the rule

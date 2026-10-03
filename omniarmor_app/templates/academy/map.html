@@ -49,7 +49,7 @@
   {% if up_next %}
     <div class="ac-speech">
       {{ armo(64, 'happy', buddy.accessory) }}
-      <p>{{ buddy.hello }} Up next: <strong>{{ up_next.world.title }}, stage {{ up_next.next }}</strong>. You've got this!
+      <p>{{ buddy.hello|random }} Up next: <strong>{{ up_next.world.title }}, stage {{ up_next.next }}</strong>. You've got this!
         <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=lid, world_number=up_next.world.number, stage=up_next.next) }}">Continue</a></p>
     </div>
   {% endif %}

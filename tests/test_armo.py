@@ -14,12 +14,28 @@ class TestPersonalities(unittest.TestCase):
         self.assertIn(armo.DEFAULT_ADULT, armo.PERSONALITIES)
         self.assertIn(armo.DEFAULT_KID, armo.PERSONALITIES)
         self.assertNotIn(armo.HIDDEN, armo.PERSONALITIES)
+        self.assertGreaterEqual(len(armo.PERSONALITIES), 14)
+        self.assertEqual(len({p.name for p in armo.PERSONALITIES.values()}), len(armo.PERSONALITIES))
         for p in armo.PERSONALITIES.values():
-            self.assertGreaterEqual(len(p.idle), 6, p.key)
-            self.assertTrue(p.clear and p.cheers and p.oops and p.win and p.retry and p.hello and p.fix, p.key)
+            self.assertGreaterEqual(len(p.idle), 20, p.key)
+            for lines in (p.alert, p.clear, p.fixed, p.poke, p.cheers):
+                self.assertGreaterEqual(len(lines), 5, p.key)
+            for lines in (p.hello, p.oops, p.win, p.retry):
+                self.assertGreaterEqual(len(lines), 3, p.key)
             self.assertTrue(all("{title}" in line for line in p.alert), p.key)
             self.assertEqual(set(p.streaks), {3, 5, 8}, p.key)
             self.assertTrue(set(p.activities) <= {"mug", "book", "juggle", "zzz", "wave"}, p.key)
+            everything = p.idle + p.alert + p.clear + p.fixed + p.poke + p.hello + p.cheers + p.oops + p.win + p.retry
+            self.assertEqual(len(set(everything)), len(everything), f"{p.key} repeats a line")
+            self.assertTrue(all(line.strip() == line and line for line in everything), p.key)
+
+    def test_every_outfit_is_drawn(self):
+        from jinja2 import Environment, FileSystemLoader
+        env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(os.path.dirname(__file__)), "omniarmor_app", "templates")))
+        art = env.get_template("academy/_art.html").module
+        plain = str(art.armo(96, "happy", "none"))
+        for p in armo.PERSONALITIES.values():
+            self.assertNotEqual(str(art.armo(96, "happy", p.accessory)), plain, f"{p.key}'s {p.accessory} isn't drawn")
 
     def test_unknown_personality_falls_back(self):
         self.assertEqual(armo.personality("nope").key, armo.DEFAULT_ADULT)
@@ -71,6 +87,14 @@ class TestCompanion(AppTestCase):
         status = self.client.get("/app/armo/status").get_json()
         self.assertEqual(status["needs"], 1)
         self.assertIn("failed to send", status["top"]["title"])
+
+    def test_armo_page_offers_every_personality(self):
+        page = self.client.get("/app/armo").data.decode()
+        for p in armo.PERSONALITIES.values():
+            self.assertIn(f'value="{p.key}"', page)
+        companion = self.client.get("/app").data.decode()
+        for attr in ("data-idle=", "data-alert=", "data-clear=", "data-fixed=", "data-poke="):
+            self.assertIn(attr, companion)
 
     def test_pick_and_hide_personality(self):
         self.assertIn("Chief", self.client.get("/app/settings").data.decode())

@@ -7,7 +7,7 @@
   <div>
     <p class="eyebrow">{{ me.name }} Armo · {{ g.org.name }}</p>
     <h1>{% if state.needs %}{{ state.needs }} thing{{ 's' if state.needs != 1 }} need{{ 's' if state.needs == 1 }} you{% else %}All clear{% endif %}</h1>
-    <p class="muted lede">{% if state.needs %}{{ me.alert[0].replace('{title}', state.top.title) }}{% else %}{{ me.clear[0] }}{% endif %}</p>
+    <p class="muted lede">{% if state.needs %}{{ (me.alert|random).replace('{title}', state.top.title) }}{% else %}{{ me.clear|random }}{% endif %}</p>
   </div>
 </section>
 
@@ -39,7 +39,7 @@
         {{ armo_art(96, 'happy', p.accessory, p.activities[0] if p.activities[0] != 'wave' else 'none') }}
         <strong>{{ p.name }}</strong>
         <span class="armo-tagline">{{ p.tagline }}</span>
-        <q>{{ p.idle[0] }}</q>
+        <q>{{ p.idle|random }}</q>
       </label>
     {% endfor %}
     <label class="armo-pick">

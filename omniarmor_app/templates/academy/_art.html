@@ -80,6 +80,45 @@
     <path d="M18 22 C24 -2 78 -16 102 4 C112 12 118 24 122 38 L104 20 Q62 6 18 22 Z" fill="#3B5B8C" stroke="#1F3557" stroke-width="2.5" stroke-linejoin="round"/>
     <path d="M17 23 Q60 6 104 20" stroke="#FFF4E6" stroke-width="7" fill="none" stroke-linecap="round"/>
     <circle cx="123" cy="40" r="6.5" fill="#FFF4E6"/>
+  {% elif accessory == 'glasses' %}
+    <g fill="#FFFFFF" fill-opacity=".14" stroke="{{ face }}" stroke-width="3">
+      <circle cx="44" cy="63" r="12.5"/><circle cx="76" cy="63" r="12.5"/>
+    </g>
+    <path d="M56.5 61 Q60 57.5 63.5 61" stroke="{{ face }}" stroke-width="3" fill="none" stroke-linecap="round"/>
+  {% elif accessory == 'headband' %}
+    <path d="M12.5 40 Q60 28 107.5 40" stroke="{{ line }}" stroke-width="12" fill="none"/>
+    <path d="M12.5 40 Q60 28 107.5 40" stroke="#FFF4E6" stroke-width="8" fill="none"/>
+    <path d="M12.5 40 Q60 28 107.5 40" stroke="#E5261C" stroke-width="2.5" fill="none"/>
+  {% elif accessory == 'pirate' %}
+    <path d="M13 30 C18 6 102 6 107 30 Q60 16 13 30 Z" fill="#1F1B18" stroke="#0F0E0D" stroke-width="2.5" stroke-linejoin="round"/>
+    <g fill="#FFF4E6"><circle cx="40" cy="17" r="2.2"/><circle cx="60" cy="13" r="2.2"/><circle cx="80" cy="17" r="2.2"/><circle cx="50" cy="22" r="1.8"/><circle cx="70" cy="22" r="1.8"/></g>
+    <path d="M105 26 L121 20 L117 32 Z M105 28 L119 38 L109 39 Z" fill="#1F1B18" stroke="#0F0E0D" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M12 47 L66 57 M86 61 L108 52" stroke="#141210" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="76" cy="63" rx="10.5" ry="11.5" fill="#141210"/>
+  {% elif accessory == 'crown' %}
+    <path d="M36 14 L38 -10 L50 2 L60 -16 L70 2 L82 -10 L84 14 Z" fill="#FFC24B" stroke="#B9791A" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="60" cy="5" r="3.5" fill="#E5261C"/><circle cx="46" cy="8" r="2.5" fill="#4FD1A5"/><circle cx="74" cy="8" r="2.5" fill="#5AB0F0"/>
+    <circle cx="38" cy="-11" r="3" fill="#FFF4E6"/><circle cx="60" cy="-17" r="3" fill="#FFF4E6"/><circle cx="82" cy="-11" r="3" fill="#FFF4E6"/>
+  {% elif accessory == 'antenna' %}
+    <path d="M60 9 V-8" stroke="#ABA297" stroke-width="3.5" stroke-linecap="round"/>
+    <circle class="armo-blink" cx="60" cy="-13" r="6.5" fill="#4FD1A5" stroke="#2F9E6E" stroke-width="2"/>
+    <rect x="15" y="50" width="6" height="14" rx="2" fill="#ABA297"/><rect x="99" y="50" width="6" height="14" rx="2" fill="#ABA297"/>
+    <path d="M52 100 H68 M52 106 H68" stroke="{{ face }}" stroke-width="2" stroke-opacity=".35" stroke-linecap="round"/>
+  {% elif accessory == 'chefhat' %}
+    <circle cx="43" cy="-2" r="12" fill="#FFF4E6" stroke="#C9BFB3" stroke-width="2"/>
+    <circle cx="77" cy="-2" r="12" fill="#FFF4E6" stroke="#C9BFB3" stroke-width="2"/>
+    <circle cx="60" cy="-10" r="14" fill="#FFF4E6" stroke="#C9BFB3" stroke-width="2"/>
+    <rect x="38" y="0" width="44" height="16" rx="4" fill="#FFF4E6" stroke="#C9BFB3" stroke-width="2"/>
+    <path d="M50 4 V12 M60 4 V12 M70 4 V12" stroke="#E6DDD2" stroke-width="2" stroke-linecap="round"/>
+  {% elif accessory == 'detective' %}
+    <path d="M30 18 C32 -6 88 -6 90 18 Z" fill="#8A5A35" stroke="#4A2E18" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M32 11 H88" stroke="#3A2412" stroke-width="5"/>
+    <path d="M20 18 H100 Q103 25 95 25 H25 Q17 25 20 18 Z" fill="#6B4226" stroke="#4A2E18" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M44 2 L50 8 M76 2 L70 8" stroke="#A8784F" stroke-width="2" stroke-linecap="round"/>
+  {% elif accessory == 'sprout' %}
+    <path d="M60 9 Q58 -2 60 -12" stroke="#2F9E6E" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M60 -6 Q48 -20 38 -9 Q50 -1 60 -6 Z" fill="#4FD1A5" stroke="#2F9E6E" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M60 -10 Q72 -24 82 -13 Q70 -5 60 -10 Z" fill="#4FD1A5" stroke="#2F9E6E" stroke-width="2" stroke-linejoin="round"/>
   {% elif accessory == 'bowtie' %}
     <path d="M47 99 L58 105 L47 111 Z M73 99 L62 105 L73 111 Z" fill="#1F1B18" stroke="{{ line }}" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="60" cy="105" r="3.5" fill="#1F1B18" stroke="{{ line }}" stroke-width="2"/>

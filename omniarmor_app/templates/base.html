@@ -69,6 +69,7 @@
   data-status="{{ url_for('armo.status') }}" data-needs="{{ state.needs }}" data-signature="{{ state.signature }}"
   data-top-title="{{ state.top.title if state.top else '' }}" data-top-url="{{ state.top.url if state.top else '' }}"
   data-idle='{{ buddy.idle|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ buddy.clear|tojson }}'
+  data-fixed='{{ buddy.fixed|tojson }}' data-poke='{{ buddy.poke|tojson }}'
   data-acts='{{ buddy.activities|tojson }}' data-fix="{{ buddy.fix }}">
   <div class="companion-bubble" data-bubble hidden>
     <p class="companion-text" data-bubble-text aria-live="polite"></p>

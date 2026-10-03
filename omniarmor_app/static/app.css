@@ -217,12 +217,14 @@ body.has-tabs:has(> .companion){padding-bottom:calc(160px + env(safe-area-inset-
 .armo-zzz text{animation:armo-zzz 3s ease-in infinite}
 .armo-zzz .z2{animation-delay:1s}.armo-zzz .z3{animation-delay:2s}
 .armo-cloud{animation:armo-cloud 3s ease-in-out infinite}
+.armo-blink{animation:armo-blink 1.6s ease-in-out infinite}
 @keyframes armo-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,.98)}}
 @keyframes armo-jump{0%{transform:translateY(0) scale(1.08,.9)}35%{transform:translateY(-34px) scale(.95,1.06)}70%{transform:translateY(0) scale(1.06,.94)}100%{transform:none}}
 @keyframes armo-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-18deg)}}
 @keyframes armo-steam{0%,100%{opacity:.2;transform:translateY(2px)}50%{opacity:.9;transform:translateY(-3px)}}
 @keyframes armo-juggle{0%,100%{transform:translateY(6px)}50%{transform:translateY(-10px)}}
 @keyframes armo-zzz{0%{opacity:0;transform:translate(0,6px)}30%{opacity:1}100%{opacity:0;transform:translate(6px,-10px)}}
+@keyframes armo-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes armo-cloud{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
 @keyframes bubble-pop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
 @media (max-width:560px){.companion-armo svg{width:72px;height:72px}.companion-bubble{margin-right:10px}}
