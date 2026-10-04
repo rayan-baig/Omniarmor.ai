@@ -13,7 +13,7 @@ original worlds. tests/test_academy_bank.py checks every entry.
 
 import importlib
 
-UNIT_MODULES = ["money", "growth", "operations", "mindset", "trust", "bigpicture"]
+UNIT_MODULES = ["money", "growth", "operations", "mindset", "trust", "bigpicture", "champion"]
 
 
 def load_worlds():

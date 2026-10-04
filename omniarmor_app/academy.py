@@ -5,9 +5,9 @@ the family company.
 Four tracks, each with its own progress:
     Launchpad (Basic)          1,350 levels: 16 core worlds x 50 stages, the
                                Owner's Challenge (50) and 50 industry Rule Quests x 10.
-    Trailblazer (Intermediate) 2,600 levels: all 41 worlds x 50, plus the same.
-    Summit (Advanced)          5,200 levels: 41 x 100, Challenge 100, Rule Quests x 20.
-    Titan Mastery              15,100 levels: 41 x 300, Challenge 300, Rule Quests x 50.
+    Trailblazer (Intermediate) 2,700 levels: all 43 worlds x 50, plus the same.
+    Summit (Advanced)          5,400 levels: 43 x 100, Challenge 100, Rule Quests x 20.
+    Titan Mastery              15,700 levels: 43 x 300, Challenge 300, Rule Quests x 50.
 
 Stage 1 of a world teaches the lesson; later stages add questions, harder
 questions, a higher pass mark and review from other worlds, and every tenth
@@ -416,7 +416,7 @@ class World:
 UNITS = [
     ("foundations", "Foundations"), ("leadership", "Leadership"), ("money", "Money and Finance"),
     ("growth", "Growth"), ("operations", "Operations"), ("mindset", "Mindset"),
-    ("trust", "Rules and Trust"), ("bigpicture", "The Big Picture"),
+    ("trust", "Rules and Trust"), ("bigpicture", "The Big Picture"), ("champion", "Winning Mindset"),
 ]
 UNIT_NAMES = dict(UNITS)
 

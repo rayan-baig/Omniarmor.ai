@@ -83,9 +83,9 @@ Four tracks share the worlds but keep separate progress, stored as
 | Track | Worlds x stages | Owner's Challenge | Rule Quests | Levels |
 |---|---|---|---|---|
 | Launchpad (Basic) | 16 x 50 | 50 | 50 x 10 | 1,350 |
-| Trailblazer (Intermediate) | 41 x 50 | 50 | 50 x 10 | 2,600 |
-| Summit (Advanced) | 41 x 100 | 100 | 50 x 20 | 5,200 |
-| Titan Mastery | 41 x 300 | 300 | 50 x 50 | 15,100 |
+| Trailblazer (Intermediate) | 43 x 50 | 50 | 50 x 10 | 2,700 |
+| Summit (Advanced) | 43 x 100 | 100 | 50 x 20 | 5,400 |
+| Titan Mastery | 43 x 300 | 300 | 50 x 50 | 15,700 |
 
 Deeper stages ask more questions, draw harder ones from the banks, raise the
 pass mark and mix in review from earlier worlds; every tenth stage is a boss
