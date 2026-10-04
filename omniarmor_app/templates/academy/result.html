@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, avatar, stars %}
+{% from "academy/_art.html" import armo, avatar, hue, stars %}
 {% block title %}{{ world.title }}, stage {{ stage }} results{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -7,7 +7,7 @@
 {% endblock %}
 {% block content %}
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
-<div class="ac">
+<div class="ac {{ hue(world) }}">
   <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
     {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
     {{ armo(120, 'cheer' if passed else 'think', buddy.accessory) }}

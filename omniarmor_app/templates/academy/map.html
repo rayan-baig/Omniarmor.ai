@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, avatar, emblem, level_icon, star %}
+{% from "academy/_art.html" import armo, avatar, emblem, hue, level_icon, star, sticker %}
 {% block title %}{{ summary.learner.nickname }}'s adventure{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -9,11 +9,11 @@
 {% set w = card.world %}
 {% set state = 'paid' if card.paid else ('done' if card.done == card.stages else ('open' if card.open else 'locked')) %}
 {% set clickable = card.open and not card.paid %}
-<li class="ac-world {{ state }}{{ ' started' if card.done and card.done < card.stages else '' }}">
+<li class="ac-world {{ state }} {{ hue(w) }}{{ ' started' if card.done and card.done < card.stages else '' }}">
   {% if clickable %}<a href="{{ url_for('academy.world_page', learner_id=learner_id, world_number=w.number) }}">
   {% elif card.paid and not g.kid %}<a href="{{ url_for('academy.plan_page') }}">
   {% else %}<span aria-disabled="true">{% endif %}
-    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}</span>
+    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}{{ sticker(state) }}</span>
     <span class="ac-world-text">
       <span class="ac-world-num">{% if w.kind == 'topic' %}World {{ number }}{% elif w.kind == 'final' %}Boss world{% else %}Rule Quest{% endif %}{% if card.paid %} · Academy plan{% elif not card.open %} · locked{% endif %}</span>
       <span class="ac-world-title">{{ w.title }}</span>
@@ -75,7 +75,16 @@
 
   {% set ns = namespace(n=0) %}
   {% for unit in units %}
-    <h2 class="ac-h2 ac-unit">{{ unit.name }} <span class="muted ac-unit-meta">{{ unit.done }}/{{ "{:,}".format(unit.stages) }}</span></h2>
+    <header class="ac-unit-head u-{{ unit.key }}">
+      <span class="ac-unit-art" aria-hidden="true">{% for c in unit.cards[:3] %}<span class="ac-mini">{{ level_icon(c.world.icon, [24, 19, 16][loop.index0]) }}</span>{% endfor %}</span>
+      <div class="ac-unit-info">
+        <h2 class="ac-h2 ac-unit">{{ unit.name }}</h2>
+        <div class="ac-unit-line">
+          <span class="ac-meter" role="img" aria-label="{{ unit.done }} of {{ unit.stages }} stages done"><span class="ac-meter-fill" style="width: {{ [100 * unit.done / unit.stages, 2 if unit.done else 0]|max|round(1) }}%"></span></span>
+          <span class="muted ac-unit-meta">{{ unit.done }}/{{ "{:,}".format(unit.stages) }} stages</span>
+        </div>
+      </div>
+    </header>
     <ol class="ac-worlds">
       {% for card in unit.cards %}{% set ns.n = ns.n + 1 %}{{ world_card(card, lid, ns.n) }}{% endfor %}
     </ol>

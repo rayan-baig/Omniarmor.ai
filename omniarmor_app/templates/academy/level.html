@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, level_icon %}
+{% from "academy/_art.html" import armo, hue, level_icon %}
 {% block title %}{{ world.title }}, stage {{ stage }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -8,7 +8,7 @@
 {% endblock %}
 {% block content %}
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
-<div class="ac">
+<div class="ac {{ hue(world) }}">
   <p class="ac-crumb"><a href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">← {{ world.title }}</a></p>
   <header class="ac-level-head">
     <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
@@ -21,12 +21,13 @@
   <section class="ac-story" aria-label="Lesson" data-story>
     {% for title, text in cards %}
       <article class="ac-story-card" data-card>
-        {{ armo(72, 'happy' if loop.index is odd else 'think', buddy.accessory) }}
+        <span class="ac-story-buddy">{{ armo(72, 'happy' if loop.index is odd else 'think', buddy.accessory) }}</span>
         <div class="ac-bubble">
           <h2>{{ title }}</h2>
           <p>{{ text }}</p>
         </div>
-        {% if loop.length > 1 %}<p class="ac-step">{{ loop.index }} / {{ loop.length }}</p>{% endif %}
+        {% set card_no, card_count = loop.index, loop.length %}
+        {% if card_count > 1 %}<p class="ac-step" aria-label="Card {{ card_no }} of {{ card_count }}">{% for i in range(card_count) %}<i{% if i < card_no %} class="on"{% endif %}></i>{% endfor %}</p>{% endif %}
       </article>
     {% endfor %}
   </section>

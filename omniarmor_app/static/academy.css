@@ -306,6 +306,90 @@
 .ac-cert-rank{font-family:var(--kid);font-weight:800;font-size:clamp(24px,4vw,32px);margin:6px 0 16px;background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ac-cert-meta{margin:0;color:var(--faint);font-size:15px}
 
+/* Unit colors. Each part of the Academy has its own color family so kids can
+   tell worlds apart at a glance. Color lives only on badges, meters and small
+   accents; card surfaces, type and spacing stay the same calm dark theme. */
+.ac{--u1:#E5261C;--u2:#F59234;--glyph:#14110F}
+.u-foundations{--u1:#3D8BFF;--u2:#86CCFF}
+.u-leadership{--u1:#8A63FF;--u2:#C99BFF}
+.u-money{--u1:#1FAE66;--u2:#8FE29A}
+.u-growth{--u1:#FF4F86;--u2:#FFA382}
+.u-operations{--u1:#EE9310;--u2:#FFD45E}
+.u-mindset{--u1:#10A597;--u2:#6DE0CF}
+.u-trust{--u1:#5662FF;--u2:#9EAAFF}
+.u-bigpicture{--u1:#178FD0;--u2:#66D6C6}
+.u-champion{--u1:#FF7A1F;--u2:#FFD04A}
+.u-final{--u1:#F2A516;--u2:#FFE27A}
+.u-industry{--u1:#E5261C;--u2:#F59234}
+
+/* Sticker badges: a rounded square in the unit's colors with a dark glyph. */
+.ac-world-badge,.ac-world.open .ac-world-badge,.ac-world.done .ac-world-badge,.ac-level-badge{position:relative;border:0;border-radius:30%;
+  color:var(--glyph);background:linear-gradient(145deg,var(--u2),var(--u1));
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -4px 0 rgba(0,0,0,.16),0 10px 20px -12px var(--u1)}
+.ac-world-badge{width:60px;height:60px}
+.ac-level-badge{width:80px;height:80px}
+.ac-world.locked .ac-world-badge,.ac-world.paid .ac-world-badge{filter:saturate(.15) brightness(.7)}
+.ac-world.started .ac-world-badge{animation:upulse 1.8s ease-in-out infinite}
+@keyframes upulse{
+  0%,100%{box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -4px 0 rgba(0,0,0,.16),0 0 0 0 color-mix(in srgb,var(--u1) 60%,transparent)}
+  50%{box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -4px 0 rgba(0,0,0,.16),0 0 0 9px color-mix(in srgb,var(--u1) 0%,transparent)}}
+.ac-sticker{position:absolute;right:-7px;bottom:-7px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:3px solid var(--card)}
+.ac-sticker.done{background:var(--sun);color:var(--glyph)}
+.ac-sticker.lock{background:var(--card-2);color:var(--muted)}
+.ac-world a:hover{border-color:var(--u1)}
+.ac-world .ac-meter-fill,.ac-unit-head .ac-meter-fill,.ac-hud .ac-meter-fill{background:linear-gradient(90deg,var(--u1),var(--u2))}
+
+/* Unit headers on the map: a soft wash of the unit color and a little pile of its world stickers. */
+.ac-unit-head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;margin:40px 0 14px;padding:14px 18px;border-radius:22px;
+  background:linear-gradient(100deg,color-mix(in srgb,var(--u1) 15%,transparent),transparent 75%);border:1px solid color-mix(in srgb,var(--u1) 26%,var(--line))}
+.ac-unit-head .ac-h2{margin:0;font-size:26px}
+.ac-unit-head + .ac-worlds{margin-top:0}
+.ac-unit-art{position:relative;width:82px;height:60px;flex:none}
+.ac-mini{position:absolute;display:grid;place-items:center;border-radius:30%;color:var(--glyph);background:linear-gradient(145deg,var(--u2),var(--u1));
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -3px 0 rgba(0,0,0,.16),0 0 0 3px var(--card)}
+.ac-mini:nth-child(1){width:44px;height:44px;left:0;top:10px;transform:rotate(-8deg);z-index:2}
+.ac-mini:nth-child(2){width:34px;height:34px;left:40px;top:0;transform:rotate(8deg)}
+.ac-mini:nth-child(3){width:28px;height:28px;left:50px;top:31px;transform:rotate(-5deg);z-index:1}
+.ac-unit-info{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ac-unit-line{display:flex;align-items:center;gap:12px}
+.ac-unit-line .ac-meter{flex:1;max-width:240px}
+.ac-unit-line .ac-unit-meta{font-size:14px;white-space:nowrap}
+
+/* World pages and levels pick up their unit color. */
+.ac-stage a:hover,.ac-stage.open a{border-color:var(--u1)}
+.ac-stage.done a{background:linear-gradient(var(--card-2),var(--card-2)) padding-box,linear-gradient(145deg,var(--u2),var(--u1)) border-box}
+.ac-stage.boss .ac-stage-num{background:linear-gradient(145deg,var(--u2),var(--u1));-webkit-background-clip:text;background-clip:text}
+.ac-qnum{background:linear-gradient(145deg,var(--u2),var(--u1));color:var(--glyph)}
+.ac-story-buddy{display:grid;place-items:center;width:100px;height:100px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--u1) 26%,transparent) 0,color-mix(in srgb,var(--u1) 8%,transparent) 62%,transparent 70%)}
+.ac-step{display:flex;gap:5px}
+.ac-step i{width:16px;height:5px;border-radius:3px;background:var(--line)}
+.ac-step i.on{background:linear-gradient(90deg,var(--u1),var(--u2))}
+
+/* Answer letters, so kids can say "I picked B". */
+.ac-letter{flex:none;display:grid;place-items:center;width:30px;height:30px;margin-right:12px;border-radius:9px;
+  font-family:var(--kid);font-weight:800;font-size:16px;color:var(--muted);background:var(--card-2);border:1.5px solid var(--line);transition:background-color .15s ease,color .15s ease}
+.ac-opt:hover .ac-letter{color:var(--ink);border-color:var(--u1)}
+.ac-opt:has(input:checked) .ac-letter{color:var(--glyph);background:linear-gradient(145deg,var(--u2),var(--u1));border-color:transparent}
+.ac-opt.right .ac-letter,.ac-opt.right:has(input:checked) .ac-letter{color:var(--glyph);background:var(--mint);border-color:transparent}
+.ac-opt.wrong .ac-letter,.ac-opt.wrong:has(input:checked) .ac-letter{color:#fff;background:var(--red);border-color:transparent}
+
+/* Celebrations in the world's colors, with round and square pieces. */
+.ac-confetti i:nth-child(4n+1){background:var(--u1)}.ac-confetti i:nth-child(4n+2){background:var(--u2)}
+.ac-confetti i:nth-child(4n+3){background:var(--sun)}.ac-confetti i:nth-child(4n){background:var(--mint)}
+.ac-confetti i:nth-child(3n){width:9px;height:9px;border-radius:50%}
+.ac-confetti i:nth-child(5n){width:8px;height:8px;border-radius:2px}
+
+@media (max-width:560px){
+  .ac-unit-head{padding:12px 14px;gap:12px}
+  .ac-unit-art{width:64px;height:50px}
+  .ac-mini:nth-child(1){width:38px;height:38px;top:8px}
+  .ac-mini:nth-child(2){width:28px;height:28px;left:32px}
+  .ac-mini:nth-child(3){width:24px;height:24px;left:38px;top:27px}
+  .ac-unit-head .ac-h2{font-size:22px}
+  .ac-story-buddy{width:76px;height:76px}
+}
+
 @media print{
   .ac-cert{border-color:#000;background:#fff;color:#000}
   .ac-cert-rank,.ac-kicker{color:#000;background:none}

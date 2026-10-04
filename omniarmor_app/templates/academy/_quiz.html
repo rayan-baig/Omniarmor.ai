@@ -25,6 +25,7 @@
           {% for opt in q.options %}
             <label class="ac-opt{% if q.kind == 'light' %} ac-light-{{ loop.index0 }}{% endif %}">
               <input type="radio" name="q{{ qi }}" value="{{ loop.index0 }}" required>
+              {% if q.kind != 'light' %}<span class="ac-letter" aria-hidden="true">{{ "ABCDEF"[loop.index0] }}</span>{% endif %}
               <span>{{ opt }}</span>
             </label>
           {% endfor %}

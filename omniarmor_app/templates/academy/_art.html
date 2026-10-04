@@ -5,9 +5,11 @@
    mood: happy, cheer, think, sleep or alert. prop: mug, book, juggle or zzz. #}
 {% set line = '#8E1A10' %}{% set face = '#2A1410' %}{% set limb = '#F47A2E' %}
 {% if prop == 'zzz' %}{% set mood = 'sleep' %}{% endif %}
+{# Each Armo needs its own gradient id: a page can show several, and a hidden one's gradient doesn't paint. #}
+{% set body_id = 'armoBody' ~ range(100000, 1000000)|random %}
 <svg class="armo armo-{{ mood }}{% if prop != 'none' %} armo-prop-{{ prop }}{% endif %}" viewBox="-16 -26 160 160" width="{{ size }}" height="{{ size }}" aria-hidden="true">
   <defs>
-    <linearGradient id="armoBody" x1="0" x2="0" y1="0" y2="1">
+    <linearGradient id="{{ body_id }}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="#F59234"/><stop offset=".55" stop-color="#F0562A"/><stop offset="1" stop-color="#E5261C"/>
     </linearGradient>
   </defs>
@@ -33,7 +35,7 @@
     <path class="armo-arm" d="{{ d }}" stroke="{{ limb }}" stroke-width="7.5" fill="none" stroke-linecap="round"/>
   {% endfor %}
   <path d="M60 8 C80 8 97 14 105 20 C108.5 22.5 110 26 110 31 V58 C110 92 88 115 60 126 C32 115 10 92 10 58 V31 C10 26 11.5 22.5 15 20 C23 14 40 8 60 8 Z"
-        fill="url(#armoBody)" stroke="{{ line }}" stroke-width="3.5" stroke-linejoin="round"/>
+        fill="url(#{{ body_id }})" stroke="{{ line }}" stroke-width="3.5" stroke-linejoin="round"/>
   <ellipse cx="38" cy="30" rx="15" ry="7" transform="rotate(-18 38 30)" fill="#FFFFFF" opacity=".3"/>
   <ellipse cx="31" cy="78" rx="7.5" ry="4.5" fill="#FFD27A" opacity=".75"/>
   <ellipse cx="89" cy="78" rx="7.5" ry="4.5" fill="#FFD27A" opacity=".75"/>
@@ -312,6 +314,17 @@
   <path d="M16 8 H32 V20 C32 25 28 29 24 29 C20 29 16 25 16 20 Z"/><path d="M16 12 H9 C9 18 12 21 16 21 M32 12 H39 C39 18 36 21 32 21"/><path d="M24 29 V36"/><path d="M16 40 H32 L30 36 H18 Z"/>
 {% endif %}
 </svg>
+{%- endmacro %}
+
+{% macro hue(w) -%}
+{# The color family of a world: its unit for topic worlds, otherwise its kind. #}
+u-{{ w.unit if w.kind == 'topic' and w.unit else w.kind }}
+{%- endmacro %}
+
+{% macro sticker(state) -%}
+{# A small corner sticker on a world badge: a gold check when finished, a padlock when locked. #}
+{% if state == 'done' %}<span class="ac-sticker done" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13"><path d="M3.5 8.5 L6.5 11.5 L12.5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+{%- elif state in ('locked', 'paid') %}<span class="ac-sticker lock" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><rect x="3" y="7" width="10" height="7.5" rx="1.6" fill="currentColor"/><path d="M5.3 7 V5.2 C5.3 3.6 6.5 2.5 8 2.5 C9.5 2.5 10.7 3.6 10.7 5.2 V7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>{% endif %}
 {%- endmacro %}
 
 {% macro star(filled=true, size=22) -%}
