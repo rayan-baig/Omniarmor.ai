@@ -4,7 +4,7 @@
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
-{% if view.me is none %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
+{% if view.me is none and not locked %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
 {% endblock %}
 {% block content %}
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
@@ -27,7 +27,18 @@
     </div>
   </section>
 
-  {% if view.me is none %}
+  {% if locked %}
+    <section class="ac-result" aria-live="polite">
+      {{ armo(96, 'think', buddy.accessory) }}
+      <h1 class="ac-title">This world is part of the Academy plan</h1>
+      <p class="ac-lead">{{ view.other.nickname }} picked {{ view.world.title }}, which your Academy plan doesn't include yet.
+        {% if g.kid %}Ask a grown-up to unlock it, then come back to play!{% else %}Start the plan to unlock it, then come back to play!{% endif %}</p>
+      <div class="ac-actions">
+        <a class="btn ac-btn" href="{{ url_for('academy.friends', learner_id=learner.id) }}">Back to friends</a>
+        {% if not g.kid %}<a class="btn" href="{{ url_for('academy.plan_page') }}">See the Academy plan</a>{% endif %}
+      </div>
+    </section>
+  {% elif view.me is none %}
     {% set needed = none %}{% set attempt = none %}
     {% include "academy/_quiz.html" %}
   {% else %}

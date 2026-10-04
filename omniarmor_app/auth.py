@@ -61,7 +61,7 @@ def signup():
         password = form.get("password", "")
         org_name = clean_text(form.get("org_name"), 120)
         tz = form.get("timezone", "UTC")
-        picked = sorted({int(i) for i in form.getlist("industries") if i.isdigit() and int(i) in INDUSTRIES})
+        picked = sorted({int(i) for i in form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6 and int(i) in INDUSTRIES})
         errors = []
         if not name:
             errors.append("Enter your name.")

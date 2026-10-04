@@ -148,29 +148,82 @@ def _org_for(conn, obj):
     return None
 
 
+SUBSCRIPTION_EVENTS = ("customer.subscription.created", "customer.subscription.updated",
+                       "customer.subscription.deleted")
+
+
+def _seen(conn, event, org_id):
+    """Records a Stripe event id; True if it was already processed (Stripe
+    retries deliveries, and a signed event can be sent again)."""
+    event_id = event.get("id")
+    if not isinstance(event_id, str) or not event_id:
+        return False
+    if conn.execute("SELECT 1 FROM stripe_events WHERE id = ?", (event_id,)).fetchone() is not None:
+        return True
+    created = event.get("created") if isinstance(event.get("created"), int) else None
+    conn.execute("INSERT INTO stripe_events (id, org_id, type, created, received_at) VALUES (?, ?, ?, ?, ?)",
+                 (event_id, org_id, str(event.get("type", ""))[:100], created, iso(utcnow())))
+    return False
+
+
+def _mark_applied(conn, org_id, created):
+    if created is not None:
+        conn.execute("UPDATE orgs SET stripe_event_at = MAX(COALESCE(stripe_event_at, 0), ?) WHERE id = ?",
+                     (created, org_id))
+
+
 def apply_event(conn, event):
     """Updates a workspace's Academy plan from a Stripe event. Returns a short
-    description of what changed, or None if the event wasn't relevant."""
+    description of what changed, or None if the event wasn't relevant.
+
+    Stripe may deliver events more than once and in any order, so repeats are
+    ignored, a subscription event older than the last one applied is ignored,
+    and while a workspace is paid, events about some other subscription (a
+    duplicate checkout, say) don't change its plan."""
     kind = event.get("type", "")
     obj = (event.get("data") or {}).get("object") or {}
     org = _org_for(conn, obj)
     if org is None:
         return None
+    if _seen(conn, event, org["id"]):
+        return None
+    created = event.get("created") if isinstance(event.get("created"), int) else None
+    paid = (org["academy_status"] or "none") in PAID_STATES
+    current_sub = org["stripe_subscription_id"]
     if kind == "checkout.session.completed":
+        subscription = obj.get("subscription")
+        if paid and current_sub and subscription != current_sub:
+            # A second checkout while already paid: keep following the first subscription.
+            conn.execute("UPDATE orgs SET stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
+                         (obj.get("customer"), org["id"]))
+            return None
         conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active'"
-                     " WHERE id = ?", (obj.get("customer"), obj.get("subscription"), org["id"]))
+                     " WHERE id = ?", (obj.get("customer"), subscription, org["id"]))
+        _mark_applied(conn, org["id"], created)
         return "active"
-    if kind in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
+    if kind in SUBSCRIPTION_EVENTS:
+        if paid and current_sub and obj.get("id") != current_sub:
+            return None
+        last = org["stripe_event_at"]
+        if created is not None and last is not None and created < last:
+            return None
         state = "canceled" if kind.endswith("deleted") else obj.get("status", "none")
         if state not in PAID_STATES | {"canceled", "unpaid", "incomplete", "incomplete_expired"}:
             state = "none"
+        if state == "incomplete" and paid:
+            # A subscription never goes back to incomplete once paid; this is a late copy of its first event.
+            return None
         ends = obj.get("current_period_end")
         renews = iso(_from_timestamp(ends)) if isinstance(ends, int) and state in PAID_STATES else None
         conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, stripe_subscription_id = ?,"
                      " stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
                      (state, renews, obj.get("id"), obj.get("customer"), org["id"]))
+        _mark_applied(conn, org["id"], created)
         return state
     if kind == "invoice.payment_failed":
+        subscription = obj.get("subscription")
+        if current_sub and subscription and subscription != current_sub:
+            return None
         conn.execute("UPDATE orgs SET academy_status = 'past_due' WHERE id = ? AND academy_status = 'active'",
                      (org["id"],))
         return "past_due"

@@ -10,6 +10,7 @@ nothing else."""
 
 import hashlib
 import json
+import re
 import secrets
 from datetime import timedelta
 from functools import wraps
@@ -20,8 +21,8 @@ from flask import (Blueprint, abort, current_app, flash, g, jsonify, redirect, r
 from . import academy, academy_plan, armo
 from .catalog import INDUSTRIES
 from .db import get_db, iso, now_iso, utcnow
-from .security import (clean_text, client_ip, flash_error, owner_required, rate_limited, record_event,
-                       start_kid_session)
+from .security import (clean_text, client_ip, flash_error, new_device_epoch, owner_required, rate_limited,
+                       record_event, start_kid_session)
 from .tracking import org_industry_ids, org_today
 
 bp = Blueprint("academy", __name__, url_prefix="/app/academy")
@@ -32,6 +33,24 @@ JOIN_CODE_DAYS = 7
 DAILY_GOAL = 3          # levels a day for the daily goal
 PRACTICE_SIZE = 8       # mistakes per practice round
 REVIEW_DAYS = [1, 3, 7]  # spaced repetition: days until a fixed mistake comes back
+MAX_ID = 2 ** 63 - 1    # SQLite's largest integer; bigger ids can't exist (and would crash a query)
+_ID_RE = re.compile(r"[0-9]{1,18}")
+
+
+def parse_id(text):
+    """A row id from a form: plain ASCII digits only, small enough for SQLite. None otherwise."""
+    text = (text or "").strip()
+    return int(text) if _ID_RE.fullmatch(text) else None
+
+
+def _form_id(name):
+    return parse_id(request.form.get(name))
+
+
+def _ids_in_range(kwargs):
+    """Path ids out of SQLite's range can't match anything: answer 404 instead of crashing."""
+    if any(isinstance(v, int) and not 0 <= v <= MAX_ID for v in kwargs.values()):
+        abort(404)
 
 
 # --- Who may see what ----------------------------------------------------------
@@ -42,6 +61,7 @@ def academy_access(view):
     def wrapped(*args, **kwargs):
         if g.get("user") is None and g.get("kid") is None:
             return redirect(url_for("auth.login", next=request.full_path if request.method == "GET" else None))
+        _ids_in_range(kwargs)
         learner_id = kwargs.get("learner_id")
         if g.get("kid") is not None and learner_id is not None and learner_id != g.kid["id"]:
             abort(404)
@@ -59,6 +79,7 @@ def grown_ups_only(view):
             abort(403)
         if g.get("user") is None:
             return redirect(url_for("auth.login", next=request.full_path if request.method == "GET" else None))
+        _ids_in_range(kwargs)
         return view(*args, **kwargs)
     return wrapped
 
@@ -66,6 +87,8 @@ def grown_ups_only(view):
 # --- Progress --------------------------------------------------------------------
 
 def _learner_or_404(learner_id):
+    if not isinstance(learner_id, int) or not 0 < learner_id <= MAX_ID:
+        abort(404)
     row = get_db().execute("SELECT * FROM learners WHERE id = ? AND org_id = ?", (learner_id, g.org["id"])).fetchone()
     if row is None:
         abort(404)
@@ -193,7 +216,7 @@ def _log_day(conn, learner_id):
 
 @bp.app_context_processor
 def academy_context():
-    return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST}
+    return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES}
 
 
 # --- Learners --------------------------------------------------------------------
@@ -201,7 +224,13 @@ def academy_context():
 @bp.route("")
 @grown_ups_only
 def home():
-    learners = get_db().execute("SELECT * FROM learners WHERE org_id = ? ORDER BY created_at, id", (g.org["id"],)).fetchall()
+    conn = get_db()
+    learners = conn.execute("SELECT * FROM learners WHERE org_id = ? ORDER BY created_at, id", (g.org["id"],)).fetchall()
+    if learners and g.org["academy_trial_ends"] is None and (g.org["academy_status"] or "none") == "none":
+        # Workspaces that had learners before the plan existed start their trial now.
+        academy_plan.start_trial(conn, g.org["id"], current_app.config["ACADEMY_TRIAL_DAYS"])
+        conn.commit()
+        g.org = conn.execute("SELECT orgs.*, ? AS role FROM orgs WHERE id = ?", (g.role, g.org["id"])).fetchone()
     return render_template("academy/home.html", summaries=[_summary(l) for l in learners], avatars=academy.AVATARS,
                            max_learners=academy.MAX_LEARNERS, tracks=academy.TRACK_LIST,
                            world_count=len(academy.TOPIC_WORLDS), plan=academy_plan.plan_status(g.org))
@@ -225,8 +254,9 @@ def add_learner():
         flash_error(f"A workspace can have up to {academy.MAX_LEARNERS} learners.")
     else:
         learner_id = conn.execute(
-            "INSERT INTO learners (org_id, nickname, avatar, armo, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (g.org["id"], nickname, avatar, buddy, g.user["id"], now_iso()),
+            "INSERT INTO learners (org_id, nickname, avatar, armo, created_by, created_at, device_epoch)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (g.org["id"], nickname, avatar, buddy, g.user["id"], now_iso(), new_device_epoch()),
         ).lastrowid
         academy_plan.start_trial(conn, g.org["id"], current_app.config["ACADEMY_TRIAL_DAYS"])
         conn.commit()
@@ -431,10 +461,17 @@ def practice(learner_id):
     learner = _learner_or_404(learner_id)
     conn = get_db()
     if request.method == "POST":
-        ids = [int(i) for i in request.form.get("deck", "").split(",") if i.isdigit()][:PRACTICE_SIZE]
+        ids = []
+        for part in request.form.get("deck", "").split(","):
+            mistake_id = parse_id(part)
+            if mistake_id is not None and mistake_id not in ids:
+                ids.append(mistake_id)
+        ids = ids[:PRACTICE_SIZE]
+        # Only questions still due count: an old or resubmitted form can't push them further out.
         rows = {r["id"]: r for r in conn.execute(
-            f"SELECT * FROM learner_mistakes WHERE learner_id = ? AND id IN ({','.join('?' * len(ids)) or 'NULL'})",
-            (learner_id, *ids))}
+            f"SELECT * FROM learner_mistakes WHERE learner_id = ? AND due_at <= ?"
+            f" AND id IN ({','.join('?' * len(ids)) or 'NULL'})",
+            (learner_id, now_iso(), *ids))}
         deck = [rows[i] for i in ids if i in rows]
         if not deck:
             flash("Those practice questions were already checked.", "ok")
@@ -566,6 +603,9 @@ def plan_page():
 @owner_required
 def plan_checkout():
     cfg = current_app.config
+    if academy_plan.plan_status(g.org)["access"] == "paid":
+        flash_error("Your Academy plan is already on. Use Manage billing to change it.")
+        return redirect(url_for("academy.plan_page"))
     if not academy_plan.stripe_ready(cfg):
         flash_error("Online payment isn't set up yet. Please contact us to start the Academy plan.")
         return redirect(url_for("academy.plan_page"))
@@ -657,6 +697,16 @@ def _duel_view(duel, learner_id):
             "world": academy.world(duel["world"]), "challenger": mine}
 
 
+def _duel_allowed(learner, w):
+    """Whether this learner's workspace plan includes a duel world: on the
+    learner's own track if it has the world, otherwise on Trailblazer, whose
+    questions duels use."""
+    t = _track(learner)
+    if not t.has(w):
+        t = academy.TRACKS["trailblazer"]
+    return academy_plan.allows(g.org, t, w)
+
+
 def _duels(learner_id, limit=20):
     rows = get_db().execute(
         "SELECT * FROM duels WHERE challenger_id = ? OR opponent_id = ? ORDER BY id DESC LIMIT ?",
@@ -684,7 +734,9 @@ def friends(learner_id):
     board = sorted([_summary(learner)] + [_summary(f) for f in _friends(learner_id)],
                    key=lambda s: (-s["done"], -s["stars"], s["learner"]["nickname"].lower()))
     return render_template("academy/friends.html", learner=learner, code=code, board=board,
-                           duels=_duels(learner_id), duel_worlds=[academy.world(n) for n in academy.DUEL_WORLDS],
+                           duels=_duels(learner_id),
+                           duel_worlds=[w for w in (academy.world(n) for n in academy.DUEL_WORLDS)
+                                        if w is not None and _duel_allowed(learner, w)],
                            avatars=academy.AVATARS, max_friends=academy.MAX_FRIENDS,
                            friend_count=len(board) - 1, code_days=academy.FRIEND_CODE_DAYS)
 
@@ -756,15 +808,20 @@ def remove_friend(learner_id, friend_id):
 @bp.route("/<int:learner_id>/duels", methods=["POST"])
 @academy_access
 def new_duel(learner_id):
-    _learner_or_404(learner_id)
-    friend_id = request.form.get("friend", type=int)
-    world_number = request.form.get("world", type=int)
+    learner = _learner_or_404(learner_id)
+    friend_id = _form_id("friend")
+    world_number = _form_id("world")
     back = redirect(url_for("academy.friends", learner_id=learner_id))
     if friend_id is None or not _are_friends(learner_id, friend_id):
         flash_error("You can only challenge your friends.")
         return back
-    if world_number not in academy.DUEL_WORLDS:
+    w = academy.world(world_number) if world_number in academy.DUEL_WORLDS else None
+    if w is None:
         flash_error("Pick a world for the duel.")
+        return back
+    if not _duel_allowed(learner, w):
+        flash_error("That world is part of the Academy plan. "
+                    + ("Ask a grown-up to unlock it!" if g.get("kid") is not None else "Start the plan to unlock it."))
         return back
     conn = get_db()
     open_duels = conn.execute("SELECT COUNT(*) FROM duels WHERE challenger_id = ? AND opponent_score IS NULL",
@@ -790,6 +847,12 @@ def duel(learner_id, duel_id):
     if row is None:
         abort(404)
     view = _duel_view(row, learner_id)
+    if view["world"] is None:
+        abort(404)
+    if view["me"] is None and not _duel_allowed(learner, view["world"]):
+        # This family's plan doesn't include the world: no quiz, just a friendly note.
+        return render_template("academy/duel.html", learner=learner, view=view, questions=[], results=None,
+                               avatars=academy.AVATARS, total=0, locked=True)
     questions = academy.duel_quiz(row["world"], row["stage"], row["seed"])
     results = None
     if request.method == "POST" and view["me"] is None:

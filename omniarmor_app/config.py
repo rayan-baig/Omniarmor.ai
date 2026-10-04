@@ -33,6 +33,9 @@ def load_config(**overrides):
         "MAIL_FROM": env.get("MAIL_FROM", "OmniArmor <no-reply@localhost>"),
         "DAILY_JOB_HOUR_UTC": int(env.get("DAILY_JOB_HOUR_UTC", "11")),
         "SCHEDULER_ENABLED": _flag("SCHEDULER_ENABLED", True),
+        # Autopilot fixes small problems itself and emails big ones here.
+        "AUTOPILOT_ENABLED": _flag("AUTOPILOT_ENABLED", True),
+        "OPERATOR_EMAIL": env.get("OPERATOR_EMAIL", "").strip(),
         # The Academy's own subscription (separate from the compliance service).
         "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
         "ACADEMY_PRICE_LABEL": env.get("ACADEMY_PRICE_LABEL", ""),

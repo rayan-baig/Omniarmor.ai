@@ -65,6 +65,27 @@ the app again.
 
 ## 5. Monitoring
 
+**Autopilot** watches the service for you, so you don't have to check it every
+day. Set `OPERATOR_EMAIL` (and email, section 2) and it runs every 10 minutes:
+
+| It fixes by itself | It emails you |
+|---|---|
+| Re-sends emails that failed (after 10 minutes, 1 hour, 6 hours) | Emails still failing after every retry |
+| Makes a backup if the newest one is over a day old | Backups failing even after it tried |
+| Trims old logs and compacts the database file | The daily job hasn't finished in 2 days |
+| | 5 or more server errors in an hour |
+| | Under 1 GB (or 5%) disk space left |
+| | Database damage (checked daily) |
+| | Email not set up in production |
+
+Each big problem is emailed once, with what to do. While it lasts you get one
+reminder a day, and a "Fixed" email when it clears up. On Mondays you get a
+short report of what it fixed, only if it fixed something. Without
+`OPERATOR_EMAIL`, the same messages go to the server log.
+
+- `flask --app wsgi autopilot` runs the checks now and prints what it found.
+- `flask --app wsgi autopilot --log` shows what it fixed and reported in the last 30 days.
+
 `GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and
 database are working. Point an uptime monitor (UptimeRobot, Better Stack) at
 it so you get a text or email if the site goes down. The server log records

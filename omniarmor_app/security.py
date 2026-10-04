@@ -75,11 +75,19 @@ def check_csrf():
 
 # --- Sessions ------------------------------------------------------------
 
+def _user_key(user):
+    """Ties a session to this exact account, not just its row id: SQLite can
+    reuse the id of a removed user for a new one, whose session_epoch also
+    starts at 0, so the id and epoch alone could match an old cookie."""
+    return hashlib.sha256(f"{user['id']}:{user['email'].lower()}:{user['created_at']}".encode()).hexdigest()[:32]
+
+
 def start_session(user):
     session.clear()
     session.permanent = True
     session["user_id"] = user["id"]
     session["epoch"] = user["session_epoch"]
+    session["ukey"] = _user_key(user)
     csrf_token()
 
 
@@ -95,7 +103,8 @@ def load_user():
         return
     conn = get_db()
     user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    if user is None or user["session_epoch"] != session.get("epoch"):
+    if (user is None or user["session_epoch"] != session.get("epoch")
+            or not hmac.compare_digest(str(session.get("ukey", "")), _user_key(user))):
         session.clear()
         return
     membership = conn.execute(
@@ -109,20 +118,35 @@ def load_user():
     g.user, g.org, g.role = user, membership, membership["role"]
 
 
+def new_device_epoch():
+    """A random starting point for a learner's device epoch, so a device
+    cookie left over from a removed learner can't match a new learner who
+    gets the same row id. Signing out adds one, so stay well below 2**63."""
+    return secrets.randbelow(2 ** 62) + 1
+
+
 def load_kid():
     conn = get_db()
-    kid = conn.execute("SELECT * FROM learners WHERE id = ?", (session.get("kid"),)).fetchone()
+    kid_id, org_id = session.get("kid"), session.get("kid_org")
+    if not isinstance(kid_id, int) or not isinstance(org_id, int) or not 0 < kid_id < 2 ** 63:
+        session.clear()
+        return
+    kid = conn.execute("SELECT * FROM learners WHERE id = ? AND org_id = ?", (kid_id, org_id)).fetchone()
     if kid is None or kid["device_epoch"] != session.get("kid_epoch"):
         session.clear()
         return
     g.kid = kid
     g.org = conn.execute("SELECT * FROM orgs WHERE id = ?", (kid["org_id"],)).fetchone()
+    if g.org is None:
+        g.kid = None
+        session.clear()
 
 
 def start_kid_session(learner):
     session.clear()
     session.permanent = True
     session["kid"] = learner["id"]
+    session["kid_org"] = learner["org_id"]
     session["kid_epoch"] = learner["device_epoch"]
     csrf_token()
 
@@ -219,7 +243,7 @@ def security_headers(response):
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     if request.is_secure:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-    if g.get("user") is not None:
+    if g.get("user") is not None or g.get("kid") is not None:
         response.headers.setdefault("Cache-Control", "no-store")
     return response
 

@@ -12,7 +12,7 @@
   <header class="ac-level-head">
     <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
     <div>
-      <p class="ac-kicker">{{ track.name }} · {% if world.kind == 'topic' %}{{ world.unit|replace('bigpicture', 'big picture')|title }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
+      <p class="ac-kicker">{{ track.name }} · {% if world.kind == 'topic' %}{{ unit_names.get(world.unit, world.unit|title) }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
       <h1 class="ac-title">{{ world.title }}</h1>
       <p class="ac-lead">{{ card.done }} of {{ card.stages }} stages done · {{ card.stars }} of {{ card.stages * 3 }} stars</p>
     </div>

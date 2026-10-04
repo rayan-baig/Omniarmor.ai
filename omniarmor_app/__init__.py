@@ -7,10 +7,10 @@ create_app() builds the app; wsgi.py runs it in production.
 import logging
 import os
 
-from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, url_for
+from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, armo_views, auth, views
+from . import academy_views, armo_views, autopilot, auth, views
 from .catalog import INDUSTRIES, rules_for
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate
@@ -137,6 +137,9 @@ def create_app(**overrides):
                   413: "That upload is too large", 500: "Something went wrong on our side",
                   503: "That's unavailable for a moment"}
         description = getattr(err, "description", None) if code != 500 else None
+        if code == 500:
+            cause = getattr(err, "original_exception", None) or err
+            autopilot.record_error(app.config, request.path, cause)
         return render_template("error.html", code=code, title=titles.get(code, "Error"),
                                description=description), code
 

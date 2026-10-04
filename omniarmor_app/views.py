@@ -192,7 +192,7 @@ def settings_reminders():
 def settings_company():
     name = clean_text(request.form.get("name"), 120)
     tz = request.form.get("timezone", "")
-    picked = sorted({int(i) for i in request.form.getlist("industries") if i.isdigit() and int(i) in INDUSTRIES})
+    picked = sorted({int(i) for i in request.form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6 and int(i) in INDUSTRIES})
     if not name:
         flash_error("Enter your company name, without line breaks.")
     elif not valid_timezone(tz):

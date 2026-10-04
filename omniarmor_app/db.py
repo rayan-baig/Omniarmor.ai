@@ -197,6 +197,44 @@ MIGRATIONS = [
     ALTER TABLE orgs ADD COLUMN stripe_customer_id TEXT;
     ALTER TABLE orgs ADD COLUMN stripe_subscription_id TEXT;
     """),
+    (6, """
+    CREATE TABLE autopilot_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        at TEXT NOT NULL,
+        check_key TEXT NOT NULL,
+        level TEXT NOT NULL CHECK (level IN ('fixed', 'alert', 'resolved')),
+        title TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        emailed INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX autopilot_events_key ON autopilot_events (check_key, at DESC);
+    CREATE TABLE app_errors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        at TEXT NOT NULL,
+        path TEXT NOT NULL,
+        error TEXT NOT NULL,
+        signature TEXT NOT NULL DEFAULT '',
+        location TEXT NOT NULL DEFAULT '',
+        trace TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX app_errors_at ON app_errors (at);
+    CREATE INDEX app_errors_signature ON app_errors (signature, at);
+    ALTER TABLE notifications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 1;
+    """),
+    (7, """
+    UPDATE learners SET device_epoch = (random() & 4611686018427387903) + 1;
+    CREATE TABLE stripe_events (
+        id TEXT PRIMARY KEY,
+        org_id INTEGER REFERENCES orgs(id) ON DELETE SET NULL,
+        type TEXT NOT NULL,
+        created INTEGER,
+        received_at TEXT NOT NULL
+    );
+    ALTER TABLE orgs ADD COLUMN stripe_event_at INTEGER;
+    UPDATE orgs SET academy_trial_ends = strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now', '+14 days')
+        WHERE academy_trial_ends IS NULL AND academy_status = 'none'
+        AND EXISTS (SELECT 1 FROM learners WHERE learners.org_id = orgs.id);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

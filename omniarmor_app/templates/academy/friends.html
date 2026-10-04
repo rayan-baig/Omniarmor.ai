@@ -51,7 +51,7 @@
             <span class="ac-board-name">{{ s.learner.nickname }}{% if s.learner.id == learner.id %} (you){% endif %}</span>
             <span class="ac-board-meta">{{ s.track.name }} · {{ s.rank }} · {{ s.done }} levels · {{ star(true, 13) }} {{ s.stars }}</span>
           </span>
-          {% if s.learner.id != learner.id %}
+          {% if s.learner.id != learner.id and duel_worlds %}
             <form class="ac-challenge" method="post" action="{{ url_for('academy.new_duel', learner_id=learner.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="friend" value="{{ s.learner.id }}">

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """The work that runs by itself every day: reminders, a database backup and
-cleanup. A built-in timer runs it once a day; several server processes can run
+cleanup. Autopilot (autopilot.py) rides on the same timer every 10 minutes. A built-in timer runs it once a day; several server processes can run
 the timer safely because each day's run is claimed in the database first."""
 
 import glob
@@ -124,12 +124,19 @@ def run_daily(cfg, force=False):
 
 
 def start_scheduler(cfg):
+    from . import autopilot
+
     def loop():
         while True:
             try:
                 run_daily(cfg)
             except Exception:  # keep the timer alive; the failure is logged above
                 pass
+            if cfg.get("AUTOPILOT_ENABLED", True):
+                try:
+                    autopilot.run(cfg)
+                except Exception:
+                    log.exception("autopilot pass failed")
             time.sleep(CHECK_EVERY_SECONDS)
     thread = threading.Thread(target=loop, name="omniarmor-daily", daemon=True)
     thread.start()
@@ -163,6 +170,32 @@ def register_cli(app):
         conn.commit()
         conn.close()
         click.echo(f"Workspace {org_id}: Academy plan {status}.")
+
+    @app.cli.command("autopilot")
+    @click.option("--log", "show_log", is_flag=True, help="Show what Autopilot fixed and reported in the last 30 days.")
+    def autopilot_command(show_log):
+        """Check the service now: fix small problems, report big ones."""
+        from . import autopilot
+        cfg = dict(app.config)
+        if show_log:
+            conn = connect(cfg["DATABASE"])
+            migrate(conn)
+            rows = conn.execute("SELECT * FROM autopilot_events WHERE at >= ? ORDER BY id DESC LIMIT 100",
+                                (iso(utcnow() - timedelta(days=30)),)).fetchall()
+            conn.close()
+            for r in rows:
+                click.echo(f"{r['at']}  {r['level']:<8}  {r['title']}{'  (emailed)' if r['emailed'] else ''}")
+            click.echo("" if rows else "Nothing in the last 30 days.")
+            return
+        result = autopilot.run(cfg, force=True)
+        for line in result["fixed"]:
+            click.echo(f"Fixed: {line}")
+        for f in result["problems"]:
+            click.echo(f"NEEDS YOU: {f.title}\n  {f.detail}\n  What to do: {f.action}")
+        if not result["fixed"] and not result["problems"]:
+            click.echo("All clear. Nothing to fix and nothing needs you.")
+        if result["problems"] and not cfg.get("OPERATOR_EMAIL"):
+            click.echo("Tip: set OPERATOR_EMAIL so Autopilot can email you about these.")
 
     @app.cli.command("backup")
     def backup_command():
