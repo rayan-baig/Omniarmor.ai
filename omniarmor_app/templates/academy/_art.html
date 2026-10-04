@@ -327,6 +327,36 @@ u-{{ w.unit if w.kind == 'topic' and w.unit else w.kind }}
 {%- elif state in ('locked', 'paid') %}<span class="ac-sticker lock" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><rect x="3" y="7" width="10" height="7.5" rx="1.6" fill="currentColor"/><path d="M5.3 7 V5.2 C5.3 3.6 6.5 2.5 8 2.5 C9.5 2.5 10.7 3.6 10.7 5.2 V7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>{% endif %}
 {%- endmacro %}
 
+{% macro sparkle(size=14) -%}
+<svg class="sparkle" viewBox="0 0 20 20" width="{{ size }}" height="{{ size }}" aria-hidden="true"><path d="M10 0 C11 7 13 9 20 10 C13 11 11 13 10 20 C9 13 7 11 0 10 C7 9 9 7 10 0 Z" fill="currentColor"/></svg>
+{%- endmacro %}
+
+{% macro scene(world, accessory='none') -%}
+{# A little landscape for a world: hills in the unit's colors, the world's sticker,
+   a few things from that part of business floating around, and Armo on the hill. #}
+{% set unit = world.unit if world.kind == 'topic' and world.unit else world.kind %}
+{% set extras = ({
+  'foundations': ['coin', 'book', 'calendar', 'building'], 'leadership': ['shield', 'mountain', 'star', 'team'],
+  'money': ['coin', 'piggy', 'bank', 'chart'], 'growth': ['megaphone', 'rocket', 'badge', 'chart'],
+  'operations': ['gear', 'box', 'hardhat', 'clock'], 'mindset': ['bulb', 'clock', 'target', 'brain'],
+  'trust': ['handshake', 'lock', 'scroll', 'shield'], 'bigpicture': ['globe', 'map', 'chart', 'leaf'],
+  'champion': ['star', 'target', 'flame', 'flag'], 'final': ['star', 'flag', 'flame', 'badge'],
+  'industry': ['shield', 'light', 'calendar', 'scale'],
+}.get(unit, ['star', 'bulb', 'flag', 'coin']) | reject('equalto', world.icon) | list)[:3] %}
+<div class="ac-scene" aria-hidden="true">
+  <span class="ac-sun"></span>
+  <span class="ac-cloud c1"></span><span class="ac-cloud c2"></span>
+  <svg class="ac-hills" viewBox="0 0 400 120" preserveAspectRatio="none">
+    <path class="h1" d="M0 64 C70 34 140 36 210 58 C280 80 340 56 400 40 V120 H0 Z"/>
+    <path class="h2" d="M0 90 C80 66 160 72 236 90 C306 106 354 94 400 82 V120 H0 Z"/>
+  </svg>
+  <span class="ac-scene-sticker">{{ level_icon(world.icon, 46) }}<span class="ac-shine"></span></span>
+  {% for name in extras %}<span class="ac-scene-mini m{{ loop.index }}">{{ level_icon(name, [18, 15, 14][loop.index0]) }}</span>{% endfor %}
+  <span class="ac-spark s1">{{ sparkle(14) }}</span><span class="ac-spark s2">{{ sparkle(10) }}</span><span class="ac-spark s3">{{ sparkle(12) }}</span>
+  <span class="ac-scene-armo">{{ armo(74, 'happy', accessory) }}</span>
+</div>
+{%- endmacro %}
+
 {% macro star(filled=true, size=22) -%}
 <svg class="star {{ 'on' if filled else 'off' }}" viewBox="0 0 24 24" width="{{ size }}" height="{{ size }}" aria-hidden="true">
   <path d="M12 2.5 L14.9 8.8 L21.8 9.5 L16.6 14.1 L18.1 20.9 L12 17.4 L5.9 20.9 L7.4 14.1 L2.2 9.5 L9.1 8.8 Z"/>

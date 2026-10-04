@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, hue, level_icon, stars %}
+{% from "academy/_art.html" import armo, hue, level_icon, scene, stars %}
 {% block title %}{{ world.title }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -9,13 +9,13 @@
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac {{ hue(world) }}">
   <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← {{ learner.nickname }}'s map</a></p>
-  <header class="ac-level-head">
-    <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
-    <div>
+  <header class="ac-world-hero">
+    <div class="ac-world-hero-text">
       <p class="ac-kicker">{{ track.name }} · {% if world.kind == 'topic' %}{{ unit_names.get(world.unit, world.unit|title) }}{% elif world.kind == 'final' %}Boss world{% else %}Rule Quest · {{ world.tagline }}{% endif %}</p>
       <h1 class="ac-title">{{ world.title }}</h1>
       <p class="ac-lead">{{ card.done }} of {{ card.stages }} stages done · {{ card.stars }} of {{ card.stages * 3 }} stars</p>
     </div>
+    {{ scene(world, buddy.accessory) }}
   </header>
 
   {% if current %}

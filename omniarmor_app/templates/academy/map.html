@@ -13,7 +13,7 @@
   {% if clickable %}<a href="{{ url_for('academy.world_page', learner_id=learner_id, world_number=w.number) }}">
   {% elif card.paid and not g.kid %}<a href="{{ url_for('academy.plan_page') }}">
   {% else %}<span aria-disabled="true">{% endif %}
-    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}{{ sticker(state) }}</span>
+    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}<span class="ac-shine"></span>{{ sticker(state) }}</span>
     <span class="ac-world-text">
       <span class="ac-world-num">{% if w.kind == 'topic' %}World {{ number }}{% elif w.kind == 'final' %}Boss world{% else %}Rule Quest{% endif %}{% if card.paid %} · Academy plan{% elif not card.open %} · locked{% endif %}</span>
       <span class="ac-world-title">{{ w.title }}</span>

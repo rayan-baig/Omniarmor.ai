@@ -8,6 +8,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     var story = document.querySelector("[data-story]");
     var quiz = document.querySelector("[data-quiz]");
+    countUp();
     if (!quiz) return;
 
     // --- Lesson cards, one at a time ---------------------------------------
@@ -24,8 +25,12 @@
       story.appendChild(nav);
 
       var show = function (i) {
+        var backwards = i < index;
         index = i;
-        cards.forEach(function (card, n) { card.classList.toggle("active", n === index); });
+        cards.forEach(function (card, n) {
+          card.classList.toggle("back", backwards);
+          card.classList.toggle("active", n === index);
+        });
         back.hidden = index === 0;
         next.textContent = index === cards.length - 1 ? "Start the quiz!" : "Next";
       };
@@ -36,6 +41,7 @@
           next.focus();
         } else {
           quiz.classList.remove("waiting");
+          story.classList.add("all");
           nav.hidden = true;
           cards.forEach(function (card) { card.classList.add("active"); });
           var first = quiz.querySelector("input[type=radio]");
@@ -102,10 +108,12 @@
       if (gotIt) {
         right += 1;
         streak += 1;
+        if (hud) hud.classList.toggle("hot", streak >= 3);
         face("cheer");
         say(STREAKS[streak] || pick(CHEERS), true);
       } else {
         streak = 0;
+        if (hud) hud.classList.remove("hot");
         face("think");
         say(pick(TRY_AGAIN), false);
       }
@@ -135,6 +143,7 @@
         input.setAttribute("data-first", "");
         var gotIt = input.value === answer;
         q.classList.add("locked", gotIt ? "got-it" : "missed");
+        if (gotIt) burst(input.closest(".ac-opt"));
         Array.prototype.forEach.call(q.querySelectorAll("input"), function (other) {
           var label = other.closest(".ac-opt");
           if (other.value === answer) label.classList.add("right");
@@ -149,6 +158,39 @@
     });
     updateCount();
   });
+
+  // A little burst of sparks from a right answer.
+  function burst(label) {
+    if (!label || reduceMotion()) return;
+    var spray = document.createElement("span");
+    spray.className = "ac-burst";
+    spray.setAttribute("aria-hidden", "true");
+    for (var n = 0; n < 12; n++) {
+      var bit = document.createElement("i");
+      bit.style.setProperty("--a", (n * 30 + Math.round(Math.random() * 14)) + "deg");
+      bit.style.setProperty("--d", (34 + Math.round(Math.random() * 22)) + "px");
+      spray.appendChild(bit);
+    }
+    label.appendChild(spray);
+    setTimeout(function () { spray.remove(); }, 900);
+  }
+
+  // Scores on the results page count up from zero.
+  function countUp() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-countup]"), function (el) {
+      var target = parseInt(el.textContent, 10);
+      if (!(target > 0) || reduceMotion()) return;
+      var start = null;
+      var step = function (now) {
+        if (start === null) start = now;
+        var t = Math.min(1, (now - start) / 700);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+        if (t < 1) window.requestAnimationFrame(step);
+      };
+      el.textContent = "0";
+      window.requestAnimationFrame(step);
+    });
+  }
 
   function button(text, className) {
     var b = document.createElement("button");

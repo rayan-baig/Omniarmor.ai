@@ -11,7 +11,7 @@
 <div class="ac {{ hue(world) }}">
   <p class="ac-crumb"><a href="{{ url_for('academy.world_page', learner_id=learner.id, world_number=world.number) }}">← {{ world.title }}</a></p>
   <header class="ac-level-head">
-    <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}</span>
+    <span class="ac-level-badge">{{ level_icon(world.icon, 44) }}<span class="ac-shine"></span></span>
     <div>
       <p class="ac-kicker">{{ track.name }} · Stage {{ stage }} of {{ stage_count }}{% if boss %} · Boss round{% endif %}</p>
       <h1 class="ac-title">{{ world.title }}</h1>

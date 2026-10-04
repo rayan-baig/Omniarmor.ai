@@ -347,9 +347,9 @@
 .ac-unit-art{position:relative;width:82px;height:60px;flex:none}
 .ac-mini{position:absolute;display:grid;place-items:center;border-radius:30%;color:var(--glyph);background:linear-gradient(145deg,var(--u2),var(--u1));
   box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -3px 0 rgba(0,0,0,.16),0 0 0 3px var(--card)}
-.ac-mini:nth-child(1){width:44px;height:44px;left:0;top:10px;transform:rotate(-8deg);z-index:2}
-.ac-mini:nth-child(2){width:34px;height:34px;left:40px;top:0;transform:rotate(8deg)}
-.ac-mini:nth-child(3){width:28px;height:28px;left:50px;top:31px;transform:rotate(-5deg);z-index:1}
+.ac-mini:nth-child(1){width:44px;height:44px;left:0;top:10px;rotate:-8deg;z-index:2}
+.ac-mini:nth-child(2){width:34px;height:34px;left:40px;top:0;rotate:8deg;animation-delay:-1.3s}
+.ac-mini:nth-child(3){width:28px;height:28px;left:50px;top:31px;rotate:-5deg;z-index:1;animation-delay:-2.6s}
 .ac-unit-info{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ac-unit-line{display:flex;align-items:center;gap:12px}
 .ac-unit-line .ac-meter{flex:1;max-width:240px}
@@ -388,6 +388,101 @@
   .ac-mini:nth-child(3){width:24px;height:24px;left:38px;top:27px}
   .ac-unit-head .ac-h2{font-size:22px}
   .ac-story-buddy{width:76px;height:76px}
+}
+
+/* Motion. A few purposeful moments: things arrive, react to a tap and
+   celebrate a win. All of it switches off for people who prefer less motion. */
+@keyframes rise{from{opacity:0;translate:0 14px}to{opacity:1;translate:0 0}}
+@keyframes floaty{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@keyframes wiggle{0%,100%{rotate:0deg}25%{rotate:-9deg}55%{rotate:7deg}80%{rotate:-3deg}}
+@keyframes sheen{0%,62%{left:-70%}88%,100%{left:140%}}
+@keyframes spark{from{transform:rotate(var(--a)) translateX(6px) scale(1);opacity:1}to{transform:rotate(var(--a)) translateX(var(--d)) scale(.2);opacity:0}}
+@keyframes popin{0%{scale:.4}60%{scale:1.25}100%{scale:1}}
+@keyframes cardIn{from{opacity:0;translate:32px 0}to{opacity:1;translate:0 0}}
+@keyframes cardBack{from{opacity:0;translate:-32px 0}to{opacity:1;translate:0 0}}
+@keyframes shimmer{from{translate:-100% 0}to{translate:100% 0}}
+@keyframes drift{from{translate:0 0}to{translate:560px 0}}
+@keyframes glow{0%,100%{opacity:.55;scale:1}50%{opacity:.85;scale:1.08}}
+@keyframes nudge{0%,100%{translate:0 0}50%{translate:0 4px}}
+
+.ac-worlds > li,.ac-unit-head{animation:rise .5s cubic-bezier(.2,.8,.3,1) both}
+.ac-worlds > li:nth-child(2){animation-delay:.05s}.ac-worlds > li:nth-child(3){animation-delay:.1s}
+.ac-worlds > li:nth-child(4){animation-delay:.15s}.ac-worlds > li:nth-child(5){animation-delay:.2s}
+.ac-worlds > li:nth-child(6){animation-delay:.25s}.ac-worlds > li:nth-child(n+7){animation-delay:.3s}
+.ac-mini{animation:floaty 4s ease-in-out infinite}
+.ac-world a:hover .ac-world-badge{animation:wiggle .6s ease}
+.ac-world.started a:hover .ac-world-badge{animation:upulse 1.8s ease-in-out infinite,wiggle .6s ease}
+
+/* A light sweeping across a sticker: on the world in progress, the world's own badge and its scene. */
+.ac-shine{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.ac-shine::before{content:"";position:absolute;top:-25%;bottom:-25%;left:-70%;width:42%;transform:skewX(-18deg);
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);display:none}
+.ac-world.started .ac-shine::before,.ac-level-badge .ac-shine::before,.ac-scene .ac-shine::before{display:block;animation:sheen 4.2s ease-in-out infinite}
+
+/* A world's scene: hills, a sun, drifting clouds, its sticker and Armo on the hill. */
+.ac-world-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,380px);align-items:center;gap:16px 28px}
+.ac-world-hero .ac-title{margin-bottom:6px}
+.ac-scene{position:relative;height:176px;border-radius:24px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--u1) 24%,var(--card)) 0%,var(--card) 92%);
+  border:1px solid color-mix(in srgb,var(--u1) 30%,var(--line))}
+.ac-hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:58%}
+.ac-hills .h1{fill:color-mix(in srgb,var(--u1) 34%,var(--card))}
+.ac-hills .h2{fill:color-mix(in srgb,var(--u1) 58%,var(--card))}
+.ac-sun{position:absolute;right:20px;top:16px;width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle,var(--u2) 0 34%,color-mix(in srgb,var(--u2) 0%,transparent) 70%);animation:glow 4.5s ease-in-out infinite}
+.ac-cloud{position:absolute;left:-90px;height:12px;border-radius:999px;background:#fff;opacity:.13;animation:drift 30s linear infinite}
+.ac-cloud::before,.ac-cloud::after{content:"";position:absolute;bottom:5px;border-radius:50%;background:#fff}
+.ac-cloud::before{left:18%;width:34%;aspect-ratio:1}
+.ac-cloud::after{left:44%;width:26%;aspect-ratio:1}
+.ac-cloud.c1{width:66px;top:26px}
+.ac-cloud.c2{width:44px;top:58px;animation-duration:40s;animation-delay:-18s}
+.ac-scene-sticker,.ac-scene-mini{position:absolute;display:grid;place-items:center;border-radius:30%;color:var(--glyph);
+  background:linear-gradient(145deg,var(--u2),var(--u1));box-shadow:inset 0 2px 0 rgba(255,255,255,.38),inset 0 -4px 0 rgba(0,0,0,.16),0 10px 18px -10px rgba(0,0,0,.6)}
+.ac-scene-sticker{left:40%;top:20px;width:72px;height:72px;rotate:-4deg;animation:floaty 3.6s ease-in-out infinite;z-index:2}
+.ac-scene-mini{animation:floaty 4.2s ease-in-out infinite}
+.ac-scene-mini.m1{left:67%;top:72px;width:34px;height:34px;rotate:9deg;animation-delay:-1s}
+.ac-scene-mini.m2{left:83%;top:104px;width:28px;height:28px;rotate:-7deg;animation-delay:-2.2s}
+.ac-scene-mini.m3{left:25%;top:22px;width:28px;height:28px;rotate:6deg;animation-delay:-3.1s}
+.ac-spark{position:absolute;color:var(--u2);animation:twinkle 2.2s ease-in-out infinite}
+.ac-spark.s1{left:35%;top:12px}.ac-spark.s2{left:62%;top:40px;animation-delay:-.8s}.ac-spark.s3{left:90%;top:80px;animation-delay:-1.5s;color:#fff}
+.ac-scene-armo{position:absolute;left:4%;bottom:0;z-index:3}
+.ac-scene-armo .armo{animation:bob 3s ease-in-out infinite}
+
+/* The stage you're on gets a bouncing marker. */
+.ac-stage.current a{position:relative}
+.ac-stage.current a::after{content:"";position:absolute;top:-13px;left:50%;margin-left:-7px;border:7px solid transparent;border-top-color:var(--u1);animation:nudge 1s ease-in-out infinite}
+
+/* Lesson cards slide in, and Armo hops in with each one. */
+.js .ac-story-card.active{animation:cardIn .4s cubic-bezier(.2,.9,.3,1.1) both}
+.js .ac-story-card.active.back{animation-name:cardBack}
+.js .ac-story-card.active .ac-story-buddy .armo{animation:hop .7s ease-out both}
+.ac-story.all .ac-story-card,.ac-story.all .ac-story-buddy .armo{animation:none}
+
+/* Answers: sparks from a right one, a shake for a miss. */
+.ac-burst{position:absolute;left:31px;top:50%;width:0;height:0;pointer-events:none;z-index:2}
+.ac-burst i{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--mint);animation:spark .75s cubic-bezier(.2,.7,.3,1) forwards}
+.ac-burst i:nth-child(3n){background:var(--sun)}
+.ac-burst i:nth-child(3n+1){background:var(--u2);width:5px;height:5px;border-radius:1px}
+.ac-opt.right .ac-letter{animation:popin .45s cubic-bezier(.3,1.6,.5,1)}
+.ac-opt.wrong{animation:shake .4s ease}
+
+/* On a streak of 3 or more, the progress bar shimmers and a flame lights up. */
+.ac-hud-flame{display:none;margin-left:6px;vertical-align:-2px;color:#FF8A2B}
+.ac-hud.hot .ac-hud-flame{display:inline-block;animation:flicker 1.2s ease-in-out infinite}
+.ac-hud .ac-meter-fill{position:relative;overflow:hidden}
+.ac-hud.hot .ac-meter-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 15%,rgba(255,255,255,.5) 50%,transparent 85%);animation:shimmer 1.3s linear infinite}
+
+/* A win: the score counts up and a slow sunburst turns behind the stars. */
+.ac-score{font-family:var(--kid);font-size:1.25em;color:var(--ink);font-variant-numeric:tabular-nums}
+.ac-big-stars{position:relative;isolation:isolate}
+.ac-result.win .ac-big-stars::before{content:"";position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;z-index:-1;
+  background:repeating-conic-gradient(color-mix(in srgb,var(--u2) 26%,transparent) 0 9deg,transparent 9deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 22%,transparent 68%);mask:radial-gradient(circle,#000 22%,transparent 68%);animation:aura 22s linear infinite}
+
+@media (max-width:720px){
+  .ac-world-hero{grid-template-columns:minmax(0,1fr)}
+  .ac-scene{order:-1;height:150px}
+  .ac-scene-sticker{width:62px;height:62px;top:16px}
 }
 
 @media print{
