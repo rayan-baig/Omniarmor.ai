@@ -51,6 +51,17 @@ def check_scenario(item, where, with_level=True):
     return problems
 
 
+MAX_LONGEST_SHARE = 0.40  # with 3 options, chance is about 1 in 3
+
+
+def longest_share(items):
+    """How often the right answer is the longest option, so kids can't guess by length."""
+    items = [q for q in items if isinstance(q, tuple) and len(q) >= 5]
+    if not items:
+        return 0
+    return sum(1 for q in items if len(q[1]) > max(len(q[2]), len(q[3]))) / len(items)
+
+
 class TestWorldBanks(unittest.TestCase):
     def test_every_world(self):
         seen_keys, problems, total = set(), [], 0
@@ -88,6 +99,10 @@ class TestWorldBanks(unittest.TestCase):
                 prompts = [q[0].lower() for q in questions if isinstance(q, tuple)]
                 if len(set(prompts)) != len(prompts):
                     problems.append(f"{where}: repeated question")
+                share = longest_share(questions)
+                if share > MAX_LONGEST_SHARE:
+                    problems.append(f"{where}: right answer is the longest option in {share:.0%} of questions "
+                                    f"(max {MAX_LONGEST_SHARE:.0%})")
                 facts = w.get("facts", [])
                 if len(facts) < 10:
                     problems.append(f"{where}: {len(facts)} facts (need 10+)")
@@ -136,6 +151,13 @@ class TestExpansions(unittest.TestCase):
             prompts = [o[0].lower() for o in original] + [o[0].lower() for o in items if isinstance(o, tuple)]
             if len(set(prompts)) != len(prompts):
                 problems.append(f"{name}: repeats a situation")
+            share = longest_share(items)
+            if share > MAX_LONGEST_SHARE:
+                problems.append(f"{name}: right answer is the longest option in {share:.0%} (max {MAX_LONGEST_SHARE:.0%})")
+            share = longest_share(original)
+            if share > MAX_LONGEST_SHARE:
+                problems.append(f"{name[:-5]} in academy.py: right answer is the longest option in {share:.0%} "
+                                f"(max {MAX_LONGEST_SHARE:.0%})")
         self.assertEqual(problems, [], "\n".join(problems[:60]))
 
 
