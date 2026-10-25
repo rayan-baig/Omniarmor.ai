@@ -27,8 +27,10 @@ a compliance professional for your jurisdiction.
 ```sh
 pip install -r requirements.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 136 tests
+python3 -m unittest discover -s tests     # 200 tests
 ```
+
+Everything about OmniArmor in plain language, from every feature to all 500 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).
 
 Production: see [docs/OPERATIONS.md](docs/OPERATIONS.md) (Render one-click
 blueprint, Docker, or `docker compose up -d` on one small server with free
