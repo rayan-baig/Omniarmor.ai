@@ -16,8 +16,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY omni_armor_platform.py wsgi.py ./
 COPY omni_armor_rules ./omni_armor_rules
 COPY omniarmor_app ./omniarmor_app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-USER omniarmor
+# Starts as root only so the entrypoint can give a root-owned disk to
+# `omniarmor`, then drops to that user with setpriv before the app starts.
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 VOLUME ["/data"]
 EXPOSE 8000
 HEALTHCHECK --interval=60s --timeout=5s --start-period=20s \
