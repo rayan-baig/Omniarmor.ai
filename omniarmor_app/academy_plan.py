@@ -135,14 +135,47 @@ def verify_webhook(payload, header, secret, now=None):
     return any(hmac.compare_digest(expected, sig) for sig in parts.get("v1", []))
 
 
-def _org_for(conn, obj):
+def _older_than(obj, org):
+    """Whether a Stripe object was created before this workspace was.
+
+    Stripe always says when a subscription was created. One older than the
+    workspace (allowing a minute for clocks) cannot be this workspace's.
+    """
+    created = obj.get("created")
+    if not isinstance(created, int) or not org["created_at"]:
+        return False
+    try:
+        from datetime import datetime, timezone
+        made = datetime.fromisoformat(str(org["created_at"]).replace("Z", "+00:00"))
+        if made.tzinfo is None:
+            made = made.replace(tzinfo=timezone.utc)
+        return created < made.timestamp() - 60
+    except ValueError:
+        return False
+
+
+def _org_for(conn, obj, kind=""):
+    """The workspace a Stripe object is about, or None.
+
+    The workspace id in the metadata is believed only when it agrees with the
+    Stripe customer. Workspace ids are reused after a deletion, so a deleted
+    workspace's subscription, renewing later, named a stranger's new
+    workspace: that workspace became paid, and its owner could open the
+    billing portal on the original customer's card and invoices. Now a
+    workspace that has a customer must match it, and one without a customer
+    is not matched by a subscription created before the workspace existed.
+    """
     meta = obj.get("metadata") or {}
     org_id = meta.get("org_id") or obj.get("client_reference_id")
+    customer = obj.get("customer")
     if org_id and str(org_id).isdigit():
         row = conn.execute("SELECT * FROM orgs WHERE id = ?", (int(org_id),)).fetchone()
         if row is not None:
-            return row
-    customer = obj.get("customer")
+            if row["stripe_customer_id"]:
+                if not customer or customer == row["stripe_customer_id"]:
+                    return row
+            elif kind == "checkout.session.completed" or not _older_than(obj, row):
+                return row
     if customer:
         return conn.execute("SELECT * FROM orgs WHERE stripe_customer_id = ?", (customer,)).fetchone()
     return None
@@ -182,7 +215,7 @@ def apply_event(conn, event):
     duplicate checkout, say) don't change its plan."""
     kind = event.get("type", "")
     obj = (event.get("data") or {}).get("object") or {}
-    org = _org_for(conn, obj)
+    org = _org_for(conn, obj, kind)
     if org is None:
         return None
     if _seen(conn, event, org["id"]):

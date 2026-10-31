@@ -527,9 +527,12 @@ class TestJobs(AppTestCase):
 
     def test_run_daily_force_and_backup_pruning(self):
         cfg = dict(self.app.config, BACKUP_KEEP=2)
-        made = [backup_database(cfg) for _ in range(3)]
+        # By hand, each one is a new copy, and the oldest are pruned.
+        made = [backup_database(cfg, fresh=True) for _ in range(3)]
         self.assertEqual(len(set(made)), 3)
         self.assertEqual(sorted(os.listdir(cfg["BACKUP_DIR"])), sorted(os.path.basename(m) for m in made[1:]))
+        # Automatically, a day's copy is made once: a retried run reuses it.
+        self.assertEqual(backup_database(cfg), made[-1])
         result = run_daily(cfg, force=True)
         self.assertIn("backup=omniarmor-", result)
 

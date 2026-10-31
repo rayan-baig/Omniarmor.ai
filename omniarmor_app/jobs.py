@@ -48,11 +48,23 @@ def finish_run(conn, job, run_date, result):
     conn.commit()
 
 
-def backup_database(cfg):
-    """Copies the live database safely (SQLite online backup) and keeps the newest BACKUP_KEEP copies."""
+def backup_database(cfg, fresh=False):
+    """Copies the live database safely (SQLite online backup) and keeps the newest BACKUP_KEEP copies.
+
+    The automatic runs keep one copy a day (see below); `fresh` makes a new
+    one regardless, for somebody asking for a backup by hand."""
     if cfg["DATABASE"] == ":memory:":
         return None
     os.makedirs(cfg["BACKUP_DIR"], exist_ok=True)
+    # One backup a day. When the daily job fails part-way it runs again ten
+    # minutes later, and every run used to take another backup and prune by
+    # count, so a job failing all afternoon pushed every earlier day's copy
+    # out: one company whose reminders kept failing wiped the restore history
+    # of every customer. Today's copy is kept once made.
+    today = utcnow().strftime("%Y%m%d")
+    existing = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{today}-*.db")))
+    if existing and not fresh:
+        return existing[-1]
     dest = os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
     src = sqlite3.connect(cfg["DATABASE"])
     dst = sqlite3.connect(dest)
@@ -200,4 +212,4 @@ def register_cli(app):
     @app.cli.command("backup")
     def backup_command():
         """Back up the database now."""
-        click.echo(backup_database(dict(app.config)) or "Nothing to back up.")
+        click.echo(backup_database(dict(app.config), fresh=True) or "Nothing to back up.")

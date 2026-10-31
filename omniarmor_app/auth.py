@@ -27,6 +27,7 @@ COMMON_TIMEZONES = [
 ]
 INVITE_DAYS = 7
 RESET_HOURS = 1
+SIGNUPS_PER_HOUR = 10
 GENERIC_LOGIN_ERROR = "That email and password don't match an account."
 
 
@@ -63,6 +64,11 @@ def signup():
         tz = form.get("timezone", "UTC")
         picked = sorted({int(i) for i in form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6 and int(i) in INDUSTRIES})
         errors = []
+        # Sign-ups from one place are limited: each costs a password hash, and
+        # an unlimited form could tie the server up or fill the database.
+        signup_key = f"signup-ip:{client_ip()}"
+        if rate_limited([(signup_key, SIGNUPS_PER_HOUR)], timedelta(hours=1)):
+            errors.append("Too many sign-ups from here in the last hour. Try again later.")
         if not name:
             errors.append("Enter your name.")
         if not valid_email(email):
@@ -84,6 +90,7 @@ def signup():
                 flash_error(e)
             return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
                                    timezones=COMMON_TIMEZONES, form=form, picked=set(picked)), 400
+        record_event([signup_key])
         now = now_iso()
         if invite is not None:
             claimed = conn.execute("UPDATE invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
@@ -151,6 +158,15 @@ def login():
 
 @bp.route("/logout", methods=["POST"])
 def logout():
+    # Ends the session on the server too. Sessions are signed cookies that
+    # last fourteen days, and clearing only this browser's copy left a copied
+    # or forgotten cookie working after "sign out". Moving the epoch on ends
+    # every session this person has, which is what signing out should mean.
+    user_id = session.get("user_id")
+    if user_id:
+        conn = get_db()
+        conn.execute("UPDATE users SET session_epoch = session_epoch + 1 WHERE id = ?", (user_id,))
+        conn.commit()
     session.clear()
     flash("You're signed out.", "ok")
     return redirect(url_for("auth.login"))

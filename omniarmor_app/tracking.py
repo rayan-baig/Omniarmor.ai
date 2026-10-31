@@ -88,8 +88,23 @@ class ItemState:
         return (LEVEL_ORDER[self.level], self.days_left if self.days_left is not None else 10 ** 6, self.industry_id, self.rule.title)
 
 
+# A hundred years. Dates past this, either way, are not a schedule anybody
+# keeps, and Python's dates stop at the year 9999: an override of three million
+# days used to raise OverflowError on every page that showed the rule.
+MAX_DAYS = 36500
+
+
 def _whole_days(value):
-    return int(math.floor(value))
+    return max(-MAX_DAYS, min(MAX_DAYS, int(math.floor(value))))
+
+
+def _shifted(day, days):
+    """`day` moved by `days`, or None past the calendar's end. One stored row
+    must never take down every page that lists its company's rules."""
+    try:
+        return day + timedelta(days=days)
+    except OverflowError:
+        return None
 
 
 def compute_state(industry_id, rule, row, today):
@@ -114,14 +129,10 @@ def compute_state(industry_id, rule, row, today):
 
     due_date = warn_date = None
     if value_date is not None:
-        if mode == "since":
-            due_date = value_date + timedelta(days=_whole_days(eff.limit))
-            if eff.warn is not None:
-                warn_date = value_date + timedelta(days=_whole_days(eff.warn))
-        else:
-            due_date = value_date - timedelta(days=_whole_days(eff.limit))
-            if eff.warn is not None:
-                warn_date = value_date - timedelta(days=_whole_days(eff.warn))
+        sign = 1 if mode == "since" else -1
+        due_date = _shifted(value_date, sign * _whole_days(eff.limit))
+        if eff.warn is not None:
+            warn_date = _shifted(value_date, sign * _whole_days(eff.warn))
     return ItemState(
         industry_id=industry_id, rule=rule, effective=eff, mode=mode, value=value, level=level,
         status=status, message=message, value_date=value_date, due_date=due_date, warn_date=warn_date,
@@ -277,6 +288,13 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
             warn = _parse_number(form.get("warn"))
             if limit is None:
                 raise ValidationError("Enter your limit.")
+            if mode:
+                # A limit counted in days: kept to a real calendar. One that
+                # ran past the year 9999 broke the company's pages and the
+                # daily job (see MAX_DAYS).
+                for days in (limit, warn):
+                    if days is not None and not 0 <= days <= MAX_DAYS:
+                        raise ValidationError(f"Enter a number of days between 0 and {MAX_DAYS}.")
             final_warn = rule.warn if warn is None else warn
             if final_warn is not None:
                 if rule.kind == "max" and final_warn > limit:

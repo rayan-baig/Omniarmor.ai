@@ -207,12 +207,22 @@ def record_event(keys):
 
 
 def _failure_keys(email):
-    return [f"email:{normalize_email(email)}", f"ip:{client_ip()}"]
+    address = normalize_email(email)
+    return [f"email-ip:{address}|{client_ip()}", f"email:{address}", f"ip:{client_ip()}"]
 
 
 def too_many_failures(email):
-    email_key, ip_key = _failure_keys(email)
-    return rate_limited([(email_key, MAX_FAILURES), (ip_key, MAX_FAILURES * 4)], FAILURE_WINDOW)
+    """Five wrong tries from one place, for one address, stops that place.
+
+    The limit used to be five per address from anywhere, so anybody who knew
+    an email could keep its owner out with five wrong passwords every fifteen
+    minutes. Now the five are per address and place; an address being guessed
+    at from many places at once still stops at fifty, and a place guessing at
+    many addresses stops at twenty.
+    """
+    pair_key, email_key, ip_key = _failure_keys(email)
+    return rate_limited([(pair_key, MAX_FAILURES), (email_key, MAX_FAILURES * 10),
+                         (ip_key, MAX_FAILURES * 4)], FAILURE_WINDOW)
 
 
 def record_failure(email):
@@ -220,8 +230,9 @@ def record_failure(email):
 
 
 def clear_failures(email):
+    pair_key, email_key, _ = _failure_keys(email)
     conn = get_db()
-    conn.execute("DELETE FROM login_failures WHERE key = ?", (f"email:{normalize_email(email)}",))
+    conn.execute("DELETE FROM login_failures WHERE key IN (?, ?)", (pair_key, email_key))
     conn.commit()
 
 
