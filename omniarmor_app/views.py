@@ -87,7 +87,8 @@ def audit():
 
 
 def _audit_rows(limit=None, offset=0):
-    sql = ("SELECT audit.*, users.name AS user_name FROM audit LEFT JOIN users ON users.id = audit.user_id"
+    sql = ("SELECT audit.*, COALESCE(users.name, audit.user_name) AS user_name FROM audit"
+           " LEFT JOIN users ON users.id = audit.user_id"
            " WHERE audit.org_id = ? ORDER BY audit.at DESC, audit.id DESC")
     params = [g.org["id"]]
     if limit is not None:

@@ -251,6 +251,12 @@ MIGRATIONS = [
     (10, """
     ALTER TABLE orgs ADD COLUMN academy_ends_at TEXT;
     """),
+    (11, """
+    ALTER TABLE audit ADD COLUMN user_name TEXT;
+    UPDATE audit SET user_name = (SELECT name FROM users WHERE users.id = audit.user_id);
+    ALTER TABLE items ADD COLUMN updated_by_name TEXT;
+    UPDATE items SET updated_by_name = (SELECT name FROM users WHERE users.id = items.updated_by);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
@@ -317,9 +323,18 @@ def close_db(_exc=None):
         conn.close()
 
 
+def user_name(conn, user_id):
+    """The person's name, kept on audit rows and readings so the record still
+    says who made a change after that person is removed from the team."""
+    if user_id is None:
+        return None
+    row = conn.execute("SELECT name FROM users WHERE id = ?", (user_id,)).fetchone()
+    return row["name"] if row else None
+
+
 def record_audit(conn, org_id, user_id, action, summary, industry_id=None, rule_key=None, before=None, after=None):
     conn.execute(
-        "INSERT INTO audit (org_id, user_id, at, action, industry_id, rule_key, before, after, summary)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (org_id, user_id, now_iso(), action, industry_id, rule_key, before, after, summary),
+        "INSERT INTO audit (org_id, user_id, user_name, at, action, industry_id, rule_key, before, after, summary)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (org_id, user_id, user_name(conn, user_id), now_iso(), action, industry_id, rule_key, before, after, summary),
     )

@@ -18,7 +18,7 @@ from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
 from .catalog import INDUSTRIES, can_override, date_mode, effective_rule, find_rule, rules_for
-from .db import now_iso, record_audit
+from .db import now_iso, record_audit, user_name
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
 LEVEL_LABEL = {"BLOCKED": "Blocked", "WARNING": "Warning", "CLEARED": "Cleared", "NONE": "No reading"}
@@ -149,7 +149,7 @@ def org_industry_ids(conn, org_id):
 
 def _load_rows(conn, org_id):
     rows = conn.execute(
-        "SELECT items.*, users.name AS updated_by_name FROM items"
+        "SELECT items.*, COALESCE(users.name, items.updated_by_name) AS updated_by_name FROM items"
         " LEFT JOIN users ON users.id = items.updated_by WHERE items.org_id = ?",
         (org_id,),
     )
@@ -229,13 +229,14 @@ def _write(conn, org_id, industry_id, rule_key, user_id, **fields):
     values.update(fields)
     conn.execute(
         "INSERT INTO items (org_id, industry_id, rule_key, value_num, value_bool, value_date, limit_override,"
-        " warn_override, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        " warn_override, updated_at, updated_by, updated_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         " ON CONFLICT (org_id, industry_id, rule_key) DO UPDATE SET value_num = excluded.value_num,"
         " value_bool = excluded.value_bool, value_date = excluded.value_date,"
         " limit_override = excluded.limit_override, warn_override = excluded.warn_override,"
-        " updated_at = excluded.updated_at, updated_by = excluded.updated_by",
+        " updated_at = excluded.updated_at, updated_by = excluded.updated_by,"
+        " updated_by_name = excluded.updated_by_name",
         (org_id, industry_id, rule_key, values["value_num"], values["value_bool"], values["value_date"],
-         values["limit_override"], values["warn_override"], now_iso(), user_id),
+         values["limit_override"], values["warn_override"], now_iso(), user_id, user_name(conn, user_id)),
     )
     return _get_row(conn, org_id, industry_id, rule_key)
 

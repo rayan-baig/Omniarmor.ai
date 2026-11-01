@@ -204,3 +204,31 @@ class TestCancelledPlan(AppTestCase):
         del obj["current_period_end"]
         self.send("evt_new_api", obj)
         self.assertIn("renews 2030-01-01", self.client.get("/app/academy/plan").data.decode())
+
+
+class TestRecordKeepsWhoAfterRemoval(AppTestCase):
+    """The Vault is the record an inspector sees: who changed what, and when.
+    Removing a team member deletes their account, and their changes used to
+    turn into "System" changes."""
+
+    def setUp(self):
+        import re
+        super().setUp()
+        self.signup(industries=(1,))
+        self.post("/app/settings/invite")
+        page = self.client.get("/app/settings").data.decode()
+        token = re.search(r"https://omniarmor\.test/signup\?invite=([\w-]+)", page).group(1)
+        self.member = self.app.test_client()
+        self.signup(email="member@example.com", client=self.member, invite=token, name="Sam Member")
+        self.change(1, "annual_mvr_review", client=self.member, date="2026-01-01")
+        with self.db() as conn:
+            member_id = conn.execute("SELECT id FROM users WHERE email = 'member@example.com'").fetchone()[0]
+        self.post(f"/app/settings/member/{member_id}/remove")
+
+    def test_the_audit_trail_still_names_them(self):
+        csv = self.client.get("/app/audit.csv").data.decode()
+        self.assertIn("Sam Member", [line for line in csv.splitlines() if "Annual driving record review" in line][0])
+
+    def test_the_report_still_names_them(self):
+        csv = self.client.get("/app/report.csv").data.decode()
+        self.assertIn("Sam Member", [line for line in csv.splitlines() if "Annual driving record review" in line][0])

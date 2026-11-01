@@ -735,7 +735,7 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 10), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 11), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
@@ -746,8 +746,8 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
   - the time of the last Stripe event applied.
 - `memberships`: who belongs to which company, as owner or member.
 - `org_industries`: which of the 50 industries each company tracks.
-- `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when.
-- `audit`: every change, with person, time, action, industry, rule, before and after, and a summary.
+- `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
+- `audit`: every change, with person, time, action, industry, rule, before and after, and a summary. The person's name is stored on the row, so a removed team member's changes still show who made them.
 - `notifications`: every email sent or saved, with status, error and number of attempts.
 - `reminder_marks`: which reminder windows were already sent, for which due date.
 - `invites` and `password_resets`: one-time links, stored as hashes.
@@ -971,7 +971,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 200 tests pass, and pyflakes is clean. No pull request has been opened yet.
-- **Database schema** is at version 10.
+- **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
   - **Everyone is signed out once.** Existing sessions, for grown-ups and kid devices alike, end on the first deploy of this branch, because sessions now carry the new identity checks. Everyone signs in again once.
