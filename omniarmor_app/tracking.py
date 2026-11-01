@@ -260,6 +260,15 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
             after = _write(conn, org_id, industry_id, rule_key, user_id, value_bool=1 if answer == "yes" else 0)
         else:
             picked = _parse_date(form.get("date")) if mode else None
+            typed = (form.get("value") or "").strip()
+            if picked is not None and typed:
+                # The page fills the date box with the saved date, so it comes
+                # back with every save. A number typed next to that unchanged
+                # date is the new reading; it used to be dropped for the old date.
+                saved = before["value_date"] if before is not None else None
+                if picked.isoformat() != saved:
+                    raise ValidationError("Enter a number or a date, not both.")
+                picked = None
             if picked is not None:
                 if mode == "since" and picked > today:
                     raise ValidationError("That date is in the future. Enter the date it last happened.")
