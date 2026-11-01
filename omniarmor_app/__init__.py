@@ -15,6 +15,7 @@ from .catalog import INDUSTRIES, rules_for
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate
 from .jobs import register_cli, start_scheduler
+from .redact import redact
 from .security import check_csrf, csrf_token, load_user, security_headers
 from .tracking import format_quantity
 
@@ -76,9 +77,15 @@ def healthz():
     return jsonify(status="ok" if ok else "error", schema=version), (200 if ok else 503)
 
 
+class OmniArmorFlask(Flask):
+    def log_exception(self, exc_info):
+        # Flask's own version writes the page address, which can hold a reset token.
+        self.logger.error(f"Exception on {redact(request.path)} [{request.method}]", exc_info=exc_info)
+
+
 def create_app(**overrides):
     cfg = load_config(**overrides)
-    app = Flask(__name__, instance_relative_config=False)
+    app = OmniArmorFlask(__name__, instance_relative_config=False)
     app.config.update(cfg)
     if cfg["TRUSTED_PROXIES"] > 0:
         hops = cfg["TRUSTED_PROXIES"]

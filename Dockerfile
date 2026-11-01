@@ -27,4 +27,4 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=20s \
   CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT','8000'), timeout=4).status == 200 else 1)"
 # One process with threads keeps memory low (fits a free or smallest VM).
 # Raise WEB_CONCURRENCY only if one process can't keep up.
-CMD ["sh", "-c", "exec gunicorn --workers ${WEB_CONCURRENCY} --threads ${WEB_THREADS} --timeout 60 --bind 0.0.0.0:${PORT} --access-logfile - wsgi:app"]
+CMD ["sh", "-c", "exec gunicorn --workers ${WEB_CONCURRENCY} --threads ${WEB_THREADS} --timeout 60 --bind 0.0.0.0:${PORT} --access-logfile - --logger-class omniarmor_app.access_log.RedactingLogger wsgi:app"]

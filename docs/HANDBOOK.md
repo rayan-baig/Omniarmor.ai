@@ -718,7 +718,7 @@ SQLite database (one file on a persistent disk) + daily backups
   - `render.yaml` for one-click Render;
   - `.env.example`;
   - `wsgi.py`, the production entry point;
-  - `requirements.txt`: flask 3.0.3, werkzeug 3.1.9, gunicorn 22.0.0 and tzdata.
+  - `requirements.txt`: flask 3.1.3, werkzeug 3.1.9, gunicorn 22.0.0 and tzdata.
 - `.github/workflows/ci.yml`: on every push, installs the requirements, runs pyflakes, runs the tests and builds the Docker image.
 
 ### 8.3 The life of a reading
@@ -828,6 +828,7 @@ The Docker image:
 - runs as a non-root user;
 - keeps the database and backups in `/data`;
 - has a built-in health check against `/healthz`;
+- writes an access log with password-reset and invite tokens replaced by `[hidden]`, so the hosting dashboard never holds a working link.
 - runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs.
 
 ### 9.3 Email

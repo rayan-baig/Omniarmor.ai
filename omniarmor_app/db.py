@@ -235,6 +235,16 @@ MIGRATIONS = [
         WHERE academy_trial_ends IS NULL AND academy_status = 'none'
         AND EXISTS (SELECT 1 FROM learners WHERE learners.org_id = orgs.id);
     """),
+    (8, """
+    CREATE TABLE quiz_checks (
+        learner_id INTEGER NOT NULL REFERENCES learners(id) ON DELETE CASCADE,
+        qkey TEXT NOT NULL,
+        choice INTEGER NOT NULL,
+        at TEXT NOT NULL,
+        PRIMARY KEY (learner_id, qkey)
+    );
+    CREATE INDEX quiz_checks_at ON quiz_checks (at);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

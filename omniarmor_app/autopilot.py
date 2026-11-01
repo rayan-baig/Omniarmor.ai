@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from . import bugfinder
+from .redact import redact
 from .db import connect, iso, migrate, now_iso, utcnow
 from .notify import send_email
 
@@ -348,7 +349,7 @@ def record_error(cfg, path, exc):
         conn = connect(cfg["DATABASE"])
         try:
             conn.execute("INSERT INTO app_errors (at, path, error, signature, location, trace) VALUES (?, ?, ?, ?, ?, ?)",
-                         (now_iso(), path[:200], f"{type(exc).__name__}: {exc}"[:300], signature, location, trace))
+                         (now_iso(), redact(path)[:200], f"{type(exc).__name__}: {exc}"[:300], signature, location, trace))
             conn.commit()
         finally:
             conn.close()

@@ -130,8 +130,42 @@
         }, 900);
       }
     };
+    // The page doesn't know the right answers. Each first answer goes to the server,
+    // which keeps it (so it can't be changed) and says whether it was right.
+    var reveal = function (q, input, verdict) {
+      var gotIt = Boolean(verdict.right);
+      q.classList.add(gotIt ? "got-it" : "missed");
+      if (gotIt) burst(input.closest(".ac-opt"));
+      Array.prototype.forEach.call(q.querySelectorAll("input"), function (other) {
+        var label = other.closest(".ac-opt");
+        if (Number(other.value) === verdict.answer) label.classList.add("right");
+        else if (Number(other.value) === verdict.chosen) label.classList.add("wrong");
+        if (Number(other.value) === verdict.chosen) other.checked = true;
+      });
+      var explain = q.querySelector("[data-explain]");
+      if (explain && verdict.explain) {
+        explain.textContent = verdict.explain;
+        explain.hidden = false;
+      }
+      react(gotIt);
+      updateCount();
+    };
+    var ask = function (q, input) {
+      var body = new FormData();
+      ["csrf_token", "attempt", "deck"].forEach(function (name) {
+        var field = quiz.querySelector("input[name='" + name + "']");
+        if (field) body.append(name, field.value);
+      });
+      body.append("check", q.getAttribute("data-index"));
+      body.append("choice", input.value);
+      return fetch(quiz.getAttribute("action") || window.location.href, {
+        method: "POST", body: body, credentials: "same-origin", headers: { "Accept": "application/json" }
+      }).then(function (response) {
+        if (!response.ok) throw new Error("check failed");
+        return response.json();
+      });
+    };
     questions.forEach(function (q) {
-      var answer = q.getAttribute("data-answer");
       q.addEventListener("change", function (event) {
         var input = event.target;
         if (q.classList.contains("locked")) {
@@ -141,19 +175,17 @@
           return;
         }
         input.setAttribute("data-first", "");
-        var gotIt = input.value === answer;
-        q.classList.add("locked", gotIt ? "got-it" : "missed");
-        if (gotIt) burst(input.closest(".ac-opt"));
+        q.classList.add("locked");
         Array.prototype.forEach.call(q.querySelectorAll("input"), function (other) {
-          var label = other.closest(".ac-opt");
-          if (other.value === answer) label.classList.add("right");
-          else if (other === input) label.classList.add("wrong");
           other.setAttribute("aria-disabled", "true");
         });
-        var explain = q.querySelector("[data-explain]");
-        if (explain) explain.hidden = false;
-        react(gotIt);
         updateCount();
+        ask(q, input).then(function (verdict) { reveal(q, input, verdict); }, function () {
+          // No answer from the server (offline, or the quiz was already checked):
+          // the choice still counts when the quiz is handed in.
+          q.classList.add("pending");
+          updateCount();
+        });
       });
     });
     updateCount();

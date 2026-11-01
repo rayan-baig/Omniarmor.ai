@@ -86,6 +86,8 @@ def cleanup(conn):
     conn.execute("DELETE FROM invites WHERE expires_at < ?", (iso(utcnow() - timedelta(days=30)),))
     conn.execute("DELETE FROM friend_codes WHERE expires_at < ?", (iso(utcnow()),))
     conn.execute("DELETE FROM join_codes WHERE expires_at < ?", (iso(utcnow()),))
+    # Answers kept from a quiz nobody finished (academy_views.QUIZ_CHECK_DAYS).
+    conn.execute("DELETE FROM quiz_checks WHERE at < ?", (iso(utcnow() - timedelta(days=30)),))
     conn.commit()
 
 

@@ -1,5 +1,6 @@
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
-{# The quiz form, shared by levels and duels. Needs questions; needed and attempt are optional. #}
+{# The quiz form, shared by levels, duels and practice. Needs questions; needed and attempt are optional.
+   The right answers are NOT in the page: academy.js asks the server about each first answer. #}
 {% from "academy/_art.html" import armo %}
   <form class="ac-quiz" id="quiz" method="post" data-quiz data-voice='{{ armo_voice(learner.armo)|tojson }}'>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -19,7 +20,7 @@
     </div>
     {% for q in questions %}
       {% set qi = loop.index0 %}
-      <fieldset class="ac-q ac-q-{{ q.kind }}" data-answer="{{ q.answer }}">
+      <fieldset class="ac-q ac-q-{{ q.kind }}" data-index="{{ qi }}">
         <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %} {{ q.prompt }}</legend>
         <div class="ac-options">
           {% for opt in q.options %}
@@ -30,7 +31,7 @@
             </label>
           {% endfor %}
         </div>
-        <p class="ac-explain" data-explain hidden aria-live="polite">{{ q.explain }}</p>
+        <p class="ac-explain" data-explain hidden aria-live="polite"></p>
       </fieldset>
     {% endfor %}
     <button class="btn ac-btn ac-submit" type="submit">Check my answers</button>

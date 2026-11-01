@@ -386,6 +386,54 @@ def world_page(learner_id, world_number):
                            card=_world_card(t, w, progress, passed), avatars=academy.AVATARS)
 
 
+# --- Checking one answer at a time --------------------------------------------------
+# The quiz page tells a player straight away whether each answer was right. The
+# right answers used to sit in the page for the script to compare against, where
+# anyone could read them (view source) before answering. Now the page sends each
+# first answer here and gets the verdict back. The first answer is kept, so trying
+# every option shows nothing new, and the final score uses the kept answers too.
+
+QUIZ_CHECK_DAYS = 30    # a quiz left unfinished this long forgets its kept answers (jobs.cleanup)
+
+
+def _checking():
+    return request.method == "POST" and "check" in request.form
+
+
+def _check_answer(learner_id, questions, keys):
+    """Keep this question's first answer, then say whether it was right (JSON)."""
+    i = request.form.get("check", type=int)
+    if i is None or not 0 <= i < len(questions):
+        abort(400)
+    q = questions[i]
+    choice = request.form.get("choice", type=int)
+    if choice is None or not 0 <= choice < len(q.options):
+        abort(400)
+    conn = get_db()
+    conn.execute("INSERT OR IGNORE INTO quiz_checks (learner_id, qkey, choice, at) VALUES (?, ?, ?, ?)",
+                 (learner_id, keys[i], choice, now_iso()))
+    conn.commit()
+    first = conn.execute("SELECT choice FROM quiz_checks WHERE learner_id = ? AND qkey = ?",
+                         (learner_id, keys[i])).fetchone()["choice"]
+    return jsonify(right=first == q.answer, chosen=first, answer=q.answer, explain=q.explain)
+
+
+def _final_answers(conn, learner_id, questions, keys):
+    """The answers to grade: a kept first answer wins over whatever the form says."""
+    kept = {}
+    if keys:
+        kept = {r["qkey"]: r["choice"] for r in conn.execute(
+            f"SELECT qkey, choice FROM quiz_checks WHERE learner_id = ? AND qkey IN ({','.join('?' * len(keys))})",
+            (learner_id, *keys))}
+        conn.execute(f"DELETE FROM quiz_checks WHERE learner_id = ? AND qkey IN ({','.join('?' * len(keys))})",
+                     (learner_id, *keys))
+    answers = []
+    for i, (q, key) in enumerate(zip(questions, keys)):
+        chosen = kept[key] if key in kept else request.form.get(f"q{i}", type=int)
+        answers.append(chosen if chosen is not None and 0 <= chosen < len(q.options) else None)
+    return answers
+
+
 @bp.route("/<int:learner_id>/world/<int:world_number>/stage/<int:stage>", methods=["GET", "POST"])
 @academy_access
 def play(learner_id, world_number, stage):
@@ -417,17 +465,19 @@ def play(learner_id, world_number, stage):
                                questions=questions, needed=needed, avatars=academy.AVATARS)
 
     if request.form.get("attempt", type=int) != attempt:
+        if _checking():
+            return jsonify(error="That quiz was already checked. Reload for a fresh one."), 409
         flash("That quiz was already checked. Here's a fresh one!", "ok")
         return redirect(url_for("academy.play", learner_id=learner_id, world_number=world_number, stage=stage))
-    answers = []
-    for i, q in enumerate(questions):
-        chosen = request.form.get(f"q{i}", type=int)
-        answers.append(chosen if chosen is not None and 0 <= chosen < len(q.options) else None)
+    keys = [f"level:{lid}:{attempt}:{i}" for i in range(len(questions))]
+    if _checking():
+        return _check_answer(learner_id, questions, keys)
+    conn = get_db()
+    answers = _final_answers(conn, learner_id, questions, keys)
     score, results = academy.grade(questions, answers)
     stars = academy.stars_for(score, len(questions), academy.pass_rate(t, w, stage))
     was_passed = row is not None and row["best_stars"] >= 1
     before = _summary(learner, progress)
-    conn = get_db()
     conn.execute(
         "INSERT INTO learner_progress (learner_id, level, attempts, best_score, best_stars, completed_at)"
         " VALUES (?, ?, 1, ?, ?, ?) ON CONFLICT (learner_id, level) DO UPDATE SET"
@@ -473,14 +523,17 @@ def practice(learner_id):
             f" AND id IN ({','.join('?' * len(ids)) or 'NULL'})",
             (learner_id, now_iso(), *ids))}
         deck = [rows[i] for i in ids if i in rows]
+        if _checking():
+            # The page numbers questions by their place in the deck it was sent.
+            if len(deck) != len(ids):
+                return jsonify(error="Those practice questions were already checked."), 409
+            return _check_answer(learner_id, [_stored_question(r) for r in deck],
+                                 [f"practice:{r['id']}:{r['due_at']}" for r in deck])
         if not deck:
             flash("Those practice questions were already checked.", "ok")
             return redirect(url_for("academy.practice", learner_id=learner_id))
         questions = [_stored_question(r) for r in deck]
-        answers = []
-        for i, q in enumerate(questions):
-            chosen = request.form.get(f"q{i}", type=int)
-            answers.append(chosen if chosen is not None and 0 <= chosen < len(q.options) else None)
+        answers = _final_answers(conn, learner_id, questions, [f"practice:{r['id']}:{r['due_at']}" for r in deck])
         score, results = academy.grade(questions, answers)
         now = utcnow()
         for r, result in zip(deck, results):
@@ -855,11 +908,13 @@ def duel(learner_id, duel_id):
                                avatars=academy.AVATARS, total=0, locked=True)
     questions = academy.duel_quiz(row["world"], row["stage"], row["seed"])
     results = None
+    keys = [f"duel:{duel_id}:{i}" for i in range(len(questions))]
+    if _checking():
+        if view["me"] is not None:
+            return jsonify(error="You already played this duel."), 409
+        return _check_answer(learner_id, questions, keys)
     if request.method == "POST" and view["me"] is None:
-        answers = []
-        for i, q in enumerate(questions):
-            chosen = request.form.get(f"q{i}", type=int)
-            answers.append(chosen if chosen is not None and 0 <= chosen < len(q.options) else None)
+        answers = _final_answers(conn, learner_id, questions, keys)
         score, results = academy.grade(questions, answers)
         column = "challenger_score" if view["challenger"] else "opponent_score"
         conn.execute(f"UPDATE duels SET {column} = ? WHERE id = ? AND {column} IS NULL", (score, duel_id))
