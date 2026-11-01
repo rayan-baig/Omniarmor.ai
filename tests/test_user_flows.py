@@ -349,3 +349,34 @@ class TestClocksThatRunFromAStartDate(AppTestCase):
         page = self.client.get("/app/industry/40?only=problems").data.decode()
         self.assertIn('id="rule-lqg_90_day_limit"', page)
         self.assertIn("days overdue", page)
+
+
+class TestPracticeGradesTheRightQuestion(AppTestCase):
+    """A practice page numbers its answers q0, q1... in the order it was sent.
+    If one of its questions stopped being due before the page was handed in
+    (answered right in a level meanwhile), the rest shifted up one place and
+    each was graded against the answer to the question before it."""
+
+    def test_answers_stay_with_their_questions(self):
+        import json
+        self.signup()
+        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
+        self.post(response.headers["Location"], {"track": "launchpad"})
+        with self.db() as conn:
+            sam = conn.execute("SELECT id FROM learners").fetchone()[0]
+            ids = []
+            for n, answer in enumerate((0, 1)):
+                question = json.dumps({"prompt": f"P{n}?", "options": ["a", "b"], "answer": answer, "explain": "e",
+                                       "kind": "choice"})
+                ids.append(conn.execute("INSERT INTO learner_mistakes (learner_id, qkey, question, due_at)"
+                                        " VALUES (?, ?, ?, '2000-01-01T00:00:00+00:00')",
+                                        (sam, f"k{n}", question)).lastrowid)
+            # The first one was answered right somewhere else and isn't due any more.
+            conn.execute("UPDATE learner_mistakes SET due_at = '2999-01-01T00:00:00+00:00', streak = 1 WHERE id = ?",
+                         (ids[0],))
+            conn.commit()
+        # The page still had both: q0 for the first (answer a), q1 for the second (answer b).
+        self.post(f"/app/academy/{sam}/practice", {"deck": f"{ids[0]},{ids[1]}", "q0": "0", "q1": "1"})
+        with self.db() as conn:
+            streak = conn.execute("SELECT streak FROM learner_mistakes WHERE id = ?", (ids[1],)).fetchone()[0]
+        self.assertEqual(streak, 1)  # answered right

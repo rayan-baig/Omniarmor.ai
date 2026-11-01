@@ -418,8 +418,10 @@ def _check_answer(learner_id, questions, keys):
     return jsonify(right=first == q.answer, chosen=first, answer=q.answer, explain=q.explain)
 
 
-def _final_answers(conn, learner_id, questions, keys):
-    """The answers to grade: a kept first answer wins over whatever the form says."""
+def _final_answers(conn, learner_id, questions, keys, places=None):
+    """The answers to grade: a kept first answer wins over whatever the form says.
+    places gives each question's number on the page (q0, q1...) when some of
+    the page's questions are no longer being graded."""
     kept = {}
     if keys:
         kept = {r["qkey"]: r["choice"] for r in conn.execute(
@@ -428,7 +430,8 @@ def _final_answers(conn, learner_id, questions, keys):
         conn.execute(f"DELETE FROM quiz_checks WHERE learner_id = ? AND qkey IN ({','.join('?' * len(keys))})",
                      (learner_id, *keys))
     answers = []
-    for i, (q, key) in enumerate(zip(questions, keys)):
+    places = range(len(questions)) if places is None else places
+    for i, q, key in zip(places, questions, keys):
         chosen = kept[key] if key in kept else request.form.get(f"q{i}", type=int)
         answers.append(chosen if chosen is not None and 0 <= chosen < len(q.options) else None)
     return answers
@@ -523,6 +526,7 @@ def practice(learner_id):
             f" AND id IN ({','.join('?' * len(ids)) or 'NULL'})",
             (learner_id, now_iso(), *ids))}
         deck = [rows[i] for i in ids if i in rows]
+        places = [n for n, i in enumerate(ids) if i in rows]  # each one's number on the page
         if _checking():
             # The page numbers questions by their place in the deck it was sent.
             if len(deck) != len(ids):
@@ -533,7 +537,8 @@ def practice(learner_id):
             flash("Those practice questions were already checked.", "ok")
             return redirect(url_for("academy.practice", learner_id=learner_id))
         questions = [_stored_question(r) for r in deck]
-        answers = _final_answers(conn, learner_id, questions, [f"practice:{r['id']}:{r['due_at']}" for r in deck])
+        answers = _final_answers(conn, learner_id, questions, [f"practice:{r['id']}:{r['due_at']}" for r in deck],
+                                 places)
         score, results = academy.grade(questions, answers)
         now = utcnow()
         for r, result in zip(deck, results):
