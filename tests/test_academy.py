@@ -148,6 +148,15 @@ class TestCourseContent(unittest.TestCase):
                 self.assertFalse(option.startswith("$-"), (q.prompt, q.options))
             self.assertEqual(len(set(q.options)), 3, q.prompt)
 
+    def test_money_world_never_leaves_negative_profit(self):
+        # "If the profit was $1,500 and the company paid a $2,000 fine, how
+        # much profit is left?" had "$-500" as its right answer.
+        for seed in range(2000):
+            for stage in (1, 9, 25, 50):
+                for q in academy._money_questions(random.Random(seed), "Acme", [2], stage):
+                    for option in q.options:
+                        self.assertNotIn("$-", option, (q.prompt, q.options))
+
     def test_join_codes(self):
         code = academy.new_join_code()
         self.assertRegex(code, r"^KID-[A-Z2-9]{8}$")

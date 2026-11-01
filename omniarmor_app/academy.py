@@ -900,7 +900,8 @@ def _money_questions(rng, company, industry_ids, stage=1):
     revenue = rng.randrange(8000 * scale, 20000 * scale + 1, 500 * scale)
     costs = rng.randrange(3000 * scale, revenue - 1000 * scale, 500 * scale)
     profit = revenue - costs
-    fine = rng.choice([500, 1000, 1500, 2000])
+    # A fine smaller than the profit: "how much profit is left" had "$-500" for an answer.
+    fine = rng.choice([f for f in (500, 1000, 1500, 2000) if f < profit])
     fix = rng.choice([100, 200, 300])
     penalty = rng.choice([1000, 2500, 5000])
     return [
