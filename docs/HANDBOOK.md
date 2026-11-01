@@ -127,13 +127,21 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - **Days since** (112 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
 
+19 more checks count **months or years since** something happened, such as "Months since the facility's last completed PREA audit" or "Years since this turnout gear was manufactured". They take a date the same way and count up by themselves:
+
+- **Months** (15 checks) count from the date to the same day of the month: exactly 12 on the anniversary, a little over the day after. The due date is the anniversary.
+- **Calendar months** (3 AeroArmor checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
+- **Years** (1 check) count like months, in years.
+
+A number typed instead of a date stays as typed.
+
 Days are counted in the company's own timezone, so a deadline flips at local midnight, not in London or California.
 
 A date in the future is refused for "days since" checks, with the message "That date is in the future. Enter the date it last happened."
 
 ### 2.4 Done today
 
-For "days since" checks, the industry page has a **Done today** button. Pressing it sets the date to today, which restarts the cycle. A yearly inspection that was just done goes back to Cleared and its next due date moves a year out. The audit trail records it as "Marked done today; the next cycle has started."
+For "days since" checks (and the months and years ones), the industry page has a **Done today** button. Pressing it sets the date to today, which restarts the cycle. A yearly inspection that was just done goes back to Cleared and its next due date moves a year out. The audit trail records it as "Marked done today; the next cycle has started."
 
 ### 2.5 Entering and clearing readings
 
@@ -1009,7 +1017,7 @@ These are the habits the project was built with. Keep them:
 ---
 
 ## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 123 checks that can be tracked from a date.
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 123 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 

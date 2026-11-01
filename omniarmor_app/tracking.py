@@ -8,6 +8,7 @@ Readings are stored once and recomputed every day:
 Every change is written to the audit trail with who made it and when.
 """
 
+import calendar
 import json
 import math
 from dataclasses import dataclass
@@ -17,7 +18,7 @@ from zoneinfo import ZoneInfo
 from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
-from .catalog import INDUSTRIES, can_override, date_mode, effective_rule, find_rule, rules_for
+from .catalog import INDUSTRIES, can_override, date_mode, date_unit, effective_rule, find_rule, rules_for
 from .db import now_iso, record_audit, user_name
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
@@ -107,8 +108,61 @@ def _shifted(day, days):
         return None
 
 
+# The longest limit a company can set, per unit a date-tracked check counts.
+MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100}
+
+
+def _add_months(day, months):
+    """The same day `months` whole months later (or earlier), kept inside short months."""
+    year, month = divmod(day.month - 1 + months, 12)
+    year += day.year
+    return date(year, month + 1, min(day.day, calendar.monthrange(year, month + 1)[1]))
+
+
+def _months_between(start, end):
+    """Months from start to end (end >= start): whole months up to the last
+    monthly anniversary, plus the share of the month since then. Exactly 12 on
+    the yearly anniversary, a little over 12 the day after."""
+    whole = (end.year - start.year) * 12 + end.month - start.month
+    if _add_months(start, whole) > end:
+        whole -= 1
+    begins, ends = _add_months(start, whole), _add_months(start, whole + 1)
+    return whole + (end - begins).days / (ends - begins).days
+
+
+def _elapsed(start, end, unit):
+    """The time from start to end in the unit a check counts; negative when end is earlier."""
+    if unit == "days":
+        return (end - start).days
+    if end < start:
+        return -_elapsed(end, start, unit)
+    if unit == "calendar months":
+        # "Within the preceding 12 calendar months": a check any day in June
+        # 2025 is good through June 30, 2026, so only the months are counted.
+        return (end.year - start.year) * 12 + end.month - start.month
+    months = _months_between(start, end)
+    return months / 12 if unit == "years" else months
+
+
+def _deadline(day, amount, unit, sign):
+    """The last day a reading counted from `day` stays within `amount` units."""
+    if unit == "days":
+        return _shifted(day, sign * _whole_days(amount))
+    amount = max(-MAX_SPAN[unit], min(MAX_SPAN[unit], amount)) * (12 if unit == "years" else 1)
+    try:
+        if unit == "calendar months" and sign > 0:
+            # Good through the end of the last month counted.
+            return _add_months(day.replace(day=1), math.floor(amount) + 1) - timedelta(days=1)
+        whole = math.floor(sign * amount)
+        begins, ends = _add_months(day, whole), _add_months(day, whole + 1)
+        return begins + timedelta(days=round((sign * amount - whole) * (ends - begins).days))
+    except (OverflowError, ValueError):
+        return None
+
+
 def compute_state(industry_id, rule, row, today):
     mode = date_mode(rule)
+    unit = date_unit(rule)
     eff = effective_rule(rule, row)
     value = None
     value_date = None
@@ -117,7 +171,7 @@ def compute_state(industry_id, rule, row, today):
             value = None if row["value_bool"] is None else bool(row["value_bool"])
         elif mode and row["value_date"]:
             value_date = date.fromisoformat(row["value_date"])
-            value = (today - value_date).days if mode == "since" else (value_date - today).days
+            value = _elapsed(value_date, today, unit) if mode == "since" else _elapsed(today, value_date, unit)
         elif row["value_num"] is not None:
             value = row["value_num"]
             if isinstance(value, float) and value.is_integer():
@@ -130,9 +184,9 @@ def compute_state(industry_id, rule, row, today):
     due_date = warn_date = None
     if value_date is not None:
         sign = 1 if mode == "since" else -1
-        due_date = _shifted(value_date, sign * _whole_days(eff.limit))
+        due_date = _deadline(value_date, eff.limit, unit, sign)
         if eff.warn is not None:
-            warn_date = _shifted(value_date, sign * _whole_days(eff.warn))
+            warn_date = _deadline(value_date, eff.warn, unit, sign)
     return ItemState(
         industry_id=industry_id, rule=rule, effective=eff, mode=mode, value=value, level=level,
         status=status, message=message, value_date=value_date, due_date=due_date, warn_date=warn_date,
@@ -299,12 +353,13 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
             if limit is None:
                 raise ValidationError("Enter your limit.")
             if mode:
-                # A limit counted in days: kept to a real calendar. One that
+                # A limit counted from a date: kept to a real calendar. One that
                 # ran past the year 9999 broke the company's pages and the
                 # daily job (see MAX_DAYS).
-                for days in (limit, warn):
-                    if days is not None and not 0 <= days <= MAX_DAYS:
-                        raise ValidationError(f"Enter a number of days between 0 and {MAX_DAYS}.")
+                unit = date_unit(rule)
+                for amount in (limit, warn):
+                    if amount is not None and not 0 <= amount <= MAX_SPAN[unit]:
+                        raise ValidationError(f"Enter a number of {unit.split()[-1]} between 0 and {MAX_SPAN[unit]}.")
             final_warn = rule.warn if warn is None else warn
             if final_warn is not None:
                 if rule.kind == "max" and final_warn > limit:

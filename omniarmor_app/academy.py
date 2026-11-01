@@ -30,7 +30,7 @@ from omni_armor_rules import CATALOG, evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
 from .academy_bank import load_expansions, load_worlds
-from .catalog import INDUSTRIES, date_mode
+from .catalog import INDUSTRIES, date_mode, date_unit
 
 PASS_RATE = 0.6
 MAX_LEARNERS = 12
@@ -697,11 +697,16 @@ def _light_cases(rule):
 
 
 def _light_rules(pool):
-    return [r for r in pool if r.kind in ("max", "min") and date_mode(r) is None and r.unit and _light_cases(r)]
+    return [r for r in pool if r.kind in ("max", "min") and date_unit(r) != "days" and r.unit and _light_cases(r)]
 
 
 def _since_rules(pool):
-    return [r for r in pool if date_mode(r) == "since" and 7 <= r.limit <= 3650]
+    return [r for r in pool if _counts_days_since(r) and 7 <= r.limit <= 3650]
+
+
+def _counts_days_since(rule):
+    """Rules counted in days since something happened (the calendar questions say "days")."""
+    return date_mode(rule) == "since" and date_unit(rule) == "days"
 
 
 def _light_question(rule, value, found):
@@ -1078,7 +1083,7 @@ def _rule_questions(rng, industry_id, index):
         _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
                 [r.input for r in rng.sample(others, 2)], "OmniArmor asks a simple question or reading for every rule."),
     ]
-    if date_mode(rule) == "since" and 7 <= rule.limit <= 3650:
+    if _counts_days_since(rule) and 7 <= rule.limit <= 3650:
         limit = int(rule.limit)
         done = rng.randint(1, limit - 1)
         left = limit - done

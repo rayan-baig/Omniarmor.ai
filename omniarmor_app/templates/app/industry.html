@@ -67,7 +67,7 @@
         <label class="q" for="{{ fid }}-v">{{ r.input }}</label>
         <div class="inline">
           <input type="number" step="any" inputmode="decimal" id="{{ fid }}-v" name="value"
-                 value="{{ '' if s.value is none or s.value_date else s.value }}" placeholder="{{ s.value if s.value_date and s.value is not none else '' }}"
+                 value="{{ '' if s.value is none or s.value_date else s.value }}" placeholder="{{ '%g' % (s.value|round(2)) if s.value_date and s.value is not none else '' }}"
                  aria-describedby="{{ fid }}-l"><span class="faint">{{ r.unit }}</span>
         </div>
         {% if s.mode %}

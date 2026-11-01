@@ -14,18 +14,37 @@ for _id, _info in sorted(MoonstoneThemeColors.INDUSTRIES.items()):
 
 _SINCE = re.compile(r"\bdays? since\b", re.I)
 _UNTIL = re.compile(r"\bdays? until\b", re.I)
+_MONTHS_SINCE = re.compile(r"\bmonths? since\b", re.I)
+_YEARS_SINCE = re.compile(r"\byears? since\b", re.I)
+
+
+def date_unit(rule):
+    """What a date-tracked reading counts: 'days', 'months', 'calendar months'
+    (whole months by the calendar, as in "the preceding 12 calendar months")
+    or 'years'. None when the reading is not tracked by date."""
+    if rule.kind not in ("max", "min"):
+        return None
+    if rule.unit in ("days", "calendar days"):
+        return "days" if _SINCE.search(rule.input) or _UNTIL.search(rule.input) else None
+    if rule.unit == "months" and _MONTHS_SINCE.search(rule.input):
+        return "calendar months" if re.search(r"\bcalendar months? since\b", rule.input, re.I) else "months"
+    if rule.unit == "years" and _YEARS_SINCE.search(rule.input):
+        return "years"
+    return None
 
 
 def date_mode(rule):
-    """'since' when the reading counts days since an event, 'until' when it counts
-    days until a due date, None when the reading is not tracked by date."""
-    if rule.kind not in ("max", "min") or rule.unit not in ("days", "calendar days"):
+    """'since' when the reading counts the time since an event, 'until' when it
+    counts days until a due date, None when the reading is not tracked by date.
+
+    Months and years count too: a reading typed as "3 months" never grew, so a
+    yearly review stayed Cleared forever. A date counts up by itself."""
+    unit = date_unit(rule)
+    if unit is None:
         return None
-    if _SINCE.search(rule.input):
-        return "since"
-    if _UNTIL.search(rule.input):
+    if unit == "days" and not _SINCE.search(rule.input):
         return "until"
-    return None
+    return "since"
 
 
 def rules_for(industry_id):

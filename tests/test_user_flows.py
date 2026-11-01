@@ -252,3 +252,68 @@ class TestInviteForAnExistingAccount(AppTestCase):
         self.assertNotIn("Sign in instead", page)
         self.assertIn("already has an OmniArmor account", page)
         self.assertIn("Join your team", page)  # the invite is still on the page to try another email
+
+
+class TestMonthCountedChecks(AppTestCase):
+    """Nineteen checks count months or years since something happened. They took
+    only a typed number, which never grew: a yearly review entered as
+    "3 months" stayed Cleared forever, and no reminder ever went out."""
+
+    def state(self, industry_id, key, value_date, today):
+        from datetime import date
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        row = {"value_num": None, "value_bool": None, "value_date": value_date, "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        return compute_state(industry_id, find_rule(industry_id, key), row, date.fromisoformat(today))
+
+    def test_every_month_and_year_check_takes_a_date(self):
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import date_mode
+        counted = [r.key for rules in CATALOG.values() for r in rules
+                   if r.unit in ("months", "years") and " since " in f" {r.input.lower()} "]
+        self.assertEqual(len(counted), 19)
+        for rules in CATALOG.values():
+            for r in rules:
+                if r.key in counted:
+                    self.assertEqual(date_mode(r), "since", r.key)
+
+    def test_months_count_up_by_themselves(self):
+        # The staffing plan must be reviewed every 12 months (warns from 11).
+        cases = {"2026-03-14": ("CLEARED", "2026-06-15"), "2026-05-15": ("WARNING", "2026-06-15"),
+                 "2026-06-15": ("WARNING", "2026-06-15"), "2026-06-16": ("BLOCKED", "2026-06-15")}
+        for today, (level, due) in cases.items():
+            s = self.state(16, "prea_staffing_plan_review", "2025-06-15", today)
+            self.assertEqual((s.level, s.due_date.isoformat()), (level, due), today)
+
+    def test_calendar_months_run_to_the_end_of_the_month(self):
+        # 14 CFR 135.293: a check in June 2025 is good through June 30, 2026.
+        s = self.state(4, "pilot_competency_check", "2025-06-10", "2026-06-30")
+        self.assertEqual((s.level, s.due_date.isoformat(), s.value), ("WARNING", "2026-06-30", 12))
+        self.assertEqual(self.state(4, "pilot_competency_check", "2025-06-10", "2026-07-01").level, "BLOCKED")
+        self.assertEqual(self.state(4, "pilot_competency_check", "2025-06-10", "2026-04-30").level, "CLEARED")
+
+    def test_years_count_up_by_themselves(self):
+        # Turnout gear retires 10 years after it was made.
+        self.assertEqual(self.state(14, "gear_retirement", "2016-11-01", "2026-11-01").level, "WARNING")
+        self.assertEqual(self.state(14, "gear_retirement", "2016-11-01", "2026-11-02").level, "BLOCKED")
+        self.assertEqual(self.state(14, "gear_retirement", "2020-01-01", "2026-11-01").level, "CLEARED")
+
+    def test_through_the_app_with_done_today_and_a_reminder(self):
+        from omniarmor_app.reminders import run_reminders
+        self.signup(industries=(24,))
+        page = self.client.get("/app/industry/24").data.decode()
+        self.assertIn('id="f-security_drill-d"', page)  # the date box
+        self.change(24, "security_drill", date="2020-01-01")
+        self.assertIn("Blocked", self.client.get("/app/industry/24?only=problems").data.decode())
+        with self.db() as conn:
+            summary = run_reminders(conn, self.app.config)
+        self.assertGreaterEqual(summary["reminders"], 1)
+        self.change(24, "security_drill", action="done_today")
+        page = self.client.get("/app/industry/24?only=problems").data.decode()
+        self.assertNotIn('id="rule-security_drill"', page)
+
+    def test_a_month_limit_is_kept_to_a_real_calendar(self):
+        self.signup(industries=(14,))
+        self.change(14, "gear_retirement", action="override", limit="5000")
+        self.assertIn("between 0 and 100", self.client.get("/app/industry/14").data.decode())
