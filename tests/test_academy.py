@@ -148,6 +148,27 @@ class TestCourseContent(unittest.TestCase):
                 self.assertFalse(option.startswith("$-"), (q.prompt, q.options))
             self.assertEqual(len(set(q.options)), 3, q.prompt)
 
+    def test_rule_quiz_wrong_answers_are_really_wrong(self):
+        # Some rules are in several industries (OFAC screening is in four).
+        # "Which kind of business follows OFAC sanctions screening?" could
+        # offer Banking Compliance as a wrong answer to an Insurance level.
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import INDUSTRIES
+        sectors = {}
+        for i, rules in CATALOG.items():
+            for r in rules:
+                sectors.setdefault(r.title, set()).add(INDUSTRIES[i]["sector"])
+        shared = [(i, n) for i, rules in CATALOG.items() for n, r in enumerate(rules, start=1)
+                  if len(sectors[r.title]) > 1]
+        self.assertGreater(len(shared), 10)
+        for industry_id, index in shared:
+            rule = CATALOG[industry_id][index - 1]
+            for seed in range(40):
+                for q in academy._rule_questions(random.Random(seed), industry_id, index):
+                    if q.prompt.startswith("Which kind of business follows"):
+                        wrong = set(q.options) - {q.options[q.answer]}
+                        self.assertFalse(wrong & sectors[rule.title], (q.prompt, q.options))
+
     def test_money_world_never_leaves_negative_profit(self):
         # "If the profit was $1,500 and the company paid a $2,000 fine, how
         # much profit is left?" had "$-500" as its right answer.

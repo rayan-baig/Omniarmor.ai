@@ -1067,7 +1067,10 @@ def _yes_no_light(rule, answer_yes):
 
 def _rule_questions(rng, industry_id, index):
     rule = CATALOG[industry_id][index - 1]
-    others = [r for i, rules in CATALOG.items() if i != industry_id for r in rules]
+    # Some rules are in several industries (OFAC screening is in four): those
+    # industries, and their copies of the rule, are never offered as wrong answers.
+    shared = {i for i, rules in CATALOG.items() if any(r.title == rule.title for r in rules)}
+    others = [r for i, rules in CATALOG.items() if i not in shared for r in rules]
     sector = INDUSTRIES[industry_id]["sector"]
     lights = []
     if rule.kind in ("max", "min"):
@@ -1080,7 +1083,7 @@ def _rule_questions(rng, industry_id, index):
         _choice(rng, f"If \"{rule.title}\" is broken, what should the team do?", rule.action,
                 [r.action for r in rng.sample(others, 2)], "Knowing the fix ahead of time means acting fast."),
         _choice(rng, f"Which kind of business follows \"{rule.title}\"?", sector,
-                rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES if i != industry_id], 2),
+                rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in shared], 2),
                 f"This rule is one of the ten that matter most in {sector.lower()}."),
         _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
                 [r.input for r in rng.sample(others, 2)], "OmniArmor asks a simple question or reading for every rule."),
