@@ -12,6 +12,7 @@ no Stripe keys set, the plan can still be turned on by hand:
 import hashlib
 import hmac
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -74,11 +75,12 @@ def stripe_ready(cfg):
     return bool(cfg.get("STRIPE_SECRET_KEY") and cfg.get("ACADEMY_STRIPE_PRICE"))
 
 
-def _stripe(cfg, path, fields):
-    data = urllib.parse.urlencode(fields).encode()
-    request = urllib.request.Request(f"{STRIPE_API}/{path}", data=data, method="POST")
+def _stripe(cfg, path, fields, method="POST"):
+    data = urllib.parse.urlencode(fields).encode() if method == "POST" else None
+    request = urllib.request.Request(f"{STRIPE_API}/{path}", data=data, method=method)
     request.add_header("Authorization", "Bearer " + cfg["STRIPE_SECRET_KEY"])
-    request.add_header("Content-Type", "application/x-www-form-urlencoded")
+    if data is not None:
+        request.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             return json.loads(response.read().decode())
@@ -109,6 +111,32 @@ def checkout_url(cfg, org, email, success_url, cancel_url):
     else:
         fields["customer_email"] = email
     return _stripe(cfg, "checkout/sessions", fields)["url"]
+
+
+# Stripe's checkout session ids, and nothing that could reach another API path.
+_SESSION_ID = re.compile(r"cs_[A-Za-z0-9_]{1,250}")
+
+
+def confirm_checkout(conn, cfg, org, session_id):
+    """Turns the plan on as soon as the family comes back from paying.
+
+    Stripe sends them back the moment the payment goes through; its webhook
+    can come seconds later, or not at all when it isn't set up right. Until
+    then the plan page offered checkout again, inviting a second payment.
+    Asking Stripe about the session they came back with settles it at once.
+    Returns True when the plan is now on."""
+    if not stripe_ready(cfg) or not _SESSION_ID.fullmatch(session_id or ""):
+        return False
+    obj = _stripe(cfg, f"checkout/sessions/{session_id}", {}, method="GET")
+    if (obj.get("mode") != "subscription" or obj.get("status") != "complete"
+            or obj.get("payment_status") not in ("paid", "no_payment_required")):
+        return False
+    if str(obj.get("client_reference_id")) != str(org["id"]):
+        return False
+    owner = _org_for(conn, obj, "checkout.session.completed")
+    if owner is None or owner["id"] != org["id"]:
+        return False
+    return _apply_checkout(conn, owner, obj, None) is not None
 
 
 def portal_url(cfg, org, return_url):
@@ -224,16 +252,7 @@ def apply_event(conn, event):
     paid = (org["academy_status"] or "none") in PAID_STATES
     current_sub = org["stripe_subscription_id"]
     if kind == "checkout.session.completed":
-        subscription = obj.get("subscription")
-        if paid and current_sub and subscription != current_sub:
-            # A second checkout while already paid: keep following the first subscription.
-            conn.execute("UPDATE orgs SET stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
-                         (obj.get("customer"), org["id"]))
-            return None
-        conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active'"
-                     " WHERE id = ?", (obj.get("customer"), subscription, org["id"]))
-        _mark_applied(conn, org["id"], created)
-        return "active"
+        return _apply_checkout(conn, org, obj, created)
     if kind in SUBSCRIPTION_EVENTS:
         if paid and current_sub and obj.get("id") != current_sub:
             return None
@@ -261,6 +280,22 @@ def apply_event(conn, event):
                      (org["id"],))
         return "past_due"
     return None
+
+
+def _apply_checkout(conn, org, obj, created):
+    """A completed checkout turns the plan on, unless the workspace is already
+    paid through another subscription (a duplicate checkout)."""
+    subscription = obj.get("subscription")
+    current_sub = org["stripe_subscription_id"]
+    if (org["academy_status"] or "none") in PAID_STATES and current_sub and subscription != current_sub:
+        # A second checkout while already paid: keep following the first subscription.
+        conn.execute("UPDATE orgs SET stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
+                     (obj.get("customer"), org["id"]))
+        return None
+    conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active'"
+                 " WHERE id = ?", (obj.get("customer"), subscription, org["id"]))
+    _mark_applied(conn, org["id"], created)
+    return "active"
 
 
 def _from_timestamp(seconds):

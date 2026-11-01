@@ -453,7 +453,7 @@ The Academy has its own subscription, separate from the compliance service.
 
 - **Free trial.** Every workspace gets a free trial of the whole Academy when it adds its first learner, 14 days by default (`ACADEMY_TRIAL_DAYS`). Workspaces that already had learners when the plan was introduced get the trial automatically.
 - **After the trial**, the first three Launchpad worlds stay free, and everything else needs the plan.
-- **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. A signed Stripe webhook keeps the plan's status current:
+- **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.
 - **Webhook safety:**

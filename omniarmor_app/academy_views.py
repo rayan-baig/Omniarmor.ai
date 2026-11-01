@@ -645,7 +645,23 @@ def leave():
 @grown_ups_only
 def plan_page():
     cfg = current_app.config
-    return render_template("academy/plan.html", plan=academy_plan.plan_status(g.org),
+    welcome = request.args.get("welcome") == "1"
+    session_id = request.args.get("session_id")
+    if session_id is not None:
+        # Back from Stripe Checkout: settle the payment now, not when the webhook comes.
+        if academy_plan.plan_status(g.org)["access"] != "paid":
+            conn = get_db()
+            try:
+                if academy_plan.confirm_checkout(conn, cfg, g.org, session_id):
+                    conn.commit()
+            except academy_plan.StripeError as exc:
+                current_app.logger.warning("Stripe checkout check failed: %s", exc)
+        return redirect(url_for("academy.plan_page", welcome=1 if welcome else None))
+    plan_now = academy_plan.plan_status(g.org)
+    if welcome and plan_now["access"] == "paid":
+        flash("Thank you! The Academy plan is on for every learner.", "ok")
+        return redirect(url_for("academy.plan_page"))
+    return render_template("academy/plan.html", plan=plan_now, confirming=welcome,
                            stripe=academy_plan.stripe_ready(cfg), price=cfg.get("ACADEMY_PRICE_LABEL", ""),
                            free_worlds=[academy.world(n) for n in sorted(academy_plan.FREE_WORLDS)],
                            tracks=academy.TRACK_LIST, trial_days=cfg["ACADEMY_TRIAL_DAYS"],
@@ -663,8 +679,10 @@ def plan_checkout():
         flash_error("Online payment isn't set up yet. Please contact us to start the Academy plan.")
         return redirect(url_for("academy.plan_page"))
     try:
+        # Stripe fills in {CHECKOUT_SESSION_ID}, so the plan page can confirm the payment on return.
         url = academy_plan.checkout_url(cfg, g.org, g.user["email"],
-                                        url_for("academy.plan_page", welcome=1, _external=True),
+                                        url_for("academy.plan_page", welcome=1, _external=True)
+                                        + "&session_id={CHECKOUT_SESSION_ID}",
                                         url_for("academy.plan_page", _external=True))
     except academy_plan.StripeError as exc:
         current_app.logger.warning("Stripe checkout failed: %s", exc)

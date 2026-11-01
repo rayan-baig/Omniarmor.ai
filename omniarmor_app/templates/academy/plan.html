@@ -46,7 +46,9 @@
             <button class="btn quiet" type="submit">Manage or cancel</button>
           </form>
         {% elif plan.access != 'paid' %}
-          {% if stripe %}
+          {% if confirming %}
+            <p class="hint">Thank you! We're confirming your payment with Stripe. It usually takes a few seconds: <a href="{{ url_for('academy.plan_page', welcome=1) }}">reload this page</a>. There's no need to pay again.</p>
+          {% elif stripe %}
             <form method="post" action="{{ url_for('academy.plan_checkout') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn ac-btn" type="submit">Start the Academy plan</button>
