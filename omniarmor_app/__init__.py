@@ -4,8 +4,10 @@
 create_app() builds the app; wsgi.py runs it in production.
 """
 
+import hmac
 import logging
 import os
+from datetime import timedelta
 
 from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -13,7 +15,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from . import academy_views, armo_views, autopilot, auth, views
 from .catalog import INDUSTRIES, rules_for
 from .config import load_config
-from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate
+from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
 from .redact import redact
 from .security import check_csrf, csrf_token, load_user, security_headers
@@ -65,6 +67,26 @@ def sitemap():
 @public.route("/favicon.ico")
 def favicon():
     return redirect(url_for("static", filename="favicon.svg"), code=301)
+
+
+@public.route("/api/stats")
+def stats():
+    """User counts for the owner's MTRX Horizon console, and nothing else.
+
+    Off unless STATS_KEY is set, and answered only to that key. Counts only:
+    no names, no companies, nothing about anyone in particular.
+    """
+    key = current_app.config.get("STATS_KEY") or ""
+    sent = request.headers.get("Authorization", "")
+    if not key:
+        abort(404)
+    if not hmac.compare_digest(sent.encode(), f"Bearer {key}".encode()):
+        return jsonify(error="unauthorized"), 401
+    conn = get_db()
+    since = (utcnow() - timedelta(days=30)).date().isoformat()
+    users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    active = conn.execute("SELECT COUNT(*) FROM users WHERE last_seen_on >= ?", (since,)).fetchone()[0]
+    return jsonify(users=users, active_users=active)
 
 
 @public.route("/healthz")

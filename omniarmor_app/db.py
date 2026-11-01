@@ -245,6 +245,9 @@ MIGRATIONS = [
     );
     CREATE INDEX quiz_checks_at ON quiz_checks (at);
     """),
+    (9, """
+    ALTER TABLE users ADD COLUMN last_seen_on TEXT;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

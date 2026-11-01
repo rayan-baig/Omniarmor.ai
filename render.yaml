@@ -31,6 +31,10 @@ services:
       # only reach the server log, which nobody reads.
       - key: OPERATOR_EMAIL
         sync: false
+      # The same value as MTRX Horizon's MTRX_STATS_KEY, to show user counts
+      # in the owner's console. Unset, /api/stats does not exist.
+      - key: STATS_KEY
+        sync: false
       # The Academy plan's card payments (optional: without them, switch a
       # family's plan on by hand with `flask --app wsgi academy-plan`).
       # Webhook: https://<your domain>/billing/stripe/webhook

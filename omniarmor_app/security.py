@@ -116,6 +116,12 @@ def load_user():
         session.clear()
         return
     g.user, g.org, g.role = user, membership, membership["role"]
+    # The day this person last used the app, written at most once a day: it
+    # is what "active users" counts, and it is a date, not a trail.
+    today = utcnow().date().isoformat()
+    if user["last_seen_on"] != today:
+        conn.execute("UPDATE users SET last_seen_on = ? WHERE id = ?", (today, user_id))
+        conn.commit()
 
 
 def new_device_epoch():

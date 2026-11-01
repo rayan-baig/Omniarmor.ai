@@ -36,6 +36,9 @@ def load_config(**overrides):
         # Autopilot fixes small problems itself and emails big ones here.
         "AUTOPILOT_ENABLED": _flag("AUTOPILOT_ENABLED", True),
         "OPERATOR_EMAIL": env.get("OPERATOR_EMAIL", "").strip(),
+        # The private key MTRX Horizon's console sends to /api/stats (the same
+        # value as its MTRX_STATS_KEY). Unset, that address does not exist.
+        "STATS_KEY": env.get("STATS_KEY", "").strip(),
         # The Academy's own subscription (separate from the compliance service).
         "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
         "ACADEMY_PRICE_LABEL": env.get("ACADEMY_PRICE_LABEL", ""),

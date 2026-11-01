@@ -5889,6 +5889,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SCHEDULER_ENABLED` | 1 | Run the built-in daily timer (and Autopilot) inside the app. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. |
+| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizon console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://<your domain>/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |
