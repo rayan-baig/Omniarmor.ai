@@ -7,7 +7,7 @@ import io
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, session, url_for
 
-from .academy_plan import plan_status
+from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
 from .catalog import INDUSTRIES, can_override, find_rule
 from .db import get_db, now_iso, record_audit
@@ -258,9 +258,9 @@ def delete_workspace():
     org_id = g.org["id"]
     # A workspace being paid for is not deleted out from under its plan: the
     # subscription would go on charging with no workspace to cancel it from.
-    plan = conn.execute("SELECT academy_status, stripe_subscription_id FROM orgs WHERE id = ?",
-                        (org_id,)).fetchone()
-    if plan and plan["stripe_subscription_id"] and plan["academy_status"] in ("active", "trialing", "past_due"):
+    # Once it's cancelled (it runs to the end of the paid period), deleting is fine.
+    plan = conn.execute("SELECT * FROM orgs WHERE id = ?", (org_id,)).fetchone()
+    if plan and charges_again(plan):
         flash_error("Cancel your Academy plan first (Academy plan page, Manage or cancel), then delete the workspace.")
         return redirect(url_for("app.settings"))
     member_ids = [r["user_id"] for r in conn.execute("SELECT user_id FROM memberships WHERE org_id = ?", (org_id,))]

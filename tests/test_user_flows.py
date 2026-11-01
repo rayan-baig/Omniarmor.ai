@@ -140,3 +140,67 @@ class TestPaidFamiliesCanFindTheirPlan(AppTestCase):
             conn.commit()
         page = self.client.get("/app/academy").data.decode()
         self.assertIn("last Academy payment didn't go through", page)
+
+
+class TestCancelledPlan(AppTestCase):
+    """Stripe's portal cancels at the end of the paid period: the subscription
+    stays active until then, with cancel_at_period_end set."""
+
+    def setUp(self):
+        super().setUp()
+        self.signup()
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
+        with self.db() as conn:
+            self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
+            conn.execute("UPDATE orgs SET academy_status = 'active', stripe_customer_id = 'cus_1',"
+                         " stripe_subscription_id = 'sub_1'")
+            conn.commit()
+        self.app.config["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
+        self.period_end = 1893456000  # 2030-01-01
+
+    def send(self, event_id, obj):
+        import hashlib
+        import hmac
+        import json
+        import time
+        event = {"id": event_id, "type": "customer.subscription.updated", "created": int(time.time()),
+                 "data": {"object": obj}}
+        payload = json.dumps(event).encode()
+        stamp = int(time.time())
+        sig = hmac.new(b"whsec_test", f"{stamp}.".encode() + payload, hashlib.sha256).hexdigest()
+        response = self.app.test_client().post("/billing/stripe/webhook", data=payload,
+                                               headers={"Stripe-Signature": f"t={stamp},v1={sig}"})
+        self.assertEqual(response.status_code, 200)
+
+    def subscription(self, **extra):
+        obj = {"id": "sub_1", "customer": "cus_1", "status": "active", "current_period_end": self.period_end,
+               "cancel_at_period_end": False, "cancel_at": None, "metadata": {"org_id": str(self.org_id)}}
+        obj.update(extra)
+        return obj
+
+    def test_a_cancelled_plan_says_when_it_ends_not_that_it_renews(self):
+        self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
+        page = self.client.get("/app/academy/plan").data.decode()
+        self.assertIn("ends 2030-01-01", page)
+        self.assertNotIn("renews", page)
+
+    def test_a_cancelled_plan_no_longer_blocks_deleting_the_workspace(self):
+        self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
+        self.post("/app/settings/delete", {"confirm": "Acme Logistics"})
+        with self.db() as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM orgs").fetchone()[0], 0)
+
+    def test_resuming_the_plan_blocks_deleting_again(self):
+        self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
+        self.send("evt_resume", self.subscription())
+        self.assertIn("renews 2030-01-01", self.client.get("/app/academy/plan").data.decode())
+        self.post("/app/settings/delete", {"confirm": "Acme Logistics"})
+        with self.db() as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM orgs").fetchone()[0], 1)
+
+    def test_renewal_date_from_newer_stripe_versions(self):
+        # Newer Stripe API versions put the period end on the subscription's items.
+        obj = self.subscription(items={"data": [{"current_period_end": self.period_end}]})
+        del obj["current_period_end"]
+        self.send("evt_new_api", obj)
+        self.assertIn("renews 2030-01-01", self.client.get("/app/academy/plan").data.decode())

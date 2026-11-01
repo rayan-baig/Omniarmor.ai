@@ -458,6 +458,7 @@ The Academy has its own subscription, separate from the compliance service.
 - **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.
+  - **Cancelled in the portal:** Stripe keeps the plan on until the paid period ends. The plan page says "Cancelled · ends" with the date instead of a renewal date, and the workspace can be deleted right away, since nothing more will be charged.
 - **Webhook safety:**
   - Events are de-duplicated by event id, and events older than the last one applied are ignored.
   - Events about a different subscription than the active one are ignored, so a cancelled duplicate can't switch off a paid plan.
@@ -734,13 +735,13 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 7), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 10), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
 - `users`: email, name, password hash, reminder switch, Armo personality, and a session counter.
 - `orgs`: companies, with their name, timezone and Academy plan fields:
-  - status, trial end and renewal date;
+  - status, trial end, renewal date, and the end date of a cancelled plan;
   - Stripe customer and subscription ids;
   - the time of the last Stripe event applied.
 - `memberships`: who belongs to which company, as owner or member.
@@ -970,7 +971,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 200 tests pass, and pyflakes is clean. No pull request has been opened yet.
-- **Database schema** is at version 7.
+- **Database schema** is at version 10.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
   - **Everyone is signed out once.** Existing sessions, for grown-ups and kid devices alike, end on the first deploy of this branch, because sessions now carry the new identity checks. Everyone signs in again once.

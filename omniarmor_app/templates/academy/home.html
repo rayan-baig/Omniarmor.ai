@@ -23,7 +23,7 @@
   {% elif plan.state == 'past_due' %}
     <p class="ac-banner">Your last Academy payment didn't go through. <a href="{{ url_for('academy.plan_page') }}">Update your card</a></p>
   {% else %}
-    <p class="ac-banner">You have the Academy plan: every track and every world. <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if g.role == 'owner' else 'See the plan' }}</a></p>
+    <p class="ac-banner">You have the Academy plan{% if plan.ends_at %} until {{ plan.ends_at[:10] }}{% endif %}: every track and every world. <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if g.role == 'owner' else 'See the plan' }}</a></p>
   {% endif %}
 
   <ul class="ac-tracks-mini" aria-label="Tracks">

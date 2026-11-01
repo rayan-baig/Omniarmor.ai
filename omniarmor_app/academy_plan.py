@@ -37,12 +37,22 @@ def plan_status(org, now=None):
     now = now or utcnow()
     state = org["academy_status"] or "none"
     if state in PAID_STATES:
-        return {"access": "paid", "state": state, "renews_at": org["academy_renews_at"], "trial_days": 0}
+        # A plan cancelled in Stripe's portal stays on until the paid period ends.
+        ends_at = org["academy_ends_at"]
+        return {"access": "paid", "state": state, "renews_at": None if ends_at else org["academy_renews_at"],
+                "ends_at": ends_at, "trial_days": 0}
     ends = org["academy_trial_ends"]
     if ends and ends > iso(now):
         days = max(1, -(-(_parse(ends) - now).total_seconds() // 86400))
-        return {"access": "trial", "state": "trial", "renews_at": None, "trial_days": int(days)}
-    return {"access": "free", "state": state, "renews_at": None, "trial_days": 0}
+        return {"access": "trial", "state": "trial", "renews_at": None, "ends_at": None, "trial_days": int(days)}
+    return {"access": "free", "state": state, "renews_at": None, "ends_at": None, "trial_days": 0}
+
+
+def charges_again(org):
+    """Whether Stripe will go on charging for this workspace's plan: it is paid
+    through a subscription that hasn't been cancelled."""
+    return bool(org["stripe_subscription_id"] and (org["academy_status"] or "none") in PAID_STATES
+                and not org["academy_ends_at"])
 
 
 def _parse(text):
@@ -65,7 +75,7 @@ def start_trial(conn, org_id, days):
 
 
 def set_status(conn, org_id, state, renews_at=None):
-    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ? WHERE id = ?",
+    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = NULL WHERE id = ?",
                  (state, renews_at, org_id))
 
 
@@ -265,11 +275,15 @@ def apply_event(conn, event):
         if state == "incomplete" and paid:
             # A subscription never goes back to incomplete once paid; this is a late copy of its first event.
             return None
-        ends = obj.get("current_period_end")
-        renews = iso(_from_timestamp(ends)) if isinstance(ends, int) and state in PAID_STATES else None
-        conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, stripe_subscription_id = ?,"
-                     " stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
-                     (state, renews, obj.get("id"), obj.get("customer"), org["id"]))
+        period_end = _period_end(obj)
+        renews = iso(_from_timestamp(period_end)) if period_end and state in PAID_STATES else None
+        # Cancelled in the portal: still paid for until the period ends, then Stripe deletes it.
+        cancel_at = obj.get("cancel_at") if isinstance(obj.get("cancel_at"), int) else (
+            period_end if obj.get("cancel_at_period_end") else None)
+        ends_at = iso(_from_timestamp(cancel_at)) if cancel_at and state in PAID_STATES else None
+        conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
+                     " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
+                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), org["id"]))
         _mark_applied(conn, org["id"], created)
         return state
     if kind == "invoice.payment_failed":
@@ -292,10 +306,22 @@ def _apply_checkout(conn, org, obj, created):
         conn.execute("UPDATE orgs SET stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
                      (obj.get("customer"), org["id"]))
         return None
-    conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active'"
-                 " WHERE id = ?", (obj.get("customer"), subscription, org["id"]))
+    conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active',"
+                 " academy_ends_at = CASE WHEN stripe_subscription_id IS ? THEN academy_ends_at END WHERE id = ?",
+                 (obj.get("customer"), subscription, subscription, org["id"]))
     _mark_applied(conn, org["id"], created)
     return "active"
+
+
+def _period_end(subscription):
+    """When the subscription's current period ends, as a Unix time, or None.
+    Newer Stripe API versions keep it on the subscription's items."""
+    value = subscription.get("current_period_end")
+    if not isinstance(value, int):
+        items = (subscription.get("items") or {}).get("data") or []
+        value = next((i.get("current_period_end") for i in items
+                      if isinstance(i, dict) and isinstance(i.get("current_period_end"), int)), None)
+    return value
 
 
 def _from_timestamp(seconds):

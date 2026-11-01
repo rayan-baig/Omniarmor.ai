@@ -248,6 +248,9 @@ MIGRATIONS = [
     (9, """
     ALTER TABLE users ADD COLUMN last_seen_on TEXT;
     """),
+    (10, """
+    ALTER TABLE orgs ADD COLUMN academy_ends_at TEXT;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
