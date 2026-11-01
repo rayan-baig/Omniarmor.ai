@@ -111,3 +111,32 @@ class TestBackFromCheckout(AppTestCase):
             response = self.client.get("/app/academy/plan?welcome=1&session_id=../customers/cus_1",
                                        follow_redirects=True)
         self.assertEqual(response.status_code, 200)
+
+
+class TestPaidFamiliesCanFindTheirPlan(AppTestCase):
+    """Once a family pays, the only links to the plan page (the trial and
+    free-plan banners) disappeared, leaving no way to manage or cancel."""
+
+    def setUp(self):
+        super().setUp()
+        self.signup()
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_status = 'active', stripe_customer_id = 'cus_1',"
+                         " stripe_subscription_id = 'sub_1'")
+            conn.commit()
+
+    def test_academy_home_links_to_the_plan(self):
+        page = self.client.get("/app/academy").data.decode()
+        self.assertIn('href="/app/academy/plan"', page)
+
+    def test_settings_links_to_the_plan(self):
+        page = self.client.get("/app/settings").data.decode()
+        self.assertIn('href="/app/academy/plan"', page)
+
+    def test_a_failed_payment_is_flagged_on_academy_home(self):
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_status = 'past_due'")
+            conn.commit()
+        page = self.client.get("/app/academy").data.decode()
+        self.assertIn("last Academy payment didn't go through", page)

@@ -173,6 +173,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 - **Owners also:**
   - change the company name, timezone and industries;
   - invite people and remove members;
+  - see the Academy plan's status, with a link to manage or cancel it;
   - delete the whole workspace, by typing the company name to confirm.
 
 ### 2.8 The public pages
@@ -453,6 +454,7 @@ The Academy has its own subscription, separate from the compliance service.
 
 - **Free trial.** Every workspace gets a free trial of the whole Academy when it adds its first learner, 14 days by default (`ACADEMY_TRIAL_DAYS`). Workspaces that already had learners when the plan was introduced get the trial automatically.
 - **After the trial**, the first three Launchpad worlds stay free, and everything else needs the plan.
+- **Finding the plan.** The Academy home always links to the plan page: to start it, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in the Armory.
 - **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.

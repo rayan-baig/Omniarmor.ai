@@ -7,6 +7,7 @@ import io
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, session, url_for
 
+from .academy_plan import plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
 from .catalog import INDUSTRIES, can_override, find_rule
 from .db import get_db, now_iso, record_audit
@@ -173,7 +174,8 @@ def settings():
         (g.org["id"], now_iso()),
     ).fetchone()[0]
     return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
-                           industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites)
+                           industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
+                           plan=plan_status(g.org))
 
 
 @bp.route("/settings/reminders", methods=["POST"])
