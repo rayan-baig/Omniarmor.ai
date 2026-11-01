@@ -46,6 +46,15 @@ def _invite(conn, token):
     return row
 
 
+def _taken_message(invite):
+    if invite is None:
+        return "An account with that email already exists. Sign in instead."
+    # Signing in would only open that account's own workspace: a person
+    # belongs to one workspace, so the invite needs a different email.
+    return ("That email already has an OmniArmor account, and an account belongs to one workspace."
+            f" To join {invite['org_name']}, use a different email address.")
+
+
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if g.get("user") is not None:
@@ -84,7 +93,7 @@ def signup():
             if not valid_timezone(tz):
                 errors.append("Pick a valid timezone.")
         if not errors and conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
-            errors.append("An account with that email already exists. Sign in instead.")
+            errors.append(_taken_message(invite))
         if errors:
             for e in errors:
                 flash_error(e)
@@ -106,7 +115,7 @@ def signup():
             ).lastrowid
         except sqlite3.IntegrityError:
             conn.rollback()
-            flash_error("An account with that email already exists. Sign in instead.")
+            flash_error(_taken_message(invite))
             return render_template("auth/signup.html", invite=None if invite is None else _invite(conn, token), token=token,
                                    industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked)), 400
         if invite is None:

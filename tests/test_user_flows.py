@@ -232,3 +232,23 @@ class TestRecordKeepsWhoAfterRemoval(AppTestCase):
     def test_the_report_still_names_them(self):
         csv = self.client.get("/app/report.csv").data.decode()
         self.assertIn("Sam Member", [line for line in csv.splitlines() if "Annual driving record review" in line][0])
+
+
+class TestInviteForAnExistingAccount(AppTestCase):
+    def test_the_message_does_not_send_them_to_sign_in(self):
+        import re
+        self.signup(industries=(1,))
+        self.post("/app/settings/invite")
+        token = re.search(r"https://omniarmor\.test/signup\?invite=([\w-]+)",
+                          self.client.get("/app/settings").data.decode()).group(1)
+        other = self.app.test_client()
+        self.post("/signup", {"name": "Lee", "email": "lee@example.com", "password": "correct horse battery",
+                              "org_name": "Lee Co", "timezone": "UTC", "industries": ["2"]}, client=other)
+        self.post("/logout", client=other)
+        response = self.signup(email="lee@example.com", client=other, invite=token, name="Lee")
+        page = response.data.decode()
+        self.assertEqual(response.status_code, 400)
+        # Signing in would only open their own workspace, never this one.
+        self.assertNotIn("Sign in instead", page)
+        self.assertIn("already has an OmniArmor account", page)
+        self.assertIn("Join your team", page)  # the invite is still on the page to try another email
