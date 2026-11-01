@@ -5,3 +5,26 @@ instance/
 *.db
 *.db-wal
 *.db-shm
+
+# Never commit: secrets, local databases, logs, build output, editor junk.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log
+backups/
+venv/
+.venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+.wrangler/
+dist/
+.DS_Store

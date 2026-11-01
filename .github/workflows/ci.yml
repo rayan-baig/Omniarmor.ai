@@ -13,10 +13,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install -r requirements.txt pyflakes
+      - run: pip install -r requirements.txt -c constraints.txt pyflakes pip-audit
       - name: Lint
         run: python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py
       - name: Tests
         run: python -m unittest discover -s tests -v
+      - name: Known security holes in dependencies
+        run: pip-audit -r constraints.txt
       - name: Docker image builds
         run: docker build -t omniarmor:ci .

@@ -11,8 +11,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv/omniarmor
 RUN useradd --create-home --uid 10001 omniarmor && mkdir -p /data && chown omniarmor /data
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# constraints.txt pins every package, including the ones requirements.txt
+# pulls in, so the image installs exactly what CI tested.
+COPY requirements.txt constraints.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
 COPY omni_armor_platform.py wsgi.py ./
 COPY omni_armor_rules ./omni_armor_rules
 COPY omniarmor_app ./omniarmor_app

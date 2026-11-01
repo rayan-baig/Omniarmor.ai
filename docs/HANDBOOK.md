@@ -809,7 +809,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ### 9.1 On a computer
 
 ```sh
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
 python3 -m unittest discover -s tests     # 256 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
