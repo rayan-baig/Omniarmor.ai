@@ -380,3 +380,29 @@ class TestPracticeGradesTheRightQuestion(AppTestCase):
         with self.db() as conn:
             streak = conn.execute("SELECT streak FROM learner_mistakes WHERE id = ?", (ids[1],)).fetchone()[0]
         self.assertEqual(streak, 1)  # answered right
+
+
+class TestSwitchingANumberToADate(AppTestCase):
+    """The page fills the number box with a saved typed number, so it comes
+    back with every later save. Picking a date next to that unchanged number
+    was refused as "a number and a date", so a check saved as a number (every
+    month and year check, and the waste and PRN clocks, took only numbers
+    until today) could not be switched to a date without emptying the box."""
+
+    def setUp(self):
+        super().setUp()
+        self.signup(industries=(1,))
+        self.change(1, "annual_mvr_review", value="12")
+
+    def reading(self):
+        with self.db() as conn:
+            return dict(conn.execute("SELECT value_num, value_date FROM items WHERE rule_key = 'annual_mvr_review'")
+                        .fetchone())
+
+    def test_a_date_next_to_the_saved_number_is_saved(self):
+        self.change(1, "annual_mvr_review", value="12", date="2026-02-01")
+        self.assertEqual(self.reading(), {"value_num": None, "value_date": "2026-02-01"})
+
+    def test_a_new_number_and_a_date_together_are_still_refused(self):
+        self.change(1, "annual_mvr_review", value="13", date="2026-02-01")
+        self.assertEqual(self.reading(), {"value_num": 12.0, "value_date": None})

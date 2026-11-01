@@ -321,9 +321,14 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
                 # back with every save. A number typed next to that unchanged
                 # date is the new reading; it used to be dropped for the old date.
                 saved = before["value_date"] if before is not None else None
-                if picked.isoformat() != saved:
+                saved_num = before["value_num"] if before is not None else None
+                if picked.isoformat() == saved:
+                    picked = None
+                elif saved_num is None or _parse_number(typed) != saved_num:
+                    # The number box comes back filled with a saved number
+                    # too; a date picked next to it, unchanged, is the new
+                    # reading. Only a new number and a new date clash.
                     raise ValidationError("Enter a number or a date, not both.")
-                picked = None
             if picked is not None:
                 if mode == "since" and picked > today:
                     raise ValidationError("That date is in the future. Enter the date it last happened.")
