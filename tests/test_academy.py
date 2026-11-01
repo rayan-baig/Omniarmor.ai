@@ -139,6 +139,15 @@ class TestCourseContent(unittest.TestCase):
             q = academy._money_math(random.Random(seed), seed / 300)
             self.assertEqual(len(set(q.options)), 3, q.prompt)
 
+    def test_money_answers_are_never_negative(self):
+        # "$20 jacket, 25% off" made a wrong answer of "$-5", which gave
+        # the right answer away.
+        for seed in range(5000):
+            q = academy._money_math(random.Random(seed), (seed % 100) / 100)
+            for option in q.options:
+                self.assertFalse(option.startswith("$-"), (q.prompt, q.options))
+            self.assertEqual(len(set(q.options)), 3, q.prompt)
+
     def test_join_codes(self):
         code = academy.new_join_code()
         self.assertRegex(code, r"^KID-[A-Z2-9]{8}$")

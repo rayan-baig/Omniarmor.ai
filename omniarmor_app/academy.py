@@ -1170,7 +1170,10 @@ def _money_math(rng, progress):
     """An exact, generated money problem; bigger numbers as the learner goes deeper."""
     question = _money_problem(rng, progress)
     correct = question.options[question.answer]
-    if len(question.options) == 3:
+    # A generated wrong answer can come out below zero ("$20 off 25" gives
+    # "$-5"). No price is negative, so that option gives the answer away;
+    # such a question gets its wrong answers picked again.
+    if len(question.options) == 3 and not any(o.startswith("$-") for o in question.options):
         return question
     prompt, explain = question.prompt, question.explain
     others = [o for o in question.options if o != correct]
