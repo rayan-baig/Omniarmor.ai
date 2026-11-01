@@ -331,3 +331,21 @@ class TestOddAddresses(AppTestCase):
         self.app.config["PROPAGATE_EXCEPTIONS"] = False
         response = self.post("/app/settings/member/99999999999999999999/remove")
         self.assertEqual(response.status_code, 404)
+
+
+class TestClocksThatRunFromAStartDate(AppTestCase):
+    """The 90- and 180-day hazardous waste accumulation limits and the 14-day
+    PRN psychotropic order limit count days from a start date, but their
+    questions weren't worded as "days since", so they only took a typed
+    number that never grew."""
+
+    def test_they_take_a_date_and_count_up(self):
+        from omniarmor_app.catalog import date_mode, find_rule
+        for industry_id, key in ((40, "lqg_90_day_limit"), (40, "sqg_180_day_limit"),
+                                 (26, "prn_psychotropic_14_days")):
+            self.assertEqual(date_mode(find_rule(industry_id, key)), "since", key)
+        self.signup(industries=(40,))
+        self.change(40, "lqg_90_day_limit", date="2020-01-01")
+        page = self.client.get("/app/industry/40?only=problems").data.decode()
+        self.assertIn('id="rule-lqg_90_day_limit"', page)
+        self.assertIn("days overdue", page)

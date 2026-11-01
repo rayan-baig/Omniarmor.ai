@@ -43,7 +43,7 @@ RULES = {
         Rule(key="prn_psychotropic_14_days", title="PRN psychotropic 14-day limit",
              cost="Unnecessary or open-ended psychotropic orders are cited as chemical restraint and unnecessary drugs, drawing penalties and lawsuits.",
              citation="42 CFR 483.45(e)(4)-(5)", kind="max",
-             input="Days an as-needed (PRN) psychotropic order has been in effect without a prescriber's documented renewal",
+             input="Days since the as-needed (PRN) psychotropic order was written, without a prescriber's documented renewal",
              unit="days", limit=14, warn=12, sample=13,
              action="Stop using the PRN order until the prescriber evaluates the resident and documents the rationale and duration."),
         Rule(key="rn_8_hours_daily", title="RN on duty 8 hours every day",

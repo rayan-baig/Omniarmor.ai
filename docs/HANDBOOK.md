@@ -122,9 +122,9 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 
 ### 2.3 Dates that count themselves
 
-123 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
+126 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
 
-- **Days since** (112 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit.
+- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
 
 19 more checks count **months or years since** something happened, such as "Months since the facility's last completed PREA audit" or "Years since this turnout gear was manufactured". They take a date the same way and count up by themselves:
@@ -1017,7 +1017,7 @@ These are the habits the project was built with. Keep them:
 ---
 
 ## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 123 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 126 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -3111,9 +3111,9 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Designate a qualified infection preventionist who has completed specialized training, and document the assignment.
 - Example reading used in demos: Yes
 
-**6. PRN psychotropic 14-day limit** (Maximum 14 days, warns from 12 days)
+**6. PRN psychotropic 14-day limit** (Maximum 14 days, warns from 12 days; counts days since a date)
 
-- Asks: Days an as-needed (PRN) psychotropic order has been in effect without a prescriber's documented renewal
+- Asks: Days since the as-needed (PRN) psychotropic order was written, without a prescriber's documented renewal
 - Rule: 42 CFR 483.45(e)(4)-(5)
 - What a miss costs: Unnecessary or open-ended psychotropic orders are cited as chemical restraint and unnecessary drugs, drawing penalties and lawsuits.
 - What to do when it's broken: Stop using the PRN order until the prescriber evaluates the resident and documents the rationale and duration.
@@ -4219,9 +4219,9 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ### 40. WasteArmor (Hazardous Waste)
 
-**1. LQG 90-day accumulation limit** (Maximum 90 days, warns from 80 days)
+**1. LQG 90-day accumulation limit** (Maximum 90 days, warns from 80 days; counts days since a date)
 
-- Asks: Days hazardous waste has been in the central accumulation area
+- Asks: Days since this hazardous waste began accumulating in the central accumulation area (the start date on its label)
 - Rule: 40 CFR 262.17(a)
 - What a miss costs: Holding waste past 90 days makes a large quantity generator an unpermitted storage facility, bringing large RCRA penalties.
 - What to do when it's broken: Ship the waste to a permitted facility now, or request an extension from the regulator if allowed.
@@ -4267,9 +4267,9 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Date the excess and move it to the central accumulation area within 3 consecutive calendar days.
 - Example reading used in demos: 40 gal
 
-**7. SQG 180-day accumulation limit** (Maximum 180 days, warns from 160 days)
+**7. SQG 180-day accumulation limit** (Maximum 180 days, warns from 160 days; counts days since a date)
 
-- Asks: Days hazardous waste has been accumulated on site (180-day limit; 270 days only if the TSDF is over 200 miles away)
+- Asks: Days since this hazardous waste began accumulating on site (180-day limit; 270 days only if the TSDF is over 200 miles away)
 - Rule: 40 CFR 262.16(b)(1); 40 CFR 262.16(d)
 - What a miss costs: Holding waste past the limit makes a small quantity generator an unpermitted storage facility subject to RCRA penalties.
 - What to do when it's broken: Ship the waste to a permitted facility now, or request an extension from the regulator if allowed.
