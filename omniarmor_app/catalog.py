@@ -47,6 +47,16 @@ def date_mode(rule):
     return "since"
 
 
+_DAY_ONE = re.compile(r"\bas day 1\b", re.I)
+
+
+def counts_first_day(rule):
+    """Whether a days-since check counts the starting day itself as day 1, as
+    the Food Code's 7-day date marking does (3-501.17(A)): food made on Monday
+    is on day 7 on Sunday, the last day it may be kept."""
+    return date_mode(rule) == "since" and date_unit(rule) == "days" and bool(_DAY_ONE.search(rule.input))
+
+
 def rules_for(industry_id):
     return CATALOG[industry_id]
 

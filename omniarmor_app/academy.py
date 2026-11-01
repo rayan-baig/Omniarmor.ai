@@ -30,7 +30,7 @@ from omni_armor_rules import CATALOG, evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
 from .academy_bank import load_expansions, load_worlds
-from .catalog import INDUSTRIES, date_mode, date_unit
+from .catalog import INDUSTRIES, counts_first_day, date_mode, date_unit
 
 PASS_RATE = 0.6
 MAX_LEARNERS = 12
@@ -705,8 +705,9 @@ def _since_rules(pool):
 
 
 def _counts_days_since(rule):
-    """Rules counted in days since something happened (the calendar questions say "days")."""
-    return date_mode(rule) == "since" and date_unit(rule) == "days"
+    """Rules counted in days since something happened (the calendar questions say "days").
+    Not one that counts its first day as day 1: "done 3 days ago" is its day 4."""
+    return date_mode(rule) == "since" and date_unit(rule) == "days" and not counts_first_day(rule)
 
 
 def _light_question(rule, value, found):

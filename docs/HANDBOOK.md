@@ -122,9 +122,9 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 
 ### 2.3 Dates that count themselves
 
-126 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
+127 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
 
-- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit.
+- **Days since** (116 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, RestoArmor's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
 
 19 more checks count **months or years since** something happened, such as "Months since the facility's last completed PREA audit" or "Years since this turnout gear was manufactured". They take a date the same way and count up by themselves:
@@ -1018,7 +1018,7 @@ These are the habits the project was built with. Keep them:
 ---
 
 ## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 126 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 127 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -1128,9 +1128,9 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Reheat to 165°F and restart cooling, or discard; use shallow pans or ice baths.
 - Example reading used in demos: 1.25 h
 
-**4. Ready-to-eat food 7-day limit** (Maximum 7 days, warns from 6 days)
+**4. Ready-to-eat food 7-day limit** (Maximum 7 days, warns from 6 days; counts days since a date, the first day as day 1)
 
-- Asks: Days this ready-to-eat TCS food has been held at 41°F, counting the prep or opening day as day 1
+- Asks: Days since this ready-to-eat TCS food was prepared or opened and held at 41°F, counting that day as day 1
 - Rule: FDA Food Code 3-501.17(A); 3-501.18
 - What a miss costs: Food past its date mark must be thrown out and is cited at inspection; it raises Listeria risk.
 - What to do when it's broken: Discard the food now and check date labels on the rest of the cooler.

@@ -406,3 +406,46 @@ class TestSwitchingANumberToADate(AppTestCase):
     def test_a_new_number_and_a_date_together_are_still_refused(self):
         self.change(1, "annual_mvr_review", value="13", date="2026-02-01")
         self.assertEqual(self.reading(), {"value_num": 12.0, "value_date": None})
+
+
+class TestReadyToEatFoodSevenDays(AppTestCase):
+    """FDA Food Code 3-501.17(A): ready-to-eat TCS food held cold may be kept
+    at most 7 days, counting the day it was prepared or opened as day 1. The
+    check took only a typed number that never grew, so food entered on day 2
+    stayed Cleared all week and past it."""
+
+    def state(self, value_date, today):
+        from datetime import date
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        row = {"value_num": None, "value_bool": None, "value_date": value_date, "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        return compute_state(2, find_rule(2, "date_marking"), row, date.fromisoformat(today))
+
+    def test_it_takes_a_date(self):
+        from omniarmor_app.catalog import date_mode, find_rule
+        self.assertEqual(date_mode(find_rule(2, "date_marking")), "since")
+
+    def test_the_prep_day_is_day_one(self):
+        # Prepared on Monday 2 November: day 1. Day 7 is Sunday 8 November, the last day.
+        cases = {"2026-11-02": (1, "CLEARED"), "2026-11-06": (5, "CLEARED"), "2026-11-07": (6, "WARNING"),
+                 "2026-11-08": (7, "WARNING"), "2026-11-09": (8, "BLOCKED")}
+        for today, (day, level) in cases.items():
+            s = self.state("2026-11-02", today)
+            self.assertEqual((s.value, s.level), (day, level), today)
+            self.assertEqual(s.due_date.isoformat(), "2026-11-08")
+            self.assertEqual(s.warn_date.isoformat(), "2026-11-07")
+
+    def test_through_the_app(self):
+        from datetime import timedelta
+        from omniarmor_app.tracking import org_today
+        self.signup(industries=(2,))
+        with self.db() as conn:
+            today = org_today(conn.execute("SELECT * FROM orgs").fetchone())
+        self.change(2, "date_marking", date=(today - timedelta(days=6)).isoformat())  # today is day 7
+        page = self.client.get("/app/industry/2").data.decode()
+        self.assertIn("Due today", page)
+        self.change(2, "date_marking", date=(today - timedelta(days=7)).isoformat())  # today is day 8
+        page = self.client.get("/app/industry/2?only=problems").data.decode()
+        self.assertIn('id="rule-date_marking"', page)
+        self.assertIn("1 day overdue", page)

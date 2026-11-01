@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
-from .catalog import INDUSTRIES, can_override, date_mode, date_unit, effective_rule, find_rule, rules_for
+from .catalog import INDUSTRIES, can_override, counts_first_day, date_mode, date_unit, effective_rule, find_rule, rules_for
 from .db import now_iso, record_audit, user_name
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
@@ -165,13 +165,15 @@ def compute_state(industry_id, rule, row, today):
     unit = date_unit(rule)
     eff = effective_rule(rule, row)
     value = None
-    value_date = None
+    value_date = origin = None
     if row is not None:
         if rule.kind in ("required", "forbidden"):
             value = None if row["value_bool"] is None else bool(row["value_bool"])
         elif mode and row["value_date"]:
             value_date = date.fromisoformat(row["value_date"])
-            value = _elapsed(value_date, today, unit) if mode == "since" else _elapsed(today, value_date, unit)
+            # A check that counts its first day as day 1 counts from the day before.
+            origin = value_date - timedelta(days=1) if counts_first_day(rule) else value_date
+            value = _elapsed(origin, today, unit) if mode == "since" else _elapsed(today, value_date, unit)
         elif row["value_num"] is not None:
             value = row["value_num"]
             if isinstance(value, float) and value.is_integer():
@@ -184,9 +186,9 @@ def compute_state(industry_id, rule, row, today):
     due_date = warn_date = None
     if value_date is not None:
         sign = 1 if mode == "since" else -1
-        due_date = _deadline(value_date, eff.limit, unit, sign)
+        due_date = _deadline(origin, eff.limit, unit, sign)
         if eff.warn is not None:
-            warn_date = _deadline(value_date, eff.warn, unit, sign)
+            warn_date = _deadline(origin, eff.warn, unit, sign)
     return ItemState(
         industry_id=industry_id, rule=rule, effective=eff, mode=mode, value=value, level=level,
         status=status, message=message, value_date=value_date, due_date=due_date, warn_date=warn_date,

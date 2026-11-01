@@ -474,9 +474,11 @@ $("rules").addEventListener("input", e => {
   const el = e.target;
   const ind = current();
   if (el.dataset.dateFor) {
-    const days = daysFromDate(el.value, el.dataset.mode);
+    let days = daysFromDate(el.value, el.dataset.mode);
     if (days === null) return;
     const key = el.dataset.dateFor;
+    // A check that counts its first day as day 1 (the 7-day date marking).
+    if (el.dataset.mode === "since" && /\bas day 1\b/i.test((ind.rules.find(x => x.key === key) || {}).input || "")) days += 1;
     readings[ind.id][key] = days;
     const num = $(`in-${ind.id}-${key}`);
     if (num) num.value = days;

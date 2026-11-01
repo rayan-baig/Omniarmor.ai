@@ -97,7 +97,7 @@ RULES = {
         Rule(key="date_marking", title="Ready-to-eat food 7-day limit",
              cost="Food past its date mark must be thrown out and is cited at inspection; it raises Listeria risk.",
              citation="FDA Food Code 3-501.17(A); 3-501.18", kind="max",
-             input="Days this ready-to-eat TCS food has been held at 41°F, counting the prep or opening day as day 1",
+             input="Days since this ready-to-eat TCS food was prepared or opened and held at 41°F, counting that day as day 1",
              unit="days", limit=7, warn=6, sample=8,
              action="Discard the food now and check date labels on the rest of the cooler."),
         Rule(key="no_bare_hand_rte", title="No bare-hand contact with RTE food",
