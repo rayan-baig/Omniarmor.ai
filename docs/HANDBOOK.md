@@ -526,7 +526,7 @@ The goal is a service that runs without someone checking it every day. The daily
 
 ### 6.2 Small problems it fixes by itself
 
-- **Failed emails.** It re-sends them, waiting longer after each try: 10 minutes after the first failure, then 1 hour, then 6 hours, within 2 days of the original email.
+- **Failed emails.** It re-sends them, waiting longer after each try: 10 minutes after the first failure, then 1 hour, then 6 hours, within 2 days of the original email. A password reset email is not re-sent once the link inside has expired.
 - **A missing backup.** Once the daily job has run at least once, if the newest backup is over 26 hours old, it makes one.
 - **Safe data slips.** Once a day it removes leftover rows that point at deleted records (in tables where that is safe), corrects star counts outside 0 to 3, and moves learners with an unknown track back to Launchpad.
 - **Tidying.** Once a day it:

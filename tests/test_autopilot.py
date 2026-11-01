@@ -67,6 +67,18 @@ class AutopilotTest(unittest.TestCase):
         logged = conn.execute("SELECT level, title FROM autopilot_events WHERE level = 'fixed'").fetchall()
         self.assertEqual(len(logged), 1)
 
+    def test_an_expired_reset_link_is_not_sent_again(self):
+        conn = self.db()
+        for kind in ("password_reset", "reminder"):
+            conn.execute("INSERT INTO notifications (created_at, kind, recipient, subject, body, status, error, attempts)"
+                         " VALUES (?, ?, 'pat@example.com', 'Subject', 'Body', 'failed', 'timeout', 3)",
+                         (iso(utcnow() - timedelta(hours=8)), kind))
+        conn.commit()
+        autopilot.run(self.cfg, force=True)
+        # The reset link inside lasted an hour; sending it hours later only sends a dead link.
+        statuses = {r["kind"]: r["status"] for r in conn.execute("SELECT kind, status FROM notifications")}
+        self.assertEqual(statuses, {"password_reset": "failed", "reminder": "sent"})
+
     def test_email_that_keeps_failing_is_reported_once(self):
         conn = self.db()
         self.smtp_works = False

@@ -28,6 +28,7 @@ from datetime import timedelta
 from . import bugfinder
 from .redact import redact
 from .db import connect, iso, migrate, now_iso, utcnow
+from .auth import RESET_HOURS
 from .notify import send_email
 
 log = logging.getLogger("omniarmor.autopilot")
@@ -69,6 +70,8 @@ def retry_failed_emails(conn, cfg):
         due = _parse(row["created_at"]) + sum(EMAIL_RETRY_AFTER[:row["attempts"]], timedelta())
         if due > now:
             continue
+        if row["kind"] == "password_reset" and _parse(row["created_at"]) + timedelta(hours=RESET_HOURS) <= now:
+            continue  # the link inside has expired; resending it would only send a dead link
         status, error = send_email(cfg, row["recipient"], row["subject"], row["body"])
         conn.execute("UPDATE notifications SET status = ?, error = ?, attempts = attempts + 1 WHERE id = ?",
                      (status if status != "logged" else "failed", error or row["error"], row["id"]))
