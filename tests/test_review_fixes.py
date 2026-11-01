@@ -2,62 +2,70 @@
 
 import glob
 import os
+import pathlib
+import tempfile
+import unittest
 
 from omniarmor_app.tracking import MAX_DAYS, _shifted, _whole_days
 
 
-def test_a_huge_day_limit_cannot_reach_past_the_calendar():
-    import datetime
-    # Clamped, and even an edge date plus the clamp is answered, not raised.
-    assert _whole_days(3_000_000) == MAX_DAYS
-    assert _shifted(datetime.date(9999, 12, 1), MAX_DAYS) is None
-    assert _shifted(datetime.date(2026, 1, 1), 30) == datetime.date(2026, 1, 31)
+class TestOutsideTheApp(unittest.TestCase):
+    """Plain functions here were only collected by pytest; CI runs unittest,
+    which skipped them. As methods they run everywhere."""
 
+    def test_a_huge_day_limit_cannot_reach_past_the_calendar(self):
+        import datetime
+        # Clamped, and even an edge date plus the clamp is answered, not raised.
+        assert _whole_days(3_000_000) == MAX_DAYS
+        assert _shifted(datetime.date(9999, 12, 1), MAX_DAYS) is None
+        assert _shifted(datetime.date(2026, 1, 1), 30) == datetime.date(2026, 1, 31)
 
-def test_a_failing_daily_job_does_not_churn_away_older_backups(tmp_path):
-    """Each retry took another backup and pruned by count, so a job that kept
-    failing pushed every earlier day's copy out."""
-    import sqlite3
-    from omniarmor_app.jobs import backup_database
+    def test_a_failing_daily_job_does_not_churn_away_older_backups(self):
+        """Each retry took another backup and pruned by count, so a job that kept
+        failing pushed every earlier day's copy out."""
+        import sqlite3
+        from omniarmor_app.jobs import backup_database
 
-    db = tmp_path / "live.db"
-    sqlite3.connect(db).close()
-    backups = tmp_path / "backups"
-    backups.mkdir()
-    for day in ("20260101", "20260102", "20260103"):
-        (backups / f"omniarmor-{day}-000000-000000.db").write_bytes(b"old")
-    cfg = {"DATABASE": str(db), "BACKUP_DIR": str(backups), "BACKUP_KEEP": 4}
-    first = backup_database(cfg)
-    for _ in range(5):
-        assert backup_database(cfg) == first
-    names = sorted(os.path.basename(p) for p in glob.glob(str(backups / "*.db")))
-    assert len(names) == 4 and names[0].startswith("omniarmor-20260101")
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        tmp_path = pathlib.Path(tmp.name)
+        db = tmp_path / "live.db"
+        sqlite3.connect(db).close()
+        backups = tmp_path / "backups"
+        backups.mkdir()
+        for day in ("20260101", "20260102", "20260103"):
+            (backups / f"omniarmor-{day}-000000-000000.db").write_bytes(b"old")
+        cfg = {"DATABASE": str(db), "BACKUP_DIR": str(backups), "BACKUP_KEEP": 4}
+        first = backup_database(cfg)
+        for _ in range(5):
+            assert backup_database(cfg) == first
+        names = sorted(os.path.basename(p) for p in glob.glob(str(backups / "*.db")))
+        assert len(names) == 4 and names[0].startswith("omniarmor-20260101")
 
+    def test_a_deleted_workspaces_subscription_does_not_land_on_a_stranger(self):
+        """Workspace ids are reused, and a renewal for a deleted workspace used to
+        make the stranger who got its id paid, with the original card behind it."""
+        import sqlite3
+        from omniarmor_app.academy_plan import _org_for
 
-def test_a_deleted_workspaces_subscription_does_not_land_on_a_stranger():
-    """Workspace ids are reused, and a renewal for a deleted workspace used to
-    make the stranger who got its id paid, with the original card behind it."""
-    import sqlite3
-    from omniarmor_app.academy_plan import _org_for
-
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    conn.execute("CREATE TABLE orgs (id INTEGER PRIMARY KEY, stripe_customer_id TEXT, created_at TEXT)")
-    # The stranger's workspace, made today with the deleted one's id.
-    conn.execute("INSERT INTO orgs (id, stripe_customer_id, created_at) "
-                 "VALUES (2, NULL, '2026-10-31T10:00:00+00:00')")
-    # A subscription from last year, renewing.
-    renewal = {"id": "sub_B", "customer": "cus_B", "created": 1735689600, "metadata": {"org_id": "2"}}
-    assert _org_for(conn, renewal, "customer.subscription.updated") is None
-    # Its own checkout still finds it.
-    checkout = {"client_reference_id": "2", "customer": "cus_new"}
-    assert _org_for(conn, checkout, "checkout.session.completed")["id"] == 2
-    # And a workspace with a customer only answers to that customer.
-    conn.execute("UPDATE orgs SET stripe_customer_id = 'cus_new' WHERE id = 2")
-    assert _org_for(conn, {"customer": "cus_other", "metadata": {"org_id": "2"}},
-                    "customer.subscription.updated") is None
-    assert _org_for(conn, {"customer": "cus_new", "metadata": {"org_id": "2"}},
-                    "customer.subscription.updated")["id"] == 2
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        conn.execute("CREATE TABLE orgs (id INTEGER PRIMARY KEY, stripe_customer_id TEXT, created_at TEXT)")
+        # The stranger's workspace, made today with the deleted one's id.
+        conn.execute("INSERT INTO orgs (id, stripe_customer_id, created_at) "
+                     "VALUES (2, NULL, '2026-10-31T10:00:00+00:00')")
+        # A subscription from last year, renewing.
+        renewal = {"id": "sub_B", "customer": "cus_B", "created": 1735689600, "metadata": {"org_id": "2"}}
+        assert _org_for(conn, renewal, "customer.subscription.updated") is None
+        # Its own checkout still finds it.
+        checkout = {"client_reference_id": "2", "customer": "cus_new"}
+        assert _org_for(conn, checkout, "checkout.session.completed")["id"] == 2
+        # And a workspace with a customer only answers to that customer.
+        conn.execute("UPDATE orgs SET stripe_customer_id = 'cus_new' WHERE id = 2")
+        assert _org_for(conn, {"customer": "cus_other", "metadata": {"org_id": "2"}},
+                        "customer.subscription.updated") is None
+        assert _org_for(conn, {"customer": "cus_new", "metadata": {"org_id": "2"}},
+                        "customer.subscription.updated")["id"] == 2
 
 
 # ---- through the app --------------------------------------------------------
