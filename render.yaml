@@ -27,3 +27,18 @@ services:
         sync: false   # e.g. OmniArmor <reminders@omniarmor.ai>
       - key: DAILY_JOB_HOUR_UTC
         value: "11"
+      # Where Autopilot emails problems it cannot fix itself. Unset, they
+      # only reach the server log, which nobody reads.
+      - key: OPERATOR_EMAIL
+        sync: false
+      # The Academy plan's card payments (optional: without them, switch a
+      # family's plan on by hand with `flask --app wsgi academy-plan`).
+      # Webhook: https://<your domain>/billing/stripe/webhook
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: ACADEMY_STRIPE_PRICE
+        sync: false
+      - key: ACADEMY_PRICE_LABEL
+        sync: false

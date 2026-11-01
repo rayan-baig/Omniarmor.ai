@@ -102,6 +102,11 @@ discover -s tests` (GitHub Actions does this on every push).
 - Form the company (see the README) and open a business bank account.
 - Get a lawyer to write your Terms of Service and Privacy Policy, and to
   review the rule catalog before you sell to customers.
-- Add payments: OmniArmor doesn't charge cards yet. Stripe Checkout and its
-  customer portal are the usual next step.
+- Payments: the Academy plan already takes cards through Stripe (set the
+  Stripe settings, and in Stripe add the webhook
+  `https://<your domain>/billing/stripe/webhook` with the events
+  `checkout.session.completed`, `customer.subscription.created`,
+  `customer.subscription.updated`, `customer.subscription.deleted` and
+  `invoice.payment_failed`). Charging for the compliance service itself is
+  not built yet.
 - Buy your domain and point it at the app.

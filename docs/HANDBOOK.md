@@ -980,7 +980,6 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 - **One workspace per person.** Consultants and multi-location owners would want several.
 - **English only.**
 - **Rule review.** A compliance professional should review the catalog before selling, especially rules marked as policy. Most rules are US federal, with some state and city rules (California, Illinois, New York City), the GDPR, PCI DSS and NFPA standards, and maritime conventions (MARPOL, SOLAS, STCW, MLC).
-- **Small copy fix.** The public home page still describes the Academy as "a fun course of 1,350 levels". That's true of Launchpad, but it could mention the four tracks up to 15,700 levels.
 - **Business steps only the founders can take:**
   1. Incorporate (for example as a Delaware C corporation).
   2. Get an EIN, open a business bank account, and assign the code and name to the company.
