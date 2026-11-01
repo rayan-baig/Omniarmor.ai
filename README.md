@@ -66,5 +66,5 @@ software startup:
 5. **Adopt bylaws**, open a business bank account, and assign the code and the
    OmniArmor name to the company.
 
-A startup lawyer and an accountant should review each step. They're also the
-people to write your Terms of Service and Privacy Policy.
+A startup lawyer and an accountant should review each step. Have the lawyer
+review the Terms (`/terms`) and Privacy (`/privacy`) pages too.

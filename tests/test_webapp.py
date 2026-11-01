@@ -84,6 +84,53 @@ class TestPublicPages(AppTestCase):
         self.assertIn("max-age=31536000", response.headers.get("Cache-Control", ""))
         response.close()
 
+    def test_terms_and_privacy_render_and_are_linked(self):
+        for path in ["/terms", "/privacy"]:
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+            self.assertIn(b"Last changed", response.data)
+        footer = self.client.get("/login").data.decode()
+        self.assertIn('href="/terms"', footer)
+        self.assertIn('href="/privacy"', footer)
+        sitemap = self.client.get("/sitemap.xml").data.decode()
+        self.assertIn("https://omniarmor.test/terms", sitemap)
+        self.assertIn("https://omniarmor.test/privacy", sitemap)
+        # Signed in, the pages still render (with the app's own navigation).
+        self.signup()
+        for path in ["/terms", "/privacy"]:
+            self.assertEqual(self.client.get(path).status_code, 200, path)
+
+    def test_privacy_page_quotes_the_numbers_the_code_uses(self):
+        from omniarmor_app.academy import FRIEND_CODE_DAYS
+        from omniarmor_app.academy_views import JOIN_CODE_DAYS, QUIZ_CHECK_DAYS
+        from omniarmor_app.autopilot import KEEP_ERRORS
+        from omniarmor_app.auth import INVITE_DAYS, RESET_HOURS
+        page = " ".join(self.client.get("/privacy").data.decode().split())
+        cfg = self.app.config
+        self.assertIn(f"it lasts {cfg['PERMANENT_SESSION_LIFETIME'].days} days", page)
+        self.assertIn(f"keep the newest {cfg['BACKUP_KEEP']} copies", page)
+        self.assertIn(f"work once, for {RESET_HOURS} hour", page)
+        self.assertIn(f"Team invite links</strong> work for {INVITE_DAYS} days", page)
+        self.assertIn(f"Kid join codes</strong> work for {JOIN_CODE_DAYS} days", page)
+        self.assertIn(f"friend codes</strong> for {FRIEND_CODE_DAYS} days", page)
+        self.assertIn(f"finished:</strong> {QUIZ_CHECK_DAYS} days", page)
+        self.assertIn(f"Error reports:</strong> {KEEP_ERRORS.days} days", page)
+        # Every outside service that receives data is named.
+        for service in ["hosting company", "email service", "Google Fonts", "Stripe"]:
+            self.assertIn(service, page)
+        terms = " ".join(self.client.get("/terms").data.decode().split())
+        self.assertIn(f"free {cfg['ACADEMY_TRIAL_DAYS']}-day trial", terms)
+        self.assertIn("not legal advice", terms)
+
+    def test_privacy_page_follows_the_backup_setting(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        app = create_app(TESTING=True, DATABASE=os.path.join(tmp.name, "t.db"), SCHEDULER_ENABLED=False,
+                         BACKUP_DIR=os.path.join(tmp.name, "backups"), BACKUP_KEEP=0)
+        page = " ".join(app.test_client().get("/privacy").data.decode().split())
+        self.assertIn("Old copies are not deleted by themselves", page)
+        self.assertNotIn("keep the newest", page)
+
     def test_slogan_and_every_industry_page(self):
         self.assertIn(b"before it catches you", self.client.get("/").data)
         sitemap = self.client.get("/sitemap.xml").data.decode()

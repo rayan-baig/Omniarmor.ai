@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Privacy{% endblock %}
+{% block description %}What OmniArmor collects, why, who else sees it, how long we keep it and how to delete it, in plain words.{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Privacy · Last changed {{ facts.updated }}</p>
+    <h1>How we handle your data</h1>
+    <p class="sub">Plain words. Every line on this page matches what the app does today.</p>
+  </div>
+</div>
+<div class="plain">
+
+<h2>The short version</h2>
+<ul>
+  <li>We keep what you type in, so the app can do its job.</li>
+  <li>We don't sell your data. We don't show ads. We don't use tracking or analytics tools.</li>
+  <li>A few outside companies help run the site. They are all listed below.</li>
+  <li>A workspace owner can delete the whole workspace at any time. (Cancel a paid Academy plan first.)</li>
+</ul>
+
+<h2 id="collect">What we collect</h2>
+<p><strong>When you sign up:</strong> your name, email, password, company name, time zone and the industries you pick. We store your password scrambled (hashed), so nobody can read it, not even us.</p>
+<p><strong>When you use the tracker:</strong> the dates, numbers and yes-or-no answers you enter, any limits you change, and who changed what and when. That last part is the audit trail.</p>
+<p><strong>Emails we send:</strong> we keep a copy of each email (reminders and password reset emails), so you can see it in Radar.</p>
+<p><strong>When a kid uses the Academy:</strong> a nickname, a picture, their Armo helper, their track, their levels and stars, the days they played, the questions they got wrong (for practice), their friends and their duels. We never ask a kid for a real name, email, birthday or password. Please pick a nickname, not a real name.</p>
+<p><strong>When you visit:</strong></p>
+<ul>
+  <li>The server writes a log line for each page you open: your IP address, the time, the page, the page you came from, and your browser type. We hide password reset and invite links in that log.</li>
+  <li>We save the date you last used the app (just the date).</li>
+  <li>When someone types a wrong password, asks for a password reset, signs up or tries a kid join code, we note the email typed (if any) and the IP address. This stops people from guessing passwords.</li>
+</ul>
+<p><strong>When something breaks:</strong> we save an error report with the page address and what went wrong in our code.</p>
+<p><strong>When you pay for the Academy plan:</strong> we keep Stripe's customer and subscription numbers and your plan's status and renewal date. We never see your card number.</p>
+
+<h2 id="cookies">Cookies</h2>
+<ul>
+  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. When you sign in, it lasts {{ facts.session_days }} days.</li>
+  <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
+  <li>No ad cookies. No tracking cookies.</li>
+</ul>
+
+<h2 id="why">Why we use it</h2>
+<ul>
+  <li>To run the tracker: count down deadlines, show what needs attention and send reminders.</li>
+  <li>To keep accounts safe: sign-in, limits on wrong guesses, and error reports so we can fix bugs.</li>
+  <li>To run the Academy and its plan.</li>
+  <li>To count users. We count how many accounts there are and how many were used in the last 30 days. Only those two numbers go to our own admin dashboard. No names, no emails, no companies.</li>
+</ul>
+
+<h2 id="who">Who else sees it</h2>
+<p><strong>Inside your workspace:</strong></p>
+<ul>
+  <li>Everyone on your team can see the readings, reports, audit trail, reminder log, and the team list with names and emails.</li>
+  <li>A kid who joins on a device with a join code can only use the Academy.</li>
+  <li>Academy friends, who can be in other families, see a kid's nickname, picture, rank and stars, and duel scores. There is no chat.</li>
+</ul>
+<p><strong>The people who run OmniArmor</strong> can open the database when they need to fix something.</p>
+<p><strong>Outside companies:</strong></p>
+<ul>
+  <li><strong>Our hosting company</strong> runs the server. It stores the database, the backups and the server logs.</li>
+  <li><strong>Our email service</strong> delivers our emails, so it sees your email address and the message.</li>
+  <li><strong>Google Fonts.</strong> Our pages load their fonts from Google. That means Google sees your IP address and browser each time you open a page.</li>
+  <li><strong>Stripe</strong> handles Academy payments. When you pay, Stripe gets your email, your card details and your workspace number.</li>
+</ul>
+<p>That's the full list. We don't sell your data or share it for ads.</p>
+
+<h2 id="keep">How long we keep it</h2>
+<ul>
+  <li><strong>Your account, workspace, readings, audit trail, email copies and kids' Academy profiles:</strong> until they are deleted (see below). Nothing here deletes itself.</li>
+  <li><strong>Wrong password tries, reset requests, sign-ups and join code tries:</strong> deleted within 2 days.</li>
+  <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days }} days.</li>
+  <li><strong>Kid join codes</strong> work for {{ facts.join_code_days }} days and <strong>friend codes</strong> for {{ facts.friend_code_days }} days. Then they are deleted.</li>
+  <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days }} days.</li>
+  <li><strong>Error reports:</strong> {{ facts.error_days }} days.</li>
+  {% if facts.backup_keep > 0 %}
+  <li><strong>Backups:</strong> we copy the whole database once a day and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep }} days.</li>
+  {% else %}
+  <li><strong>Backups:</strong> we copy the whole database once a day. Old copies are not deleted by themselves, so something you delete can stay in a backup.</li>
+  {% endif %}
+  <li><strong>Server logs:</strong> our hosting company keeps them. How long depends on that company.</li>
+  <li><strong>Stripe</strong> keeps its own payment records under its own rules.</li>
+</ul>
+
+<h2 id="delete">How to delete it</h2>
+<ul>
+  <li><strong>The whole workspace:</strong> the owner goes to Settings, then Delete workspace, and types the company name. This deletes the company, every reading, the audit trail, the reminder log, every kid's Academy profile and every team account that isn't in another workspace. Download your report and audit trail first if you need them.</li>
+  <li>If you pay for the Academy plan, cancel it first on the <a href="{{ url_for('academy.plan_page') }}">Academy plan page</a> (Manage or cancel). Deleting is blocked until you do, so you aren't charged for a workspace that's gone.</li>
+  <li><strong>One team member:</strong> the owner removes them in Settings. Their account is deleted too, unless they belong to another workspace. There is no button to delete only your own account, so ask your workspace owner. Changes you made stay in that workspace's audit trail.</li>
+  <li><strong>One kid:</strong> a grown-up opens the Academy, then Manage learners, then Remove. Their progress, friends and duels go too.</li>
+  <li><strong>A kid's devices:</strong> a grown-up can sign a kid out on every device from the kid's map page.</li>
+  <li><strong>Reminder emails:</strong> turn them off for yourself in Settings.</li>
+</ul>
+<p>Deleted means gone from the app right away. Copies can still sit in backups, server logs and Stripe for the times listed above.</p>
+
+<h2 id="promise">What we promise and what we don't</h2>
+<p><strong>We promise:</strong></p>
+<ul>
+  <li>Passwords are stored scrambled.</li>
+  <li>Card numbers never reach us.</li>
+  <li>No ads, no tracking tools, and we don't sell your data.</li>
+</ul>
+<p><strong>We don't promise:</strong></p>
+<ul>
+  <li>That nothing will ever go wrong. We work hard to keep your data safe, but no website is perfectly safe.</li>
+</ul>
+<p>We may change this page. The date at the top shows the last change. Also see our <a href="{{ url_for('public.terms') }}">Terms</a>.</p>
+</div>
+{% endblock %}

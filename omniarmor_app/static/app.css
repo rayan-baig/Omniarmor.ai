@@ -172,6 +172,13 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .rule-list li{padding:14px 0;border-bottom:1px solid var(--line)}
 .rule-list strong{display:block}
 .rule-list span{color:var(--muted);font-size:15px}
+.plain{max-width:68ch}
+.plain ul{padding-left:1.2em;margin:0 0 12px}
+.plain li{margin-bottom:6px}
+.plain p{margin:0 0 12px}
+footer.site nav{display:flex;gap:16px}
+footer.site nav a{color:var(--faint)}
+footer.site nav a:hover{color:var(--ink)}
 footer.site{border-top:1px solid var(--line);color:var(--faint);font-size:14px}
 footer.site .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;padding-block:20px}
 

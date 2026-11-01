@@ -49,6 +49,44 @@ def industry_page(slug):
     return render_template("industry_public.html", info=match, rules=rules_for(match["id"]))
 
 
+# The date the Terms and Privacy pages last changed. Update it with them.
+RULES_UPDATED = "1 November 2026"
+
+
+def _rules_facts():
+    """The numbers the Terms and Privacy pages quote, read from the code that
+    sets them, so the pages stay true when a setting changes."""
+    from .academy import FRIEND_CODE_DAYS
+    from .academy_plan import FREE_WORLDS
+    from .academy_views import JOIN_CODE_DAYS, QUIZ_CHECK_DAYS
+    from .autopilot import KEEP_ERRORS
+    from .auth import INVITE_DAYS, RESET_HOURS
+    cfg = current_app.config
+    return {
+        "updated": RULES_UPDATED,
+        "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
+        "free_worlds": len(FREE_WORLDS),
+        "backup_keep": cfg["BACKUP_KEEP"],
+        "session_days": cfg["PERMANENT_SESSION_LIFETIME"].days,
+        "reset_hours": RESET_HOURS,
+        "invite_days": INVITE_DAYS,
+        "join_code_days": JOIN_CODE_DAYS,
+        "friend_code_days": FRIEND_CODE_DAYS,
+        "quiz_check_days": QUIZ_CHECK_DAYS,
+        "error_days": KEEP_ERRORS.days,
+    }
+
+
+@public.route("/privacy")
+def privacy():
+    return render_template("privacy.html", facts=_rules_facts())
+
+
+@public.route("/terms")
+def terms():
+    return render_template("terms.html", facts=_rules_facts())
+
+
 @public.route("/robots.txt")
 def robots():
     body = "User-agent: *\nAllow: /\nDisallow: /app\nSitemap: " + current_app.config["BASE_URL"] + "/sitemap.xml\n"
@@ -58,7 +96,7 @@ def robots():
 @public.route("/sitemap.xml")
 def sitemap():
     base = current_app.config["BASE_URL"]
-    urls = [base + "/", base + "/industries"] + [f"{base}/industries/{i['brand'].lower()}" for i in INDUSTRIES.values()]
+    urls = [base + "/", base + "/industries", base + "/terms", base + "/privacy"] + [f"{base}/industries/{i['brand'].lower()}" for i in INDUSTRIES.values()]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml += [f"<url><loc>{u}</loc></url>" for u in urls] + ["</urlset>"]
     return Response("\n".join(xml), mimetype="application/xml")

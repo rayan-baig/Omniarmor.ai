@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Terms{% endblock %}
+{% block description %}The rules for using OmniArmor, in plain words: what it is, what it isn't, and what we promise.{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Terms · Last changed {{ facts.updated }}</p>
+    <h1>The rules for using OmniArmor</h1>
+    <p class="sub">Plain words. By using OmniArmor, you agree to these rules.</p>
+  </div>
+</div>
+<div class="plain">
+
+<h2 id="what">What OmniArmor is</h2>
+<ul>
+  <li>A tracker that helps a business keep up with inspections, deadlines, limits and sign-offs in 50 industries.</li>
+  <li>The Future Owner Academy: a learning game about running a business, for kids in a grown-up's workspace.</li>
+</ul>
+
+<h2 id="helper">It helps you. It doesn't decide for you.</h2>
+<ul>
+  <li>OmniArmor is a helper, not a lawyer. It is not legal advice.</li>
+  <li>Each check names the rule it comes from. Rules change and differ from place to place, so our list can be out of date, missing something, or wrong for you. Check the rules for your business with an expert.</li>
+  <li>Some limits are marked "policy". That means common practice, not one fixed law. You can set your own.</li>
+  <li>OmniArmor only knows what you type in. If a date or number is wrong, its status will be wrong too.</li>
+  <li>Reminder emails can be late or never arrive. Check your deadlines in the app too.</li>
+  <li>The Academy is a learning game. It is not business, money or legal advice.</li>
+</ul>
+
+<h2 id="account">Your account</h2>
+<ul>
+  <li>Grown-ups make accounts. Kids use the Academy only through a grown-up's workspace, with a nickname and a picture.</li>
+  <li>Use your real email and keep your password secret. You are responsible for what happens in your account.</li>
+  <li>The owner of a workspace runs it. The owner can invite people, remove them and delete the whole workspace.</li>
+</ul>
+
+<h2 id="dont">Please don't</h2>
+<ul>
+  <li>Try to break into the site or anyone's account, or try to overload the site.</li>
+  <li>Use someone else's account.</li>
+  <li>Put in information you don't have the right to share.</li>
+  <li>Use OmniArmor to break the law.</li>
+</ul>
+<p>If you break these rules, we may remove your access.</p>
+
+<h2 id="paying">Paying</h2>
+<ul>
+  <li>The compliance tracker costs nothing right now.</li>
+  <li>The Academy: a workspace gets a free {{ facts.trial_days }}-day trial of the whole Academy when it adds its first kid. After that, the first {{ facts.free_worlds }} worlds of the Launchpad track stay free. Everything else needs the Academy plan.</li>
+  <li>Stripe handles the Academy plan. It renews until you cancel. You can cancel or change your card any time on the <a href="{{ url_for('academy.plan_page') }}">Academy plan page</a> (Manage or cancel).</li>
+</ul>
+
+<h2 id="promise">What we promise and what we don't</h2>
+<ul>
+  <li>We try hard to keep OmniArmor working and correct. But we can't promise it will always be online, free of mistakes, or right for your business.</li>
+  <li>We're not responsible for fines, losses or missed deadlines, even if OmniArmor got something wrong. Keeping your business within the law is still your job.</li>
+  <li>We may change or stop the service. We may change these rules too. The date at the top shows the last change.</li>
+</ul>
+<p>How we handle your data is on the <a href="{{ url_for('public.privacy') }}">Privacy</a> page.</p>
+</div>
+{% endblock %}

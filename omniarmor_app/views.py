@@ -259,7 +259,7 @@ def delete_workspace():
     plan = conn.execute("SELECT academy_status, stripe_subscription_id FROM orgs WHERE id = ?",
                         (org_id,)).fetchone()
     if plan and plan["stripe_subscription_id"] and plan["academy_status"] in ("active", "trialing", "past_due"):
-        flash_error("Cancel your Academy plan first (Settings, Manage plan), then delete the workspace.")
+        flash_error("Cancel your Academy plan first (Academy plan page, Manage or cancel), then delete the workspace.")
         return redirect(url_for("app.settings"))
     member_ids = [r["user_id"] for r in conn.execute("SELECT user_id FROM memberships WHERE org_id = ?", (org_id,))]
     conn.execute("DELETE FROM orgs WHERE id = ?", (org_id,))

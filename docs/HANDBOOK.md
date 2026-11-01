@@ -182,9 +182,10 @@ Visitors who aren't signed in see:
 - a landing page with the slogan and how it works;
 - a list of all 50 industries;
 - one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, so a prospect can see their own risks before signing up;
-- a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy.
+- a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
+- the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
-The site also serves a `sitemap.xml` listing the public pages, a `robots.txt` that keeps search engines out of the signed-in app, and a favicon.
+The site also serves a `sitemap.xml` listing the public pages (including Terms and Privacy), a `robots.txt` that keeps search engines out of the signed-in app, and a favicon.
 
 ### 2.9 Team, invites and roles
 
@@ -983,7 +984,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 - **Business steps only the founders can take:**
   1. Incorporate (for example as a Delaware C corporation).
   2. Get an EIN, open a business bank account, and assign the code and name to the company.
-  3. Have a lawyer write the Terms of Service and Privacy Policy, and review the catalog.
+  3. Have a lawyer review the Terms and Privacy pages and the catalog.
   4. Buy the domain.
 - **Scale.** The app is built for one small server. It scales up with a bigger server; moving beyond that would mean a different database.
 
@@ -5861,11 +5862,13 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/kids/leave` | A kid device leaves the Academy |
 | GET, POST | `/login` | Sign in |
 | POST | `/logout` | Sign out |
+| GET | `/privacy` | Privacy page: what is collected, who sees it, how long it is kept, how to delete it |
 | GET, POST | `/reset/<token>` | Set a new password from a reset link |
 | GET | `/robots.txt` | robots.txt |
 | GET, POST | `/signup` | Sign up (or accept an invite) |
 | GET | `/sitemap.xml` | sitemap.xml |
 | GET | `/static/<path:filename>` | CSS, scripts and icons |
+| GET | `/terms` | Terms page: the rules for using OmniArmor |
 
 ---
 
