@@ -81,7 +81,8 @@ def change(industry_id, rule_key):
 @bp.route("/audit")
 @login_required
 def audit():
-    page = max(1, request.args.get("page", 1, type=int))
+    # Past SQLite's integer range a page number crashed the query; no trail is that long.
+    page = min(max(1, request.args.get("page", 1, type=int)), 10 ** 9)
     rows = _audit_rows(limit=AUDIT_PAGE + 1, offset=(page - 1) * AUDIT_PAGE)
     return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE)
 
@@ -235,6 +236,8 @@ def remove_member(user_id):
     if user_id == g.user["id"]:
         flash_error("You can't remove yourself. Delete the workspace instead.")
         return redirect(url_for("app.settings"))
+    if user_id > 2 ** 63 - 1:
+        abort(404)  # past SQLite's integer range: no such person, and the query would crash
     member = conn.execute("SELECT users.name FROM memberships JOIN users ON users.id = memberships.user_id"
                           " WHERE memberships.org_id = ? AND memberships.user_id = ?", (g.org["id"], user_id)).fetchone()
     if member is None:

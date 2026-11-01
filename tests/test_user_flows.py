@@ -317,3 +317,17 @@ class TestMonthCountedChecks(AppTestCase):
         self.signup(industries=(14,))
         self.change(14, "gear_retirement", action="override", limit="5000")
         self.assertIn("between 0 and 100", self.client.get("/app/industry/14").data.decode())
+
+
+class TestOddAddresses(AppTestCase):
+    def test_a_huge_audit_page_number_is_not_a_server_error(self):
+        self.signup()
+        self.app.config["PROPAGATE_EXCEPTIONS"] = False
+        response = self.client.get("/app/audit?page=99999999999999999999")
+        self.assertEqual(response.status_code, 200)
+
+    def test_removing_a_huge_member_id_is_not_found(self):
+        self.signup()
+        self.app.config["PROPAGATE_EXCEPTIONS"] = False
+        response = self.post("/app/settings/member/99999999999999999999/remove")
+        self.assertEqual(response.status_code, 404)
