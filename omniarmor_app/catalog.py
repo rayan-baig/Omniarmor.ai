@@ -16,14 +16,19 @@ _SINCE = re.compile(r"\bdays? since\b", re.I)
 _UNTIL = re.compile(r"\bdays? until\b", re.I)
 _MONTHS_SINCE = re.compile(r"\bmonths? since\b", re.I)
 _YEARS_SINCE = re.compile(r"\byears? since\b", re.I)
+_HOURS_SINCE = re.compile(r"\bhours? since\b", re.I)
 
 
 def date_unit(rule):
     """What a date-tracked reading counts: 'days', 'months', 'calendar months'
     (whole months by the calendar, as in "the preceding 12 calendar months"),
-    'years' or 'business days' (Monday to Friday, not US federal holidays; the
-    rules say "business days", "working days" or "work days").
-    None when the reading is not tracked by date."""
+    'years', 'business days' (Monday to Friday, not US federal holidays; the
+    rules say "business days", "working days" or "work days") or 'hours'
+    (real hours since a date and time, such as "Hours since becoming aware of
+    a personal data breach"). None when the reading is not tracked by date.
+
+    Only "hours since" counts by the clock: "Hours driven since..." or "Hours
+    in service since..." are hours of driving or flying, not time passed."""
     if rule.kind not in ("max", "min"):
         return None
     if rule.unit in ("days", "calendar days"):
@@ -35,6 +40,8 @@ def date_unit(rule):
     if rule.unit in ("business days", "working days", "work days") and \
             re.search(r"\b(business|working|work) days? since\b", rule.input, re.I):
         return "business days"
+    if rule.unit == "h" and _HOURS_SINCE.search(rule.input):
+        return "hours"
     return None
 
 
@@ -60,6 +67,12 @@ def counts_first_day(rule):
     the Food Code's 7-day date marking does (3-501.17(A)): food made on Monday
     is on day 7 on Sunday, the last day it may be kept."""
     return date_mode(rule) == "since" and date_unit(rule) == "days" and bool(_DAY_ONE.search(rule.input))
+
+
+def counts_time(rule):
+    """Whether a check counts the time since a moment (a date and a time of
+    day), not since a day: the hour clocks."""
+    return date_unit(rule) == "hours"
 
 
 def rules_for(industry_id):

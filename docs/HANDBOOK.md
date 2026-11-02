@@ -92,7 +92,7 @@ A new customer opens the sign-up page and enters:
 - their name and email address,
 - a password of at least 10 characters,
 - the company's name,
-- the company's timezone (used to count days correctly), and
+- the company's timezone (used to count days and hours correctly), and
 - every industry that applies, ticked from the list of 50.
 
 That creates a **workspace** for the company. The person who signs up is its **owner**. They land on HQ right away, with every check for their industries in place and waiting for a first reading.
@@ -135,22 +135,31 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 
 16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday.
 
-A number typed instead of a date stays as typed.
+22 checks count **hours since** something happened, such as "Hours since becoming aware of a personal data breach not yet reported to the supervisory authority" (72 hours) or "Hours since learning of a work-related fatality without reporting it to OSHA" (8 hours). They take the date **and time** the clock started, and count real hours from it to now, in whole minutes:
+
+- The due time is the start plus the limit: a death learned of at 9:00 is due at 17:00. Up to and including 17:00 the check is at most a Warning ("8 h is close to the 8 h limit"); from 17:01 it is Blocked. It warns from the warning point the same way (6 hours here, so from 15:00).
+- The industry page shows "Due in 5 h 20 min", "Due now" or "2 h 5 min overdue", with the due date and time, for example "2026-11-04 17:00 EST". Longer clocks read "Due in 2 days 23 h".
+- The time entered is read in the company's timezone and shown back in it; it is stored in UTC, so moving the company to another timezone keeps the same moment. Across a change to or from daylight time the hours are real hours: 72 hours from noon on the Saturday before clocks go back end at 11:00 on the Tuesday. A time that happens twice the night clocks go back is taken the first time (the earlier moment); a time skipped the night clocks go forward, such as 2:30, is read as 3:30.
+- One that ran out earlier today counts as overdue, not "due today", in reminders and in Armo's alerts.
+
+"Hours driven since..." (the 11-hour driving limit) and "Hours in service since..." (the 100-hour aircraft inspection) count hours of driving or flying, not time passed, so they still take a typed number.
+
+A number typed instead of a date stays as typed. The page sends a saved date or number back with every save: a number typed next to the unchanged saved date (or date and time) replaces it, a date picked next to the unchanged saved number replaces that, and a new number with a new date is refused with "Enter a number or a date, not both."
 
 Days are counted in the company's own timezone, so a deadline flips at local midnight, not in London or California.
 
-A date in the future is refused for "days since" checks, with the message "That date is in the future. Enter the date it last happened."
+A date in the future is refused for "days since" checks, with the message "That date is in the future. Enter the date it last happened." A start time in the future is refused for hour checks ("That time is in the future. Enter when it started."), and so is a date without a time.
 
 ### 2.4 Done today
 
-For "days since" checks (and the months and years ones), the industry page has a **Done today** button. Pressing it sets the date to today, which restarts the cycle. A yearly inspection that was just done goes back to Cleared and its next due date moves a year out. The audit trail records it as "Marked done today; the next cycle has started."
+For "days since" checks (and the months and years ones), the industry page has a **Done today** button. Pressing it sets the date to today, which restarts the cycle. Hour checks have **Done now** instead, which starts their clock again at the current minute ("Marked done now; the next cycle has started"). When an hour check's report has been made and nothing new has started, **Clear** removes the reading. A yearly inspection that was just done goes back to Cleared and its next due date moves a year out. The audit trail records it as "Marked done today; the next cycle has started."
 
 ### 2.5 Entering and clearing readings
 
 On each industry page, every check has its own small form:
 
 - a number box with the unit next to it, for maximums and minimums;
-- for date-counted checks, a date picker below it ("Or the date it last happened" or the expiry date);
+- for date-counted checks, a date picker below it ("Or the date it last happened" or the expiry date); for hour checks, a date-and-time picker ("Or the date and time it started", with the company's timezone, such as EST);
 - Yes and No buttons for required and forbidden checks;
 - **Save**, and **Clear** to remove the reading.
 
@@ -230,6 +239,8 @@ Every date-tracked check moves through windows as its deadline gets closer:
 - **Overdue**: the first day overdue, then once for each further week it stays overdue.
 
 The first daily run that finds a check in a new window sends one reminder for it. The same window is never reminded twice for the same due date; this is tracked per company, industry, check, due date and window.
+
+**Hour checks** use the same windows, by the date their due time falls on, and the email gives the due time: "Report a work fatality in 8 hours, 2 h 5 min overdue (2026-11-04 17:00 EST)". The digest goes out once a day, so a clock of a few hours can start and run out between two digests; the industry page, HQ and Armo show it the moment it does.
 
 **Catch-up:** if the server was down on a given morning, the next run finds the check in its current window and sends it then.
 
@@ -717,7 +728,7 @@ SQLite database (one file on a persistent disk) + daily backups
     - `favicon.svg` and `manifest.webmanifest`.
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
-- `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings.
+- `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
 - `tests/`: 256 tests in 13 files.
   - `test_webapp.py` (50) and `test_academy.py` (47).
   - `test_omni_armor_platform.py` (29), `test_user_flows.py` (28, bugs a person using the app would hit) and `test_rule_catalog.py` (23).
@@ -742,8 +753,8 @@ SQLite database (one file on a persistent disk) + daily backups
 1. A person enters a reading on an industry page. The form posts to `/app/industry/<id>/rule/<key>` with its form token.
 2. `security.py` checks the token and the sign-in. The route checks that the industry belongs to the company and the rule exists.
 3. `tracking.apply_change` validates the input, writes the reading, and writes an audit row with who, when, before and after.
-4. When any page loads, `tracking.states_for_org` reads the company's readings. For date-tracked rules it counts days from today in the company's timezone. Then `omni_armor_rules.evaluate` gives Cleared, Warning or Blocked: the same answer the engine and the demo dashboard give.
-5. Each morning, `jobs.run_daily` claims the day. `reminders.run_reminders` then finds deadlines at 30, 7, 1 and 0 days or overdue, records each window so it's sent once, and emails each team member a digest.
+4. When any page loads, `tracking.states_for_org` reads the company's readings. For date-tracked rules it counts days from today in the company's timezone; hour clocks count the minutes from their stored UTC start to now. Then `omni_armor_rules.evaluate` gives Cleared, Warning or Blocked: the same answer the engine and the demo dashboard give.
+5. Each morning, `jobs.run_daily` claims the day. `reminders.run_reminders` then finds deadlines at 30, 7, 1 and 0 days or overdue (an hour check past its due time is overdue), records each window so it's sent once, and emails each team member a digest.
 
 ### 8.4 The data model
 
@@ -1393,7 +1404,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Provide the records now, or send the patient a written notice of the one 30-day extension allowed.
 - Example reading used in demos: 12 days
 
-**6. Violent restraint order 4 hours** (Maximum 4 h, warns from 3.5 h)
+**6. Violent restraint order 4 hours** (Maximum 4 h, warns from 3.5 h; counts hours since a date and time)
 
 - Asks: Hours since the current restraint order for an adult's violent or self-destructive behavior was written
 - Rule: 42 CFR 482.13(e)(8)(ii)(A) (adults 18 and older)
@@ -1451,7 +1462,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop collecting biometric data from that person until written consent is signed; publish a retention policy.
 - Example reading used in demos: Yes
 
-**3. Report data breach within 72 hours** (Maximum 72 h, warns from 48 h)
+**3. Report data breach within 72 hours** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
 - Asks: Hours since becoming aware of a personal data breach not yet reported to the supervisory authority
 - Rule: GDPR Art. 33(1) (no later than 72 hours after becoming aware, unless the breach is unlikely to result in risk)
@@ -2057,7 +2068,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Pay cash overtime for further overtime hours instead of adding comp time until the balance drops below 480.
 - Example reading used in demos: 455 h
 
-**7. Probable cause review within 48 hours** (Maximum 48 h, warns from 36 h)
+**7. Probable cause review within 48 hours** (Maximum 48 h, warns from 36 h; counts hours since a date and time)
 
 - Asks: Hours since a warrantless arrest with no judicial probable cause determination yet
 - Rule: County of Riverside v. McLaughlin, 500 U.S. 44 (1991); Gerstein v. Pugh, 420 U.S. 103 (1975); state rules may be shorter
@@ -2263,7 +2274,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Check the cell now and log the time; use 15-minute or constant watch for anyone at risk of suicide.
 - Example reading used in demos: 34 min
 
-**2. PREA intake risk screening** (Maximum 72 h, warns from 60 h)
+**2. PREA intake risk screening** (Maximum 72 h, warns from 60 h; counts hours since a date and time)
 
 - Asks: Hours since the inmate arrived without a sexual victimization and abusiveness risk screening
 - Rule: 28 CFR 115.41(a)-(b)
@@ -2295,7 +2306,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Screen the person now; place anyone who screens positive on observation and refer to mental health.
 - Example reading used in demos: Yes
 
-**6. Health requests reviewed in 24 hours** (Maximum 24 h, warns from 20 h; policy, a company can set its own limit)
+**6. Health requests reviewed in 24 hours** (Maximum 24 h, warns from 20 h; policy, a company can set its own limit; counts hours since a date and time)
 
 - Asks: Hours since the oldest unreviewed health care request was submitted
 - Rule: NCCHC standards (nonemergency requests reviewed within 24 hours; common policy); Estelle v. Gamble, 429 U.S. 97 (1976)
@@ -2369,7 +2380,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Accept or deny the claim in writing now; if more time is needed, give written notice of what is needed and why.
 - Example reading used in demos: 45 days
 
-**5. Cybersecurity event notice** (Maximum 72 h, warns from 48 h; policy, a company can set its own limit)
+**5. Cybersecurity event notice** (Maximum 72 h, warns from 48 h; policy, a company can set its own limit; counts hours since a date and time)
 
 - Asks: Hours since the company determined a reportable cybersecurity event occurred
 - Rule: NAIC Insurance Data Security Model Law (#668) Sec. 6 as adopted by states; 23 NYCRR 500.17(a); state versions vary
@@ -2623,7 +2634,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Move workers upwind out of the area now; re-enter only with supplied-air respirators after the source is found.
 - Example reading used in demos: 25 ppm
 
-**6. Pipeline incident phone report** (Maximum 1 h, warns from 0.75 h)
+**6. Pipeline incident phone report** (Maximum 1 h, warns from 0.75 h; counts hours since a date and time)
 
 - Asks: Hours since a reportable pipeline incident was confirmed without calling the National Response Center
 - Rule: 49 CFR 191.5(a) (gas); 49 CFR 195.52(a) (hazardous liquid): no later than one hour after confirmed discovery
@@ -2729,7 +2740,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Use engineering or administrative controls, require hearing protection and enroll workers in hearing conservation.
 - Example reading used in demos: 87 dBA
 
-**9. Severe injury report to OSHA** (Maximum 24 h, warns from 12 h)
+**9. Severe injury report to OSHA** (Maximum 24 h, warns from 12 h; counts hours since a date and time)
 
 - Asks: Hours since learning of a work-related hospitalization, amputation or eye loss, without reporting it to OSHA
 - Rule: 29 CFR 1904.39(a)(2)
@@ -2795,7 +2806,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Complete the review of batches, complaints, recalls and investigations and record any corrective actions.
 - Example reading used in demos: 345 days
 
-**7. DSCSA illegitimate product notice** (Maximum 24 h, warns from 18 h)
+**7. DSCSA illegitimate product notice** (Maximum 24 h, warns from 18 h; counts hours since a date and time)
 
 - Asks: Hours since determining a product is illegitimate, without notifying FDA and affected trading partners
 - Rule: 21 U.S.C. 360eee-1(b)(4)(B) (FD&C Act 582(b)(4)(B))
@@ -2943,7 +2954,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Have the facility security officer complete the audit and submit any needed plan amendments.
 - Example reading used in demos: 200 days
 
-**5. MARSEC level change measures** (Maximum 12 h, warns from 9 h)
+**5. MARSEC level change measures** (Maximum 12 h, warns from 9 h; counts hours since a date and time)
 
 - Asks: Hours since notice of a MARSEC level increase, without all of the new level's measures in place
 - Rule: 33 CFR 105.230
@@ -3075,7 +3086,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ### 26. SeniorArmor (Nursing Homes & Assisted Living)
 
-**1. Abuse allegation reported in 2 hours** (Maximum 2 h, warns from 1.5 h)
+**1. Abuse allegation reported in 2 hours** (Maximum 2 h, warns from 1.5 h; counts hours since a date and time)
 
 - Asks: Hours since staff learned of an allegation involving abuse or serious bodily injury, without reporting it to the administrator and state agency
 - Rule: 42 CFR 483.12(c)(1); Elder Justice Act, 42 U.S.C. 1320b-25(b)
@@ -3467,7 +3478,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Send the eligibility notice and rights and responsibilities notice to the employee today.
 - Example reading used in demos: 3 business days
 
-**9. Report hospitalization in 24 hours** (Maximum 24 h, warns from 20 h)
+**9. Report hospitalization in 24 hours** (Maximum 24 h, warns from 20 h; counts hours since a date and time)
 
 - Asks: Hours since learning of a work-related in-patient hospitalization, amputation or eye loss without reporting to OSHA
 - Rule: 29 CFR 1904.39(a)(2)
@@ -3475,7 +3486,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Report the incident to OSHA now by phone, in person or online.
 - Example reading used in demos: 6 h
 
-**10. Report a work fatality in 8 hours** (Maximum 8 h, warns from 6 h)
+**10. Report a work fatality in 8 hours** (Maximum 8 h, warns from 6 h; counts hours since a date and time)
 
 - Asks: Hours since learning of a work-related fatality without reporting it to OSHA
 - Rule: 29 CFR 1904.39(a)(1)
@@ -3485,7 +3496,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ### 31. PrivacyArmor (Data Privacy & SaaS)
 
-**1. Breach notice to authority in 72 hours** (Maximum 72 h, warns from 48 h)
+**1. Breach notice to authority in 72 hours** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
 - Asks: Hours since becoming aware of a personal data breach, without notifying the supervisory authority
 - Rule: GDPR Art. 33(1)
@@ -3943,7 +3954,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Perform a new NIST SP 800-171 assessment and post the score and summary in SPRS now.
 - Example reading used in demos: 1,030 days
 
-**7. Cyber incident reported to DoD** (Maximum 72 h, warns from 48 h)
+**7. Cyber incident reported to DoD** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
 - Asks: Hours since the cyber incident affecting covered defense information was discovered, without reporting to DoD
 - Rule: DFARS 252.204-7012(c)(1)
@@ -4009,7 +4020,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Hold exposed product, call pest control, seal entry points and document cleaning and corrective action.
 - Example reading used in demos: No
 
-**5. Reportable food reported in 24 h** (Maximum 24 h, warns from 18 h)
+**5. Reportable food reported in 24 h** (Maximum 24 h, warns from 18 h; counts hours since a date and time)
 
 - Asks: Hours since determining a food is a reportable food, without submitting a Reportable Food Registry report
 - Rule: 21 U.S.C. 350f(d)(1) (FD&C Act 417)
@@ -4313,7 +4324,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Evaluate all released security patches now and document the result for each applicable BES Cyber Asset.
 - Example reading used in demos: 38 days
 
-**2. Access removed after termination** (Maximum 24 h, warns from 16 h)
+**2. Access removed after termination** (Maximum 24 h, warns from 16 h; counts hours since a date and time)
 
 - Asks: Hours since a termination action without removing unescorted physical and Interactive Remote Access
 - Rule: NERC CIP-004 R5.1
@@ -4329,7 +4340,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Dispatch crews to clear the encroachment, notify the Reliability Coordinator if required, and log the event.
 - Example reading used in demos: No
 
-**4. 1-hour cyber incident notice** (Maximum 1 h, warns from 0.5 h)
+**4. 1-hour cyber incident notice** (Maximum 1 h, warns from 0.5 h; counts hours since a date and time)
 
 - Asks: Hours since a Reportable Cyber Security Incident was determined, without notice to E-ISAC and CISA
 - Rule: NERC CIP-008 R4.2
@@ -4377,7 +4388,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Have the CIP Senior Manager review and approve the documented cyber security policies now.
 - Example reading used in demos: 16 months
 
-**10. Reportable event filed in 24 h** (Maximum 24 h, warns from 18 h)
+**10. Reportable event filed in 24 h** (Maximum 24 h, warns from 18 h; counts hours since a date and time)
 
 - Asks: Hours since recognizing an EOP-004 reportable event without submitting the report
 - Rule: NERC EOP-004 R2 and Attachment 1
@@ -4395,7 +4406,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Notify the state, start public education within the required time, and begin the required treatment steps.
 - Example reading used in demos: 13 ppb
 
-**2. Tier 1 notice within 24 hours** (Maximum 24 h, warns from 12 h)
+**2. Tier 1 notice within 24 hours** (Maximum 24 h, warns from 12 h; counts hours since a date and time)
 
 - Asks: Hours since learning of a Tier 1 violation or situation without issuing public notice
 - Rule: 40 CFR 141.202(b)
@@ -4403,7 +4414,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Issue public notice now by broadcast or hand delivery and consult the state primacy agency.
 - Example reading used in demos: 30 h
 
-**3. Repeat samples after TC-positive** (Maximum 24 h, warns from 16 h)
+**3. Repeat samples after TC-positive** (Maximum 24 h, warns from 16 h; counts hours since a date and time)
 
 - Asks: Hours since notice of a total coliform-positive routine sample without collecting the repeat samples
 - Rule: 40 CFR 141.858(a)
@@ -4919,7 +4930,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: File ATF Form 3310.4 with ATF and the chief local law enforcement officer today.
 - Example reading used in demos: 0 business days
 
-**6. Theft or loss reported in 48 hours** (Maximum 48 h, warns from 36 h)
+**6. Theft or loss reported in 48 hours** (Maximum 48 h, warns from 36 h; counts hours since a date and time)
 
 - Asks: Hours since a firearm theft or loss was discovered, without reporting to ATF and local police
 - Rule: 18 U.S.C. 923(g)(6); 27 CFR 478.39a

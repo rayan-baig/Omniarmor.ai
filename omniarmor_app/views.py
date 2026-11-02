@@ -9,10 +9,11 @@ from flask import Blueprint, Response, abort, flash, g, redirect, render_templat
 
 from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
-from .catalog import INDUSTRIES, can_override, find_rule
+from .catalog import INDUSTRIES, can_override, counts_time, find_rule
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, login_required, owner_required
-from .tracking import LEVEL_LABEL, ValidationError, apply_change, org_industry_ids, org_today, states_for_org, tally
+from .tracking import (LEVEL_LABEL, ValidationError, apply_change, org_industry_ids, org_now, org_today,
+                       states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
@@ -55,11 +56,12 @@ def overview():
 @login_required
 def industry(industry_id):
     info = _industry_or_404(industry_id)
-    states = sorted(states_for_org(get_db(), g.org, industry_ids=[industry_id]), key=lambda s: s.sort_key)
+    now = org_now(g.org)
+    states = sorted(states_for_org(get_db(), g.org, industry_ids=[industry_id], now=now), key=lambda s: s.sort_key)
     only = request.args.get("only") == "problems"
     shown = [s for s in states if s.problem] if only else states
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
-                           can_override=can_override, today=org_today(g.org))
+                           can_override=can_override, today=now.date(), now=now, counts_time=counts_time)
 
 
 @bp.route("/industry/<int:industry_id>/rule/<rule_key>", methods=["POST"])
@@ -147,7 +149,7 @@ def report_csv():
     return _csv_response("omniarmor-compliance-report.csv",
                          ["Industry", "Check", "Status", "Reading", "Due date", "Rule", "Last updated (UTC)", "Updated by"],
                          [[s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.shown_value,
-                           s.due_date.isoformat() if s.due_date else "", s.rule.citation,
+                           s.due_label, s.rule.citation,
                            s.updated_at or "", s.updated_by or ""] for s in states])
 
 

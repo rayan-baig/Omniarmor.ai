@@ -4,6 +4,8 @@
 Readings are stored once and recomputed every day:
     - date-tracked rules store a date ("last done" or "due on"); the day count
       is worked out from today's date in the company's timezone
+    - hour clocks store the moment they started, in UTC; the hours are counted
+      from it to now, and shown in the company's timezone
     - other number rules store a number; yes/no rules store a yes or no
 Every change is written to the audit trail with who made it and when.
 """
@@ -12,14 +14,15 @@ import calendar
 import json
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
-from .catalog import INDUSTRIES, can_override, counts_first_day, date_mode, date_unit, effective_rule, find_rule, rules_for
-from .db import now_iso, record_audit, user_name
+from .catalog import (INDUSTRIES, can_override, counts_first_day, counts_time, date_mode, date_unit, effective_rule,
+                      find_rule, rules_for)
+from .db import iso, now_iso, record_audit, user_name, utcnow
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
 LEVEL_LABEL = {"BLOCKED": "Blocked", "WARNING": "Warning", "CLEARED": "Cleared", "NONE": "No reading"}
@@ -33,6 +36,25 @@ class ValidationError(ValueError):
 
 def org_today(org):
     return datetime.now(ZoneInfo(org["timezone"])).date()
+
+
+def org_now(org):
+    return datetime.now(ZoneInfo(org["timezone"]))
+
+
+def _duration(minutes):
+    """A span of whole minutes in words: "45 min", "5 h 20 min", "3 days 2 h"."""
+    if minutes < 60:
+        return f"{minutes} min"
+    if minutes < 48 * 60:
+        hours, rest = divmod(minutes, 60)
+        return f"{hours} h" + (f" {rest} min" if rest else "")
+    days, rest = divmod(minutes, 24 * 60)
+    return f"{days} days" + (f" {rest // 60} h" if rest // 60 else "")
+
+
+def _plural_days(n):
+    return f"{n} day{'s' if n != 1 else ''}"
 
 
 @dataclass
@@ -51,6 +73,12 @@ class ItemState:
     today: date
     updated_at: object
     updated_by: object
+    # Hour clocks only, in the company's timezone: when the clock started, when
+    # it is due and when it warns, and whole minutes left (negative once overdue).
+    value_at: object = None
+    due_at: object = None
+    warn_at: object = None
+    minutes_left: object = None
 
     @property
     def key(self):
@@ -66,7 +94,46 @@ class ItemState:
 
     @property
     def days_left(self):
-        return None if self.due_date is None else (self.due_date - self.today).days
+        """Days from today to the due date. An hour clock that ran out earlier
+        today is already overdue, so it counts as -1, not "due today"."""
+        if self.due_date is None:
+            return None
+        days = (self.due_date - self.today).days
+        return min(days, -1) if self.minutes_left is not None and self.minutes_left < 0 else days
+
+    @property
+    def overdue(self):
+        return self.days_left is not None and self.days_left < 0
+
+    @property
+    def overdue_by(self):
+        """How far past due, in words: "3 days", or "2 h 5 min" for an hour clock."""
+        if not self.overdue:
+            return None
+        return _duration(-self.minutes_left) if self.minutes_left is not None else _plural_days(-self.days_left)
+
+    @property
+    def due_in(self):
+        """When it is due, in words: "today", "in 3 days", or "in 5 h 20 min" for an hour clock."""
+        if self.due_date is None or self.overdue:
+            return None
+        if self.minutes_left is not None:
+            return "now" if self.minutes_left == 0 else f"in {_duration(self.minutes_left)}"
+        return "today" if self.days_left == 0 else f"in {_plural_days(self.days_left)}"
+
+    @property
+    def due_text(self):
+        """The due line on the industry page: "3 days overdue", "Due today", "Due in 5 h 20 min"."""
+        if self.due_date is None:
+            return ""
+        return f"{self.overdue_by} overdue" if self.overdue else f"Due {self.due_in}"
+
+    @property
+    def due_label(self):
+        """The due date, or for an hour clock the due date and time in the company's timezone."""
+        if self.due_at is not None:
+            return _moment_text(self.due_at)
+        return self.due_date.isoformat() if self.due_date else ""
 
     @property
     def overridden(self):
@@ -109,7 +176,49 @@ def _shifted(day, days):
 
 
 # The longest limit a company can set, per unit a date-tracked check counts.
-MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100, "business days": 26000}
+MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100, "business days": 26000,
+            "hours": MAX_DAYS * 24}
+
+
+# --- Hour clocks: real time since a moment, counted in whole minutes ---------
+
+def _moment_text(moment):
+    """A moment as the company reads it, e.g. "2026-11-02 14:30 EST"."""
+    return moment.strftime("%Y-%m-%d %H:%M %Z").strip()
+
+
+def _stored_moment(text, tz):
+    """The start of an hour clock from the database, in the company's timezone.
+    Stored as UTC; a bare date (none are written, but never crash) is local midnight."""
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=tz) if "T" in text or " " in text else datetime.combine(moment.date(), time(0), tz)
+    return moment.astimezone(tz)
+
+
+def _moment_on(today, tz):
+    """The moment a day is checked at: now when it is today there, otherwise
+    noon that day (reminder runs and tests can ask about another day)."""
+    now = datetime.now(tz)
+    return now if now.date() == today else datetime.combine(today, time(12), tz)
+
+
+def _whole_minutes(amount):
+    """A limit in hours as whole minutes. Floored, so the due minute is the
+    last one still within the limit."""
+    return max(0, min(MAX_SPAN["hours"] * 60, math.floor(amount * 60 + 1e-9)))
+
+
+def _hours_since(start, now):
+    """Hours from start to now, counted in whole minutes: exactly 72 for the
+    whole 72nd-hour minute, a little over from the next minute. Real hours:
+    worked out in UTC, as Python counts by the wall clock within one timezone
+    (a night when clocks go back would lose an hour)."""
+    minutes = math.floor((now.astimezone(timezone.utc) - start.astimezone(timezone.utc)).total_seconds() / 60)
+    return minutes // 60 if minutes % 60 == 0 else minutes / 60, minutes
 
 
 # --- Business days: Monday to Friday, not counting US federal holidays -------
@@ -227,17 +336,27 @@ def _deadline(day, amount, unit, sign):
         return None
 
 
-def compute_state(industry_id, rule, row, today):
+def compute_state(industry_id, rule, row, today, now=None, tz=None):
+    """The state of one check on `today`. Hour clocks count to `now` (an aware
+    datetime; by default the current moment, or noon on a day other than
+    today) and show their times in `tz` (the company's timezone, UTC if None)."""
     mode = date_mode(rule)
     unit = date_unit(rule)
     eff = effective_rule(rule, row)
     value = None
-    value_date = origin = None
+    value_date = origin = value_at = elapsed = None
     if row is not None:
         if rule.kind in ("required", "forbidden"):
             value = None if row["value_bool"] is None else bool(row["value_bool"])
+        elif mode and row["value_date"] and counts_time(rule):
+            tz = tz or timezone.utc
+            value_at = _stored_moment(row["value_date"], tz)
+            if value_at is not None:
+                now = (now or _moment_on(today, tz)).astimezone(tz)
+                value, elapsed = _hours_since(value_at, now)
+                value_date = value_at.date()
         elif mode and row["value_date"]:
-            value_date = date.fromisoformat(row["value_date"])
+            value_date = date.fromisoformat(row["value_date"][:10])
             # A check that counts its first day as day 1 counts from the day before.
             origin = value_date - timedelta(days=1) if counts_first_day(rule) else value_date
             value = _elapsed(origin, today, unit) if mode == "since" else _elapsed(today, value_date, unit)
@@ -250,8 +369,16 @@ def compute_state(industry_id, rule, row, today):
     else:
         level, status, message = evaluate(eff, value)
 
-    due_date = warn_date = None
-    if value_date is not None:
+    due_date = warn_date = due_at = warn_at = minutes_left = None
+    if value_at is not None:
+        start = value_at.astimezone(timezone.utc)  # real hours, see _hours_since
+        limit_minutes = _whole_minutes(eff.limit)
+        due_at = (start + timedelta(minutes=limit_minutes)).astimezone(tz)
+        due_date, minutes_left = due_at.date(), limit_minutes - elapsed
+        if eff.warn is not None:
+            warn_at = (start + timedelta(minutes=_whole_minutes(eff.warn))).astimezone(tz)
+            warn_date = warn_at.date()
+    elif value_date is not None:
         sign = 1 if mode == "since" else -1
         due_date = _deadline(origin, eff.limit, unit, sign)
         if eff.warn is not None:
@@ -262,6 +389,7 @@ def compute_state(industry_id, rule, row, today):
         today=today,
         updated_at=row["updated_at"] if row is not None else None,
         updated_by=row["updated_by_name"] if row is not None else None,
+        value_at=value_at, due_at=due_at, warn_at=warn_at, minutes_left=minutes_left,
     )
 
 
@@ -279,11 +407,15 @@ def _load_rows(conn, org_id):
     return {(r["industry_id"], r["rule_key"]): r for r in rows}
 
 
-def states_for_org(conn, org, industry_ids=None, today=None):
-    today = today or org_today(org)
+def states_for_org(conn, org, industry_ids=None, today=None, now=None):
+    tz = ZoneInfo(org["timezone"])
+    if today is None:
+        now = now or datetime.now(tz)
+        today = now.astimezone(tz).date()
+    now = now or _moment_on(today, tz)
     ids = org_industry_ids(conn, org["id"]) if industry_ids is None else industry_ids
     rows = _load_rows(conn, org["id"])
-    return [compute_state(i, rule, rows.get((i, rule.key)), today) for i in ids for rule in rules_for(i)]
+    return [compute_state(i, rule, rows.get((i, rule.key)), today, now, tz) for i in ids for rule in rules_for(i)]
 
 
 def tally(states):
@@ -297,11 +429,14 @@ def tally(states):
 # Changes
 # ---------------------------------------------------------------------------
 
-def _describe(rule, row):
+def _describe(rule, row, tz=None):
     if row is None:
         return "no reading"
     if rule.kind in ("required", "forbidden"):
         return "no reading" if row["value_bool"] is None else ("Yes" if row["value_bool"] else "No")
+    if row["value_date"] and counts_time(rule):
+        started = _stored_moment(row["value_date"], tz or timezone.utc)
+        return f"started {_moment_text(started)}" if started else f"started {row['value_date']}"
     if row["value_date"]:
         return f"date {row['value_date']}"
     if row["value_num"] is not None:
@@ -338,6 +473,45 @@ def _parse_date(text):
     return d
 
 
+def _parse_moment(text, tz):
+    """A date and time typed or picked on the page, read in the company's
+    timezone. Returns (the moment in UTC, to the minute; the same wall-clock
+    time as "YYYY-MM-DDTHH:MM"), or None when the box is empty.
+
+    A time that happens twice, when clocks go back, is taken the first time
+    (the earlier moment, so the clock never runs short). A time skipped when
+    clocks go forward is read with the offset before the change, so 2:30 on
+    that night is 3:30."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        moment = None
+    if moment is None or len(text) <= 10:
+        raise ValidationError("Enter the date and the time it started, for example 2026-11-02 14:30.")
+    if not EARLIEST_DATE <= moment.date() <= LATEST_DATE:
+        raise ValidationError("That date is out of range.")
+    if moment.tzinfo is not None:
+        moment = moment.astimezone(tz).replace(tzinfo=None)
+    moment = moment.replace(second=0, microsecond=0)
+    utc = moment.replace(tzinfo=tz, fold=0).astimezone(timezone.utc)
+    return utc, moment.strftime("%Y-%m-%dT%H:%M")
+
+
+def _same_as_saved(rule, picked, saved, tz):
+    """Whether the date box came back holding the saved date unchanged. An hour
+    clock compares the wall-clock time the page showed, so a time that happens
+    twice when clocks go back still matches the one that was saved."""
+    if not saved:
+        return False
+    if counts_time(rule):
+        moment = _stored_moment(saved, tz)
+        return moment is not None and moment.strftime("%Y-%m-%dT%H:%M") == picked[1]
+    return picked.isoformat() == saved
+
+
 def _get_row(conn, org_id, industry_id, rule_key):
     return conn.execute(
         "SELECT * FROM items WHERE org_id = ? AND industry_id = ? AND rule_key = ?",
@@ -371,10 +545,12 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
     if rule is None:
         raise LookupError(rule_key)
     org_id = org["id"]
+    tz = ZoneInfo(org["timezone"])
     today = org_today(org)
     mode = date_mode(rule)
+    timed = counts_time(rule)
     before = _get_row(conn, org_id, industry_id, rule_key)
-    before_text = _describe(rule, before)
+    before_text = _describe(rule, before, tz)
 
     if action == "save":
         if rule.kind in ("required", "forbidden"):
@@ -383,7 +559,8 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
                 raise ValidationError("Choose Yes or No.")
             after = _write(conn, org_id, industry_id, rule_key, user_id, value_bool=1 if answer == "yes" else 0)
         else:
-            picked = _parse_date(form.get("date")) if mode else None
+            # An hour clock's date box holds a date and a time ("when it started").
+            picked = None if not mode else _parse_moment(form.get("date"), tz) if timed else _parse_date(form.get("date"))
             typed = (form.get("value") or "").strip()
             if picked is not None and typed:
                 # The page fills the date box with the saved date, so it comes
@@ -391,28 +568,39 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
                 # date is the new reading; it used to be dropped for the old date.
                 saved = before["value_date"] if before is not None else None
                 saved_num = before["value_num"] if before is not None else None
-                if picked.isoformat() == saved:
+                if _same_as_saved(rule, picked, saved, tz):
                     picked = None
                 elif saved_num is None or _parse_number(typed) != saved_num:
                     # The number box comes back filled with a saved number
                     # too; a date picked next to it, unchanged, is the new
                     # reading. Only a new number and a new date clash.
                     raise ValidationError("Enter a number or a date, not both.")
-            if picked is not None:
+            if picked is not None and timed:
+                if picked[0] > utcnow():
+                    raise ValidationError("That time is in the future. Enter when it started.")
+                after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=iso(picked[0]), value_num=None)
+            elif picked is not None:
                 if mode == "since" and picked > today:
                     raise ValidationError("That date is in the future. Enter the date it last happened.")
                 after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=picked.isoformat(), value_num=None)
             else:
                 number = _parse_number(form.get("value"))
                 if number is None:
-                    raise ValidationError("Enter a reading" + (" or pick a date." if mode else "."))
+                    raise ValidationError("Enter a reading" + (" or pick when it started." if timed else
+                                                               " or pick a date." if mode else "."))
                 after = _write(conn, org_id, industry_id, rule_key, user_id, value_num=number, value_date=None)
         action_name, verb = "reading", "Saved"
     elif action == "done_today":
         if mode != "since":
             raise ValidationError("This check is not tracked by the date it was last done.")
-        after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=today.isoformat(), value_num=None)
-        action_name, verb = "done", "Marked done today; the next cycle has started"
+        if timed:
+            # An hour clock starts again now, to the minute.
+            started = iso(utcnow().replace(second=0, microsecond=0))
+            after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=started, value_num=None)
+            action_name, verb = "done", "Marked done now; the next cycle has started"
+        else:
+            after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=today.isoformat(), value_num=None)
+            action_name, verb = "done", "Marked done today; the next cycle has started"
     elif action == "clear":
         after = _write(conn, org_id, industry_id, rule_key, user_id, value_num=None, value_bool=None, value_date=None)
         action_name, verb = "cleared", "Reading cleared"
@@ -450,7 +638,7 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
     else:
         raise ValidationError("Unknown action.")
 
-    after_text = _describe(rule, after)
+    after_text = _describe(rule, after, tz)
     record_audit(conn, org_id, user_id, action_name, f"{rule.title}: {before_text} → {after_text}",
                  industry_id, rule_key, before_text, after_text)
     conn.commit()

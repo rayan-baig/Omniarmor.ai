@@ -48,22 +48,22 @@ def live_issues(conn, org):
         link = url_for("app.industry", industry_id=s.industry_id) + f"#rule-{s.key}"
         where = s.industry["brand"]
         if s.level == "BLOCKED":
-            if s.days_left is not None and s.days_left < 0:
-                title = f"{s.rule.title}: overdue by {_plural(-s.days_left, 'day')}"
+            if s.overdue:
+                title = f"{s.rule.title}: overdue by {s.overdue_by}"
             else:
                 title = f"{s.rule.title} is blocked"
             urgent.append({"level": "urgent", "kind": "blocked", "title": title, "where": where, "detail": s.message,
                            "action": s.rule.action, "cost": s.rule.cost, "url": link})
         elif s.level == "WARNING":
             if s.days_left is not None and s.days_left >= 0:
-                title = f"{s.rule.title}: due {'today' if s.days_left == 0 else 'in ' + _plural(s.days_left, 'day')}"
+                title = f"{s.rule.title}: due {s.due_in}"
             else:
                 title = f"{s.rule.title} is close to the limit"
             soon.append({"level": "soon", "kind": "warning", "title": title, "where": where, "detail": s.message,
                          "action": s.rule.action, "cost": s.rule.cost, "url": link})
         elif s.due_date is not None and s.days_left is not None and 0 <= s.days_left <= UPCOMING_DAYS:
-            info.append({"level": "info", "kind": "upcoming", "title": f"{s.rule.title}: due in {_plural(s.days_left, 'day')}",
-                         "where": where, "detail": f"Due {s.due_date.isoformat()}.",
+            info.append({"level": "info", "kind": "upcoming", "title": f"{s.rule.title}: due {s.due_in}",
+                         "where": where, "detail": f"Due {s.due_label}.",
                          "action": "Plan it now so it doesn't become urgent.", "cost": "", "url": link})
 
     since = iso(utcnow() - timedelta(days=FAILED_EMAIL_DAYS))

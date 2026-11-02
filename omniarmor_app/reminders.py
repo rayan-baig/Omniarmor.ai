@@ -35,14 +35,8 @@ def reminder_window(days_left):
 
 
 def _line(state):
-    d = state.days_left
-    if d < 0:
-        when = f"{-d} day{'s' if d != -1 else ''} overdue"
-    elif d == 0:
-        when = "due today"
-    else:
-        when = f"due in {d} day{'s' if d != 1 else ''}"
-    return f"- {state.industry['brand']}: {state.rule.title}, {when} ({state.due_date.isoformat()}). {state.rule.action}"
+    when = f"{state.overdue_by} overdue" if state.overdue else f"due {state.due_in}"
+    return f"- {state.industry['brand']}: {state.rule.title}, {when} ({state.due_label}). {state.rule.action}"
 
 
 def build_digest(org, triggered, all_states, base_url, today):

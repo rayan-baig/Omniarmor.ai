@@ -388,6 +388,15 @@ function daysFromDate(value, mode) {
   const picked = new Date(y, m - 1, d);
   return Math.round((mode === "since" ? todayStart() - picked : picked - todayStart()) / MS_DAY);
 }
+/* "Hours since" clocks take the date and time they started, in this browser's
+   timezone, and count real hours to now in whole minutes, as the app does. */
+const countsTime = r => r.unit === "h" && /\bhours? since\b/i.test(r.input);
+function hoursFromTime(value) {
+  const m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(value);
+  if (!m) return null;
+  const picked = new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
+  return Math.floor((Date.now() - picked) / 60000) / 60;
+}
 function limitText(r) {
   if (r.kind === "max") return `Limit ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns from ${fmt(r.warn, r.unit)}` : "");
   if (r.kind === "min") return `Minimum ${fmt(r.limit, r.unit)}` + (r.warn !== null ? ` · warns at ${fmt(r.warn, r.unit)} or less` : "");
@@ -401,6 +410,7 @@ function inputHtml(ind, r) {
     return `<label class="q" for="${id}">${esc(r.input)}</label>
       <div class="field-row">
         <div class="num"><input id="${id}" type="number" inputmode="decimal" step="any" value="${v === null ? "" : v}" data-key="${r.key}">${r.unit ? `<span class="unit">${esc(r.unit)}</span>` : ""}</div>
+        ${countsTime(r) ? `<input class="date" type="datetime-local" id="${id}-date" data-time-for="${r.key}" aria-label="Or pick the date and time it started" title="Pick when it started instead">` : ""}
         ${mode ? `<input class="date" type="date" id="${id}-date" data-date-for="${r.key}" data-mode="${mode}" aria-label="Or pick the ${mode === "since" ? "date it happened" : "due date"}" title="Pick a date instead">` : ""}
       </div>
       <span class="limit">${esc(limitText(r))}</span>`;
@@ -473,6 +483,17 @@ function updateRow(ind, key) {
 $("rules").addEventListener("input", e => {
   const el = e.target;
   const ind = current();
+  if (el.dataset.timeFor) {
+    const hours = hoursFromTime(el.value);
+    if (hours === null) return;
+    const key = el.dataset.timeFor;
+    readings[ind.id][key] = hours;
+    const num = $(`in-${ind.id}-${key}`);
+    if (num) num.value = Math.round(hours * 100) / 100;
+    updateRow(ind, key);
+    save();
+    return;
+  }
   if (el.dataset.dateFor) {
     let days = daysFromDate(el.value, el.dataset.mode);
     if (days === null) return;

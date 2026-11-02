@@ -41,7 +41,7 @@
     {% for s in upcoming %}
       <li><a class="row" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
         <span><span class="title">{{ s.rule.title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
-        <span class="meta mono">{{ 'today' if s.days_left == 0 else 'in ' ~ s.days_left ~ ' day' ~ ('s' if s.days_left != 1 else '') }} · {{ s.due_date.isoformat() }}</span>
+        <span class="meta mono">{{ s.due_in }} · {{ s.due_label }}</span>
       </a></li>
     {% endfor %}
   </ul>

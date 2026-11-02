@@ -564,3 +564,273 @@ class TestWorkingDayClocks(AppTestCase):
         self.assertEqual((s.value, s.level), (2, "WARNING"))
         self.assertEqual(s.due_date.isoformat(), "2026-11-12")  # Wednesday 11 November is a holiday
         self.assertEqual(rule.unit, "working days")
+
+
+class TestHourClocks(AppTestCase):
+    """Twenty-two checks are asked as "Hours since ..." (a breach reported in
+    72 hours, a work death reported to OSHA in 8...). They took only a typed
+    number, which never grew: a breach saved as "10 hours" stayed Cleared
+    forever, with no due time, no reminder and never Blocked. They now take
+    the date and time the clock started and count real hours from it."""
+
+    NY = "America/New_York"
+
+    def state(self, industry_id, key, started, now, tz=NY, **row):
+        """`started` is stored UTC; `now` is a wall-clock time in `tz`."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        zone = ZoneInfo(tz)
+        moment = datetime.fromisoformat(now).replace(tzinfo=zone)
+        base = {"value_num": None, "value_bool": None, "value_date": started, "limit_override": None,
+                "warn_override": None, "updated_at": None, "updated_by_name": None}
+        base.update(row)
+        return compute_state(industry_id, find_rule(industry_id, key), base, moment.date(), moment, zone)
+
+    def reading(self, key):
+        with self.db() as conn:
+            return dict(conn.execute("SELECT value_num, value_date FROM items WHERE rule_key = ?", (key,)).fetchone())
+
+    def org_now(self):
+        from omniarmor_app.tracking import org_now
+        with self.db() as conn:
+            return org_now(conn.execute("SELECT * FROM orgs").fetchone())
+
+    def test_every_hours_since_check_takes_a_date_and_time(self):
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import counts_time, date_mode, date_unit, find_rule
+        counted = [r for rules in CATALOG.values() for r in rules if r.input.lower().startswith("hours since ")]
+        self.assertEqual(len(counted), 22)
+        for r in counted:
+            self.assertEqual((date_mode(r), date_unit(r), counts_time(r)), ("since", "hours", True), r.key)
+            self.assertEqual(r.unit, "h", r.key)
+        # Hours of driving or flying are not time passed: they stay typed numbers.
+        for industry_id, key in ((1, "hos_11_hour"), (4, "inspection_100_hour"), (1, "hos_70_hour_8_day")):
+            self.assertIsNone(date_mode(find_rule(industry_id, key)), key)
+
+    def test_exactly_at_the_limit_and_one_minute_past(self):
+        # OSHA 29 CFR 1904.39: a work death reported within 8 hours (warns from 6).
+        start = "2026-11-04T14:00:00+00:00"  # 09:00 in New York
+        cases = {"2026-11-04T14:59": (5.98, "CLEARED", "Due in 2 h 1 min"),
+                 "2026-11-04T15:00": (6, "WARNING", "Due in 2 h"),
+                 "2026-11-04T16:59": (7.98, "WARNING", "Due in 1 min"),
+                 "2026-11-04T17:00": (8, "WARNING", "Due now"),
+                 "2026-11-04T17:00:59": (8, "WARNING", "Due now"),
+                 "2026-11-04T17:01": (8.02, "BLOCKED", "1 min overdue"),
+                 "2026-11-04T19:30": (10.5, "BLOCKED", "2 h 30 min overdue")}
+        for now, (hours, level, due) in cases.items():
+            s = self.state(30, "fatality_report_8h", start, now)
+            self.assertEqual((round(s.value, 2), s.level, s.due_text), (hours, level, due), now)
+            self.assertEqual(s.due_label, "2026-11-04 17:00 EST")
+            self.assertEqual(s.warn_at.strftime("%H:%M"), "15:00")
+        self.assertIn("8 h is close to the 8 h limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:00").message)
+        self.assertIn("is over the 8 h limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:01").message)
+
+    def test_one_hour_and_shorter_limits(self):
+        # 49 CFR 191.5: call the National Response Center within 1 hour (warns from 45 minutes).
+        start = "2026-11-04T14:00:00+00:00"
+        self.assertEqual(self.state(20, "pipeline_incident_call", start, "2026-11-04T09:44").level, "CLEARED")
+        self.assertEqual(self.state(20, "pipeline_incident_call", start, "2026-11-04T09:45").level, "WARNING")
+        s = self.state(20, "pipeline_incident_call", start, "2026-11-04T10:00")
+        self.assertEqual((s.value, s.level, s.due_text), (1, "WARNING", "Due now"))
+        self.assertEqual(self.state(20, "pipeline_incident_call", start, "2026-11-04T10:01").level, "BLOCKED")
+
+    def test_across_midnight(self):
+        # Started at 8 p.m.: the 8 hours run out at 4 a.m. the next day.
+        start = "2026-11-05T01:00:00+00:00"  # 20:00 on 4 November in New York
+        s = self.state(30, "fatality_report_8h", start, "2026-11-04T23:59")
+        self.assertEqual((round(s.value, 2), s.level, s.due_label), (3.98, "CLEARED", "2026-11-05 04:00 EST"))
+        self.assertEqual((s.due_date.isoformat(), s.days_left, s.due_in), ("2026-11-05", 1, "in 4 h 1 min"))
+        s = self.state(30, "fatality_report_8h", start, "2026-11-05T00:00")
+        self.assertEqual((s.value, s.days_left), (4, 0))
+        s = self.state(30, "fatality_report_8h", start, "2026-11-05T04:01")
+        # Past due earlier the same day: overdue, never "due today".
+        self.assertEqual((s.level, s.days_left, s.overdue, s.due_text), ("BLOCKED", -1, True, "1 min overdue"))
+        # A 72-hour clock counts days and hours.
+        s = self.state(6, "gdpr_breach_72h", "2026-11-04T14:00:00+00:00", "2026-11-04T10:00")
+        self.assertEqual((s.value, s.due_text), (1, "Due in 2 days 23 h"))
+
+    def test_across_the_change_back_from_daylight_time(self):
+        # Clocks went back an hour at 2 a.m. on Sunday 1 November 2026 in New York.
+        # 72 real hours from noon on Saturday 31 October run out at 11 a.m. on Tuesday.
+        start = "2026-10-31T16:00:00+00:00"  # 12:00 EDT
+        s = self.state(6, "gdpr_breach_72h", start, "2026-11-03T11:00")
+        self.assertEqual((s.value, s.level, s.due_label), (72, "WARNING", "2026-11-03 11:00 EST"))
+        self.assertEqual(self.state(6, "gdpr_breach_72h", start, "2026-11-03T11:01").level, "BLOCKED")
+        self.assertEqual(self.state(6, "gdpr_breach_72h", start, "2026-11-03T12:00").value, 73)
+        # Across the night itself: 00:30 EDT to 01:30 EST is two hours.
+        s = self.state(6, "gdpr_breach_72h", "2026-11-01T04:30:00+00:00", "2026-11-01T01:30")
+        self.assertEqual(s.value, 1)  # 01:30 with fold 0 is still EDT
+        from datetime import datetime, timezone
+        from zoneinfo import ZoneInfo
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        later = datetime(2026, 11, 1, 6, 30, tzinfo=timezone.utc)  # 01:30 EST, the second time
+        row = {"value_num": None, "value_bool": None, "value_date": "2026-11-01T04:30:00+00:00", "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        s = compute_state(6, find_rule(6, "gdpr_breach_72h"), row, later.date(), later, ZoneInfo(self.NY))
+        self.assertEqual(s.value, 2)
+
+    def test_across_the_change_to_daylight_time(self):
+        # Clocks went forward at 2 a.m. on Sunday 8 March 2026: 24 real hours from
+        # noon on Saturday end at 1 p.m. on Sunday.
+        start = "2026-03-07T17:00:00+00:00"  # 12:00 EST
+        s = self.state(30, "hospitalization_report_24h", start, "2026-03-08T12:00")
+        self.assertEqual((s.value, s.level, s.due_label, s.due_text), (23, "WARNING", "2026-03-08 13:00 EDT", "Due in 1 h"))
+        self.assertEqual(self.state(30, "hospitalization_report_24h", start, "2026-03-08T13:00").level, "WARNING")
+        self.assertEqual(self.state(30, "hospitalization_report_24h", start, "2026-03-08T13:01").level, "BLOCKED")
+
+    def test_times_that_happen_twice_or_never(self):
+        from zoneinfo import ZoneInfo
+        from omniarmor_app.tracking import ValidationError, _parse_moment
+        ny = ZoneInfo(self.NY)
+        # 01:30 on 1 November 2026 happens twice: the first (earlier) one is taken.
+        self.assertEqual(_parse_moment("2026-11-01T01:30", ny)[0].isoformat(), "2026-11-01T05:30:00+00:00")
+        # 02:30 on 8 March 2026 never happens: read as 03:30 EDT.
+        self.assertEqual(_parse_moment("2026-03-08T02:30", ny)[0].isoformat(), "2026-03-08T07:30:00+00:00")
+        # Typed by hand with a space, or with seconds (dropped).
+        self.assertEqual(_parse_moment("2026-06-01 09:15:42", ny)[0].isoformat(), "2026-06-01T13:15:00+00:00")
+        for bad in ("2026-06-01", "yesterday", "2026-13-01T10:00", "1900-01-01T10:00"):
+            with self.assertRaises(ValidationError, msg=bad):
+                _parse_moment(bad, ny)
+
+    def test_the_entered_time_is_read_in_the_workspace_timezone(self):
+        self.signup(industries=(30,))
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET timezone = 'Asia/Tokyo'")
+            conn.commit()
+        page = self.client.get("/app/industry/30").data.decode()
+        self.assertIn('type="datetime-local" id="f-fatality_report_8h-d"', page)
+        self.assertIn("Or the date and time it started (JST)", page)
+        self.change(30, "fatality_report_8h", date="2026-01-10T09:00")
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": None, "value_date": "2026-01-10T00:00:00+00:00"})
+        page = self.client.get("/app/industry/30?only=problems").data.decode()
+        self.assertIn('value="2026-01-10T09:00"', page)  # shown back in Tokyo time
+        self.assertIn("overdue · 2026-01-10 17:00 JST", page)
+        with self.db() as conn:
+            summary = conn.execute("SELECT summary FROM audit WHERE rule_key = 'fatality_report_8h'").fetchone()[0]
+        self.assertIn("started 2026-01-10 09:00 JST", summary)
+        # The same moment reads back in the new zone when the workspace moves.
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET timezone = 'America/New_York'")
+            conn.commit()
+        page = self.client.get("/app/industry/30?only=problems").data.decode()
+        self.assertIn('value="2026-01-09T19:00"', page)
+        self.assertIn("2026-01-10 03:00 EST", page)
+
+    def test_it_counts_up_through_the_app(self):
+        import re
+        from datetime import timedelta
+        self.signup(industries=(30,))
+        an_hour_ago = (self.org_now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")
+        self.change(30, "fatality_report_8h", date=an_hour_ago)
+        page = self.client.get("/app/industry/30").data.decode()
+        self.assertRegex(page, r"Due in (7 h|6 h 59 min) · \d{4}-\d\d-\d\d \d\d:\d\d E[SD]T")
+        self.assertIn(f'value="{an_hour_ago}"', page)
+        self.assertIn(">Done now</button>", page)
+        overview = self.client.get("/app").data.decode()
+        self.assertRegex(overview, r"in (7 h|6 h 59 min) · \d{4}-\d\d-\d\d \d\d:\d\d E[SD]T")
+        csv = self.client.get("/app/report.csv").data.decode()
+        self.assertTrue(re.search(r"Report a work fatality in 8 hours,Cleared,[\d.]+ h,\d{4}-\d\d-\d\d \d\d:\d\d E[SD]T", csv))
+
+    def test_a_future_time_or_a_date_alone_is_refused(self):
+        from datetime import timedelta
+        self.signup(industries=(30,))
+        later = (self.org_now() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M")
+        self.change(30, "fatality_report_8h", date=later)
+        self.assertIn("That time is in the future", self.client.get("/app/industry/30").data.decode())
+        self.change(30, "fatality_report_8h", date="2026-01-10")
+        self.assertIn("Enter the date and the time it started", self.client.get("/app/industry/30").data.decode())
+        with self.db() as conn:
+            self.assertIsNone(conn.execute("SELECT 1 FROM items WHERE rule_key = 'fatality_report_8h'").fetchone())
+
+    def test_a_typed_number_still_works_and_stays_as_typed(self):
+        self.signup(industries=(30,))
+        self.change(30, "fatality_report_8h", value="5")
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": 5.0, "value_date": None})
+        s = self.state(30, "fatality_report_8h", None, "2030-01-01T00:00", value_num=5.0)
+        self.assertEqual((s.value, s.level, s.due_date), (5, "CLEARED", None))
+
+    def test_switching_between_a_number_and_a_time(self):
+        # The same rules as the date checks: the page sends back whatever is saved.
+        self.signup(industries=(30,))
+        self.change(30, "fatality_report_8h", value="5")
+        self.change(30, "fatality_report_8h", value="6", date="2026-01-10T09:00")  # new number, new time
+        self.assertIn("Enter a number or a date, not both", self.client.get("/app/industry/30").data.decode())
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": 5.0, "value_date": None})
+        self.change(30, "fatality_report_8h", value="5", date="2026-01-10T09:00")  # saved number, new time
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": None, "value_date": "2026-01-10T14:00:00+00:00"})
+        self.change(30, "fatality_report_8h", value="3", date="2026-01-10T09:00")  # new number, saved time
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": 3.0, "value_date": None})
+
+    def test_a_saved_time_from_the_second_one_thirty_comes_back_unchanged(self):
+        # 01:30 EST on 1 November 2026 shows as "2026-11-01T01:30", which also
+        # names 01:30 EDT an hour earlier. Sent back with a new number, it is the
+        # saved time unchanged, not a clashing new one.
+        self.signup(industries=(30,))
+        with self.db() as conn:
+            org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
+            conn.execute("INSERT INTO items (org_id, industry_id, rule_key, value_date) VALUES (?, 30, ?, ?)",
+                         (org_id, "fatality_report_8h", "2026-11-01T06:30:00+00:00"))
+            conn.commit()
+        self.assertIn('value="2026-11-01T01:30"', self.client.get("/app/industry/30").data.decode())
+        self.change(30, "fatality_report_8h", value="4", date="2026-11-01T01:30")
+        self.assertEqual(self.reading("fatality_report_8h"), {"value_num": 4.0, "value_date": None})
+
+    def test_done_now_starts_the_clock_again(self):
+        from datetime import datetime, timezone
+        self.signup(industries=(30,))
+        self.change(30, "fatality_report_8h", date="2026-01-10T09:00")
+        self.assertIn('id="rule-fatality_report_8h"', self.client.get("/app/industry/30?only=problems").data.decode())
+        before = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        self.change(30, "fatality_report_8h", action="done_today")
+        started = datetime.fromisoformat(self.reading("fatality_report_8h")["value_date"])
+        self.assertLessEqual(before, started)
+        self.assertEqual((started.second, started.utcoffset().total_seconds()), (0, 0))
+        page = self.client.get("/app/industry/30").data.decode()
+        self.assertIn("Marked done now", page)
+        self.assertNotIn('id="rule-fatality_report_8h"', self.client.get("/app/industry/30?only=problems").data.decode())
+
+    def test_an_overdue_clock_gets_a_reminder_with_its_due_time(self):
+        from omniarmor_app.reminders import run_reminders
+        self.signup(industries=(30,))
+        self.change(30, "fatality_report_8h", date="2026-01-10T09:00")
+        with self.db() as conn:
+            summary = run_reminders(conn, self.app.config)
+            body = conn.execute("SELECT body FROM notifications WHERE kind = 'reminder'").fetchone()[0]
+        self.assertGreaterEqual(summary["reminders"], 1)
+        self.assertIn("OVERDUE", body)
+        self.assertRegex(body, r"Report a work fatality in 8 hours, \d+ days( \d+ h)? overdue \(2026-01-10 17:00 EST\)")
+
+    def test_a_reminder_run_for_another_day_counts_to_noon_that_day(self):
+        from datetime import date
+        from omniarmor_app.tracking import states_for_org
+        self.signup(industries=(30,))
+        self.change(30, "fatality_report_8h", date="2026-01-10T09:00")
+        with self.db() as conn:
+            org = conn.execute("SELECT * FROM orgs").fetchone()
+            s = next(s for s in states_for_org(conn, org, today=date(2026, 1, 10)) if s.key == "fatality_report_8h")
+        self.assertEqual((s.value, s.level, s.days_left), (3, "CLEARED", 0))
+
+    def test_a_policy_limit_counts_in_hours(self):
+        # Sick call triage in 24 hours is common policy, so a jail can set its own.
+        self.signup(industries=(16,))
+        self.change(16, "sick_call_triage", action="override", limit="5000000")
+        self.assertIn("Enter a number of hours between 0 and 876000", self.client.get("/app/industry/16").data.decode())
+        s = self.state(16, "sick_call_triage", "2026-11-04T14:00:00+00:00", "2026-11-04T20:00",
+                       limit_override=12, warn_override=10)
+        self.assertEqual((s.value, s.level, s.due_label), (11, "WARNING", "2026-11-04 21:00 EST"))
+
+    def test_a_stored_value_of_the_other_kind_never_breaks_a_page(self):
+        # A bare date on an hour clock counts from local midnight; a moment on a
+        # day clock counts from its day.
+        s = self.state(30, "fatality_report_8h", "2026-11-04", "2026-11-04T07:00")
+        self.assertEqual((s.value, s.level), (7, "WARNING"))
+        self.assertEqual(self.state(30, "fatality_report_8h", "not a date", "2026-11-04T07:00").level, "NONE")
+        from datetime import date
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        row = {"value_num": None, "value_bool": None, "value_date": "2026-01-01T10:00:00+00:00", "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        self.assertEqual(compute_state(1, find_rule(1, "annual_mvr_review"), row, date(2026, 1, 11)).value, 10)

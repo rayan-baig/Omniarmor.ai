@@ -22,7 +22,7 @@
             <td>{{ s.rule.title }}</td>
             <td><span class="tag {{ s.level }}">{{ s.label }}</span></td>
             <td class="num">{{ s.shown_value or '—' }}</td>
-            <td class="num mono">{{ s.due_date.isoformat() if s.due_date else '—' }}</td>
+            <td class="num mono">{{ s.due_label or '—' }}</td>
             <td class="mono">{{ s.rule.citation }}</td>
             <td class="num">{{ s.updated_at[:10] if s.updated_at else '—' }}{{ ' · ' ~ s.updated_by if s.updated_by }}</td>
           </tr>
