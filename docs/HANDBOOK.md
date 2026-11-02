@@ -222,7 +222,7 @@ Visitors who aren't signed in see:
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
-The site also serves a `sitemap.xml` listing the public pages (including Terms and Privacy), a `robots.txt` that keeps search engines out of the signed-in app, and a favicon.
+The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 50 industry pages, sign up, sign in, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
 
 ### 2.9 Team, invites and roles
 
@@ -771,7 +771,8 @@ SQLite database (one file on a persistent disk) + daily backups
     - `app.css` and `academy.css`, the styles;
     - `armo.js`, the companion;
     - `academy.js`, the lesson stepper, instant feedback, sparks and count-up;
-    - `favicon.svg` and `manifest.webmanifest`.
+    - `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` and `manifest.webmanifest`, the icons;
+    - `og-image.png`, the picture shown when a public page is shared.
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
@@ -5933,6 +5934,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/settings/member/<int:user_id>/remove` | Remove a teammate (owners) |
 | POST | `/app/settings/reminders` | Turn one's own reminder email on or off |
 | POST | `/billing/stripe/webhook` | Stripe webhook (signed) |
+| GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | The icon phones ask for at the root |
 | GET | `/favicon.ico` | Favicon |
 | GET, POST | `/forgot` | Ask for a password reset link |
 | GET | `/healthz` | Health check for uptime monitors |

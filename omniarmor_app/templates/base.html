@@ -6,10 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
   <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 50 regulated industries.{% endblock %}">
-  {% if noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
+  {% set listed = public_page() and not noindex %}
+  {% if not listed %}<meta name="robots" content="noindex, nofollow">{% endif %}
   <meta name="theme-color" content="#0F0E0D">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="16x16 32x32 48x48">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  {% if listed %}
+  {% set page_url = canonical_url() %}
+  {% set share_title = self.title()|trim ~ ' · OmniArmor.ai' %}
+  {% set share_text = self.description()|trim %}
+  {% set share_image = config.BASE_URL ~ url_for('static', filename='og-image.png') %}
+  <link rel="canonical" href="{{ page_url }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OmniArmor.ai">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:title" content="{{ share_title }}">
+  <meta property="og:description" content="{{ share_text }}">
+  <meta property="og:image" content="{{ share_image }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="OmniArmor.ai: {{ SLOGAN }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ share_title }}">
+  <meta name="twitter:description" content="{{ share_text }}">
+  <meta name="twitter:image" content="{{ share_image }}">
+  <meta name="twitter:image:alt" content="OmniArmor.ai: {{ SLOGAN }}">
+  {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">

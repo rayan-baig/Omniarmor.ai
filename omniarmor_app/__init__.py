@@ -10,7 +10,8 @@ import os
 import time
 from datetime import timedelta
 
-from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request, url_for
+from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request,
+                   send_from_directory, url_for)
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -120,24 +121,75 @@ def terms():
     return render_template("terms.html", facts=_rules_facts())
 
 
+# The pages anyone can open and search engines may list: the sitemap gives
+# them, and they carry share previews (og: and twitter: tags) and a canonical
+# address. Every other page is private: marked noindex, and the ones that
+# hold a person's or a company's data are closed to crawlers in robots.txt.
+PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.terms", "public.privacy",
+                "auth.signup", "auth.login"}
+# Addresses that are not pages: they get no noindex header.
+NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
+# Closed to crawlers: the app (with the Academy and Settings), password reset
+# and invite links, the kids' join page, and the addresses only programs use.
+# ("/app$" and "/app/", not "/app", which would also close /apple-touch-icon.png.)
+ROBOTS_DISALLOW = ("/app$", "/app/", "/reset/", "/signup?invite=", "/forgot", "/kids", "/logout", "/billing/", "/api/",
+                   "/healthz")
+
+
+def public_page():
+    """Whether the page being drawn is one of PUBLIC_PAGES, as a visitor sees
+    it (a sign-up page opened from an invite link is private)."""
+    return request.endpoint in PUBLIC_PAGES and not request.args.get("invite")
+
+
+def canonical_url():
+    """This page's one full address, as the sitemap gives it."""
+    args = dict(request.view_args or {})
+    if request.endpoint == "public.industry_page":
+        args["slug"] = args["slug"].lower()
+    return current_app.config["BASE_URL"] + url_for(request.endpoint, **args)
+
+
+def robots_header(response):
+    """noindex on everything but the public pages, for crawlers that read
+    the header (it also covers the CSV exports, which have no <meta>)."""
+    if request.endpoint not in NOT_PAGES and not (public_page() and response.status_code == 200):
+        response.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
+    return response
+
+
 @public.route("/robots.txt")
 def robots():
-    body = "User-agent: *\nAllow: /\nDisallow: /app\nSitemap: " + current_app.config["BASE_URL"] + "/sitemap.xml\n"
-    return Response(body, mimetype="text/plain")
+    lines = ["User-agent: *", "Allow: /"] + [f"Disallow: {path}" for path in ROBOTS_DISALLOW]
+    lines.append("Sitemap: " + current_app.config["BASE_URL"] + "/sitemap.xml")
+    return Response("\n".join(lines) + "\n", mimetype="text/plain")
 
 
 @public.route("/sitemap.xml")
 def sitemap():
     base = current_app.config["BASE_URL"]
-    urls = [base + "/", base + "/industries", base + "/terms", base + "/privacy"] + [f"{base}/industries/{i['brand'].lower()}" for i in INDUSTRIES.values()]
+    paths = [url_for("public.home"), url_for("public.industries")]
+    paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
+    paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.terms"), url_for("public.privacy")]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    xml += [f"<url><loc>{u}</loc></url>" for u in urls] + ["</urlset>"]
+    xml += [f"<url><loc>{escape(base + path)}</loc></url>" for path in paths] + ["</urlset>"]
     return Response("\n".join(xml), mimetype="application/xml")
 
 
+# Browsers and phones ask for these at the site's root, whatever the page
+# says. Their address never changes, so browsers keep them for a day, not a year.
 @public.route("/favicon.ico")
 def favicon():
-    return redirect(url_for("static", filename="favicon.svg"), code=301)
+    return send_from_directory(current_app.static_folder, "favicon.ico", max_age=ROOT_ICON_MAX_AGE)
+
+
+@public.route("/apple-touch-icon.png")
+@public.route("/apple-touch-icon-precomposed.png")
+def apple_touch_icon():
+    return send_from_directory(current_app.static_folder, "apple-touch-icon.png", max_age=ROOT_ICON_MAX_AGE)
+
+
+ROOT_ICON_MAX_AGE = 24 * 3600
 
 
 @public.route("/api/stats")
@@ -236,7 +288,9 @@ def create_app(**overrides):
     app.before_request(load_user)
     app.before_request(check_csrf)
     app.after_request(security_headers)
-    app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__)
+    app.after_request(robots_header)
+    app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__,
+                                public_page=public_page, canonical_url=canonical_url)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 

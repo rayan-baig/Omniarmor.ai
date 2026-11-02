@@ -15,6 +15,13 @@ The first release for launch. It gathers the work of the last few days.
   as the rest of the site, with a way back home. A server error never shows
   what went wrong inside; it is recorded for Autopilot instead, and if even
   the error page fails, a plain one takes its place.
+- Icons for every browser and phone (a real `favicon.ico`, an Apple touch
+  icon, and 192 and 512 icons in the app manifest), and share previews on the
+  public pages: title, description and a picture when a link is shared.
+- The sitemap lists every public page, sign up and sign in included.
+  robots.txt keeps search engines out of the app, the Academy, Settings,
+  password reset and invite links and the kids' join page, and every page
+  that isn't public says `noindex`.
 
 ### Deadlines and clocks
 
