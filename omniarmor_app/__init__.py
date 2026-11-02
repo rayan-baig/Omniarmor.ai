@@ -11,6 +11,7 @@ import time
 from datetime import timedelta
 
 from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request, url_for
+from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import academy_views, armo_views, autopilot, auth, views
@@ -170,6 +171,34 @@ def healthz():
     return jsonify(status="ok" if ok else "error", schema=version, version=__version__), (200 if ok else 503)
 
 
+# What each error page says: a title, and what to do about it.
+ERROR_PAGES = {
+    400: ("That request didn't work", "Go back, reload the page and try again."),
+    403: ("You don't have access to that",
+          "This page belongs to another account, or only the workspace owner can open it."),
+    404: ("Page not found", "That page doesn't exist, or it has moved. Check the address, or start again from"
+                            " the home page."),
+    405: ("That action isn't allowed here", "Go back, reload the page and try again."),
+    413: ("That upload is too large", "Try a smaller file."),
+    500: ("Something went wrong on our side", "It's not something you did. We've noted it so it can be fixed."
+                                               " Please try again in a minute."),
+    503: ("That's unavailable for a moment", "Please try again in a minute."),
+}
+
+# The error page when even the error page can't be shown: no template, no
+# database, nothing that can fail. It still matches the look (the same
+# stylesheet) and leads home.
+PLAIN_ERROR_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>{title} · OmniArmor.ai</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/static/app.css"></head>
+<body><main id="main"><div class="wrap"><div class="narrow error-page">
+<p class="eyebrow">Error {code}</p><h1>{title}</h1><p class="sub">{description}</p>
+<p class="cta"><a class="btn" href="/">Go to the home page</a></p>
+</div></div></main></body></html>
+"""
+
+
 class OmniArmorFlask(Flask):
     def log_exception(self, exc_info):
         # Flask's own version writes the page address, which can hold a reset token.
@@ -247,16 +276,29 @@ def create_app(**overrides):
     @app.errorhandler(503)
     def error_page(err):
         code = getattr(err, "code", 500) or 500
-        titles = {400: "That request didn't work", 403: "You don't have access to that",
-                  404: "Page not found", 405: "That action isn't allowed here",
-                  413: "That upload is too large", 500: "Something went wrong on our side",
-                  503: "That's unavailable for a moment"}
-        description = getattr(err, "description", None) if code != 500 else None
         if code == 500:
             cause = getattr(err, "original_exception", None) or err
             autopilot.record_error(app.config, request.path, cause)
-        return render_template("error.html", code=code, title=titles.get(code, "Error"),
-                               description=description), code
+        title, help_text = ERROR_PAGES.get(code, ERROR_PAGES[500])
+        # A message the app wrote for this case (an expired form, say) beats
+        # the general one; Werkzeug's own wording, written for developers,
+        # never shows. Nothing about a server error ever does.
+        description = getattr(err, "description", None)
+        if code == 500 or not description or description == getattr(type(err), "description", None):
+            description = help_text
+        try:
+            return render_template("error.html", code=code, title=title, description=description, noindex=True), code
+        except Exception:  # the page itself failed: answer with one that can't
+            app.logger.exception("couldn't show the error page for %s", code)
+            return Response(PLAIN_ERROR_PAGE.format(code=code, title=escape(title), description=escape(description)),
+                            status=code, mimetype="text/html"), code
+
+    if app.config["TESTING"]:
+        # A page that always fails, so tests can see the 500 page as a visitor
+        # would. Only in tests: no running server has it.
+        @app.route("/_test/server-error")
+        def _test_server_error():
+            raise RuntimeError("test failure at /srv/omniarmor/omniarmor_app/secret.py with SECRET_KEY")
 
     # Start the daily timer once per server process (not in tests, not in the reloader's parent).
     if app.config["SCHEDULER_ENABLED"] and not app.config["TESTING"] and \

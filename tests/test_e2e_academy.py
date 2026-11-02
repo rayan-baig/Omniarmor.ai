@@ -433,6 +433,8 @@ class TestKidCannotReachTheGrownUps(KidCase):
                     continue
                 if endpoint == "plan.stripe_webhook":
                     continue    # signed by Stripe, not a person's page
+                if endpoint.startswith("_test_"):
+                    continue    # exists only in tests (it always fails, for the error page's test)
                 url = self.url_for_rule(rule)
                 for method in sorted(rule.methods - {"HEAD", "OPTIONS"}):
                     data = {"csrf_token": token, "confirm": "Acme Logistics", "name": "Kid Co", "timezone": "UTC",

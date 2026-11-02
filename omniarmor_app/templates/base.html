@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
   <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 50 regulated industries.{% endblock %}">
+  {% if noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
   <meta name="theme-color" content="#0F0E0D">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">

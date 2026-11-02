@@ -11,6 +11,10 @@ The first release for launch. It gathers the work of the last few days.
 
 - One version number, shown in Settings under About and in `/healthz`, and
   this changelog.
+- Friendly "page not found" and "something went wrong" pages in the same look
+  as the rest of the site, with a way back home. A server error never shows
+  what went wrong inside; it is recorded for Autopilot instead, and if even
+  the error page fails, a plain one takes its place.
 
 ### Deadlines and clocks
 
