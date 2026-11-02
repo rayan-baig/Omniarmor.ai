@@ -60,7 +60,8 @@ def _rules_facts():
     from .academy import FRIEND_CODE_DAYS
     from .academy_plan import FREE_WORLDS
     from .academy_views import JOIN_CODE_DAYS, QUIZ_CHECK_DAYS
-    from .autopilot import KEEP_ERRORS
+    from .autopilot import KEEP_ERRORS, MAX_EMAILS_PER_HOUR
+    from .jobs import ALERTS_EVERY_SECONDS
     from .auth import INVITE_DAYS, RESET_HOURS
     cfg = current_app.config
     return {
@@ -75,6 +76,8 @@ def _rules_facts():
         "friend_code_days": FRIEND_CODE_DAYS,
         "quiz_check_days": QUIZ_CHECK_DAYS,
         "error_days": KEEP_ERRORS.days,
+        "operator_emails_per_hour": MAX_EMAILS_PER_HOUR,
+        "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
     }
 
 

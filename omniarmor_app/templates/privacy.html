@@ -22,20 +22,20 @@
 <h2 id="collect">What we collect</h2>
 <p><strong>When you sign up:</strong> your name, email, password, company name, time zone and the industries you pick. We store your password scrambled (hashed), so nobody can read it, not even us.</p>
 <p><strong>When you use the tracker:</strong> the dates (and, for checks that count hours or minutes, the times), numbers and yes-or-no answers you enter, any limits you change, and who changed what and when. That last part is the audit trail.</p>
-<p><strong>Emails we send:</strong> we keep a copy of each email (reminders, time-limit alerts and password reset emails), so you can see it in Radar. Reminders go out once a day. Checks that count hours or minutes also send an alert when they get close to their limit and when they pass it.</p>
+<p><strong>Emails we send:</strong> we keep a copy of each email (reminders, time-limit alerts and password reset emails), so you can see it in Radar. Reminders go out once a day. Checks that count hours or minutes also send an alert when they get close to their limit and when they pass it; we look for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
 <p><strong>When a kid uses the Academy:</strong> a nickname, a picture, their Armo helper, their track, their levels and stars, the days they played, the questions they got wrong (for practice), their friends and their duels. We never ask a kid for a real name, email, birthday or password. Please pick a nickname, not a real name.</p>
 <p><strong>When you visit:</strong></p>
 <ul>
-  <li>The server writes a log line for each page you open: your IP address, the time, the page, the page you came from, and your browser type. We hide password reset and invite links in that log.</li>
+  <li>The server writes a log line for each page you open: your IP address, the time, the page, the page you came from, and your browser type. We hide password reset links, invite links and the link back from a Stripe payment in that log, and we shorten any email address in it to its first letter and its domain (like p***@example.com).</li>
   <li>We save the date you last used the app (just the date).</li>
-  <li>When someone types a wrong password, asks for a password reset, signs up or tries a kid join code, we note the email typed (if any) and the IP address. This stops people from guessing passwords.</li>
+  <li>When someone types a wrong password, asks for a password reset, signs up, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes.</li>
 </ul>
-<p><strong>When something breaks:</strong> we save an error report with the page address and what went wrong in our code.</p>
+<p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened.</p>
 <p><strong>When you pay for the Academy plan:</strong> we keep Stripe's customer and subscription numbers and your plan's status, renewal date and, if you cancel, the date it ends. We never see your card number.</p>
 
 <h2 id="cookies">Cookies</h2>
 <ul>
-  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. When you sign in, it lasts {{ facts.session_days }} days.</li>
+  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days }} days from the last time you use the site. Before that, it only holds a form token and goes away when you close your browser.</li>
   <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
   <li>No ad cookies. No tracking cookies.</li>
 </ul>
@@ -55,7 +55,7 @@
   <li>A kid who joins on a device with a join code can only use the Academy.</li>
   <li>Academy friends, who can be in other families, see a kid's nickname, picture, rank and stars, and duel scores. There is no chat.</li>
 </ul>
-<p><strong>The people who run OmniArmor</strong> can open the database when they need to fix something.</p>
+<p><strong>The people who run OmniArmor</strong> can open the database when they need to fix something. They also get Autopilot's emails about problems: error reports, failing backups, and reminder emails that keep failing (with the error the email service gave).</p>
 <p><strong>Outside companies:</strong></p>
 <ul>
   <li><strong>Our hosting company</strong> runs the server. It stores the database, the backups and the server logs.</li>
@@ -68,15 +68,15 @@
 <h2 id="keep">How long we keep it</h2>
 <ul>
   <li><strong>Your account, workspace, readings, audit trail, email copies and kids' Academy profiles:</strong> until they are deleted (see below). Nothing here deletes itself.</li>
-  <li><strong>Wrong password tries, reset requests, sign-ups and join code tries:</strong> deleted within 2 days.</li>
+  <li><strong>Wrong password tries, reset requests, sign-ups, and join code and friend code tries:</strong> deleted within 2 days.</li>
   <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days }} days.</li>
   <li><strong>Kid join codes</strong> work for {{ facts.join_code_days }} days and <strong>friend codes</strong> for {{ facts.friend_code_days }} days. Then they are deleted.</li>
   <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days }} days.</li>
-  <li><strong>Error reports:</strong> {{ facts.error_days }} days.</li>
+  <li><strong>Error reports:</strong> {{ facts.error_days }} days in the app. A copy emailed to the people who run OmniArmor stays in their inbox.</li>
   {% if facts.backup_keep > 0 %}
-  <li><strong>Backups:</strong> we copy the whole database once a day and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep }} days.</li>
+  <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep }} days.</li>
   {% else %}
-  <li><strong>Backups:</strong> we copy the whole database once a day. Old copies are not deleted by themselves, so something you delete can stay in a backup.</li>
+  <li><strong>Backups:</strong> we copy the whole database once a day and check each copy before we keep it. Old copies are not deleted by themselves, so something you delete can stay in a backup.</li>
   {% endif %}
   <li><strong>Server logs:</strong> our hosting company keeps them. How long depends on that company.</li>
   <li><strong>Stripe</strong> keeps its own payment records under its own rules.</li>

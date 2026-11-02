@@ -115,12 +115,23 @@ class TestPublicPages(AppTestCase):
         self.assertIn(f"friend codes</strong> for {FRIEND_CODE_DAYS} days", page)
         self.assertIn(f"finished:</strong> {QUIZ_CHECK_DAYS} days", page)
         self.assertIn(f"Error reports:</strong> {KEEP_ERRORS.days} days", page)
+        from omniarmor_app.autopilot import MAX_EMAILS_PER_HOUR
+        from omniarmor_app.jobs import ALERTS_EVERY_SECONDS
+        self.assertEqual(ALERTS_EVERY_SECONDS, 60)
+        self.assertIn("we look for those every minute", page)
+        self.assertIn(f"at most {MAX_EMAILS_PER_HOUR} emails an hour", page)
+        self.assertIn("check each copy before we keep it", page)
+        self.assertIn("p***@example.com", page)  # the log shortens email addresses (redact.redact_line)
         # Every outside service that receives data is named.
         for service in ["hosting company", "email service", "Google Fonts", "Stripe"]:
             self.assertIn(service, page)
         terms = " ".join(self.client.get("/terms").data.decode().split())
         self.assertIn(f"free {cfg['ACADEMY_TRIAL_DAYS']}-day trial", terms)
         self.assertIn("not legal advice", terms)
+        # Business-day checks (tracking.py): weekends and US federal holidays
+        # only, and overdue from the day after the due date.
+        self.assertIn("skips weekends and US federal holidays only", terms)
+        self.assertIn("Once the due date has ended, the check is overdue", terms)
 
     def test_privacy_page_follows_the_backup_setting(self):
         tmp = tempfile.TemporaryDirectory()
