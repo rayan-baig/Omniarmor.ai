@@ -128,7 +128,7 @@ RULES = {
              cost="Late field alerts draw FDA enforcement and let defective drugs stay on the market, raising recall and liability costs.",
              citation="21 CFR 314.81(b)(1)", kind="max",
              input="Working days since learning of a distributed product quality problem (e.g., contamination, label mix-up), without a field alert",
-             unit="days", limit=3, warn=2, sample=4,
+             unit="working days", limit=3, warn=2, sample=4,
              action="File the field alert report with the FDA district office now, even if the investigation is still open."),
         Rule(key="dea_biennial_inventory", title="DEA biennial inventory",
              cost="Controlled substance recordkeeping failures bring DEA civil penalties and can cost the company its registration.",

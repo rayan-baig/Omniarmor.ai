@@ -537,3 +537,29 @@ class TestBusinessDayClocks(AppTestCase):
         page = self.client.get("/app/industry/30?only=problems").data.decode()
         self.assertIn('id="rule-i9_section_2"', page)
         self.assertIn("days overdue", page)
+
+
+class TestWorkingDayClocks(AppTestCase):
+    """Five checks count working days. Four took only a typed number that never
+    grew; the FDA field alert (3 working days) counted calendar days, so a
+    problem found on a Friday showed Blocked on Tuesday, a day before it was due."""
+
+    def test_every_working_day_clock_counts_working_days(self):
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import date_mode, date_unit
+        counted = [r for rules in CATALOG.values() for r in rules if "working days since" in r.input.lower()]
+        self.assertEqual(len(counted), 5)
+        for r in counted:
+            self.assertEqual((date_mode(r), date_unit(r)), ("since", "business days"), r.key)
+
+    def test_field_alert_skips_the_weekend(self):
+        from datetime import date
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        row = {"value_num": None, "value_bool": None, "value_date": "2026-11-06", "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        rule = find_rule(22, "field_alert_report")
+        s = compute_state(22, rule, row, date.fromisoformat("2026-11-10"))  # Friday to Tuesday
+        self.assertEqual((s.value, s.level), (2, "WARNING"))
+        self.assertEqual(s.due_date.isoformat(), "2026-11-12")  # Wednesday 11 November is a holiday
+        self.assertEqual(rule.unit, "working days")
