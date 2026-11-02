@@ -156,7 +156,9 @@ class TestCancelledPlan(AppTestCase):
                          " stripe_subscription_id = 'sub_1'")
             conn.commit()
         self.app.config["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
-        self.period_end = 1893456000  # 2030-01-01
+        # 2030-01-01 00:00 UTC, which is 7 pm on 31 December in New York, the
+        # workspace's time zone: pages show the workspace's date.
+        self.period_end = 1893456000
 
     def send(self, event_id, obj):
         import hashlib
@@ -181,7 +183,7 @@ class TestCancelledPlan(AppTestCase):
     def test_a_cancelled_plan_says_when_it_ends_not_that_it_renews(self):
         self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
         page = self.client.get("/app/academy/plan").data.decode()
-        self.assertIn("ends 2030-01-01", page)
+        self.assertIn("ends 2029-12-31", page)
         self.assertNotIn("renews", page)
 
     def test_a_cancelled_plan_no_longer_blocks_deleting_the_workspace(self):
@@ -193,7 +195,7 @@ class TestCancelledPlan(AppTestCase):
     def test_resuming_the_plan_blocks_deleting_again(self):
         self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
         self.send("evt_resume", self.subscription())
-        self.assertIn("renews 2030-01-01", self.client.get("/app/academy/plan").data.decode())
+        self.assertIn("renews 2029-12-31", self.client.get("/app/academy/plan").data.decode())
         self.post("/app/settings/delete", {"confirm": "Acme Logistics"})
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM orgs").fetchone()[0], 1)
@@ -203,7 +205,7 @@ class TestCancelledPlan(AppTestCase):
         obj = self.subscription(items={"data": [{"current_period_end": self.period_end}]})
         del obj["current_period_end"]
         self.send("evt_new_api", obj)
-        self.assertIn("renews 2030-01-01", self.client.get("/app/academy/plan").data.decode())
+        self.assertIn("renews 2029-12-31", self.client.get("/app/academy/plan").data.decode())
 
 
 class TestRecordKeepsWhoAfterRemoval(AppTestCase):

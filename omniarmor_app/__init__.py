@@ -7,6 +7,7 @@ create_app() builds the app; wsgi.py runs it in production.
 import hmac
 import logging
 import os
+import time
 from datetime import timedelta
 
 from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request, url_for
@@ -17,9 +18,9 @@ from .catalog import INDUSTRIES, rules_for
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
-from .redact import redact
+from .redact import RedactingFilter, redact
 from .security import check_csrf, csrf_token, load_user, security_headers
-from .tracking import format_quantity
+from .tracking import format_quantity, local_date
 
 SLOGAN = "Catch the fine before it catches you."
 
@@ -143,6 +144,20 @@ class OmniArmorFlask(Flask):
         self.logger.error(f"Exception on {redact(request.path)} [{request.method}]", exc_info=exc_info)
 
 
+def _set_up_logging():
+    """The server log: times in UTC, said so on every line, and every line
+    passed through redact_line() (reset, invite and payment links hidden,
+    email addresses shortened), whoever wrote it."""
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s UTC %(levelname)s %(name)s: %(message)s")
+    formatter.converter = time.gmtime
+    handler.setFormatter(formatter)
+    logging.basicConfig(level=logging.INFO, handlers=[handler])  # only if nothing set the log up yet
+    for each in logging.getLogger().handlers:
+        if not any(isinstance(f, RedactingFilter) for f in each.filters):
+            each.addFilter(RedactingFilter())
+
+
 def create_app(**overrides):
     cfg = load_config(**overrides)
     app = OmniArmorFlask(__name__, instance_relative_config=False)
@@ -150,7 +165,7 @@ def create_app(**overrides):
     if cfg["TRUSTED_PROXIES"] > 0:
         hops = cfg["TRUSTED_PROXIES"]
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    _set_up_logging()
 
     conn = connect(app.config["DATABASE"])
     migrate(conn)
@@ -162,6 +177,7 @@ def create_app(**overrides):
     app.after_request(security_headers)
     app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
+    app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 
     # Browsers keep CSS, JS and images for a year, so repeat visits cost no
     # bandwidth. Each link carries the file's change time, so a deploy that

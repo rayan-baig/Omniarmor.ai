@@ -50,6 +50,9 @@ def load_config(**overrides):
         "TESTING": False,
         "SESSION_COOKIE_SECURE": _flag("SESSION_COOKIE_SECURE", production),
         "SESSION_COOKIE_HTTPONLY": True,
+        # Lax on purpose: a link in a reminder email opens the app signed in,
+        # while a form posted from another site arrives without the cookie
+        # (and every form also needs its CSRF token).
         "SESSION_COOKIE_SAMESITE": "Lax",
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),
         "MAX_CONTENT_LENGTH": 1024 * 1024,

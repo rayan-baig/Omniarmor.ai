@@ -140,7 +140,7 @@
       <p class="hint">Make a join code, then open <strong>{{ url_for('kids.join', _external=True) }}</strong> on {{ summary.learner.nickname }}'s phone, tablet or computer and type it in. That device gets the Academy only: no business pages, no email or password.</p>
       {% if join %}
         <p class="ac-code" aria-label="Join code">{{ join.code }}</p>
-        <p class="hint">Works once, until {{ join.expires_at[:10] }}.</p>
+        <p class="hint">Works once, until {{ join.expires_at|local_date }}.</p>
       {% endif %}
       <div class="ac-code-actions">
         <form method="post" action="{{ url_for('academy.join_code', learner_id=lid) }}">

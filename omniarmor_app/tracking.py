@@ -34,6 +34,27 @@ class ValidationError(ValueError):
     """A reading or setting a person entered that cannot be saved; the message says why."""
 
 
+def local_date(text, org):
+    """A moment the database keeps in UTC ("2026-11-03T02:30:00+00:00") as the
+    date it was where the workspace is ("2026-11-02" in Los Angeles). Pages
+    showed the first ten characters, the UTC date, which is the next day
+    for every evening change in the Americas. Without a workspace, the UTC
+    date."""
+    if not text:
+        return ""
+    try:
+        moment = datetime.fromisoformat(str(text))
+    except ValueError:
+        return str(text)[:10]
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    try:
+        tz = ZoneInfo(org["timezone"]) if org is not None and org["timezone"] else timezone.utc
+    except (KeyError, IndexError, ValueError):
+        tz = timezone.utc
+    return moment.astimezone(tz).date().isoformat()
+
+
 def org_today(org):
     return datetime.now(ZoneInfo(org["timezone"])).date()
 

@@ -23,7 +23,7 @@ from .catalog import INDUSTRIES
 from .db import get_db, iso, now_iso, utcnow
 from .security import (clean_text, client_ip, flash_error, new_device_epoch, owner_required, rate_limited,
                        record_event, start_kid_session)
-from .tracking import org_industry_ids, org_today
+from .tracking import local_date, org_industry_ids, org_today
 
 bp = Blueprint("academy", __name__, url_prefix="/app/academy")
 kids = Blueprint("kids", __name__, url_prefix="/kids")
@@ -610,7 +610,7 @@ def certificate(learner_id):
         flash_error("Pass stage 1 of the Owner's Challenge to earn the certificate.")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
     first = progress[academy.level_id(t, academy.FINAL_WORLD.number, 1)]["completed_at"]
-    return render_template("academy/certificate.html", summary=summary, earned=(first or "")[:10],
+    return render_template("academy/certificate.html", summary=summary, earned=local_date(first, g.org),
                            today=org_today(g.org), avatars=academy.AVATARS)
 
 

@@ -24,7 +24,7 @@
             <td class="num">{{ s.shown_value or '—' }}</td>
             <td class="num mono">{{ s.due_label or '—' }}</td>
             <td class="mono">{{ s.rule.citation }}</td>
-            <td class="num">{{ s.updated_at[:10] if s.updated_at else '—' }}{{ ' · ' ~ s.updated_by if s.updated_by }}</td>
+            <td class="num">{{ s.updated_at|local_date if s.updated_at else '—' }}{{ ' · ' ~ s.updated_by if s.updated_by }}</td>
           </tr>
         {% endfor %}
       </tbody>

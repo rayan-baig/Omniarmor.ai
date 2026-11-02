@@ -33,7 +33,7 @@
         <div class="why">
           <p>{{ r.cost }}</p>
           <p class="mono">{{ r.citation }}</p>
-          {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at[:10] }}{{ ' by ' ~ s.updated_by if s.updated_by }}</p>{% endif %}
+          {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at|local_date }}{{ ' by ' ~ s.updated_by if s.updated_by }}</p>{% endif %}
         </div>
       </details>
       {% if can_override(r) %}

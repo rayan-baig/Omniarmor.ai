@@ -78,7 +78,7 @@
         <h3 class="ac-label">Share {{ learner.nickname }}'s code</h3>
         {% if code %}
           <p class="ac-code" aria-label="Friend code">{{ code.code }}</p>
-          <p class="hint">Works once, until {{ code.expires_at[:10] }}.</p>
+          <p class="hint">Works once, until {{ code.expires_at|local_date }}.</p>
         {% else %}
           <p class="hint">Codes work once and last {{ code_days }} days.</p>
         {% endif %}

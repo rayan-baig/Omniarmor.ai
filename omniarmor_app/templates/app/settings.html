@@ -65,7 +65,7 @@
   </form>
 
   <h2>Academy plan</h2>
-  <p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. Update your card to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at[:10] }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at[:10] }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
+  <p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. Update your card to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at|local_date }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at|local_date }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
     <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if plan.access == 'paid' else 'See the Academy plan' }}</a></p>
 
   <h2>Delete workspace</h2>
