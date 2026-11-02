@@ -14,7 +14,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: BASE_URL
-        sync: false   # set to your public address, e.g. https://app.omniarmor.ai
+        sync: false   # the subdomain on MTRX Horizon's domain, e.g. https://omniarmor.example.com
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -24,7 +24,7 @@ services:
       - key: SMTP_PASSWORD
         sync: false
       - key: MAIL_FROM
-        sync: false   # e.g. OmniArmor <reminders@omniarmor.ai>
+        sync: false   # e.g. OmniArmor <no-reply@omniarmor.example.com>
       - key: DAILY_JOB_HOUR_UTC
         value: "11"
       # Where Autopilot emails problems it cannot fix itself. Unset, they

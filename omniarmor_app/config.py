@@ -54,6 +54,11 @@ def load_config(**overrides):
         # while a form posted from another site arrives without the cookie
         # (and every form also needs its CSRF token).
         "SESSION_COOKIE_SAMESITE": "Lax",
+        # Host-only: no Domain attribute, so the cookie goes back to this
+        # exact host and nowhere else. OmniArmor runs on a subdomain of MTRX
+        # Horizon's domain, beside its other apps; a cookie scoped to the
+        # parent domain would carry an OmniArmor sign-in to every one of them.
+        "SESSION_COOKIE_DOMAIN": None,
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),
         "MAX_CONTENT_LENGTH": 1024 * 1024,
     }

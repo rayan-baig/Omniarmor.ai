@@ -16,14 +16,15 @@ pricing page before you pick one.
 | Daily reminders and backups | Included | Built into the app. No cron or queue service. |
 | HTTPS certificate | Free | Caddy gets and renews Let's Encrypt certificates automatically |
 | Email | Optional | A free sending tier (Brevo, Mailjet, SMTP2GO, Resend and others have one), or Amazon SES's low per-email price. Without email, reminders show in the app. |
-| Domain name | Recommended | The one yearly cost most setups can't avoid |
+| Domain name | No | OmniArmor runs on a subdomain of MTRX Horizon's domain (`omniarmor.<your domain>`), so there is nothing to buy for it |
 | Off-server backup copies | Recommended | A free object-storage tier (Cloudflare R2 and Backblaze B2 have one) |
 | Taking payments | When you charge | Stripe charges a fee per payment, with no monthly fee. The Academy plan uses Stripe Checkout, so you never store or secure card numbers yourself. |
 
 ## The near-zero setup (about 20 minutes)
 
 1. Create a free-tier Linux VM and install Docker.
-2. Point your domain's A record at the VM's IP address.
+2. On MTRX Horizon's domain, add an A record named `omniarmor` pointing at the
+   VM's IP address (see [OPERATIONS.md](OPERATIONS.md), section 1).
 3. Copy the repo to the VM, then `cp .env.example .env` and set `SECRET_KEY`,
    `BASE_URL` and `DOMAIN`.
 4. Run `docker compose up -d`.

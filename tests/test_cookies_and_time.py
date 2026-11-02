@@ -105,6 +105,9 @@ class TestTheOneCookie(unittest.TestCase):
             # in, while a form posted from another site arrives without it.
             self.assertEqual(morsel["samesite"], "Lax", header)
             self.assertEqual(morsel["path"], "/", header)
+            # Host-only: MTRX Horizon's other apps, on sibling subdomains of
+            # the same parent domain, never receive it.
+            self.assertFalse(morsel["domain"], header)
             if not morsel.value:  # deleted
                 self.assertLess(parsedate_to_datetime(morsel["expires"]), now, header)
                 continue

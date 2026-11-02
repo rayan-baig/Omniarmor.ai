@@ -6,13 +6,42 @@ touching it. This guide covers the few things a person has to do once.
 
 ## 1. Launch (about 15 minutes)
 
+**The address.** OmniArmor is a product of MTRX Horizon, and MTRX Horizon owns
+the one domain: its own site is on the domain itself (and `www`), and each
+product gets a subdomain. OmniArmor lives at `omniarmor.<your domain>`, beside
+`cyberlogix.<your domain>` and `rankup.<your domain>`. Below, `example.com`
+stands for that domain. There is no domain to buy for OmniArmor.
+
+A subdomain, not a folder (`example.com/omniarmor`), on purpose: each
+subdomain is its own origin, so OmniArmor's sign-in cookie, the browser's
+storage for it and anything it installs stay with OmniArmor and never reach
+the other apps. The app keeps it that way: its cookie has no `Domain`, so it
+goes back only to `omniarmor.example.com`, and it sends no CORS headers, so no
+other site (a sibling app included) can read its pages from a browser.
+
+1. **DNS:** where the domain's DNS is managed, add one record for the
+   subdomain. On Render, a `CNAME` named `omniarmor` pointing at the service's
+   `onrender.com` address; on your own server, an `A` record named
+   `omniarmor` pointing at its IP address.
+2. **The host:** Render: the service, then Settings > Custom Domains, add
+   `omniarmor.example.com` and wait for it to verify. Your own server: set
+   `DOMAIN=omniarmor.example.com` in `.env` for Caddy.
+3. **HTTPS:** Render and Caddy both get the certificate themselves once DNS
+   answers. Check `https://omniarmor.example.com` opens before going on: the
+   sign-in cookie is marked secure in production and needs it.
+4. **The app:** set `BASE_URL=https://omniarmor.example.com` (no slash at the
+   end). Every link in an email is built from it.
+5. **MTRX Horizon:** in MTRX Horizon's settings, OmniArmor's address is
+   `https://omniarmor.example.com` and its stats address is
+   `https://omniarmor.example.com/api/stats` (see `STATS_KEY`).
+
 **Render (easiest):** push this repo to GitHub, then in Render choose
 New > Blueprint and pick the repo. `render.yaml` creates the web service, a
-persistent disk for the database, and a random `SECRET_KEY`. Set `BASE_URL`
-to your public address.
+persistent disk for the database, and a random `SECRET_KEY`. Then add the
+custom domain and set `BASE_URL` as above.
 
 **Cheapest (one small server, even a free-tier VM):** set `SECRET_KEY`,
-`BASE_URL` and `DOMAIN` in `.env`, point your domain at the server, and run
+`BASE_URL` and `DOMAIN` in `.env`, add the subdomain's DNS record, and run
 `docker compose up -d`. Caddy adds free HTTPS. See [COSTS.md](COSTS.md).
 
 **Any server with Docker:**
@@ -21,7 +50,7 @@ to your public address.
 docker build -t omniarmor .
 docker run -d --name omniarmor -p 8000:8000 -v omniarmor-data:/data \
   -e SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
-  -e BASE_URL=https://app.example.com \
+  -e BASE_URL=https://omniarmor.example.com \
   --restart unless-stopped omniarmor
 ```
 
@@ -36,6 +65,18 @@ app's Reminders page instead of sent. To send real email, sign up with any
 SMTP provider (Postmark, SendGrid, Amazon SES, Mailgun), verify your sending
 domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and
 `MAIL_FROM`. Failed sends are logged on the Reminders page with the reason.
+
+All of MTRX Horizon's apps send from its one domain, so the records that keep
+mail out of spam are set up once, on that domain, by whoever runs it: **SPF**
+(which servers may send for it), **DKIM** (a signature on each message) and
+**DMARC** (what to do with mail that fails those two). The email provider
+gives the exact values. OmniArmor then sends from an address of its own, such
+as `MAIL_FROM=OmniArmor <no-reply@omniarmor.example.com>`, so people can tell
+the apps apart. A sending subdomain like `omniarmor.example.com` must be
+verified with the provider too (it adds a DKIM record for it); the parent
+domain's DMARC covers it. Check the records with any free DMARC checker before
+real customers depend on reminders. Every email ends with "OmniArmor is a
+product of MTRX Horizon."
 
 ## 3. What runs by itself every day
 
@@ -106,14 +147,16 @@ discover -s tests` (GitHub Actions does this on every push).
 
 ## 7. Things only you can do
 
-- Form the company (see the README) and open a business bank account.
+- Form the company, MTRX Horizon (see the README), and open a business bank
+  account.
 - Get a lawyer to write your Terms of Service and Privacy Policy, and to
   review the rule catalog before you sell to customers.
 - Payments: the Academy plan already takes cards through Stripe (set the
   Stripe settings, and in Stripe add the webhook
-  `https://<your domain>/billing/stripe/webhook` with the events
+  `https://omniarmor.<your domain>/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,
   `customer.subscription.updated`, `customer.subscription.deleted` and
   `invoice.payment_failed`). Charging for the compliance service itself is
   not built yet.
-- Buy your domain and point it at the app.
+- Add the `omniarmor` subdomain on MTRX Horizon's domain and point it at the
+  app (section 1). OmniArmor has no domain of its own.

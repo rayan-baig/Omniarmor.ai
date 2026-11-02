@@ -1,7 +1,8 @@
 # Cheapest way to run OmniArmor: one small Linux server (even a free-tier VM)
 # running the app plus Caddy, which gets and renews free HTTPS certificates.
 #
-#   1. Point your domain's DNS (an A record) at the server's IP address.
+#   1. On MTRX Horizon's domain, add an A record named omniarmor pointing at the
+#      server's IP address. OmniArmor runs on that subdomain (docs/OPERATIONS.md).
 #   2. cp .env.example .env, then set DOMAIN, BASE_URL and SECRET_KEY in .env.
 #   3. docker compose up -d
 #

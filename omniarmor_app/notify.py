@@ -8,6 +8,19 @@ from email.message import EmailMessage
 
 from .db import now_iso
 
+# Every MTRX Horizon app sends from the one company domain. The From line
+# names the product; this line, at the foot of every email, names the
+# company behind it.
+SIGNATURE = "OmniArmor is a product of MTRX Horizon."
+
+
+def signed(body):
+    """The body as it is sent: with the company line at the foot, once."""
+    body = body.rstrip()
+    if body.endswith(SIGNATURE):
+        return body + "\n"
+    return f"{body}\n\n--\n{SIGNATURE}\n"
+
 
 def send_email(cfg, to, subject, body):
     """Returns (status, error) where status is 'sent', 'logged' or 'failed'."""
@@ -18,7 +31,7 @@ def send_email(cfg, to, subject, body):
         msg["From"] = cfg["MAIL_FROM"]
         msg["To"] = to
         msg["Subject"] = " ".join(subject.split())
-        msg.set_content(body)
+        msg.set_content(signed(body))
         with smtplib.SMTP(cfg["SMTP_HOST"], cfg["SMTP_PORT"], timeout=20) as smtp:
             if cfg.get("SMTP_STARTTLS", True):
                 smtp.starttls(context=ssl.create_default_context())
