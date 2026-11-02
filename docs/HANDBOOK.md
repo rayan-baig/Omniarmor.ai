@@ -888,7 +888,7 @@ The Docker image:
 - runs as a non-root user;
 - keeps the database and backups in `/data`;
 - has a built-in health check against `/healthz`;
-- writes an access log with password-reset and invite tokens replaced by `[hidden]`, so the hosting dashboard never holds a working link.
+- writes an access log with password-reset and invite tokens, and the Stripe Checkout id a payer comes back with, replaced by `[hidden]` (also when they sit percent-encoded inside another address, such as a sign-in page's `next`), so the hosting dashboard never holds a working link.
 - runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs.
 
 ### 9.3 Email

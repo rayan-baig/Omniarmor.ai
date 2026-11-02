@@ -214,6 +214,83 @@ class TestTokensStayOutOfLogs(unittest.TestCase):
         self.assertNotIn("SECRET2", line)
         self.assertIn("/reset/[hidden]", atoms["r"])
 
+    def test_stripe_checkout_return_is_hidden(self):
+        """Stripe sends the payer back to /app/academy/plan?welcome=1&session_id=cs_...
+        and the plan page settles the payment with that id. The access log wrote
+        it out in full, and percent-encoded inside /login?next=... when the
+        payer came back signed out."""
+        line = "GET /app/academy/plan?welcome=1&session_id=cs_live_a1B2c3 HTTP/1.1"
+        self.assertEqual(redact(line), "GET /app/academy/plan?welcome=1&session_id=[hidden] HTTP/1.1")
+        self.assertEqual(redact("session_id=cs_live_a1B2c3"), "session_id=[hidden]")  # gunicorn's query atom
+        encoded = "/login?next=%2Fapp%2Facademy%2Fplan%3Fwelcome%3D1%26session_id%3Dcs_live_a1B2c3"
+        self.assertNotIn("cs_live_a1B2c3", redact(encoded))
+        self.assertTrue(redact(encoded).startswith("/login?next=%2Fapp%2Facademy%2Fplan%3Fwelcome%3D1%26session_id%3D"))
+        self.assertNotIn("SECRET", redact("/login?next=%2Fsignup%3Finvite%3DSECRET"))
+        self.assertNotIn("SECRET", redact("https://x.example/login?next=%2Freset%2FSECRET"))
+        # Nothing else is touched.
+        self.assertEqual(redact("/app/report?only=problems&page=2"), "/app/report?only=problems&page=2")
+
+    def test_the_signed_out_return_from_stripe_keeps_the_id_out_of_the_log(self):
+        from omniarmor_app.access_log import RedactingLogger
+        from omniarmor_app import create_app
+        import tempfile
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        app = create_app(TESTING=True, DATABASE=os.path.join(tmp.name, "t.db"), SCHEDULER_ENABLED=False,
+                         SECRET_KEY="x" * 32, BACKUP_DIR=os.path.join(tmp.name, "b"))
+        response = app.test_client().get("/app/academy/plan?welcome=1&session_id=cs_live_SECRET1")
+        self.assertEqual(response.status_code, 302)
+        target = response.headers["Location"]
+        self.assertIn("SECRET1", target)  # the sign-in page carries it on, encoded
+        logger = RedactingLogger(SimpleNamespace(
+            errorlog="-", loglevel="info", accesslog=None, syslog=False, capture_output=False, logconfig=None,
+            logconfig_dict={}, logconfig_json=None, disable_redirect_access_to_syslog=False, user=0, group=0,
+            umask=0, access_log_format="", syslog_addr=None, syslog_prefix=None, syslog_facility="user",
+            logger_class=None, statsd_host=None, dogstatsd_tags="", statsd_prefix="", raw_env=[]))
+        path, _, query = target.partition("?")
+        from datetime import timedelta
+        for raw in ("/app/academy/plan?welcome=1&session_id=cs_live_SECRET1", f"{path}?{query}"):
+            p, _, q = raw.partition("?")
+            environ = {"REQUEST_METHOD": "GET", "RAW_URI": raw, "SERVER_PROTOCOL": "HTTP/1.1",
+                       "PATH_INFO": p, "QUERY_STRING": q, "REMOTE_ADDR": "1.2.3.4"}
+            atoms = logger.atoms(SimpleNamespace(status="302 FOUND", headers=[], sent=10),
+                                 SimpleNamespace(headers=[("REFERER", "https://checkout.stripe.com/")]),
+                                 environ, timedelta(seconds=0))
+            self.assertNotIn("SECRET1", " ".join(str(v) for v in atoms.values()), raw)
+
+    def test_every_query_value_a_route_reads_is_known(self):
+        """A new route reading a secret from its query string has to be added
+        to SECRET_PARAMS (or here, when the value is harmless)."""
+        import re
+        from omniarmor_app.redact import SECRET_PARAMS
+        harmless = {"chapter", "welcome", "industry", "next", "only", "page"}
+        app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "omniarmor_app")
+        names = set()
+        for name in os.listdir(app_dir):
+            if name.endswith(".py"):
+                with open(os.path.join(app_dir, name), encoding="utf-8") as f:
+                    names |= set(re.findall(r"request\.(?:args|values)\.get(?:list)?\(\s*[\"'](\w+)[\"']", f.read()))
+        self.assertTrue({"invite", "session_id"} <= names)
+        self.assertEqual(names - harmless - set(SECRET_PARAMS), set())
+        for name in names & set(SECRET_PARAMS):
+            self.assertEqual(redact(f"/x?{name}=SECRET"), f"/x?{name}=[hidden]")
+
+    def test_every_address_with_a_token_in_its_path_is_hidden(self):
+        """Path parts named like a secret (/reset/<token>) are hidden; any new
+        one would show up here."""
+        from omniarmor_app import create_app
+        import tempfile
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        app = create_app(TESTING=True, DATABASE=os.path.join(tmp.name, "t.db"), SCHEDULER_ENABLED=False,
+                         SECRET_KEY="x" * 32, BACKUP_DIR=os.path.join(tmp.name, "b"))
+        secret_parts = [rule.rule for rule in app.url_map.iter_rules()
+                        if any(arg in ("token", "code", "invite", "session_id", "key", "secret")
+                               for arg in rule.arguments)]
+        self.assertEqual(secret_parts, ["/reset/<token>"])
+        for rule in secret_parts:
+            self.assertNotIn("SECRET", redact(rule.replace("<token>", "SECRET")))
+
     def test_dockerfile_uses_it(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         with open(os.path.join(root, "Dockerfile")) as f:
