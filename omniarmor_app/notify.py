@@ -8,10 +8,10 @@ from email.message import EmailMessage
 
 from .db import now_iso
 
-# Every MTRX Horizon app sends from the one company domain. The From line
+# Every MTRX Horizyn app sends from the one company domain. The From line
 # names the product; this line, at the foot of every email, names the
 # company behind it.
-SIGNATURE = "OmniArmor is a product of MTRX Horizon."
+SIGNATURE = "OmniArmor is a product of MTRX Horizyn."
 
 
 def signed(body):

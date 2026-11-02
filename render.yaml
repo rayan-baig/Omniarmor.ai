@@ -14,7 +14,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: BASE_URL
-        sync: false   # the subdomain on MTRX Horizon's domain, e.g. https://omniarmor.example.com
+        sync: false   # the subdomain on MTRX Horizyn's domain, e.g. https://omniarmor.example.com
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -31,7 +31,7 @@ services:
       # only reach the server log, which nobody reads.
       - key: OPERATOR_EMAIL
         sync: false
-      # The same value as MTRX Horizon's MTRX_STATS_KEY, to show user counts
+      # The same value as MTRX Horizyn's MTRX_STATS_KEY, to show user counts
       # in the owner's console. Unset, /api/stats does not exist.
       - key: STATS_KEY
         sync: false

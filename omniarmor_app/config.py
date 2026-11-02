@@ -36,7 +36,7 @@ def load_config(**overrides):
         # Autopilot fixes small problems itself and emails big ones here.
         "AUTOPILOT_ENABLED": _flag("AUTOPILOT_ENABLED", True),
         "OPERATOR_EMAIL": env.get("OPERATOR_EMAIL", "").strip(),
-        # The private key MTRX Horizon's console sends to /api/stats (the same
+        # The private key MTRX Horizyn's console sends to /api/stats (the same
         # value as its MTRX_STATS_KEY). Unset, that address does not exist.
         "STATS_KEY": env.get("STATS_KEY", "").strip(),
         # The Academy's own subscription (separate from the compliance service).
@@ -56,7 +56,7 @@ def load_config(**overrides):
         "SESSION_COOKIE_SAMESITE": "Lax",
         # Host-only: no Domain attribute, so the cookie goes back to this
         # exact host and nowhere else. OmniArmor runs on a subdomain of MTRX
-        # Horizon's domain, beside its other apps; a cookie scoped to the
+        # Horizyn's domain, beside its other apps; a cookie scoped to the
         # parent domain would carry an OmniArmor sign-in to every one of them.
         "SESSION_COOKIE_DOMAIN": None,
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),

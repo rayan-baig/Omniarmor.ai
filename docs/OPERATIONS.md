@@ -6,7 +6,7 @@ touching it. This guide covers the few things a person has to do once.
 
 ## 1. Launch (about 15 minutes)
 
-**The address.** OmniArmor is a product of MTRX Horizon, and MTRX Horizon owns
+**The address.** OmniArmor is a product of MTRX Horizyn, and MTRX Horizyn owns
 the one domain: its own site is on the domain itself (and `www`), and each
 product gets a subdomain. OmniArmor lives at `omniarmor.<your domain>`, beside
 `cyberlogix.<your domain>` and `rankup.<your domain>`. Below, `example.com`
@@ -31,7 +31,7 @@ other site (a sibling app included) can read its pages from a browser.
    sign-in cookie is marked secure in production and needs it.
 4. **The app:** set `BASE_URL=https://omniarmor.example.com` (no slash at the
    end). Every link in an email is built from it.
-5. **MTRX Horizon:** in MTRX Horizon's settings, OmniArmor's address is
+5. **MTRX Horizyn:** in MTRX Horizyn's settings, OmniArmor's address is
    `https://omniarmor.example.com` and its stats address is
    `https://omniarmor.example.com/api/stats` (see `STATS_KEY`).
 
@@ -66,7 +66,7 @@ SMTP provider (Postmark, SendGrid, Amazon SES, Mailgun), verify your sending
 domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and
 `MAIL_FROM`. Failed sends are logged on the Reminders page with the reason.
 
-All of MTRX Horizon's apps send from its one domain, so the records that keep
+All of MTRX Horizyn's apps send from its one domain, so the records that keep
 mail out of spam are set up once, on that domain, by whoever runs it: **SPF**
 (which servers may send for it), **DKIM** (a signature on each message) and
 **DMARC** (what to do with mail that fails those two). The email provider
@@ -76,7 +76,7 @@ the apps apart. A sending subdomain like `omniarmor.example.com` must be
 verified with the provider too (it adds a DKIM record for it); the parent
 domain's DMARC covers it. Check the records with any free DMARC checker before
 real customers depend on reminders. Every email ends with "OmniArmor is a
-product of MTRX Horizon."
+product of MTRX Horizyn."
 
 ## 3. What runs by itself every day
 
@@ -147,7 +147,7 @@ discover -s tests` (GitHub Actions does this on every push).
 
 ## 7. Things only you can do
 
-- Form the company, MTRX Horizon (see the README), and open a business bank
+- Form the company, MTRX Horizyn (see the README), and open a business bank
   account.
 - Get a lawyer to write your Terms of Service and Privacy Policy, and to
   review the rule catalog before you sell to customers.
@@ -158,5 +158,5 @@ discover -s tests` (GitHub Actions does this on every push).
   `customer.subscription.updated`, `customer.subscription.deleted` and
   `invoice.payment_failed`). Charging for the compliance service itself is
   not built yet.
-- Add the `omniarmor` subdomain on MTRX Horizon's domain and point it at the
+- Add the `omniarmor` subdomain on MTRX Horizyn's domain and point it at the
   app (section 1). OmniArmor has no domain of its own.

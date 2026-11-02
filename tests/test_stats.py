@@ -1,4 +1,4 @@
-"""The owner's console (MTRX Horizon) asks each app how many people use it.
+"""The owner's console (MTRX Horizyn) asks each app how many people use it.
 
 Counts only, behind a private key, and switched off unless that key is set.
 """

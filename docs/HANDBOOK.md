@@ -775,7 +775,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 486 tests in 22 files.
+- `tests/`: 488 tests in 22 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
@@ -784,7 +784,8 @@ SQLite database (one file on a persistent disk) + daily backups
   - `test_quiz_checks.py` (17), `test_review_fixes.py` (8) and `test_stats.py` (3).
   - `test_academy_bank.py` (2, which check every bank entry).
   - `test_parity.py` (1: dashboard against engine, run with Node).
-  - `test_shared_parent_domain.py` (9: on a subdomain of MTRX Horizon's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizon).
+  - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
+  - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
   - `test_logs.py` (4: the main flows against gunicorn as the Docker image runs it and against the development server, then the daily job, the alerts, Autopilot and a crash, with every log line searched for passwords, tokens, cookies, keys and full email addresses) and `test_cookies_and_time.py` (7: the one cookie's flags and lifetime through every way in and out; dates shown in the workspace's time zone; no naive or local clock in the code).
 - `docs/`:
   - `ARCHITECTURE.md`, `OPERATIONS.md` and `COSTS.md`;
@@ -876,7 +877,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 486 tests
+python3 -m unittest discover -s tests     # 488 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -891,12 +892,12 @@ Command-line tools:
 
 ### 9.2 Hosting options
 
-OmniArmor is a product of MTRX Horizon and has no domain of its own. MTRX Horizon owns the one domain (its own site on the domain itself and `www`), and OmniArmor runs on the subdomain `omniarmor.<your domain>`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to OmniArmor's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://omniarmor.<your domain>`. docs/OPERATIONS.md section 1 has the steps.
+OmniArmor is a product of MTRX Horizyn and has no domain of its own. MTRX Horizyn owns the one domain (its own site on the domain itself and `www`), and OmniArmor runs on the subdomain `omniarmor.<your domain>`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to OmniArmor's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://omniarmor.<your domain>`. docs/OPERATIONS.md section 1 has the steps.
 
 - **Render (easiest):** push the repository to GitHub, then choose New > Blueprint in Render. `render.yaml` creates the web service with a 1 GB persistent disk, a health check and a random `SECRET_KEY`. Set `BASE_URL`. It needs a paid plan because the app needs a persistent disk.
 - **One small server (cheapest):**
   1. Create a free-tier or smallest VM with Docker.
-  2. Add an A record named `omniarmor` on MTRX Horizon's domain, pointing at it.
+  2. Add an A record named `omniarmor` on MTRX Horizyn's domain, pointing at it.
   3. Copy the repository, run `cp .env.example .env`, and set `SECRET_KEY`, `BASE_URL` and `DOMAIN`.
   4. Run `docker compose up -d`.
 
@@ -913,7 +914,7 @@ The Docker image:
 
 ### 9.3 Email
 
-Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizon's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.<your domain>>`, and every email ends with "OmniArmor is a product of MTRX Horizon." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
+Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.<your domain>>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
 
 ### 9.4 Backups and restore
 
@@ -5959,7 +5960,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 |---|---|---|
 | `SECRET_KEY` | random in development; required in production | Signs sessions. Generate with `python3 -c "import secrets; print(secrets.token_hex(32))"`. |
 | `OMNIARMOR_ENV` | development | Set to `production` to require a secret key, mark cookies Secure and trust one proxy hop. |
-| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://omniarmor.<your domain>`, the subdomain on MTRX Horizon's domain. |
+| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://omniarmor.<your domain>`, the subdomain on MTRX Horizyn's domain. |
 | `DOMAIN` | (none) | For docker-compose only: the domain Caddy gets an HTTPS certificate for. |
 | `DATABASE_PATH` | instance/omniarmor.db | Where the SQLite database lives. Use a persistent disk. |
 | `BACKUP_DIR` | a `backups` folder next to the database | Where daily backups go. |
@@ -5971,7 +5972,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. |
-| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizon console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
+| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |

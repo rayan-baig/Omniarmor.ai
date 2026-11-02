@@ -1,6 +1,6 @@
-"""OmniArmor on a subdomain of MTRX Horizon's domain, beside its siblings.
+"""OmniArmor on a subdomain of MTRX Horizyn's domain, beside its siblings.
 
-MTRX Horizon owns the one domain. OmniArmor, CyberLogix and RankUp are its
+MTRX Horizyn owns the one domain. OmniArmor, CyberLogix and RankUp are its
 products, each on its own subdomain (omniarmor.<domain> and so on), and the
 company's site is on the apex. Each subdomain is its own origin, so one
 app's sign-in, storage and service worker never reach another.
@@ -80,10 +80,10 @@ class TestWhoIsBehindIt(AppTestCase):
     def test_terms_and_privacy_name_mtrx_horizon(self):
         for path in ("/terms", "/privacy"):
             text = " ".join(self.client.get(path).get_data(as_text=True).split())
-            self.assertIn("OmniArmor is a product of MTRX Horizon", text, path)
+            self.assertIn("OmniArmor is a product of MTRX Horizyn", text, path)
 
     def test_every_page_footer_names_it(self):
-        self.assertIn(b"A product of MTRX Horizon", self.client.get("/").data)
+        self.assertIn(b"A product of MTRX Horizyn", self.client.get("/").data)
 
     def test_every_email_says_whose_product_it_is(self):
         sent = []
@@ -115,7 +115,42 @@ class TestWhoIsBehindIt(AppTestCase):
             notify.send_email(cfg, "pat@example.com", "Hi", notify.signed("Body."))
         for msg in sent:
             body = msg.get_content()
-            self.assertEqual(body.count("OmniArmor is a product of MTRX Horizon."), 1, body)
+            self.assertEqual(body.count("OmniArmor is a product of MTRX Horizyn."), 1, body)
+
+
+# The company's earlier spelling, built in pieces so this file never holds it.
+OLD_NAME = re.compile("MTRX" + r"\s+(?:#\s*)?" + "Hori" + "zon", re.I)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+class TestTheCompanyIsSpelledHorizyn(AppTestCase):
+    def test_no_page_or_email_uses_the_old_spelling(self):
+        pages = ["/", "/industries", "/industries/restoarmor", "/terms", "/privacy", "/signup", "/login", "/forgot",
+                 "/kids"]
+        for path in pages:
+            self.assertIsNone(OLD_NAME.search(self.client.get(path).get_data(as_text=True)), path)
+        self.signup()
+        for path in ["/app", "/app/industry/1", "/app/report", "/app/audit", "/app/notifications", "/app/settings",
+                     "/app/academy", "/app/armo", "/terms", "/privacy"]:
+            page = self.client.get(path).get_data(as_text=True)
+            self.assertIsNone(OLD_NAME.search(page), path)
+        self.assertIn("MTRX Horizyn", notify.SIGNATURE)
+        self.assertIn("MTRX Horizyn", notify.signed("Hi."))
+
+    def test_no_file_in_the_repository_uses_the_old_spelling(self):
+        found = []
+        for folder, dirs, files in os.walk(ROOT):
+            dirs[:] = [d for d in dirs if d not in (".git", "__pycache__", "instance", ".venv", "node_modules")]
+            for name in files:
+                if not name.endswith((".py", ".html", ".md", ".js", ".css", ".yml", ".yaml", ".txt", ".example",
+                                      ".json", ".webmanifest", ".svg", ".sh")) and name not in (
+                                          "Dockerfile", "Caddyfile", ".env.example"):
+                    continue
+                path = os.path.join(folder, name)
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    if OLD_NAME.search(f.read()):
+                        found.append(os.path.relpath(path, ROOT))
+        self.assertEqual(found, [])
 
 
 if __name__ == "__main__":

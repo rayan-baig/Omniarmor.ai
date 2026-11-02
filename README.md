@@ -2,8 +2,8 @@
 
 **Catch the fine before it catches you.**
 
-OmniArmor is a product of MTRX Horizon. In production it runs on its own
-subdomain of MTRX Horizon's domain, `omniarmor.<your domain>`
+OmniArmor is a product of MTRX Horizyn. In production it runs on its own
+subdomain of MTRX Horizyn's domain, `omniarmor.<your domain>`
 ([docs/OPERATIONS.md](docs/OPERATIONS.md), section 1).
 
 A self-running compliance service for 50 regulated industries. Each industry
@@ -32,7 +32,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 486 tests
+python3 -m unittest discover -s tests     # 488 tests
 ```
 
 A virtual environment is needed on most systems: Ubuntu 24.04, Debian 12 and
@@ -61,8 +61,8 @@ HTTPS; email setup, backups, monitoring). To run it for close to nothing:
 
 ## Forming the company
 
-OmniArmor is not a company of its own: it is a product of MTRX Horizon, and
-MTRX Horizon is the company to form. That's a legal filing only the founders
+OmniArmor is not a company of its own: it is a product of MTRX Horizyn, and
+MTRX Horizyn is the company to form. That's a legal filing only the founders
 can make. The usual path for a software startup:
 
 1. **Incorporate in Delaware** as a C corporation, directly with the Delaware
@@ -74,7 +74,7 @@ can make. The usual path for a software startup:
 4. **Issue founder stock** and file an **83(b) election** with the IRS within
    30 days of receiving it.
 5. **Adopt bylaws**, open a business bank account, and assign the code and the
-   OmniArmor name to MTRX Horizon.
+   OmniArmor name to MTRX Horizyn.
 
 A startup lawyer and an accountant should review each step. Have the lawyer
 review the Terms (`/terms`) and Privacy (`/privacy`) pages too.

@@ -140,7 +140,7 @@ def favicon():
 
 @public.route("/api/stats")
 def stats():
-    """User counts for the owner's MTRX Horizon console, and nothing else.
+    """User counts for the owner's MTRX Horizyn console, and nothing else.
 
     Off unless STATS_KEY is set, and answered only to that key. Counts only:
     no names, no companies, nothing about anyone in particular.
