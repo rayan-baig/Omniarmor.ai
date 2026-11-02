@@ -21,8 +21,11 @@ Children don't get accounts: a family member adds a learner profile with only
 a nickname and a picture, so no child's personal information is collected.
 """
 
+import difflib
+import functools
 import math
 import random
+import re
 import secrets
 from dataclasses import dataclass
 
@@ -1065,11 +1068,55 @@ def _yes_no_light(rule, answer_yes):
                     list(LIGHTS), LIGHT_INDEX[found], explain, "light")
 
 
+@functools.lru_cache(maxsize=None)
+def _citation_core(rule):
+    """The provision a rule cites, without notes: "21 CFR 1304.11(c)". None
+    for a citation that names no provision, such as "State law varies"."""
+    core = re.split(r" \(|;", rule.citation, maxsplit=1)[0].strip().casefold()
+    return core if re.search(r"\d", core) else None
+
+
+def _same_requirement(a, b):
+    """Whether two industries' rules are the same legal duty, maybe under
+    another title: the DEA's biennial inventory is "DEA biennial inventory"
+    for drug makers and "Biennial controlled-drug inventory" for pharmacies."""
+    return (a.title == b.title or a.key == b.key
+            or (_citation_core(a) is not None and _citation_core(a) == _citation_core(b)))
+
+
+@functools.lru_cache(maxsize=None)
+def _sharing(industry_id, index):
+    """The industries that have this rule, under its own title or another."""
+    rule = CATALOG[industry_id][index - 1]
+    return frozenset(i for i, rules in CATALOG.items() if any(_same_requirement(r, rule) for r in rules))
+
+
+def _alike(a, b):
+    """Whether two answers say the same thing in nearly the same words."""
+    x, y = (re.sub(r"[\W_]+", " ", t).casefold().split() for t in (a, b))
+    if x == y:
+        return True
+    matcher = difflib.SequenceMatcher(None, x, y)
+    return matcher.real_quick_ratio() >= 0.8 and matcher.quick_ratio() >= 0.8 and matcher.ratio() >= 0.8
+
+
+def _wrong_answers(rng, right, texts, count=2):
+    """`count` wrong answers from texts, none of which reads like the right
+    answer or like each other: two near-copies would be two right answers."""
+    picked = rng.sample(texts, count)
+    for n, text in enumerate(picked):
+        if _alike(text, right) or any(_alike(text, p) for p in picked[:n]):
+            pool = [t for t in texts if not _alike(t, right) and not any(_alike(t, p) for p in picked[:n])]
+            picked[n] = rng.choice(pool)
+    return picked
+
+
 def _rule_questions(rng, industry_id, index):
     rule = CATALOG[industry_id][index - 1]
-    # Some rules are in several industries (OFAC screening is in four): those
-    # industries, and their copies of the rule, are never offered as wrong answers.
-    shared = {i for i, rules in CATALOG.items() if any(r.title == rule.title for r in rules)}
+    # Some rules are in several industries (OFAC screening is in four), some
+    # under another title: those industries, and their copies of the rule,
+    # are never offered as wrong answers.
+    shared = _sharing(industry_id, index)
     others = [r for i, rules in CATALOG.items() if i not in shared for r in rules]
     sector = INDUSTRIES[industry_id]["sector"]
     lights = []
@@ -1078,15 +1125,18 @@ def _rule_questions(rng, industry_id, index):
     else:
         lights = [_yes_no_light(rule, True), _yes_no_light(rule, False)]
     facts = [
-        _choice(rng, f"Why does \"{rule.title}\" matter?", rule.cost, [r.cost for r in rng.sample(others, 2)],
+        _choice(rng, f"Why does \"{rule.title}\" matter?", rule.cost,
+                _wrong_answers(rng, rule.cost, [r.cost for r in others]),
                 "Every rule protects something: people, money or the company's good name."),
         _choice(rng, f"If \"{rule.title}\" is broken, what should the team do?", rule.action,
-                [r.action for r in rng.sample(others, 2)], "Knowing the fix ahead of time means acting fast."),
+                _wrong_answers(rng, rule.action, [r.action for r in others]),
+                "Knowing the fix ahead of time means acting fast."),
         _choice(rng, f"Which kind of business follows \"{rule.title}\"?", sector,
                 rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in shared], 2),
                 f"This rule is one of the ten that matter most in {sector.lower()}."),
         _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
-                [r.input for r in rng.sample(others, 2)], "OmniArmor asks a simple question or reading for every rule."),
+                _wrong_answers(rng, rule.input, [r.input for r in others]),
+                "OmniArmor asks a simple question or reading for every rule."),
     ]
     if _counts_days_since(rule) and 7 <= rule.limit <= 3650:
         limit = int(rule.limit)

@@ -177,29 +177,57 @@ def _qkey(q):
     return hashlib.sha1(f"{q.prompt}\x00{q.options[q.answer]}".encode()).hexdigest()[:20]
 
 
+def _cards_by_prompt(conn, learner_id):
+    """The learner's practice cards, by question."""
+    cards = {}
+    for row in conn.execute("SELECT id, qkey, streak, question FROM learner_mistakes WHERE learner_id = ?",
+                            (learner_id,)):
+        cards.setdefault(json.loads(row["question"])["prompt"], []).append(row)
+    return cards
+
+
 def _remember(conn, learner_id, results):
     """Spaced repetition: a missed question goes into the learner's practice
-    deck; answering it right later pushes it further out until it's mastered."""
+    deck; answering it right later pushes it further out until it's mastered.
+
+    One card per question. Some questions come with a different right answer
+    another time ("What kind of work does Acme do?" for a family in two
+    industries): missed both ways, they used to make two cards, and practice
+    asked the same question twice. Now the newer miss replaces the card, and
+    answering the question right either way counts for it."""
     now = utcnow()
+    cards = _cards_by_prompt(conn, learner_id)
     for r in results:
         q = r["question"]
         key = _qkey(q)
+        same = cards.get(q.prompt, [])
         if not r["right"]:
             data = json.dumps({"prompt": q.prompt, "options": q.options, "answer": q.answer,
                                "explain": q.explain, "kind": q.kind})
-            conn.execute("INSERT INTO learner_mistakes (learner_id, qkey, question, misses, streak, due_at)"
-                         " VALUES (?, ?, ?, 1, 0, ?) ON CONFLICT (learner_id, qkey) DO UPDATE SET"
-                         " misses = misses + 1, streak = 0, due_at = excluded.due_at",
-                         (learner_id, key, data, iso(now)))
+            card = next((c for c in same if c["qkey"] == key), same[0] if same else None)
+            if card is None:
+                conn.execute("INSERT INTO learner_mistakes (learner_id, qkey, question, misses, streak, due_at)"
+                             " VALUES (?, ?, ?, 1, 0, ?)", (learner_id, key, data, iso(now)))
+            else:
+                conn.execute("UPDATE learner_mistakes SET qkey = ?, question = ?, misses = misses + 1, streak = 0,"
+                             " due_at = ? WHERE id = ?", (key, data, iso(now), card["id"]))
+                for extra in same:
+                    if extra["id"] != card["id"]:
+                        conn.execute("DELETE FROM learner_mistakes WHERE id = ?", (extra["id"],))
         else:
-            _reviewed(conn, learner_id, key, now)
+            for card in same:
+                _review(conn, card, now)
 
 
 def _reviewed(conn, learner_id, key, now):
     row = conn.execute("SELECT id, streak FROM learner_mistakes WHERE learner_id = ? AND qkey = ?",
                        (learner_id, key)).fetchone()
-    if row is None:
-        return
+    if row is not None:
+        _review(conn, row, now)
+
+
+def _review(conn, row, now):
+    """A practice card answered right: back in 1, 3, then 7 days, then mastered."""
     streak = row["streak"] + 1
     if streak > len(REVIEW_DAYS):
         conn.execute("DELETE FROM learner_mistakes WHERE id = ?", (row["id"],))
@@ -551,8 +579,16 @@ def practice(learner_id):
         conn.commit()
         return render_template("academy/practice.html", learner=learner, results=results, score=score,
                                total=len(questions), left=_mistakes_due(learner_id), avatars=academy.AVATARS)
-    deck = conn.execute("SELECT * FROM learner_mistakes WHERE learner_id = ? AND due_at <= ? ORDER BY due_at LIMIT ?",
-                        (learner_id, now_iso(), PRACTICE_SIZE)).fetchall()
+    # Never the same question twice in one round, even from cards saved twice before that was prevented.
+    deck, prompts = [], set()
+    for row in conn.execute("SELECT * FROM learner_mistakes WHERE learner_id = ? AND due_at <= ? ORDER BY due_at, id",
+                            (learner_id, now_iso())):
+        prompt = json.loads(row["question"])["prompt"]
+        if prompt not in prompts:
+            prompts.add(prompt)
+            deck.append(row)
+            if len(deck) == PRACTICE_SIZE:
+                break
     upcoming = conn.execute("SELECT COUNT(*) FROM learner_mistakes WHERE learner_id = ?", (learner_id,)).fetchone()[0]
     return render_template("academy/practice.html", learner=learner, questions=[_stored_question(r) for r in deck],
                            deck=",".join(str(r["id"]) for r in deck), upcoming=upcoming, avatars=academy.AVATARS)
@@ -628,8 +664,15 @@ def join():
             record_event([key])
             flash_error("That code didn't work. Check it with a grown-up and try again.")
             return render_template("kids/join.html"), 400
-        conn.execute("DELETE FROM join_codes WHERE learner_id = ?", (row["id"],))  # one use per code
+        # One use per code: only the device that uses it up gets in, even when
+        # two type it at the same moment.
+        used = conn.execute("DELETE FROM join_codes WHERE code = ? AND learner_id = ? AND expires_at > ?",
+                            (code, row["id"], now_iso())).rowcount
         conn.commit()
+        if used != 1:
+            record_event([key])
+            flash_error("That code didn't work. Check it with a grown-up and try again.")
+            return render_template("kids/join.html"), 400
         start_kid_session(row)
         flash(f"Welcome, {row['nickname']}! This device is ready for the Academy.", "ok")
         return redirect(url_for("academy.level_map", learner_id=row["id"]))
