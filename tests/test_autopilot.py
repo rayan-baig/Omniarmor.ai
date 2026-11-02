@@ -242,6 +242,21 @@ class AutopilotTest(unittest.TestCase):
         reports = [m for m in self.operator_mail() if m[1] == "[OmniArmor] Weekly Autopilot report"]
         self.assertEqual(len(reports), 1)
 
+    def test_a_daily_finding_is_not_called_fixed_by_the_next_quick_pass(self):
+        # The self-test, quiz and data checks run once a day. The 10-minute
+        # passes in between didn't run them, so they found the problem
+        # "gone" and mailed "Fixed" minutes after the alert, then alerted
+        # again the next day.
+        base = utcnow().replace(hour=12, minute=0)
+        with mock.patch.object(bugfinder, "self_test", return_value=[]), \
+                mock.patch.object(bugfinder, "check_content", return_value=["Launchpad, Money, stage 3: no right answer"]):
+            with mock.patch("omniarmor_app.autopilot.utcnow", return_value=base):
+                autopilot.run(self.cfg)
+            with mock.patch("omniarmor_app.autopilot.utcnow", return_value=base + timedelta(minutes=10)):
+                autopilot.run(self.cfg)
+        subjects = [m[1] for m in self.operator_mail(weekly=False)]
+        self.assertEqual(subjects, ["[OmniArmor] 1 broken Academy quiz"])
+
     def test_cli(self):
         runner = self.app.test_cli_runner()
         out = runner.invoke(args=["autopilot"]).output

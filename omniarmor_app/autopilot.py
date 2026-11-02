@@ -255,11 +255,19 @@ def _alert_body(f):
     return f"{f.title}\n\n{f.detail}\n\nWhat to do: {f.action}"
 
 
-def report(conn, cfg, found):
-    """Emails new problems, reminds about old ones once a day, and announces fixes."""
+# Findings from the slower checks that only run on the day's first pass.
+DEEP_KEYS = {"selftest", "content", "data", "database"}
+
+
+def report(conn, cfg, found, deep=True):
+    """Emails new problems, reminds about old ones once a day, and announces fixes.
+    deep=False: the daily checks didn't run this pass, so their problems
+    can't have cleared up and stay open."""
     now = utcnow()
     current = {f.key: f for f in found}
     already = open_alerts(conn)
+    if not deep:
+        already = {k: v for k, v in already.items() if k not in DEEP_KEYS}
     for key, f in current.items():
         previous = already.get(key)
         if previous is None:
@@ -323,7 +331,7 @@ def run(cfg, force=False):
             record(conn, "fix", "fixed", title)
             log.info("autopilot fixed: %s", title)
         found = find_problems(conn, cfg, deep=daily)
-        report(conn, cfg, found)
+        report(conn, cfg, found, deep=daily)
         # Once each Monday, even when passes are forced: each forced pass
         # counts as the day's first, and every one used to resend the report.
         if daily and now.weekday() == 0 and claim_run(conn, "autopilot-weekly", now.date().isoformat()):
