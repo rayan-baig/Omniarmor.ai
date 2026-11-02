@@ -359,6 +359,16 @@ def _deadline(day, amount, unit, sign, reached=False):
         return None
 
 
+def _past_due(rule, due_date):
+    """Blocked the day after the due date. A business-day count stands still
+    on a weekend or holiday, but "within 3 business days" is missed once the
+    third one has ended: a check due on a Friday is overdue on the Saturday,
+    not on the Monday."""
+    source = " (policy setting)" if rule.policy else ""
+    limit = format_quantity(rule.limit, rule.unit)
+    return "BLOCKED", "OVER LIMIT", f"The {limit} limit ended on {due_date.isoformat()}{source}. {rule.action}"
+
+
 def compute_state(industry_id, rule, row, today, now=None, tz=None):
     """The state of one check on `today`. Hour clocks count to `now` (an aware
     datetime; by default the current moment, or noon on a day other than
@@ -406,6 +416,8 @@ def compute_state(industry_id, rule, row, today, now=None, tz=None):
         due_date = _deadline(origin, eff.limit, unit, sign)
         if eff.warn is not None:
             warn_date = _deadline(origin, eff.warn, unit, sign, reached=True)
+        if unit == "business days" and level != "BLOCKED" and due_date is not None and today > due_date:
+            level, status, message = _past_due(eff, due_date)
     return ItemState(
         industry_id=industry_id, rule=rule, effective=eff, mode=mode, value=value, level=level,
         status=status, message=message, value_date=value_date, due_date=due_date, warn_date=warn_date,

@@ -9,7 +9,9 @@
    point, from starts at month ends and on leap days (31 January plus a
    month, 29 February plus a year): the due date is the last day before
    Blocked and the warning day is the first day of Warning. The same for a
-   company's own limits with a part of a day, month or year in them.
+   company's own limits with a part of a day, month or year in them. A
+   business-day check is Blocked the day after its due date even when that
+   day is a weekend or a holiday.
 3. The hour and minute clocks turn to Warning at their warning minute and to
    Blocked the minute after their due minute.
 """
@@ -28,7 +30,8 @@ from omni_armor_platform import MoonstoneThemeColors  # noqa: E402
 from omni_armor_rules import CATALOG, evaluate  # noqa: E402
 from omni_armor_rules.rule import _fmt  # noqa: E402
 from omniarmor_app.catalog import can_override, counts_first_day, counts_time, date_mode, date_unit  # noqa: E402
-from omniarmor_app.tracking import compute_state, federal_holidays  # noqa: E402
+from omniarmor_app.reminders import reminder_window  # noqa: E402
+from omniarmor_app.tracking import _plural_days as _plural, compute_state, federal_holidays  # noqa: E402
 
 HANDBOOK = os.path.join(ROOT, "docs", "HANDBOOK.md")
 
@@ -187,9 +190,9 @@ class TestHandbookAppendix(unittest.TestCase):
 
 class TestDateCountedEdges(unittest.TestCase):
     def check_edges(self, industry_id, rule, start, override=None):
-        """The due date is the last day before Blocked (for a business-day check,
-        the last business day: the weekend or holiday after it still counts the
-        same), and the warning day is the first day of Warning."""
+        """The due date is the last day before Blocked, and the warning day is
+        the first day of Warning. A business-day check is Blocked the day after
+        its due date too, weekend or not; its warning day is a business day."""
         stored = row(start.isoformat(), **(override or {}))
         level = lambda day: compute_state(industry_id, rule, stored, day).level  # noqa: E731
         state = compute_state(industry_id, rule, stored, start)
@@ -198,14 +201,12 @@ class TestDateCountedEdges(unittest.TestCase):
         due = state.due_date
         self.assertNotEqual(level(due), "BLOCKED", f"{where}: Blocked on its due date {due}")
         after = due + timedelta(days=1)
-        if date_unit(rule) == "business days":
-            while not is_business_day(after):
-                self.assertNotEqual(level(after), "BLOCKED", f"{where}: {after}")
-                after += timedelta(days=1)
         self.assertEqual(level(after), "BLOCKED", f"{where}: not Blocked on {after}, after the due date {due}")
         if eff.warn is not None and eff.warn != eff.limit:
             warn = state.warn_date
             self.assertEqual(level(warn), "WARNING", f"{where}: not a Warning on its warning day {warn}")
+            if date_unit(rule) == "business days":
+                self.assertTrue(is_business_day(warn), f"{where}: warns from {warn}, not a business day")
             if date_unit(rule) != "business days" or is_business_day(warn - timedelta(days=1)):
                 self.assertEqual(level(warn - timedelta(days=1)), "CLEARED", f"{where}: a Warning before {warn}")
 
@@ -273,6 +274,75 @@ class TestDateCountedEdges(unittest.TestCase):
         s = compute_state(4, rule, row("2025-06-10"), date(2026, 5, 1))
         self.assertEqual((s.level, s.warn_date, s.due_date), ("WARNING", date(2026, 5, 1), date(2026, 6, 30)))
         self.assertEqual(compute_state(4, rule, row("2025-06-10"), date(2026, 4, 30)).level, "CLEARED")
+
+
+class TestBusinessDayDeadlines(unittest.TestCase):
+    """"Within 3 business days" is missed once the third business day has
+    ended. The count stands still over a weekend or a holiday, so a check due
+    on a Friday stayed a Warning on Saturday and Sunday while its due line
+    already read "1 day overdue". The count and the due date stay as the law
+    counts them; the day after the due date is Blocked whatever day it is."""
+
+    I9 = next(r for r in CATALOG[30] if r.key == "i9_section_2")  # 3 business days, warns from 2
+
+    def state(self, start, today, rule=None):
+        return compute_state(30, rule or self.I9, row(start), date.fromisoformat(today))
+
+    def assert_overdue(self, start, today, due, days, count):
+        s = self.state(start, today)
+        where = f"from {start} on {today}"
+        self.assertEqual((s.level, s.status), ("BLOCKED", "OVER LIMIT"), where)
+        self.assertEqual((s.value, s.due_date.isoformat()), (count, due), where)  # counted as before
+        self.assertEqual((s.days_left, s.overdue_by, s.due_text), (-days, _plural(days), f"{_plural(days)} overdue"),
+                         where)
+        # The count alone shows it once it is past the limit; until then the message says when it ended.
+        self.assertIn(f"limit ended on {due}" if count <= self.I9.limit else "is over the 3 business days limit",
+                      s.message, where)
+        self.assertIn(self.I9.action, s.message)
+        self.assertEqual(reminder_window(s.days_left), "overdue-week-0", where)
+
+    def test_due_on_a_friday_is_overdue_on_saturday_and_sunday(self):
+        # Started Tuesday 3 November 2026: Wednesday 1, Thursday 2, Friday 3.
+        s = self.state("2026-11-03", "2026-11-06")
+        self.assertEqual((s.level, s.value, s.due_text), ("WARNING", 3, "Due today"))
+        self.assert_overdue("2026-11-03", "2026-11-07", "2026-11-06", 1, 3)
+        self.assert_overdue("2026-11-03", "2026-11-08", "2026-11-06", 2, 3)
+        self.assertEqual(self.state("2026-11-03", "2026-11-09").value, 4)  # Monday counts on as before
+
+    def test_due_the_friday_before_a_monday_holiday(self):
+        # Labor Day is Monday 7 September 2026. Started Tuesday 1 September: due Friday 4.
+        self.assertEqual(self.state("2026-09-01", "2026-09-04").level, "WARNING")
+        for today, days in (("2026-09-05", 1), ("2026-09-06", 2), ("2026-09-07", 3)):
+            self.assert_overdue("2026-09-01", today, "2026-09-04", days, 3)
+        self.assertEqual(self.state("2026-09-01", "2026-09-08").value, 4)
+
+    def test_due_the_day_before_thanksgiving(self):
+        # Thanksgiving is Thursday 26 November 2026. Started Friday 20 November:
+        # Monday 1, Tuesday 2, Wednesday 3.
+        self.assertEqual(self.state("2026-11-20", "2026-11-25").level, "WARNING")
+        self.assert_overdue("2026-11-20", "2026-11-26", "2026-11-25", 1, 3)
+        self.assert_overdue("2026-11-20", "2026-11-27", "2026-11-25", 2, 4)
+
+    def test_the_warning_point_still_lands_on_a_business_day(self):
+        # Started Thursday 5 November 2026: Friday is 1, so the warning point of
+        # 2 is Monday 9 November; the weekend before it stays Cleared.
+        for today in ("2026-11-06", "2026-11-07", "2026-11-08"):
+            self.assertEqual(self.state("2026-11-05", today).level, "CLEARED", today)
+        s = self.state("2026-11-05", "2026-11-09")
+        self.assertEqual((s.level, s.value, s.warn_date, s.due_date), ("WARNING", 2, date(2026, 11, 9), date(2026, 11, 10)))
+        # Veterans Day, Wednesday 11 November, is the day after the due date.
+        self.assert_overdue("2026-11-05", "2026-11-11", "2026-11-10", 1, 3)
+        # Started the Friday before Labor Day: the warning point is Wednesday 9 September.
+        s = self.state("2026-09-04", "2026-09-08")
+        self.assertEqual((s.level, s.value, s.warn_date), ("CLEARED", 1, date(2026, 9, 9)))
+
+    def test_a_same_day_report_started_on_a_weekend(self):
+        # ATF Form 3310.4 counts 0 business days: due the day of the sale.
+        rule = next(r for r in CATALOG[48] if r.key == "multiple_handgun_report")
+        s = compute_state(48, rule, row("2026-11-07"), date(2026, 11, 7))
+        self.assertEqual((s.level, s.due_date), ("CLEARED", date(2026, 11, 7)))
+        s = compute_state(48, rule, row("2026-11-07"), date(2026, 11, 8))
+        self.assertEqual((s.level, s.value, s.due_text), ("BLOCKED", 0, "1 day overdue"))
 
 
 # --- 3. The hour and minute clocks at their warning and due minutes -----------------------

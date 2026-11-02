@@ -133,7 +133,7 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - **Calendar months** (3 AeroArmor checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
 - **Years** (1 check) count like months, in years.
 
-16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday.
+16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday. The deadline is missed once the due date has ended, so from the next day the check is Blocked and overdue, even when that day is a weekend or a holiday and the count hasn't grown: an I-9 due on a Friday is Blocked on the Saturday ("1 day overdue", "The 3 business days limit ended on" that Friday) on its page, the overview, the report and its CSV, in reminders and in Armo. The warning point is always a business day, so the weekend before it stays Cleared.
 
 22 checks count **hours since** something happened, such as "Hours since becoming aware of a personal data breach not yet reported to the supervisory authority" (72 hours) or "Hours since learning of a work-related fatality without reporting it to OSHA" (8 hours). They take the date **and time** the clock started, and count real hours from it to now, in whole minutes:
 
@@ -761,7 +761,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 434 tests in 18 files.
+- `tests/`: 440 tests in 18 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
@@ -859,7 +859,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 434 tests
+python3 -m unittest discover -s tests     # 440 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -1027,7 +1027,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 434 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 440 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.

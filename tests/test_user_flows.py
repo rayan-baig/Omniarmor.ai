@@ -539,6 +539,65 @@ class TestBusinessDayClocks(AppTestCase):
         self.assertIn("days overdue", page)
 
 
+class TestBusinessDayDeadlinesOverAWeekend(AppTestCase):
+    """An I-9 due on a Friday stayed a Warning on Saturday and Sunday (the
+    business-day count doesn't grow on those days) while its due line read
+    "1 day overdue". Every place now says overdue the day after the due date."""
+
+    def at(self, day):
+        """Runs the app as if it were 10:00 on `day` in the company's timezone (New York)."""
+        from datetime import datetime
+        from unittest import mock
+        from zoneinfo import ZoneInfo
+
+        moment = datetime.fromisoformat(f"{day}T10:00").replace(tzinfo=ZoneInfo("America/New_York"))
+
+        class Frozen(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return moment.astimezone(tz) if tz else moment.replace(tzinfo=None)
+
+        return mock.patch("omniarmor_app.tracking.datetime", Frozen)
+
+    def test_due_friday_is_overdue_on_saturday_everywhere(self):
+        from omniarmor_app.reminders import run_reminders
+        self.signup(industries=(30,))
+        with self.at("2026-11-04"):
+            self.change(30, "i9_section_2", date="2026-11-03")  # a Tuesday start: due Friday 6 November
+        with self.at("2026-11-06"):
+            page = self.client.get("/app/industry/30").data.decode()
+            self.assertIn("Due today", page)
+            self.assertIn("3 business days is close to the 3 business days limit", page)
+        for day, overdue in (("2026-11-07", "1 day"), ("2026-11-08", "2 days")):
+            with self.subTest(day=day), self.at(day):
+                page = self.client.get("/app/industry/30?only=problems").data.decode()
+                self.assertIn('id="rule-i9_section_2"', page)
+                self.assertIn(f"{overdue} overdue", page)
+                self.assertIn("limit ended on 2026-11-06", page)
+                self.assertNotIn("close to the 3 business days limit", page)
+                overview = self.client.get("/app").data.decode()
+                self.assertIn("limit ended on 2026-11-06", overview)
+                self.assertIn('class="tag BLOCKED">Blocked', overview)
+                report = self.client.get("/app/report").data.decode()
+                row = report.split("<td>Form I-9 done within 3 business days</td>")[1].split("</tr>")[0]
+                self.assertIn('class="tag BLOCKED">Blocked', row)
+                self.assertIn("2026-11-06", row)
+                csv = self.client.get("/app/report.csv").data.decode()
+                line = next(row for row in csv.splitlines() if row.startswith("HRArmor") and "I-9" in row)
+                self.assertIn(",Blocked,3 business days,2026-11-06,", line)
+                issues = self.client.get("/app/armo/status").get_json()["issues"]
+                self.assertTrue(any(i["title"] == f"Form I-9 done within 3 business days: overdue by {overdue}"
+                                    for i in issues), issues)
+        with self.at("2026-11-07"), self.db() as conn:
+            run_reminders(conn, self.app.config)
+            body = conn.execute("SELECT body FROM notifications WHERE kind = 'reminder'"
+                                " ORDER BY id DESC").fetchone()["body"]
+        overdue_part = body.split("OVERDUE")[1].split("COMING DUE")[0]
+        self.assertIn("Form I-9 done within 3 business days", overdue_part)
+        self.assertIn("1 day overdue", overdue_part)
+        self.assertIn("Right now: 1 blocked, 0 warnings", body)
+
+
 class TestWorkingDayClocks(AppTestCase):
     """Six checks count working days. Five took only a typed number that never
     grew; the FDA field alert (3 working days) counted calendar days, so a
