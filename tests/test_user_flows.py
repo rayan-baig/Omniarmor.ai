@@ -540,15 +540,16 @@ class TestBusinessDayClocks(AppTestCase):
 
 
 class TestWorkingDayClocks(AppTestCase):
-    """Five checks count working days. Four took only a typed number that never
+    """Six checks count working days. Five took only a typed number that never
     grew; the FDA field alert (3 working days) counted calendar days, so a
     problem found on a Friday showed Blocked on Tuesday, a day before it was due."""
 
     def test_every_working_day_clock_counts_working_days(self):
         from omni_armor_rules import CATALOG
         from omniarmor_app.catalog import date_mode, date_unit
-        counted = [r for rules in CATALOG.values() for r in rules if "working days since" in r.input.lower()]
-        self.assertEqual(len(counted), 5)
+        counted = [r for rules in CATALOG.values() for r in rules
+                   if "working days since" in r.input.lower() or "work days since" in r.input.lower()]
+        self.assertEqual(len(counted), 6)  # and the FDA 5-day MDR report's "work days"
         for r in counted:
             self.assertEqual((date_mode(r), date_unit(r)), ("since", "business days"), r.key)
 

@@ -133,7 +133,7 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - **Calendar months** (3 AeroArmor checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
 - **Years** (1 check) count like months, in years.
 
-15 checks count **business days or working days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. A business or working day is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday.
+16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday.
 
 A number typed instead of a date stays as typed.
 
@@ -1021,7 +1021,7 @@ These are the habits the project was built with. Keep them:
 ---
 
 ## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 126 checks counted in days from a date; the 19 checks counted in months or years and the 15 counted in business or working days since a date (section 2.3) can be tracked from a date too.
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 126 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -4115,7 +4115,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Submit the Part 806 correction or removal report to FDA now.
 - Example reading used in demos: 3 working days
 
-**8. 5-day MDR report** (Maximum 5 work days, warns from 4 work days)
+**8. 5-day MDR report** (Maximum 5 work days, warns from 4 work days; counts business days since a date)
 
 - Asks: Work days since becoming aware of an event needing remedial action to prevent substantial harm (or an FDA 5-day request), without reporting
 - Rule: 21 CFR 803.53
