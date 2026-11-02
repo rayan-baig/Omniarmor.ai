@@ -30,6 +30,6 @@
   {% if more %}<a href="{{ url_for('app.audit', page=page + 1) }}">Older</a>{% endif %}
 </div>
 {% else %}
-  <p class="empty">No changes yet.</p>
+  <p class="empty">No changes yet. Every check you save, and every team or settings change, shows up here with who and when. <a href="{{ url_for('app.overview') }}">Back to HQ</a></p>
 {% endif %}
 {% endblock %}

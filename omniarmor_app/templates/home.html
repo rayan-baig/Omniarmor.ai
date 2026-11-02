@@ -2,12 +2,22 @@
 {% block title %}Compliance checks for 50 industries{% endblock %}
 {% block content %}
 <section class="hero">
-  <p class="eyebrow">50 industries · 500 checks · daily reminders</p>
+  <p class="eyebrow">{{ facts.industries }} industries · {{ facts.checks }} checks · daily reminders</p>
   <h1><span class="blend-text">Catch the fine</span> before it catches you.</h1>
-  <p class="lead">OmniArmor tracks the ten compliance failures that cost your industry the most: inspection dates, filing deadlines, limits and sign-offs. Enter a date once and it counts the days, warns your team before anything is due, and keeps the record an inspector asks for.</p>
+  <p class="lead">For businesses in {{ facts.industries }} regulated industries, such as {{ facts.examples[:-1]|join(', ') }} and {{ facts.examples[-1] }}. OmniArmor tracks the {{ facts.per_industry }} compliance failures that cost your industry the most. Enter a date once and it counts the days, warns your team before anything is due, and keeps the record an inspector asks for.</p>
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
     <a class="btn ghost" href="{{ url_for('public.industries') }}">Find your industry</a>
+  </div>
+  <div class="plans" id="price" aria-label="Price">
+    <div>
+      <p class="eyebrow">Compliance tracker</p>
+      <p><b>Free</b> right now: every check in your industries, for your whole team. No card needed.</p>
+    </div>
+    <div>
+      <p class="eyebrow">Future Owner Academy, for your kids</p>
+      <p><b>{{ facts.trial_days }}-day free trial</b> of all {{ facts.tracks }} tracks, from when you add your first kid. Then {{ facts.price if facts.price else 'the Academy plan' }}, or keep the first {{ facts.free_worlds }} {{ facts.free_track }} worlds free.</p>
+    </div>
   </div>
 </section>
 
@@ -26,7 +36,7 @@
   </div>
   <div>
     <h3>Future Owner Academy</h3>
-    <p>A fun course of four tracks, from 1,350 to 15,700 levels, that teaches the kids who may one day run your company how it works, business words, speaking like a pro, hiring, leadership, winning customers and never giving up.</p>
+    <p>A fun course of {{ facts.tracks }} tracks, from {{ '{:,}'.format(facts.fewest_levels) }} to {{ '{:,}'.format(facts.most_levels) }} levels, that teaches the kids who may one day run your company how it works, business words, speaking like a pro, hiring, leadership, winning customers and never giving up.</p>
   </div>
   <div>
     <h3>A record for inspectors</h3>

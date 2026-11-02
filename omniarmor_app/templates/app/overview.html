@@ -10,11 +10,26 @@
 {% set total = total %}
 {% include "app/_totals.html" %}
 
-{% if missing == total %}
-  <h2>Start here</h2>
-  <p class="muted">Open an industry and enter each check's date or reading once. From then on OmniArmor counts the days and sends reminders by itself.</p>
-{% elif missing %}
-  <p class="hint mt-s">{{ missing }} check{{ 's' if missing != 1 }} still need a first reading.</p>
+{% macro check_link(s) -%}
+  <a href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">{{ s.rule.title }}</a> in {{ s.industry.brand }}
+{%- endmacro %}
+
+{% if checklist %}
+<section class="card mt checklist" aria-labelledby="first-day">
+  <h2 id="first-day">First day <span class="muted">· {{ checklist.done }} of {{ checklist.total }} done</span></h2>
+  <ol class="steps">
+    {% for item in checklist["items"] %}
+      <li class="{{ 'done' if item.done else 'todo' }}">
+        <span class="mark" aria-hidden="true">{{ '✓' if item.done else '' }}</span>
+        <span><span class="title">{{ item.label }}</span><span class="sr">{{ ': done' if item.done else ': not done yet' }}</span>
+          {% if item.progress %}<span class="meta mono"> · {{ item.progress }}</span>{% endif %}
+          {% if not item.done and item.next %}<br><span class="meta">Next: {{ check_link(item.next) }}</span>{% endif %}
+        </span>
+      </li>
+    {% endfor %}
+  </ol>
+  <p class="hint">Each step ticks itself when it's saved. This list goes away once all {{ checklist.total }} are done.</p>
+</section>
 {% endif %}
 
 <h2>Needs attention</h2>
@@ -31,6 +46,10 @@
       </a></li>
     {% endfor %}
   </ul>
+{% elif missing == total %}
+  <p class="empty">Nothing to flag yet, because no check has a reading. Start with {{ check_link(next_up) }}: enter its date or answer once, and anything blocked or close to a limit shows up here.</p>
+{% elif missing %}
+  <p class="empty">Nothing blocked or close to a limit in the {{ total - missing }} check{{ 's' if total - missing != 1 }} with a reading. {{ missing }} still need{{ 's' if missing == 1 }} one; next up: {{ check_link(next_up) }}.</p>
 {% else %}
   <p class="empty">Nothing blocked or close to a limit. Nice work.</p>
 {% endif %}
@@ -45,6 +64,10 @@
       </a></li>
     {% endfor %}
   </ul>
+{% elif later %}
+  <p class="empty">No tracked deadlines in the next 60 days. The next one is {{ check_link(later) }}, due {{ later.due_label }}.</p>
+{% elif next_dated %}
+  <p class="empty">No deadlines yet. A check counted from a date shows up here once its date is in: try {{ check_link(next_dated) }}.</p>
 {% else %}
   <p class="empty">No tracked deadlines in the next 60 days.</p>
 {% endif %}

@@ -10,9 +10,20 @@
     <a class="btn" href="{{ url_for('auth.signup', industry=info.id) }}">Start free with {{ info.brand }}</a>
   </div>
 </section>
-<h2>What {{ info.brand }} checks</h2>
+<h2>Start with these {{ top|length }}</h2>
+<p class="hint">The {{ top|length }} checks that can hurt {{ info.sector|lower }} the most: first those whose miss can stop the business, then those that bring fines, then the rest; deadlines that run out by themselves come first within each.</p>
+<ol class="rule-list top-list">
+  {% for r in top %}
+    <li>
+      <strong>{{ r.title }}</strong>
+      <span><b class="why-label">Why this matters:</b> {{ why_line(r) }}</span><br>
+      <span class="mono faint">{{ r.citation }}</span>
+    </li>
+  {% endfor %}
+</ol>
+<h2>The other {{ rest|length }}</h2>
 <ul class="rule-list">
-  {% for r in rules %}
+  {% for r in rest %}
     <li>
       <strong>{{ r.title }}</strong>
       <span>{{ r.cost }}</span><br>

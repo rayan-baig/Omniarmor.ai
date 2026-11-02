@@ -24,6 +24,6 @@
     {% endfor %}
   </ul>
 {% else %}
-  <p class="empty">No reminders yet. They start once checks have dates.</p>
+  <p class="empty">No reminders yet. They start once checks counted from a date have their dates{% if next_dated %}: try <a href="{{ url_for('app.industry', industry_id=next_dated.industry_id) }}#rule-{{ next_dated.key }}">{{ next_dated.rule.title }}</a> in {{ next_dated.industry.brand }}{% endif %}.</p>
 {% endif %}
 {% endblock %}

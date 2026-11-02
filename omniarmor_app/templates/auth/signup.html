@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Create your account{% endblock %}
+{% block head %}{% if not invite %}<script src="{{ url_for('static', filename='signup.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <div class="narrow">
   <p class="eyebrow">{{ 'Join ' ~ invite.org_name if invite else 'Start free' }}</p>
@@ -8,6 +9,7 @@
   <form class="card mt" method="post" action="{{ url_for('auth.signup') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% if invite %}<input type="hidden" name="invite" value="{{ token }}">{% endif %}
+    {% if start_industry %}<input type="hidden" name="start" value="{{ start_industry }}">{% endif %}
     <label class="field"><span>Your name</span>
       <input type="text" name="name" value="{{ form.get('name', '') }}" autocomplete="name" required maxlength="100"></label>
     <label class="field"><span>Work email</span>
@@ -19,11 +21,11 @@
       <label class="field"><span>Company name</span>
         <input type="text" name="org_name" value="{{ form.get('org_name', '') }}" autocomplete="organization" required maxlength="120"></label>
       <label class="field"><span>Timezone</span>
-        <select name="timezone">
+        <select name="timezone"{% if not form.get('timezone') %} data-auto-timezone{% endif %}>
           {% set chosen = form.get('timezone', 'America/New_York') %}
           {% for tz in timezones %}<option value="{{ tz }}" {% if tz == chosen %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
         </select>
-        <span class="hint">Deadlines roll over at midnight in this timezone.</span></label>
+        <span class="hint">Set from your device. Deadlines roll over at midnight in this timezone.</span></label>
       <fieldset class="plain">
         <legend class="plain"><span class="muted">Your industries</span></legend>
         <div class="checks">

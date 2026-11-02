@@ -8,7 +8,7 @@ from zoneinfo import available_timezones
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .catalog import INDUSTRIES
+from .catalog import INDUSTRIES, TOP_COUNT
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
 from .security import (
@@ -55,6 +55,12 @@ def _taken_message(invite):
             f" To join {invite['org_name']}, use a different email address.")
 
 
+def _start_industry(form):
+    """The industry whose page the sign-up came from, if any."""
+    start = form.get("start", type=int)
+    return start if start in INDUSTRIES else None
+
+
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if g.get("user") is not None:
@@ -98,7 +104,8 @@ def signup():
             for e in errors:
                 flash_error(e)
             return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
-                                   timezones=COMMON_TIMEZONES, form=form, picked=set(picked)), 400
+                                   timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
+                                   start_industry=_start_industry(form)), 400
         record_event([signup_key])
         now = now_iso()
         if invite is not None:
@@ -117,7 +124,8 @@ def signup():
             conn.rollback()
             flash_error(_taken_message(invite))
             return render_template("auth/signup.html", invite=None if invite is None else _invite(conn, token), token=token,
-                                   industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked)), 400
+                                   industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
+                                   start_industry=_start_industry(form)), 400
         if invite is None:
             org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at) VALUES (?, ?, ?)",
                                   (org_name, tz, now)).lastrowid
@@ -126,6 +134,7 @@ def signup():
             conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",
                              [(org_id, i) for i in picked])
             record_audit(conn, org_id, user_id, "workspace", f"Workspace created with {len(picked)} industries")
+            start = _start_industry(form) if _start_industry(form) in picked else picked[0]
         else:
             org_id = invite["org_id"]
             conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'member', ?)",
@@ -133,11 +142,19 @@ def signup():
             record_audit(conn, org_id, user_id, "team", f"{name} joined the team")
         conn.commit()
         start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
-        flash("Welcome to OmniArmor. Start by entering your first readings.", "ok")
-        return redirect(url_for("app.overview"))
+        if invite is not None:
+            flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")
+            return redirect(url_for("app.overview"))
+        # A new workspace opens on an industry page, where the first check is
+        # saved, not on an overview of empty totals one click further away.
+        flash(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
+              " or answer once and OmniArmor keeps count from there.", "ok")
+        return redirect(url_for("app.industry", industry_id=start))
     preselect = request.args.get("industry", type=int)
+    preselect = preselect if preselect in INDUSTRIES else None
     return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
-                           timezones=COMMON_TIMEZONES, form=form, picked={preselect} if preselect in INDUSTRIES else set())
+                           timezones=COMMON_TIMEZONES, form=form, picked={preselect} if preselect else set(),
+                           start_industry=preselect)
 
 
 @bp.route("/login", methods=["GET", "POST"])

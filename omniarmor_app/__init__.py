@@ -14,7 +14,7 @@ from flask import Blueprint, Flask, Response, abort, current_app, g, jsonify, re
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import academy_views, armo_views, autopilot, auth, views
-from .catalog import INDUSTRIES, rules_for
+from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
@@ -33,7 +33,32 @@ def home():
         return redirect(url_for("app.overview"))
     if g.get("kid") is not None:
         return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
-    return render_template("home.html", industries=INDUSTRIES)
+    return render_template("home.html", industries=INDUSTRIES, facts=_landing_facts())
+
+
+# Industries named on the landing page as examples of who OmniArmor is for.
+LANDING_EXAMPLES = (2, 1, 29, 45, 5, 28)
+
+
+def _landing_facts():
+    """Every number the landing page shows, read from the code that sets it:
+    the catalog, the Academy's tracks and plan, and the settings."""
+    from .academy import TRACK_LIST
+    from .academy_plan import FREE_TRACK, FREE_WORLDS
+    cfg = current_app.config
+    return {
+        "industries": len(INDUSTRIES),
+        "checks": sum(len(rules_for(i)) for i in INDUSTRIES),
+        "per_industry": len(rules_for(next(iter(INDUSTRIES)))),
+        "examples": [INDUSTRIES[i]["sector"].lower() for i in LANDING_EXAMPLES],
+        "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
+        "price": cfg.get("ACADEMY_PRICE_LABEL", "").strip(),
+        "free_worlds": len(FREE_WORLDS),
+        "free_track": next(t.name for t in TRACK_LIST if t.key == FREE_TRACK),
+        "tracks": len(TRACK_LIST),
+        "fewest_levels": min(t.total for t in TRACK_LIST),
+        "most_levels": max(t.total for t in TRACK_LIST),
+    }
 
 
 @public.route("/industries")
@@ -47,7 +72,9 @@ def industry_page(slug):
     match = next((i for i in INDUSTRIES.values() if i["brand"].lower() == slug.lower()), None)
     if match is None:
         abort(404)
-    return render_template("industry_public.html", info=match, rules=rules_for(match["id"]))
+    top = top_checks(match["id"])
+    rest = [r for r in rules_for(match["id"]) if r not in top]
+    return render_template("industry_public.html", info=match, top=top, rest=rest, why_line=why_line)
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.

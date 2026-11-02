@@ -24,6 +24,8 @@
   <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}">
     <div class="rule-main">
       <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span></div>
+      {% set rank = top_rank(info.id, r.key) %}
+      {% if rank %}<p class="why-line"><span class="top-n">Top {{ top_count }} · #{{ rank }}</span>Why this matters: {{ why_line(r) }}</p>{% endif %}
       {% if s.level != 'CLEARED' %}<p class="msg {{ s.level }}">{{ s.message }}</p>{% else %}<p class="sr">{{ s.message }}</p>{% endif %}
       {% if s.due_date %}
         <p class="due mono">{{ s.due_text }} · {{ s.due_label }}</p>
@@ -91,7 +93,11 @@
     </form>
   </li>
 {% else %}
-  <li class="empty">No problems in {{ info.brand }} right now.</li>
+  {% if counts.NONE == total %}
+    <li class="empty">No problems yet, because no {{ info.brand }} check has a reading. <a href="{{ url_for('app.industry', industry_id=info.id) }}">Show all checks</a> and start with the top {{ top_count }}.</li>
+  {% else %}
+    <li class="empty">No problems in {{ info.brand }} right now.{% if counts.NONE %} {{ counts.NONE }} check{{ 's' if counts.NONE != 1 }} still need{{ 's' if counts.NONE == 1 }} a first reading:{% endif %} <a href="{{ url_for('app.industry', industry_id=info.id) }}">Show all checks</a></li>
+  {% endif %}
 {% endfor %}
 </ul>
 {% endblock %}

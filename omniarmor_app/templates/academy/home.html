@@ -48,7 +48,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="ac-empty">No learners yet. Add one below to start the adventure!</p>
+    <p class="ac-empty">No learners yet. Add one below to start the adventure!{% if g.org.academy_trial_ends is none and plan.access == 'free' %} The first one starts your free {{ config.ACADEMY_TRIAL_DAYS }}-day trial of every track.{% endif %}</p>
   {% endif %}
 
   {% if summaries|length < max_learners %}

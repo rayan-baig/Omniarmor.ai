@@ -10,7 +10,7 @@ from flask import (Blueprint, Response, abort, flash, g, redirect, render_templa
 
 from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
-from .catalog import INDUSTRIES, can_override, counts_time, find_rule
+from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, login_required, owner_required
 from .tracking import (LEVEL_LABEL, ValidationError, apply_change, org_industry_ids, org_now, org_today,
@@ -41,16 +41,55 @@ def overview():
     conn = get_db()
     states = states_for_org(conn, g.org)
     today = org_today(g.org)
+    ids = org_industry_ids(conn, g.org["id"])
     problems = sorted([s for s in states if s.problem], key=lambda s: s.sort_key)
     upcoming = sorted([s for s in states if s.due_date and 0 <= s.days_left <= UPCOMING_DAYS and not s.problem],
                       key=lambda s: s.days_left)
+    later = sorted([s for s in states if s.due_date and s.days_left > UPCOMING_DAYS and not s.problem],
+                   key=lambda s: s.days_left)
     missing = [s for s in states if s.level == "NONE"]
     by_industry = []
-    for i in org_industry_ids(conn, g.org["id"]):
+    for i in ids:
         mine = [s for s in states if s.industry_id == i]
         by_industry.append({"industry": INDUSTRIES[i], "counts": tally(mine)})
     return render_template("app/overview.html", counts=tally(states), problems=problems, upcoming=upcoming,
-                           missing=len(missing), by_industry=by_industry, today=today, total=len(states))
+                           missing=len(missing), by_industry=by_industry, today=today, total=len(states),
+                           checklist=first_day_checklist(states, ids), next_up=next_reading(states, ids),
+                           next_dated=next_reading(states, ids, dated=True), later=later[0] if later else None,
+                           top_count=TOP_COUNT)
+
+
+def _in_page_order(states, ids):
+    """States industry by industry, each industry in its page's order."""
+    for i in ids:
+        yield from sorted((s for s in states if s.industry_id == i), key=page_order)
+
+
+def next_reading(states, ids, dated=False):
+    """The check to fill in next: the first one without a reading, top checks
+    first, industry by industry. With dated, only checks counted from a date."""
+    return next((s for s in _in_page_order(states, ids) if s.level == "NONE" and (s.mode or not dated)), None)
+
+
+def first_day_checklist(states, ids):
+    """The new workspace's first steps, each ticked from what is saved, not
+    from what was clicked. None once every step is done, so it disappears."""
+    tops = [s for s in states if top_rank(s.industry_id, s.key) is not None]
+    first_top = next((s for s in _in_page_order(tops, ids) if s.level == "NONE"), None)
+    first_any = next_reading(states, ids)
+    read = [s for s in states if s.level != "NONE"]
+    top_read = [s for s in tops if s.level != "NONE"]
+    items = [
+        {"label": "Create your workspace", "done": True},
+        {"label": "Save your first check", "done": bool(read), "next": first_any},
+        {"label": f"Fill in the top {TOP_COUNT} checks" + (" of each industry" if len(ids) > 1 else ""),
+         "done": len(top_read) == len(tops), "progress": f"{len(top_read)} of {len(tops)}", "next": first_top},
+        {"label": "Give every check its first reading", "done": len(read) == len(states),
+         "progress": f"{len(read)} of {len(states)}", "next": first_any},
+    ]
+    if all(item["done"] for item in items):
+        return None
+    return {"items": items, "done": sum(item["done"] for item in items), "total": len(items)}
 
 
 @bp.route("/industry/<int:industry_id>")
@@ -58,11 +97,24 @@ def overview():
 def industry(industry_id):
     info = _industry_or_404(industry_id)
     now = org_now(g.org)
-    states = sorted(states_for_org(get_db(), g.org, industry_ids=[industry_id], now=now), key=lambda s: s.sort_key)
+    states = sorted(states_for_org(get_db(), g.org, industry_ids=[industry_id], now=now), key=page_order)
     only = request.args.get("only") == "problems"
     shown = [s for s in states if s.problem] if only else states
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
-                           can_override=can_override, today=now.date(), now=now, counts_time=counts_time)
+                           can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
+                           top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT)
+
+
+def page_order(state):
+    """An industry page's order: problems first (blocked, then warnings, the
+    most urgent first), then the industry's top checks in their own order
+    (catalog.top_checks), then the rest."""
+    if state.problem:
+        return (0, state.sort_key)
+    rank = top_rank(state.industry_id, state.key)
+    if rank is not None:
+        return (1, (rank,))
+    return (2, state.sort_key)
 
 
 @bp.route("/industry/<int:industry_id>/rule/<rule_key>", methods=["POST"])
@@ -178,7 +230,11 @@ def notifications():
         " ORDER BY created_at DESC, id DESC LIMIT 200",
         (g.org["id"], g.user["id"]),
     ).fetchall()
-    return render_template("app/notifications.html", rows=rows)
+    next_dated = None
+    if not rows:
+        conn = get_db()
+        next_dated = next_reading(states_for_org(conn, g.org), org_industry_ids(conn, g.org["id"]), dated=True)
+    return render_template("app/notifications.html", rows=rows, next_dated=next_dated)
 
 
 @bp.route("/settings", methods=["GET"])

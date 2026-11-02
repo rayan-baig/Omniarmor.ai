@@ -92,10 +92,24 @@ A new customer opens the sign-up page and enters:
 - their name and email address,
 - a password of at least 10 characters,
 - the company's name,
-- the company's timezone (used to count days and hours correctly), and
-- every industry that applies, ticked from the list of 50.
+- the company's timezone (used to count days and hours correctly; the page fills in the device's own timezone, so most people never change it), and
+- every industry that applies, ticked from the list of 50 (already ticked when they came from that industry's public page).
 
-That creates a **workspace** for the company. The person who signs up is its **owner**. They land on HQ right away, with every check for their industries in place and waiting for a first reading.
+That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on HQ.
+
+### 2.1.1 The top 5 checks of each industry
+
+Each industry page starts with five checks, chosen by one rule from the catalog itself (`top_checks` in `omniarmor_app/catalog.py`):
+
+1. What a miss can bring, read from the check's "What a miss costs" text: first the checks whose miss can stop the business or a person (a closure or shutdown, an out-of-service order, a license suspended or revoked, debarment, exclusion, a criminal charge), then those that bring fines or penalties, then the rest.
+2. Within each, a check counted from a date (a deadline that runs out by itself) before one that is answered or measured.
+3. Then the catalog's own order.
+
+Each top check shows a "Why this matters" line: the first part of its "What a miss costs" sentence when that part is a whole clause and already names the serious consequence, otherwise the whole sentence. Nothing is added to it.
+
+### 2.1.2 The first-day checklist
+
+Until it is done, HQ shows a **First day** list: create your workspace; save your first check; fill in the top 5 checks (of each industry); give every check its first reading. Each step ticks itself from what is saved, not from what was clicked, shows how far along it is ("3 of 5") and links to the next check to fill in. When all four are done the list goes away. It comes back if an industry is added or a reading is cleared, since a step is then no longer true.
 
 A person belongs to one workspace. Other people join by invitation (section 2.9).
 
@@ -176,12 +190,12 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **HQ (the overview).** The top line shows the company name and today's date in its timezone, then four counts: blocked, warnings, cleared and without a reading, with a thin colored bar showing the proportions. Below that:
 
-- **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with its message and a link to the check.
-- **Coming up**: date-tracked checks due within the next 30 days that aren't a problem yet.
-- A note about how many checks still need a first reading.
+- **First day**: the checklist of section 2.1.2, until it is done.
+- **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with its message and a link to the check. With none, it says why and what to do next: no check has a reading yet (with a link to the first one to fill in), or how many checks still need one, or "Nice work" when every check has a reading.
+- **Coming up**: date-tracked checks due within the next 60 days that aren't a problem yet. With none, it names the next deadline after that, or, before any date is in, a check counted from a date to start with.
 - A summary per industry.
 
-**Industry pages.** One page per industry the company tracks, with the industry's counts at the top and its ten checks below, problems first. Each check shows its status, its message, the due date and days left when it's date-tracked (for example "15 days overdue · 2026-10-10"), "Why it matters" (the cost and the citation), and its input form.
+**Industry pages.** One page per industry the company tracks, with the industry's counts at the top and its ten checks below: problems first, then the top 5 (section 2.1.1), then the rest. With **Only problems** on and none to show, it says whether that is because nothing has a reading yet. Each check shows its status, its message, the due date and days left when it's date-tracked (for example "15 days overdue · 2026-10-10"), "Why it matters" (the cost and the citation), and its input form.
 
 **Intel (the compliance report).** A table of every check: status, reading, due date, the rule citation, and who last updated it and when. It prints cleanly, and **Export CSV** downloads the same data. The CSV is formula-safe: a cell that starts with a character a spreadsheet could treat as a formula is escaped.
 
@@ -202,9 +216,9 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 Visitors who aren't signed in see:
 
-- a landing page with the slogan and how it works;
+- a landing page with the slogan, who it's for and, in the first screen, the price: the compliance tracker is free right now, and the Academy has a free trial (`ACADEMY_TRIAL_DAYS`) and then the Academy plan (`ACADEMY_PRICE_LABEL`, when set), with the first Launchpad worlds free. Every number on it is read from the code and settings;
 - a list of all 50 industries;
-- one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, so a prospect can see their own risks before signing up;
+- one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
@@ -761,7 +775,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 460 tests in 21 files.
+- `tests/`: 482 tests in 22 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
@@ -862,7 +876,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 451 tests
+python3 -m unittest discover -s tests     # 482 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 

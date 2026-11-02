@@ -105,3 +105,78 @@ def effective_rule(rule, row):
     if limit is None and warn is None:
         return rule
     return replace(rule, limit=rule.limit if limit is None else limit, warn=rule.warn if warn is None else warn)
+
+
+# ---------------------------------------------------------------------------
+# The top checks of each industry
+# ---------------------------------------------------------------------------
+#
+# Each industry page starts with its five most serious checks. They are chosen
+# by one rule, from what the catalog itself says, in this order:
+#
+# 1. What a miss can bring, read from the check's "What a miss costs" text:
+#    first the checks whose miss can stop the business or a person (a closure
+#    or shutdown, an out-of-service order, a license suspended or revoked,
+#    debarment, exclusion, a criminal charge); then those that bring fines or
+#    penalties; then the rest (lawsuits, citations, lost work).
+# 2. A check counted from a date (a deadline that runs out by itself) before
+#    one that is answered or measured.
+# 3. The catalog's own order.
+
+TOP_COUNT = 5
+
+STOPS_WORK = re.compile(
+    r"out[- ]of[- ]service|(?<!window )\bclos(?:e|es|ed|ure|ures)\b|\bclosing (?:the|a|an|its|their)\b|\bshut|\bsuspen|"
+    r"\brevo(?:ke|kes|ked|cation)|\bdisbar|\bdebar|\bcriminal|\bcrimes?\b|\bprison|\bjail|\bseiz|\bdetain|"
+    r"\bdetention|\bgrounded|\bfelon|\bterminat|\bexclu(?:sion|ded) from|"
+    r"\blos(?:s|e|es|ing) (?:of )?(?:the |its |their )?(?:\w+ )?(?:license|registration|permit|certification|"
+    r"participation|access|accreditation)", re.I)
+FINES = re.compile(r"\bfines?\b|\bpenalt|\bsanction|\bforfeit|\bcivil money|\bdisallow|\brefund|\brepay|\brestitution",
+                   re.I)
+SEVERITY_LABEL = {0: "Can stop the business", 1: "Fines or penalties", 2: "Other costs"}
+
+
+def severity(rule):
+    """0 when a miss can stop the business or a person, 1 when it brings fines
+    or penalties, 2 otherwise: read from the rule's "What a miss costs" text."""
+    if STOPS_WORK.search(rule.cost):
+        return 0
+    if FINES.search(rule.cost):
+        return 1
+    return 2
+
+
+def _top_order(industry_id):
+    rules = CATALOG[industry_id]
+    return sorted(range(len(rules)), key=lambda n: (severity(rules[n]), date_mode(rules[n]) is None, n))
+
+
+TOP_RANK = {(i, CATALOG[i][n].key): place
+            for i in CATALOG for place, n in enumerate(_top_order(i)[:TOP_COUNT], 1)}
+
+
+def top_checks(industry_id):
+    """The industry's TOP_COUNT most serious rules, most serious first."""
+    return [CATALOG[industry_id][n] for n in _top_order(industry_id)[:TOP_COUNT]]
+
+
+def top_rank(industry_id, rule_key):
+    """1 to TOP_COUNT for a top check, None for the others."""
+    return TOP_RANK.get((industry_id, rule_key))
+
+
+_CLAUSE = re.compile(r", and |; ")
+
+
+def why_line(rule):
+    """One line on why a check matters, cut from its own "What a miss costs"
+    text and never added to: the first part of the sentence when that part
+    is a whole clause of its own (no list running on past it) and already
+    says what makes the check serious; otherwise the whole sentence."""
+    cost = rule.cost.strip()
+    first = _CLAUSE.split(cost, maxsplit=1)[0].rstrip(".")
+    pattern = {0: STOPS_WORK, 1: FINES}.get(severity(rule))
+    if (first != cost.rstrip(".") and "," not in first and pattern is not None and pattern.search(first)
+            and len(first.split()) >= 4):
+        return first + "."
+    return cost
