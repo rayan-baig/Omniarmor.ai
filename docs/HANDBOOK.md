@@ -121,9 +121,9 @@ Every check is a small piece of data with these parts:
 - **Kind**, one of four:
   - **Maximum**: the reading must not go over a limit. It warns once the reading reaches a warning point. Example: hours driven since the last 10 hours off duty, limit 11, warns from 10.
   - **Minimum**: the reading must not fall below a limit. It warns once the reading drops to a warning point. Example: days until a driver's medical certificate expires, minimum 0, warns at 30.
-  - **Required**: a Yes-or-No control that must be in place. Example: "Is the driver recording hours of service on a registered ELD?"
+  - **Required**: a Yes-or-No control that must be in place. Example: "Is the driver logging hours of service on a registered electronic logging device (ELD)?"
   - **Forbidden**: a Yes-or-No condition that must never happen. Example: storing card security codes after a payment is authorized.
-- **Input**: the question the business answers, written in plain words.
+- **Input**: the question the business answers, written in plain words: everyday words over legal ones where they mean the same ("in a row", not "consecutive"; "such as", not "e.g."), and an abbreviation spelled out where the question uses it ("protected health information (PHI)"). The words that say how a check is counted ("Days since", "Days until", "Hours since", "Business days since", "counting that day as day 1") stay exactly so, because the app reads them (section 2.3), and a test pins how many checks count each way.
 - **Unit**: for maximums and minimums, such as hours, days, °F, dollars, percent or "32nds of an inch".
 - **Limit** and **warning point**.
 - **Citation**: the regulation or standard, for example "49 CFR 395.3(a)(3)" or "GDPR Art. 33(1)".
@@ -149,7 +149,7 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 
 16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday. The deadline is missed once the due date has ended, so from the next day the check is Blocked and overdue, even when that day is a weekend or a holiday and the count hasn't grown: an I-9 due on a Friday is Blocked on the Saturday ("1 day overdue", "The 3 business days limit ended on" that Friday) on its page, the overview, the report and its CSV, in reminders and in Armo. The warning point is always a business day, so the weekend before it stays Cleared.
 
-22 checks count **hours since** something happened, such as "Hours since becoming aware of a personal data breach not yet reported to the supervisory authority" (72 hours) or "Hours since learning of a work-related fatality without reporting it to OSHA" (8 hours). They take the date **and time** the clock started, and count real hours from it to now, in whole minutes:
+22 checks count **hours since** something happened, such as "Hours since becoming aware of a personal data breach not yet reported to the supervisory authority (the data protection regulator)" (72 hours) or "Hours since learning of a work-related fatality without reporting it to OSHA" (8 hours). They take the date **and time** the clock started, and count real hours from it to now, in whole minutes:
 
 - The due time is the start plus the limit: a death learned of at 9:00 is due at 17:00. Up to and including 17:00 the check is at most a Warning ("8 h is close to the 8 h limit"); from 17:01 it is Blocked. It warns from the warning point the same way (6 hours here, so from 15:00).
 - The industry page shows "Due in 5 h 20 min", "Due now" or "2 h 5 min overdue", with the due date and time, for example "2026-11-04 17:00 EST". Longer clocks read "Due in 2 days 23 h".
@@ -157,7 +157,7 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - One that ran out earlier today counts as overdue, not "due today", in reminders and in Armo's alerts.
 - Besides the daily digest, each one gets an email when it reaches its warning point and another when it becomes overdue (section 3.3).
 
-Two more count **minutes since** something happened: "Minutes since the last welfare check of the person in restrictive housing" (30 minutes) and "Minutes since a reportable accident was known, without calling MSHA" (15 minutes). They work the same way, in minutes, and are what "hour checks" below means too.
+Two more count **minutes since** something happened: "Minutes since the last welfare check of the person in restrictive housing (segregation)" (30 minutes) and "Minutes since a reportable accident was known, without calling MSHA" (15 minutes). They work the same way, in minutes, and are what "hour checks" below means too.
 
 "Hours driven since..." (the 11-hour driving limit) and "Hours in service since..." (the 100-hour aircraft inspection) count hours of driving or flying, not time passed, so they still take a typed number.
 
@@ -775,7 +775,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 482 tests in 22 files.
+- `tests/`: 486 tests in 22 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
@@ -876,7 +876,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 482 tests
+python3 -m unittest discover -s tests     # 486 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -1091,15 +1091,15 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. 11-hour driving limit** (Maximum 11 h, warns from 10 h)
 
-- Asks: Hours driven since last 10 consecutive hours off duty
+- Asks: Hours driven since the driver's last 10 hours in a row off duty
 - Rule: 49 CFR 395.3(a)(3)
 - What a miss costs: Out-of-service orders idle the truck and load, and HOS violations raise CSA scores and insurance costs.
-- What to do when it's broken: Stop driving; 10 consecutive hours off duty required.
+- What to do when it's broken: Stop driving; 10 hours off duty in a row required.
 - Example reading used in demos: 11.5 h
 
 **2. Electronic logging device in use** (Must be in place, answered Yes or No)
 
-- Asks: Is the driver recording hours of service on a registered ELD (or covered by a listed exemption)?
+- Asks: Is the driver logging hours of service on a registered electronic logging device (ELD), or covered by a listed exemption?
 - Rule: 49 CFR 395.8(a); 49 CFR Part 395 Subpart B
 - What a miss costs: Drivers without a required ELD are placed out of service, and missing records are cited in audits and raise CSA scores.
 - What to do when it's broken: Do not dispatch; install a registered ELD or document the exemption that applies.
@@ -1107,7 +1107,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Driver medical certificate current** (Minimum 0 days, warns from 30 days; counts days until a date)
 
-- Asks: Days until the driver's medical examiner's certificate expires
+- Asks: Days until the driver's medical card (medical examiner's certificate) expires
 - Rule: 49 CFR 391.41(a); 49 CFR 391.45
 - What a miss costs: A driver without a valid medical card is placed out of service, and using unqualified drivers draws audit penalties.
 - What to do when it's broken: Pull the driver from duty until a certified medical examiner issues a new certificate.
@@ -1115,7 +1115,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Valid CDL for the vehicle** (Must be in place, answered Yes or No)
 
-- Asks: Does the driver hold a valid CDL with the class and endorsements this vehicle and load need?
+- Asks: Does the driver hold a valid commercial driver's license (CDL) with the class and endorsements this vehicle and load need?
 - Rule: 49 CFR 383.23(a); 49 CFR 383.37
 - What a miss costs: Letting a driver operate without a valid CDL of the right class draws civil penalties, out-of-service orders and crash liability.
 - What to do when it's broken: Do not let this driver operate the vehicle; assign a properly licensed driver.
@@ -1123,7 +1123,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Annual driving record review** (Maximum 365 days, warns from 335 days; counts days since a date)
 
-- Asks: Days since the driver's last annual motor vehicle record inquiry and review
+- Asks: Days since the driver's driving record (MVR) was last pulled and reviewed for the yearly check
 - Rule: 49 CFR 391.25
 - What a miss costs: Missing annual reviews are cited in compliance reviews and weaken the carrier's defense in negligent-retention lawsuits.
 - What to do when it's broken: Order the driver's MVR from each state now, review it and file it in the qualification file.
@@ -1131,7 +1131,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Pre-employment drug test** (Must be in place, answered Yes or No)
 
-- Asks: Has a verified negative pre-employment drug test been received for this driver?
+- Asks: Has this driver's drug test from before hiring come back as a verified negative?
 - Rule: 49 CFR 382.301(a)
 - What a miss costs: Using a driver before a negative drug result is an acute audit violation that can lead to penalties and an unsatisfactory rating.
 - What to do when it's broken: Keep the driver off all safety-sensitive work until a verified negative result is on file.
@@ -1163,7 +1163,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. 70-hour/8-day on-duty limit** (Maximum 70 h, warns from 63 h)
 
-- Asks: On-duty hours in the last 8 consecutive days (carrier on the 70-hour/8-day schedule)
+- Asks: On-duty hours in the last 8 days in a row (for carriers on the 70-hour/8-day schedule)
 - Rule: 49 CFR 395.3(b)(2) (60 h/7 days in 395.3(b)(1) if not operating every day)
 - What a miss costs: Driving past the 60/70-hour limit brings out-of-service orders and is a frequently cited HOS violations in audits.
 - What to do when it's broken: No more driving until on-duty hours fall under 70, or take a 34-hour restart.
@@ -1173,7 +1173,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Cold holding at 41°F or below** (Maximum 41°F, warns from 40°F)
 
-- Asks: Current temperature of TCS food in cold holding
+- Asks: Current temperature of cold-held food that needs temperature control for safety (TCS food)
 - Rule: FDA Food Code 3-501.16(A)(2)
 - What a miss costs: Out-of-temperature food is discarded, is a priority violation at inspection and can cause outbreaks and lawsuits.
 - What to do when it's broken: Hold the food; check how long it was above 41°F and discard it if safe time cannot be shown.
@@ -1181,7 +1181,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Hot holding at 135°F or above** (Minimum 135°F, warns from 140°F)
 
-- Asks: Current temperature of TCS food in hot holding
+- Asks: Current temperature of hot-held food that needs temperature control for safety (TCS food)
 - Rule: FDA Food Code 3-501.16(A)(1)
 - What a miss costs: Food held below 135°F must be reheated or discarded, is a priority violation and can cause outbreaks.
 - What to do when it's broken: Reheat the food to 165°F within 2 hours if allowed, or discard it; fix the holding unit.
@@ -1189,7 +1189,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Cooling 135°F to 70°F in 2 hours** (Maximum 2 h, warns from 1.5 h)
 
-- Asks: Hours taken to cool cooked TCS food from 135°F to 70°F
+- Asks: Hours it took to cool cooked TCS food from 135°F to 70°F
 - Rule: FDA Food Code 3-501.14(A)(1)
 - What a miss costs: Improper cooling is a common cause of foodborne outbreaks and requires the batch to be reheated or thrown out.
 - What to do when it's broken: Reheat to 165°F and restart cooling, or discard; use shallow pans or ice baths.
@@ -1221,7 +1221,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Sick employees kept off work** (Must never happen, answered Yes or No)
 
-- Asks: Is any employee with vomiting or diarrhea working in the establishment?
+- Asks: Is any employee with vomiting or diarrhea working in the restaurant?
 - Rule: FDA Food Code 2-201.11; 2-201.12(A)
 - What a miss costs: Ill food workers cause outbreaks that bring closures, lawsuits and lost customers.
 - What to do when it's broken: Send the employee home, clean and sanitize affected areas and log the exclusion.
@@ -1245,7 +1245,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. Overtime paid over 40 hours** (Must be in place, answered Yes or No)
 
-- Asks: Are nonexempt employees paid 1.5 times their regular rate for hours over 40 in a workweek?
+- Asks: Are employees who are owed overtime (nonexempt) paid 1.5 times their regular rate for hours over 40 in a workweek?
 - Rule: Fair Labor Standards Act, 29 U.S.C. 207(a)(1)
 - What a miss costs: Unpaid overtime leads to back wages, equal liquidated damages and class or collective lawsuits.
 - What to do when it's broken: Correct the payroll and pay back overtime owed; review how the regular rate is figured for tipped staff.
@@ -1255,7 +1255,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Untreated sewage 12 nm from land** (Minimum 12 nm, warns from 13 nm)
 
-- Asks: Distance from nearest land for a planned untreated sewage discharge
+- Asks: Distance from the nearest land where untreated sewage is to be discharged
 - Rule: MARPOL Annex IV reg. 11.1.1
 - What a miss costs: Illegal sewage discharge draws Coast Guard and port state fines and can lead to detention of the yacht.
 - What to do when it's broken: Do not discharge; hold sewage until the yacht is over 12 nm out and en route at 4 knots or more.
@@ -1263,7 +1263,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Oily bilge discharge under 15 ppm** (Maximum 15 ppm, warns from 12 ppm)
 
-- Asks: Oil content of bilge effluent from the oily-water separator
+- Asks: Oil content of the bilge water leaving the oily-water separator
 - Rule: MARPOL Annex I reg. 15; 33 CFR 151.10
 - What a miss costs: Oily discharges bring pollution fines, detention and criminal prosecution of the owner, operator and crew.
 - What to do when it's broken: Stop the discharge and keep oily water on board for delivery ashore.
@@ -1287,7 +1287,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. ECA fuel sulfur 0.10% or less** (Maximum 0.1%, warns from 0.09%)
 
-- Asks: Sulfur content of fuel in use inside an Emission Control Area, by mass
+- Asks: Sulfur content of the fuel burned inside an Emission Control Area (ECA), by weight
 - Rule: MARPOL Annex VI reg. 14.4
 - What a miss costs: Burning high-sulfur fuel in an Emission Control Area draws EPA and port state penalties and forced fuel changes.
 - What to do when it's broken: Change over to compliant fuel now and log the changeover time and position.
@@ -1327,7 +1327,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. Garbage Record Book kept** (Must be in place, answered Yes or No)
 
-- Asks: Is every garbage discharge, incineration and delivery ashore entered in the Garbage Record Book with receipts?
+- Asks: Is every garbage discharge, burning on board and delivery ashore entered in the Garbage Record Book, with receipts?
 - Rule: MARPOL Annex V reg. 10.3 (400 GT and above, or certified for 15 or more persons)
 - What a miss costs: Missing or incomplete Garbage Record Book entries are a frequent port state control deficiency and support pollution fines.
 - What to do when it's broken: Bring the Garbage Record Book up to date and file shore reception receipts.
@@ -1345,7 +1345,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Single-pilot 8-hour flight time** (Maximum 8 h, warns from 7 h)
 
-- Asks: Flight time assigned to a single-pilot crew in the last 24 consecutive hours
+- Asks: Flight time assigned to a single-pilot crew in the last 24 hours
 - Rule: 14 CFR 135.267(b)(1) (unscheduled one- and two-pilot crews)
 - What a miss costs: Scheduling pilots past flight time limits draws FAA civil penalties and raises accident risk and liability.
 - What to do when it's broken: Do not assign more flying; use a two-pilot crew or a rested pilot.
@@ -1353,10 +1353,10 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. 10 hours rest before assignment** (Minimum 10 h, warns from 11 h)
 
-- Asks: Consecutive hours of rest in the 24 hours before the planned end of the assignment
+- Asks: Hours of rest in a row during the 24 hours before the assignment is planned to end
 - Rule: 14 CFR 135.267(d)
 - What a miss costs: Assigning a pilot without required rest draws FAA civil penalties and fatigue-related accident liability.
-- What to do when it's broken: Do not dispatch this pilot; reschedule so the pilot gets 10 consecutive hours of rest.
+- What to do when it's broken: Do not dispatch this pilot; reschedule so the pilot gets 10 hours of rest in a row.
 - Example reading used in demos: 9 h
 
 **4. Pilot competency check current** (Maximum 12 months, warns from 11 months)
@@ -1393,7 +1393,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. No overdue airworthiness directives** (Must never happen, answered Yes or No)
 
-- Asks: Is any applicable airworthiness directive overdue on this aircraft?
+- Asks: Is any airworthiness directive (AD) that applies to this aircraft overdue?
 - Rule: 14 CFR 39.7
 - What a miss costs: Flying with an overdue airworthiness directive makes the aircraft unairworthy and draws FAA civil penalties.
 - What to do when it's broken: Ground the aircraft until the directive is complied with and recorded.
@@ -1401,7 +1401,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. IFR fuel reserve 45 minutes** (Minimum 45 min, warns from 50 min)
 
-- Asks: Minutes of fuel at normal cruise planned to remain after reaching the IFR alternate
+- Asks: Minutes of fuel, at normal cruise, planned to be left after reaching the alternate airport on an IFR flight
 - Rule: 14 CFR 135.223(a)(3) (airplanes)
 - What a miss costs: Fuel planning violations draw FAA enforcement and fuel exhaustion accidents bring hull loss and liability.
 - What to do when it's broken: Add fuel, reduce load or pick a closer alternate before departure.
@@ -1427,7 +1427,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. EMTALA medical screening exam** (Must be in place, answered Yes or No)
 
-- Asks: Does every person who comes to the ED asking for care get a medical screening exam, not delayed by payment questions?
+- Asks: Does every person who comes to the emergency department asking for care get a medical screening exam, not delayed by payment questions?
 - Rule: 42 U.S.C. 1395dd(a); 42 CFR 489.24(a) and (d)(4)
 - What a miss costs: EMTALA violations bring OIG civil penalties, possible loss of Medicare participation and patient lawsuits.
 - What to do when it's broken: Screen the patient now and stop any payment or insurance questions that delay the exam.
@@ -1435,7 +1435,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. HIPAA breach notice within 60 days** (Maximum 60 days, warns from 45 days; counts days since a date)
 
-- Asks: Days since a breach of unsecured PHI was discovered without notifying affected patients
+- Asks: Days since a breach of unsecured protected health information (PHI) was discovered, with affected patients not yet notified
 - Rule: 45 CFR 164.404(b)
 - What a miss costs: Late breach notices draw OCR penalties and state attorney general actions, and add to class action exposure.
 - What to do when it's broken: Send notices to affected patients now, without further delay, and prepare the HHS report.
@@ -1443,7 +1443,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. HIPAA security risk analysis** (Must be in place, answered Yes or No)
 
-- Asks: Is there a current, organization-wide risk analysis covering all systems that hold electronic PHI?
+- Asks: Is there a current risk analysis, for the whole organization, covering every system that holds electronic patient health information (ePHI)?
 - Rule: 45 CFR 164.308(a)(1)(ii)(A)
 - What a miss costs: A missing or outdated risk analysis is among the most common findings in OCR settlements and penalties.
 - What to do when it's broken: Start an enterprise-wide security risk analysis and document the risk management plan.
@@ -1467,7 +1467,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Informed consent before surgery** (Must be in place, answered Yes or No)
 
-- Asks: Is a properly executed informed consent form in the chart before this non-emergency procedure?
+- Asks: Is a signed and completed informed consent form in the chart before this non-emergency procedure?
 - Rule: 42 CFR 482.51(b)(2); 42 CFR 482.24(c)(4)(v)
 - What a miss costs: Surgery without documented informed consent is cited in CMS surveys and is a common basis for malpractice claims.
 - What to do when it's broken: Hold the procedure until informed consent is obtained and documented.
@@ -1483,7 +1483,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Physician agreements signed and current** (Must be in place, answered Yes or No)
 
-- Asks: Is every paid arrangement with a referring physician covered by a signed agreement still in effect (or in an allowed holdover)?
+- Asks: Is every paid arrangement with a referring physician covered by a signed agreement still in effect (or in an allowed holdover period after it ended)?
 - Rule: 42 U.S.C. 1395nn (Stark Law); 42 CFR 411.357
 - What a miss costs: Expired or unsigned physician agreements can make Medicare claims false, leading to refunds and False Claims Act settlements.
 - What to do when it's broken: Stop referral-linked billing under the lapsed arrangement and have counsel renew it and review past claims.
@@ -1501,7 +1501,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Post-market drift monitoring** (Maximum 0.15, warns from 0.12; policy, a company can set its own limit)
 
-- Asks: Current model drift score from post-market monitoring
+- Asks: Current model drift score from monitoring after release
 - Rule: EU AI Act Art. 15 (accuracy, robustness) and Art. 72 (post-market monitoring); threshold is your own policy
 - What a miss costs: Unchecked drift in a high-risk AI system can lead to regulator orders to withdraw it from the market, fines and claims from people it harmed.
 - What to do when it's broken: Pause the release and re-validate accuracy before redeploying.
@@ -1517,7 +1517,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Report data breach within 72 hours** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
-- Asks: Hours since becoming aware of a personal data breach not yet reported to the supervisory authority
+- Asks: Hours since becoming aware of a personal data breach not yet reported to the supervisory authority (the data protection regulator)
 - Rule: GDPR Art. 33(1) (no later than 72 hours after becoming aware, unless the breach is unlikely to result in risk)
 - What a miss costs: Late breach reports to the data protection authority are a common GDPR finding and bring fines on top of the breach costs.
 - What to do when it's broken: Notify the supervisory authority now with what is known and send the rest in phases.
@@ -1525,7 +1525,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Answer data requests in a month** (Maximum 30 days, warns from 25 days; counts days since a date)
 
-- Asks: Days since a data subject request (access, deletion, objection) was received without a reply
+- Asks: Days since a person's request about their data (access, deletion, objection) was received without a reply
 - Rule: GDPR Art. 12(3) (within one month; extendable by two months if the person is told); 30 days used here
 - What a miss costs: Late or missing replies to access and deletion requests are among the most common GDPR complaints and lead to fines and orders.
 - What to do when it's broken: Reply to the person today, or tell them of the extension and the reason if the request is complex.
@@ -1565,7 +1565,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Human review of automated decisions** (Must be in place, answered Yes or No)
 
-- Asks: Can people subject to solely automated decisions with legal or similar effects get human review and contest the decision?
+- Asks: Can people who get a decision made only by automated means, with legal or similarly serious effects, ask for a human review and challenge it?
 - Rule: GDPR Art. 22(3) (right to human intervention and to contest) and Art. 13(2)(f)
 - What a miss costs: Solely automated decisions without safeguards break GDPR, bringing data protection fines, orders to stop processing and claims.
 - What to do when it's broken: Route affected decisions to a human reviewer and tell people how to contest them before deciding more cases.
@@ -1583,7 +1583,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. CIPA internet filter active** (Must be in place, answered Yes or No)
 
-- Asks: Is a technology protection measure (filter) active on every public computer and on public Wi-Fi?
+- Asks: Is an internet filter (technology protection measure) active on every public computer and on public Wi-Fi?
 - Rule: CIPA, 47 U.S.C. 254(h)(6); 47 CFR 54.520; 20 U.S.C. 9134(f) (LSTA)
 - What a miss costs: Libraries without a working filter lose E-rate and LSTA internet funding and may have to repay funds already received.
 - What to do when it's broken: Turn the filter back on for all public devices and Wi-Fi before patrons use them again.
@@ -1615,7 +1615,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. File E-rate invoice on time** (Maximum 120 days, warns from 90 days; counts days since a date)
 
-- Asks: Days since the last day to receive service without filing the E-rate invoice (BEAR or SPI)
+- Asks: Days since the last day to receive service, with the E-rate invoice (BEAR or SPI) not yet filed
 - Rule: 47 CFR 54.514(a) (120 days after the last day to receive service, or later notice date)
 - What a miss costs: Missing the invoice deadline forfeits E-rate discounts the library was already approved for.
 - What to do when it's broken: File the BEAR form or confirm the vendor filed its SPI invoice today; request an extension if still allowed.
@@ -1623,7 +1623,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Exits unlocked and clear** (Must never happen, answered Yes or No)
 
-- Asks: Is any exit door, exit path or exit sign blocked, locked or out during open hours?
+- Asks: Is any exit door, exit path or exit sign blocked, locked or not working during open hours?
 - Rule: NFPA 101 Life Safety Code or IFC Chapter 10, as adopted by the local fire code; adoption varies
 - What a miss costs: Blocked or locked exits are among the most common fire inspection citations and bring fines and orders to close until fixed.
 - What to do when it's broken: Clear or unlock the exit now and check every exit before opening.
@@ -1665,7 +1665,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. FERPA consent before disclosure** (Must be in place, answered Yes or No)
 
-- Asks: Is every disclosure of student records covered by written consent or a 34 CFR 99.31 exception?
+- Asks: Is every release of student records covered by written consent or an exception in 34 CFR 99.31?
 - Rule: FERPA, 20 U.S.C. 1232g; 34 CFR 99.30 and 99.31
 - What a miss costs: Improper release of student records can end federal education funding and brings complaints, corrective orders and lawsuits under state law.
 - What to do when it's broken: Withhold the records until written consent is on file or a 99.31 exception is documented.
@@ -1673,7 +1673,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Give parents records in 45 days** (Maximum 45 days, warns from 35 days; counts days since a date)
 
-- Asks: Days since a parent or eligible student asked to inspect records
+- Asks: Days since a parent or eligible student asked to see the student's records
 - Rule: FERPA, 34 CFR 99.10(b) (no more than 45 days after the request)
 - What a miss costs: Missing the access deadline is a FERPA violation that leads to Department of Education complaints and corrective orders.
 - What to do when it's broken: Schedule the records review with the parent immediately.
@@ -1729,7 +1729,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. AHERA asbestos reinspection** (Maximum 1,095 days, warns from 1,005 days; counts days since a date)
 
-- Asks: Days since the last accredited AHERA asbestos reinspection
+- Asks: Days since the last asbestos reinspection by an accredited AHERA inspector
 - Rule: AHERA, 40 CFR 763.85(b) (reinspection at least once every three years)
 - What a miss costs: Missed asbestos reinspections are a frequent EPA citation and bring civil penalties plus costly cleanup if materials are disturbed.
 - What to do when it's broken: Hire an accredited inspector to reinspect now and update the management plan.
@@ -1861,7 +1861,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Odometer disclosure on transfer** (Must be in place, answered Yes or No)
 
-- Asks: Is a signed odometer disclosure statement completed for every non-exempt vehicle transfer?
+- Asks: Is a signed odometer disclosure statement completed for every vehicle sale or transfer that isn't exempt?
 - Rule: 49 U.S.C. 32705; 49 CFR 580.5 (see 580.17 for exempt vehicles)
 - What a miss costs: Missing or false odometer statements bring federal civil penalties and damages suits from buyers.
 - What to do when it's broken: Hold the title transfer until the odometer disclosure is completed and signed.
@@ -1869,7 +1869,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. File Form 8300 for cash over $10,000** (Maximum 15 days, warns from 10 days; counts days since a date)
 
-- Asks: Days since receiving more than $10,000 in cash in one or related transactions without filing Form 8300
+- Asks: Days since receiving more than $10,000 in cash in one sale or related sales, with Form 8300 not yet filed
 - Rule: 26 U.S.C. 6050I; 26 CFR 1.6050I-1 (file within 15 days of receiving more than $10,000 in cash)
 - What a miss costs: Late or missing Form 8300 filings bring IRS penalties, and intentional disregard carries much larger penalties.
 - What to do when it's broken: File Form 8300 today and send the buyer the required written statement by January 31.
@@ -1911,7 +1911,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. CITES permit for exotic materials** (Must be in place, answered Yes or No)
 
-- Asks: If this shipment contains a CITES-listed species (e.g. crocodile, python, ostrich, coral), are the CITES permits and Form 3-177 on file? (Yes if none.)
+- Asks: If this shipment contains a CITES-listed species (such as crocodile, python, ostrich or coral), are the CITES permits and Form 3-177 on file? (Yes if none.)
 - Rule: CITES; 50 CFR Parts 14 and 23 (CITES permits plus USFWS Form 3-177 declaration)
 - What a miss costs: Wildlife inspectors seize shipments of listed-species goods without permits, and the goods can be forfeited with civil or criminal penalties.
 - What to do when it's broken: Hold the shipment; do not import, export or sell it until valid CITES permits and the USFWS declaration are on file.
@@ -1919,7 +1919,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Lacey Act plant declaration** (Must be in place, answered Yes or No)
 
-- Asks: For imported goods with covered plant material (e.g. wood cases, handles, paper), was a Lacey Act declaration filed and legal harvest documented?
+- Asks: For imported goods with covered plant material (such as wood cases, handles or paper), was a Lacey Act declaration filed and legal harvest documented?
 - Rule: Lacey Act, 16 U.S.C. 3372(a) and 3372(f) (plant product import declaration)
 - What a miss costs: Goods made with illegally sourced wood or plants can be seized and forfeited even if the importer did not know, plus civil and criminal penalties.
 - What to do when it's broken: Stop entry of the goods; file the plant declaration (PPQ 505 or electronic) and gather proof of species and country of harvest.
@@ -1959,7 +1959,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. AML program for dealers** (Must be in place, answered Yes or No)
 
-- Asks: If you are a covered dealer, do you have a written AML program with a compliance officer, risk-based procedures, training and independent testing?
+- Asks: If you are a covered dealer, do you have a written anti-money-laundering (AML) program with a compliance officer, risk-based procedures, training and independent testing?
 - Rule: Bank Secrecy Act; 31 CFR 1027.210 (dealers in precious metals, precious stones or jewels)
 - What a miss costs: FinCEN civil money penalties apply to covered dealers that lack an AML program, and gaps invite criminal money-laundering exposure.
 - What to do when it's broken: Adopt a written AML program now: name a compliance officer, set risk-based procedures, train staff and schedule independent testing.
@@ -1967,7 +1967,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. Form 8300 cash report filing** (Maximum 15 days, warns from 10 days; counts days since a date)
 
-- Asks: Days since receiving over $10,000 in cash (one or related transactions) with Form 8300 not yet filed
+- Asks: Days since receiving over $10,000 in cash (in one sale or related sales) with Form 8300 not yet filed
 - Rule: 26 U.S.C. 6050I; 31 U.S.C. 5331; 31 CFR 1010.330 (file within 15 days)
 - What a miss costs: Late or missing Form 8300 filings bring IRS civil penalties per return, higher penalties for intentional disregard, and possible criminal charges.
 - What to do when it's broken: File Form 8300 with the IRS/FinCEN today and send the buyer the required written notice by January 31.
@@ -1975,7 +1975,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. California Prop 65 warning** (Must be in place, answered Yes or No)
 
-- Asks: For products sold in California that expose buyers to a listed chemical (e.g. lead, DEHP) above safe-harbor levels, is a clear Prop 65 warning given?
+- Asks: For products sold in California that expose buyers to a listed chemical (such as lead or DEHP) above safe-harbor levels, is a clear Prop 65 warning given?
 - Rule: Cal. Health & Safety Code 25249.6; 27 CCR 25600 et seq. (businesses with 10 or more employees)
 - What a miss costs: Private enforcers send 60-day notices and sue for civil penalties, attorney fees and forced relabeling of products sold in California.
 - What to do when it's broken: Stop California sales of the product until a compliant Prop 65 warning is on the product, shelf or web listing.
@@ -1983,7 +1983,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. Forced labor supply-chain tracing** (Must be in place, answered Yes or No)
 
-- Asks: Is supply-chain tracing on file showing no input (e.g. cotton, leather, gold, polysilicon) came from Xinjiang or a UFLPA Entity List supplier?
+- Asks: Is supply-chain tracing on file showing no input (such as cotton, leather, gold or polysilicon) came from Xinjiang or a UFLPA Entity List supplier?
 - Rule: Uyghur Forced Labor Prevention Act, Pub. L. 117-78; 19 U.S.C. 1307
 - What a miss costs: CBP detains and excludes goods tied to Xinjiang or listed entities, stranding inventory and missing selling seasons.
 - What to do when it's broken: Hold the shipment; assemble tracing documents back to raw materials and replace any Xinjiang or listed-entity source.
@@ -1993,7 +1993,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Pesticide pre-harvest interval** (Must be in place, answered Yes or No)
 
-- Asks: Has the full label pre-harvest interval (PHI) passed since the last pesticide application to this crop?
+- Asks: Has the full waiting time before harvest on the pesticide label (pre-harvest interval) passed since this crop was last treated?
 - Rule: FIFRA 12(a)(2)(G), 7 U.S.C. 136j - use must follow the label, including its pre-harvest interval
 - What a miss costs: Residues over tolerance lead to rejected loads, crop destruction, buyer delistings and FIFRA misuse penalties.
 - What to do when it's broken: Do not harvest; wait until the label PHI has fully passed since the last application.
@@ -2001,7 +2001,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Restricted-entry interval** (Must never happen, answered Yes or No)
 
-- Asks: Did any worker enter a treated area during its label restricted-entry interval without a permitted early-entry exception and PPE?
+- Asks: Did any worker enter a treated area during the label's no-entry period (restricted-entry interval) without an allowed early-entry exception and protective equipment (PPE)?
 - Rule: EPA Worker Protection Standard, 40 CFR 170.405 and 170.407; FIFRA 12(a)(2)(G)
 - What a miss costs: Worker poisonings bring WPS penalties, medical and workers' compensation costs, and lawsuits.
 - What to do when it's broken: Remove workers from the treated area now, post or tell the REI, and provide decontamination and medical help if exposed.
@@ -2049,7 +2049,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. H-2A required wage rate** (Must be in place, answered Yes or No)
 
-- Asks: Are H-2A workers and workers in corresponding employment paid at least the highest of the AEWR, prevailing wage, agreed rate, or federal or state minimum wage?
+- Asks: Are H-2A workers and workers in corresponding employment paid at least the highest of the adverse effect wage rate (AEWR), prevailing wage, agreed rate, or federal or state minimum wage?
 - Rule: 20 CFR 655.120(a) and 655.122(l); 29 CFR Part 501
 - What a miss costs: Underpaying H-2A or corresponding workers brings DOL back wages, civil money penalties and debarment from the H-2A program.
 - What to do when it's broken: Raise pay to the highest required rate now and pay back wages owed for all hours already worked.
@@ -2099,7 +2099,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Body-worn camera retention** (Must be in place, answered Yes or No; policy)
 
-- Asks: Is body-worn camera footage kept for your state's required period, with longer holds for use of force, arrests, complaints and litigation?
+- Asks: Is body-worn camera footage kept for your state's required period, with longer holds for use of force, arrests, complaints and lawsuits?
 - Rule: State law varies (state body-worn camera and records retention laws); agency retention policy
 - What a miss costs: Deleted or missing footage leads to lost cases, adverse-inference rulings, public-records suits and settlements.
 - What to do when it's broken: Place a hold on all footage at risk of deletion and fix retention settings to match state law and open cases.
@@ -2115,7 +2115,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Compensatory time 480-hour cap** (Maximum 480 h, warns from 440 h)
 
-- Asks: Hours of compensatory time this officer has banked
+- Asks: Hours of comp time (compensatory time off) this officer has banked
 - Rule: FLSA 7(o)(3)(A), 29 U.S.C. 207(o)(3)(A); 29 CFR 553.24 - 480 hours for law enforcement
 - What a miss costs: Comp time banked over the cap must be paid as overtime, with FLSA back pay, equal liquidated damages and attorney fees.
 - What to do when it's broken: Pay cash overtime for further overtime hours instead of adding comp time until the balance drops below 480.
@@ -2123,7 +2123,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Probable cause review within 48 hours** (Maximum 48 h, warns from 36 h; counts hours since a date and time)
 
-- Asks: Hours since a warrantless arrest with no judicial probable cause determination yet
+- Asks: Hours since an arrest without a warrant, with no judge's probable cause finding yet
 - Rule: County of Riverside v. McLaughlin, 500 U.S. 44 (1991); Gerstein v. Pugh, 420 U.S. 103 (1975); state rules may be shorter
 - What a miss costs: Holding a warrantless arrestee past 48 hours without a judicial probable cause finding brings civil rights suits and release orders.
 - What to do when it's broken: Get the arrestee before a judge for a probable cause determination now, or release them.
@@ -2147,7 +2147,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. ADA communication with deaf people** (Must be in place, answered Yes or No)
 
-- Asks: Are qualified interpreters or other auxiliary aids provided to deaf or hard-of-hearing people in interviews, interrogations and arrests?
+- Asks: Are qualified interpreters or other communication aids provided to deaf or hard-of-hearing people in interviews, interrogations and arrests?
 - Rule: ADA Title II, 42 U.S.C. 12132; 28 CFR 35.160 (effective communication)
 - What a miss costs: Failing to provide interpreters brings DOJ settlements, damages suits and suppressed statements.
 - What to do when it's broken: Get a qualified interpreter or other auxiliary aid before continuing the interview, and document it.
@@ -2157,7 +2157,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. SCBA inspected and charged** (Minimum 90%, warns from 92%)
 
-- Asks: SCBA cylinder pressure as a percent of rated full pressure at this shift's check
+- Asks: Air pack (SCBA) cylinder pressure as a percent of its rated full pressure at this shift's check
 - Rule: OSHA 29 CFR 1910.134(h)(3) - SCBA checked before and after use and monthly; recharge below 90% of rated pressure
 - What a miss costs: A low or unchecked SCBA can fail inside a fire, causing injury or death, OSHA citations and wrongful-death suits.
 - What to do when it's broken: Take the SCBA out of service and recharge the cylinder before assigning it.
@@ -2221,7 +2221,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Two-in, two-out entry** (Must never happen, answered Yes or No)
 
-- Asks: Did any interior structural firefighting entry into an IDLH atmosphere happen without two properly equipped firefighters standing by outside?
+- Asks: Did any crew go inside a burning structure, into air immediately dangerous to life or health (IDLH), without two properly equipped firefighters standing by outside?
 - Rule: OSHA 29 CFR 1910.134(g)(4) - two in, two out for interior structural firefighting (known-rescue exception)
 - What a miss costs: Entering without a standby team leaves no rescue option, causing line-of-duty deaths, OSHA citations and lawsuits.
 - What to do when it's broken: Hold interior entry until two equipped firefighters are outside, and review the incident with the crews.
@@ -2287,7 +2287,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. VGB-compliant drain covers** (Must be in place, answered Yes or No)
 
-- Asks: Does every pool and spa drain have a VGB-compliant cover within its rated service life, plus required anti-entrapment systems?
+- Asks: Does every pool and spa drain have a cover that meets the Virginia Graeme Baker Act (VGB) standard and is within its rated service life, plus required anti-entrapment systems?
 - Rule: Virginia Graeme Baker Pool and Spa Safety Act, 15 U.S.C. 8003; 16 CFR Part 1450
 - What a miss costs: Drain entrapment causes catastrophic injuries or death, CPSC enforcement and large lawsuits.
 - What to do when it's broken: Close the pool or spa until noncompliant or expired drain covers are replaced and anti-entrapment protection is in place.
@@ -2321,7 +2321,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Restrictive housing welfare checks** (Maximum 30 min, warns from 24 min; policy, a company can set its own limit; counts minutes since a date and time)
 
-- Asks: Minutes since the last welfare check of the person in restrictive housing
+- Asks: Minutes since the last welfare check of the person in restrictive housing (segregation)
 - Rule: Corrections standards (e.g., ACA): checks at least every 30 minutes at irregular times; common policy, set to yours
 - What a miss costs: Missed checks are central to in-custody death lawsuits and settlements, and can cost a facility its accreditation.
 - What to do when it's broken: Check the cell now and log the time; use 15-minute or constant watch for anyone at risk of suicide.
@@ -2329,7 +2329,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. PREA intake risk screening** (Maximum 72 h, warns from 60 h; counts hours since a date and time)
 
-- Asks: Hours since the inmate arrived without a sexual victimization and abusiveness risk screening
+- Asks: Hours since the inmate arrived, still without a screening for risk of sexual victimization or abusiveness
 - Rule: 28 CFR 115.41(a)-(b)
 - What a miss costs: Unscreened housing assignments lead to sexual abuse, civil rights suits and failed PREA audits.
 - What to do when it's broken: Complete the PREA risk screening now and review the housing assignment against the result.
@@ -2411,7 +2411,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Producer licensed and CE current** (Must be in place, answered Yes or No)
 
-- Asks: Is every producer selling to this customer licensed in the customer's state for the line, with CE complete?
+- Asks: Is every agent (producer) selling to this customer licensed in the customer's state for this line of insurance, with continuing education (CE) complete?
 - Rule: State insurance producer licensing laws based on the NAIC Producer Licensing Model Act; state CE rules for renewal
 - What a miss costs: Unlicensed sales bring state fines, license revocation and commission forfeiture, and can void coverage placed.
 - What to do when it's broken: Stop the producer from selling in that state or line until the license is active and CE hours are complete.
@@ -2419,7 +2419,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Claim acknowledged on time** (Maximum 15 days, warns from 12 days; policy, a company can set its own limit; counts days since a date)
 
-- Asks: Days since notice of claim was received without acknowledging it
+- Asks: Days since notice of a claim was received, not yet acknowledged
 - Rule: State unfair claims practices laws vary; NAIC model regulation and e.g. Cal. Code Regs. tit. 10, 2695.5(e) use 15 days
 - What a miss costs: Late claim handling is a top finding in market conduct exams, leading to fines and bad-faith lawsuits.
 - What to do when it's broken: Acknowledge the claim in writing now, tell the claimant what is needed, and begin the investigation.
@@ -2435,7 +2435,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Cybersecurity event notice** (Maximum 72 h, warns from 48 h; policy, a company can set its own limit; counts hours since a date and time)
 
-- Asks: Hours since the company determined a reportable cybersecurity event occurred
+- Asks: Hours since the company decided a reportable cybersecurity event happened
 - Rule: NAIC Insurance Data Security Model Law (#668) Sec. 6 as adopted by states; 23 NYCRR 500.17(a); state versions vary
 - What a miss costs: Late notice of a data breach to the insurance regulator brings penalties, consent orders and costly remediation plans.
 - What to do when it's broken: Notify the insurance commissioner now with the facts known, and update the notice as more is learned.
@@ -2467,7 +2467,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. OFAC sanctions screening** (Must be in place, answered Yes or No)
 
-- Asks: Were the policyholder, insureds and claim payees screened against the OFAC SDN list?
+- Asks: Were the policyholder, insureds and claim payees checked against the OFAC sanctions list (SDN list)?
 - Rule: 31 CFR Chapter V (OFAC regulations); blocked property reports, 31 CFR 501.603
 - What a miss costs: OFAC penalties apply on a strict liability basis to policies issued or claims paid to sanctioned parties.
 - What to do when it's broken: Hold the policy or payment and screen all parties now; block and report any confirmed match to OFAC.
@@ -2485,7 +2485,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Currency Transaction Report** (Maximum $10,000, warns from $9,000)
 
-- Asks: Customer's total cash in or out today, aggregated across transactions
+- Asks: Customer's total cash in or out today, all transactions added together
 - Rule: 31 CFR 1010.311, 1010.313 (aggregation); filed within 15 days, 31 CFR 1010.306(a)(1); structuring, 31 U.S.C. 5324
 - What a miss costs: Missed CTRs and ignored structuring bring FinCEN and bank regulator penalties and BSA consent orders.
 - What to do when it's broken: File a FinCEN CTR within 15 calendar days; the transaction may proceed. Review recent activity for structuring.
@@ -2493,7 +2493,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. SAR filed within 30 days** (Maximum 30 days, warns from 25 days; counts days since a date)
 
-- Asks: Days since suspicious activity was first detected without a SAR filed
+- Asks: Days since suspicious activity was first detected without a suspicious activity report (SAR) filed
 - Rule: 31 CFR 1020.320(b)(3) (30 days; up to 60 if no suspect is identified)
 - What a miss costs: Late or missing SARs are frequently cited BSA failures, leading to civil money penalties and consent orders.
 - What to do when it's broken: File the SAR with FinCEN now; call law enforcement first if the activity needs immediate attention.
@@ -2509,7 +2509,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Beneficial owners identified** (Must be in place, answered Yes or No)
 
-- Asks: For a legal entity customer, were beneficial owners identified and verified at account opening?
+- Asks: For a business customer (legal entity), were its beneficial owners identified and verified when the account was opened?
 - Rule: 31 CFR 1010.230(a)-(b)
 - What a miss costs: Missing beneficial ownership records are a frequent BSA exam finding behind penalties and consent orders.
 - What to do when it's broken: Collect the beneficial ownership certification and verify each owner's identity before further activity.
@@ -2517,7 +2517,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. OFAC sanctions screening** (Must be in place, answered Yes or No)
 
-- Asks: Were all parties to the account or payment screened against the OFAC SDN list?
+- Asks: Were all parties to the account or payment checked against the OFAC sanctions list (SDN list)?
 - Rule: 31 CFR Chapter V (OFAC regulations); blocked property reports, 31 CFR 501.603
 - What a miss costs: OFAC penalties apply on a strict liability basis to payments for sanctioned parties and can be very large.
 - What to do when it's broken: Hold the transaction and screen all parties now; block and report any confirmed match to OFAC.
@@ -2525,7 +2525,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Reg E error investigation** (Maximum 10 business days, warns from 8 business days; counts business days since a date)
 
-- Asks: Business days since the customer reported an EFT error without a decision or provisional credit
+- Asks: Business days since the customer reported an electronic transfer (EFT) error, with no decision or provisional credit yet
 - Rule: 12 CFR 1005.11(c)(1)-(2)
 - What a miss costs: Mishandled EFT disputes bring CFPB and regulator enforcement, required restitution and class actions.
 - What to do when it's broken: Finish the investigation or give provisional credit now, and tell the customer the result in writing.
@@ -2533,7 +2533,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Closing Disclosure 3 days early** (Minimum 3 business days, warns from 3 business days)
 
-- Asks: Business days before consummation that the borrower received the Closing Disclosure
+- Asks: Business days before the loan was signed (consummation) that the borrower received the Closing Disclosure
 - Rule: 12 CFR 1026.19(f)(1)(ii)(A)
 - What a miss costs: Late Closing Disclosures force closing delays, and TRID errors lead to restitution and TILA liability.
 - What to do when it's broken: Reschedule consummation so the borrower has the Closing Disclosure at least 3 business days beforehand.
@@ -2567,7 +2567,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Form ADV annual amendment** (Maximum 90 days, warns from 75 days; counts days since a date)
 
-- Asks: Days since the adviser's fiscal year-end without the annual Form ADV amendment filed
+- Asks: Days since the adviser's fiscal year ended, with the annual Form ADV amendment not yet filed
 - Rule: 17 CFR 275.204-1(a)(1) (within 90 days of fiscal year-end)
 - What a miss costs: Late Form ADV filings draw SEC or state deficiency findings and fines, and a long lapse can end registration.
 - What to do when it's broken: File the annual updating amendment on IARD now and deliver the brochure or summary of changes to clients.
@@ -2583,7 +2583,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Private fund audit delivery** (Maximum 120 days, warns from 100 days; counts days since a date)
 
-- Asks: Days since the private fund's fiscal year-end without audited financials delivered to investors
+- Asks: Days since the private fund's fiscal year ended, with audited financial statements not yet delivered to investors
 - Rule: 17 CFR 275.206(4)-2(b)(4) (120 days; 180 days for funds of funds)
 - What a miss costs: Late fund audits break the custody rule, a frequent SEC exam finding that leads to settled orders and penalties.
 - What to do when it's broken: Press the auditor to finish now and deliver the audited financials; report any delay on Form ADV as required.
@@ -2631,7 +2631,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. SAR filed within 30 days** (Maximum 30 days, warns from 25 days; counts days since a date)
 
-- Asks: Days since suspicious activity was first detected without a SAR filed
+- Asks: Days since suspicious activity was first detected without a suspicious activity report (SAR) filed
 - Rule: 31 CFR 1023.320(b)(3) (broker-dealers); 31 CFR 1022.320(b)(3) (money services businesses)
 - What a miss costs: Late or missing SARs bring FinCEN, SEC and FINRA penalties and AML consent orders.
 - What to do when it's broken: File the SAR with FinCEN now and keep the supporting documentation for five years.
@@ -2657,7 +2657,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Methane leak repair deadline** (Maximum 30 days, warns from 24 days; counts days since a date)
 
-- Asks: Days since a fugitive emissions leak was detected without a repair attempt
+- Asks: Days since a gas leak (fugitive emissions) was found without a repair attempt
 - Rule: 40 CFR 60.5397a(h) (OOOOa); 40 CFR 60.5397b(h) (OOOOb): first repair attempt within 30 days of detection
 - What a miss costs: LDAR failures are a frequent EPA Clean Air Act case, leading to civil penalties and consent decrees.
 - What to do when it's broken: Attempt the repair now, resurvey to confirm it holds, and record the repair and resurvey dates.
@@ -2665,7 +2665,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. SPCC plan five-year review** (Maximum 60 months, warns from 54 months)
 
-- Asks: Months since the SPCC plan was last reviewed and evaluated
+- Asks: Months since the oil spill prevention (SPCC) plan was last reviewed and evaluated
 - Rule: 40 CFR 112.5(b)
 - What a miss costs: Out-of-date SPCC plans are routine EPA inspection findings with civil penalties, and worsen spill liability.
 - What to do when it's broken: Complete and document the SPCC plan review now, and amend the plan if technology or the facility has changed.
@@ -2681,7 +2681,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Hydrogen sulfide exposure** (Maximum 20 ppm, warns from 10 ppm)
 
-- Asks: Highest H2S concentration measured in the worker's breathing zone
+- Asks: Highest hydrogen sulfide (H2S) level measured in the air the worker breathes
 - Rule: 29 CFR 1910.1000 Table Z-2 (ceiling 20 ppm; 50 ppm peak up to 10 minutes once per shift if no other exposure)
 - What a miss costs: H2S overexposure can kill workers within minutes, leading to OSHA citations, shutdowns and wrongful death suits.
 - What to do when it's broken: Move workers upwind out of the area now; re-enter only with supplied-air respirators after the source is found.
@@ -2697,7 +2697,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Operator qualification for tasks** (Must be in place, answered Yes or No)
 
-- Asks: Is every person performing covered pipeline tasks today qualified under the written OQ program?
+- Asks: Is every person doing covered pipeline tasks today qualified under the written operator qualification (OQ) program?
 - Rule: 49 CFR 192.805 (gas); 49 CFR 195.505 (hazardous liquid)
 - What a miss costs: Unqualified workers on covered tasks are common PHMSA findings that lead to civil penalties and raise accident risk.
 - What to do when it's broken: Stop the task until a qualified person performs it or directly observes and directs the unqualified worker.
@@ -2705,7 +2705,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. Offshore SEMS audit** (Maximum 36 months, warns from 32 months)
 
-- Asks: Months since the last independent SEMS audit of the offshore facility
+- Asks: Months since the last independent audit of the offshore facility's safety and environmental management system (SEMS)
 - Rule: 30 CFR 250.1920(a)
 - What a miss costs: Missed SEMS audits bring BSEE incidents of noncompliance, civil penalties and possible shut-in of operations.
 - What to do when it's broken: Engage an accredited audit service provider now and submit the audit report to BSEE on time.
@@ -2731,7 +2731,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Lockout/tagout before servicing** (Must be in place, answered Yes or No)
 
-- Asks: Has energy isolation been verified and has every worker on the job applied a personal lock?
+- Asks: Has it been checked that the equipment's energy is shut off and locked out, and has every worker on the job put on a personal lock?
 - Rule: 29 CFR 1910.147(d)(6) and (f)(3)
 - What a miss costs: Lockout/tagout is frequently cited by OSHA; failures bring citations, amputation and death lawsuits, and line shutdowns.
 - What to do when it's broken: Stop servicing; verify isolation and have every worker apply a personal lock first.
@@ -2787,7 +2787,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. Noise exposure limit** (Maximum 90 dBA, warns from 85 dBA)
 
-- Asks: Worker's 8-hour time-weighted average noise exposure
+- Asks: Worker's noise exposure, as an 8-hour average (time-weighted average)
 - Rule: 29 CFR 1910.95(b)(1) and (c)(1)
 - What a miss costs: Noise violations bring OSHA citations, and hearing loss is a common and costly workers' compensation claim.
 - What to do when it's broken: Use engineering or administrative controls, require hearing protection and enroll workers in hearing conservation.
@@ -2813,7 +2813,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Part 11 electronic signatures** (Must be in place, answered Yes or No)
 
-- Asks: Does every electronic signature show the signer's name, date/time and meaning, and use two distinct ID components?
+- Asks: Does every electronic signature show the signer's name, date/time and meaning, and use two separate ID parts (such as an ID code and a password)?
 - Rule: 21 CFR 11.50 and 11.200(a)(1)
 - What a miss costs: Part 11 and data integrity gaps are common in FDA warning letters and can hold up batch release and product approvals.
 - What to do when it's broken: Do not release the record; fix the signature so name, date/time and meaning show and two ID components are used.
@@ -2861,7 +2861,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. DSCSA illegitimate product notice** (Maximum 24 h, warns from 18 h; counts hours since a date and time)
 
-- Asks: Hours since determining a product is illegitimate, without notifying FDA and affected trading partners
+- Asks: Hours since deciding a product is illegitimate (such as counterfeit or stolen), without notifying FDA and affected trading partners
 - Rule: 21 U.S.C. 360eee-1(b)(4)(B) (FD&C Act 582(b)(4)(B))
 - What a miss costs: Late notice of illegitimate product violates DSCSA, can bring FDA enforcement, and lets harmful product reach patients.
 - What to do when it's broken: Notify FDA (Form 3911) and affected trading partners now, and quarantine the product.
@@ -2877,7 +2877,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Field alert report** (Maximum 3 working days, warns from 2 working days; counts business days since a date)
 
-- Asks: Working days since learning of a distributed product quality problem (e.g., contamination, label mix-up), without a field alert
+- Asks: Working days since learning of a quality problem in a product already shipped (such as contamination or a label mix-up), without a field alert
 - Rule: 21 CFR 314.81(b)(1)
 - What a miss costs: Late field alerts draw FDA enforcement and let defective drugs stay on the market, raising recall and liability costs.
 - What to do when it's broken: File the field alert report with the FDA district office now, even if the investigation is still open.
@@ -2935,7 +2935,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Noise exposure limit** (Maximum 90 dBA, warns from 85 dBA)
 
-- Asks: Miner's 8-hour time-weighted average noise exposure
+- Asks: Miner's noise exposure, as an 8-hour average (time-weighted average)
 - Rule: 30 CFR 62.130 (action level 30 CFR 62.120)
 - What a miss costs: Noise overexposure brings MSHA citations, and hearing loss leads to compensation claims.
 - What to do when it's broken: Use engineering and administrative controls, provide hearing protection and enroll the miner in hearing conservation.
@@ -2977,7 +2977,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. TWIC for secure areas** (Must be in place, answered Yes or No)
 
-- Asks: Does every person entering a secure area hold a valid TWIC or have a TWIC-holding escort?
+- Asks: Does every person entering a secure area hold a valid TWIC card, or have an escort who holds one?
 - Rule: 33 CFR 101.514; 33 CFR 105.255
 - What a miss costs: Access control failures draw Coast Guard civil penalties and can lead to orders suspending facility operations.
 - What to do when it's broken: Stop the person at the gate; allow entry only with a valid TWIC or an escort who holds one.
@@ -3009,7 +3009,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. MARSEC level change measures** (Maximum 12 h, warns from 9 h; counts hours since a date and time)
 
-- Asks: Hours since notice of a MARSEC level increase, without all of the new level's measures in place
+- Asks: Hours since notice that the maritime security (MARSEC) level went up, without all of the new level's measures in place
 - Rule: 33 CFR 105.230
 - What a miss costs: Failing to raise security when MARSEC rises can bring Coast Guard penalties and orders to stop cargo or vessel operations.
 - What to do when it's broken: Put the higher MARSEC measures in place now and report status to the Captain of the Port.
@@ -3017,7 +3017,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. Declaration of Security** (Must be in place, answered Yes or No)
 
-- Asks: When a Declaration of Security is required, was it signed before the vessel-facility interface began?
+- Asks: When a Declaration of Security is required, was it signed before the ship and the facility began working together?
 - Rule: 33 CFR 105.245
 - What a miss costs: Missing Declarations of Security draw Coast Guard penalties and can delay vessel operations.
 - What to do when it's broken: Hold cargo or passenger operations until the vessel and facility security officers sign the Declaration.
@@ -3059,7 +3059,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. IBC approval before research** (Must be in place, answered Yes or No)
 
-- Asks: For work under NIH Guidelines Sections III-A to III-D, did the IBC approve it before it began?
+- Asks: For work under NIH Guidelines Sections III-A to III-D, did the Institutional Biosafety Committee (IBC) approve it before it began?
 - Rule: NIH Guidelines, Section III (III-A to III-D)
 - What a miss costs: Noncompliance with the NIH Guidelines can lead NIH to suspend or end funding for the project or the whole institution.
 - What to do when it's broken: Stop the experiment and submit it to the Institutional Biosafety Committee for approval.
@@ -3107,7 +3107,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Biosafety cabinet certification** (Maximum 365 days, warns from 330 days; policy, a company can set its own limit; counts days since a date)
 
-- Asks: Days since the biosafety cabinet was field-certified
+- Asks: Days since the biosafety cabinet was last certified on site
 - Rule: NSF/ANSI 49 standard; CDC/NIH BMBL (annual field certification)
 - What a miss costs: Uncertified cabinets can expose staff and ruin samples, putting at risk inspections, grants and select agent registration.
 - What to do when it's broken: Stop work in the cabinet and have it field-certified before use.
@@ -3131,7 +3131,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. IRB approval for human research** (Must be in place, answered Yes or No)
 
-- Asks: Did an IRB approve this human subjects research before any participant was enrolled?
+- Asks: Did an Institutional Review Board (IRB) approve this research with people before anyone was enrolled?
 - Rule: 45 CFR 46.103 and 46.109
 - What a miss costs: Research without IRB approval can lead to suspended federal funding, unusable data and lawsuits from participants.
 - What to do when it's broken: Stop enrolling participants and submit the study to the IRB for review.
@@ -3181,7 +3181,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. PRN psychotropic 14-day limit** (Maximum 14 days, warns from 12 days; counts days since a date)
 
-- Asks: Days since the as-needed (PRN) psychotropic order was written, without a prescriber's documented renewal
+- Asks: Days since the as-needed (PRN) order for a psychotropic drug was written, without a renewal from the prescriber on record
 - Rule: 42 CFR 483.45(e)(4)-(5)
 - What a miss costs: Unnecessary or open-ended psychotropic orders are cited as chemical restraint and unnecessary drugs, drawing penalties and lawsuits.
 - What to do when it's broken: Stop using the PRN order until the prescriber evaluates the resident and documents the rationale and duration.
@@ -3189,10 +3189,10 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. RN on duty 8 hours every day** (Must be in place, answered Yes or No)
 
-- Asks: Is a registered nurse on duty for at least 8 consecutive hours today?
+- Asks: Is a registered nurse on duty for at least 8 hours in a row today?
 - Rule: 42 U.S.C. 1395i-3(b)(4)(C)(i); 42 CFR 483.35(b)
 - What a miss costs: Missing RN coverage is cited as a staffing deficiency, can lower star ratings and draws civil money penalties.
-- What to do when it's broken: Schedule or call in a registered nurse to cover at least 8 consecutive hours today.
+- What to do when it's broken: Schedule or call in a registered nurse to cover at least 8 hours in a row today.
 - Example reading used in demos: Yes
 
 **8. Admission MDS within 14 days** (Maximum 14 days, warns from 12 days; counts days since a date)
@@ -3305,7 +3305,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Controlled Rx red flags resolved** (Must be in place, answered Yes or No)
 
-- Asks: Are red flags on controlled-substance prescriptions resolved and documented before dispensing?
+- Asks: Are red flags on controlled-substance prescriptions resolved and documented before they are filled?
 - Rule: 21 CFR 1306.04(a); 21 CFR 1306.06
 - What a miss costs: Filling illegitimate controlled-substance prescriptions brings DEA registration loss, civil penalties and opioid lawsuits.
 - What to do when it's broken: Do not dispense until the red flag is resolved with the prescriber and documented; refuse if it cannot be.
@@ -3329,7 +3329,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Emergency C-II follow-up in 7 days** (Maximum 7 days, warns from 5 days; counts days since a date)
 
-- Asks: Days since dispensing an emergency oral Schedule II prescription without receiving the prescriber's follow-up prescription
+- Asks: Days since filling an emergency Schedule II prescription given by phone, without receiving the prescriber's follow-up prescription
 - Rule: 21 CFR 1306.11(d)(4)
 - What a miss costs: Dispensing an emergency oral Schedule II prescription without the follow-up prescription is a Controlled Substances Act violation.
 - What to do when it's broken: Notify the nearest DEA Diversion office that the follow-up prescription was not received.
@@ -3469,7 +3469,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Overtime paid over 40 hours** (Must be in place, answered Yes or No)
 
-- Asks: Is every non-exempt employee paid 1.5 times the regular rate for all hours over 40 in a workweek?
+- Asks: Is every employee who is owed overtime (non-exempt) paid 1.5 times the regular rate for all hours over 40 in a workweek?
 - Rule: 29 U.S.C. 207(a)(1)
 - What a miss costs: Unpaid overtime brings back wages plus equal liquidated damages, attorney fees and class or collective action lawsuits.
 - What to do when it's broken: Pay the unpaid overtime on the next payroll and fix timekeeping so all hours over 40 are paid at 1.5x.
@@ -3551,7 +3551,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Breach notice to authority in 72 hours** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
-- Asks: Hours since becoming aware of a personal data breach, without notifying the supervisory authority
+- Asks: Hours since becoming aware of a personal data breach, without notifying the supervisory authority (the data protection regulator)
 - Rule: GDPR Art. 33(1)
 - What a miss costs: Late breach notice draws GDPR fines from supervisory authorities on top of the breach costs and follow-on claims.
 - What to do when it's broken: Notify the lead supervisory authority now; explain the reasons for any delay and send what facts you have.
@@ -3559,7 +3559,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Lawful basis for processing** (Must be in place, answered Yes or No)
 
-- Asks: Is a lawful basis documented for every processing activity, with valid consent where consent is the basis?
+- Asks: Is a lawful basis written down for every way you use personal data, with valid consent where consent is the basis?
 - Rule: GDPR Art. 6(1); Art. 7
 - What a miss costs: Processing without a valid legal basis, such as invalid consent for ads, is the ground for many of the largest GDPR fines and orders to stop processing.
 - What to do when it's broken: Stop the processing that lacks a lawful basis until a valid basis is identified and documented.
@@ -3567,7 +3567,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Lawful transfers outside the EEA** (Must be in place, answered Yes or No)
 
-- Asks: Is every transfer of personal data out of the EEA covered by an adequacy decision, standard contractual clauses or another Chapter V tool?
+- Asks: Is every transfer of personal data out of the European Economic Area (EEA) covered by an adequacy decision, standard contractual clauses or another tool allowed under Chapter V?
 - Rule: GDPR Chapter V (Art. 44-49)
 - What a miss costs: Unlawful transfers of EU personal data can bring large GDPR fines and orders to suspend transfers that the product depends on.
 - What to do when it's broken: Pause the uncovered transfer; put SCCs with a transfer risk assessment in place or use an adequacy-covered recipient.
@@ -3575,7 +3575,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Answer data subject requests** (Maximum 30 days, warns from 21 days; counts days since a date)
 
-- Asks: Days since the data subject request was received, with no response and no extension notice
+- Asks: Days since a person's request about their data was received, with no response and no extension notice
 - Rule: GDPR Art. 12(3) (one month, treated here as 30 days; extendable by two months with notice)
 - What a miss costs: Ignored or late access and erasure requests are among the most common complaints to regulators and lead to orders, fines and damages claims.
 - What to do when it's broken: Respond now, or tell the person within the month why you are extending and by how long.
@@ -3615,7 +3615,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. HIPAA business associate agreements** (Must be in place, answered Yes or No)
 
-- Asks: Is a signed business associate agreement in place with every client and subcontractor for which you handle PHI?
+- Asks: Is a signed business associate agreement in place with every client and subcontractor for which you handle protected health information (PHI)?
 - Rule: 45 CFR 164.502(e), 164.504(e), 164.308(b)
 - What a miss costs: Handling protected health information without a signed business associate agreement is a HIPAA violation cited in OCR settlements and lost contracts.
 - What to do when it's broken: Stop receiving PHI from, or sending it to, any party without a signed business associate agreement.
@@ -3623,7 +3623,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. DPIA before high-risk processing** (Must be in place, answered Yes or No)
 
-- Asks: Was a data protection impact assessment completed before starting processing likely to be high risk?
+- Asks: Was a data protection impact assessment completed before starting any use of personal data likely to be high risk?
 - Rule: GDPR Art. 35(1)
 - What a miss costs: Launching high-risk processing without a data protection impact assessment draws GDPR fines and can force a product feature to be withdrawn.
 - What to do when it's broken: Complete the DPIA before continuing; consult the supervisory authority if high risk remains after mitigation.
@@ -3633,7 +3633,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. No CVV or track data after auth** (Must never happen, answered Yes or No; policy)
 
-- Asks: Is CVV, full track data or PIN data stored anywhere after authorization?
+- Asks: Are card security codes (CVV), full magnetic-stripe (track) data or PIN data stored anywhere after the payment is authorized?
 - Rule: PCI DSS v4.0.1 Req. 3.3.1 (industry standard)
 - What a miss costs: Storing sensitive authentication data turns a breach into card-brand assessments, forensic costs, higher fees and possible loss of card acceptance.
 - What to do when it's broken: Find and securely delete the stored data, fix the capture flow, and report to your acquirer if a compromise is suspected.
@@ -3641,7 +3641,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. OFAC sanctions screening** (Must be in place, answered Yes or No)
 
-- Asks: Are merchants, customers and payment parties screened against the OFAC SDN list at onboarding and when the list changes?
+- Asks: Are merchants, customers and payment parties checked against the OFAC sanctions list (SDN list) at onboarding and when the list changes?
 - Rule: 31 CFR Part 501; 31 CFR Chapter V sanctions programs
 - What a miss costs: Processing payments for sanctioned parties brings strict-liability OFAC civil penalties and bank de-risking of the business.
 - What to do when it's broken: Hold transactions with unscreened parties; screen them now and block and report any match to OFAC.
@@ -3665,7 +3665,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. MFA for access into the CDE** (Must be in place, answered Yes or No; policy)
 
-- Asks: Is multi-factor authentication required for all access into the cardholder data environment?
+- Asks: Is multi-factor authentication required for all access into the systems that hold card data (cardholder data environment)?
 - Rule: PCI DSS v4.0.1 Req. 8.4.2 (industry standard)
 - What a miss costs: Password-only access to cardholder data systems is a common breach path that leads to card-brand assessments and failed PCI validation.
 - What to do when it's broken: Turn on MFA for every account that can reach the cardholder data environment before further access.
@@ -3681,7 +3681,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Annual PCI validation (SAQ/ROC)** (Maximum 365 days, warns from 330 days; policy, a company can set its own limit; counts days since a date)
 
-- Asks: Days since the last completed SAQ or Report on Compliance and Attestation of Compliance
+- Asks: Days since the last completed PCI self-assessment (SAQ) or Report on Compliance, with its Attestation of Compliance
 - Rule: Card brand compliance programs (policy; annual SAQ or ROC with AOC)
 - What a miss costs: Lapsed PCI validation brings monthly non-compliance fees from the acquirer and weakens the defense after a breach.
 - What to do when it's broken: Complete the SAQ or ROC and submit the Attestation of Compliance to your acquirer.
@@ -3689,7 +3689,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. Stored card numbers unreadable** (Must be in place, answered Yes or No; policy)
 
-- Asks: Is every stored primary account number rendered unreadable (encryption, tokenization, truncation or hashing)?
+- Asks: Is every stored card number (PAN) made unreadable by encryption, tokenization, truncation or hashing?
 - Rule: PCI DSS v4.0.1 Req. 3.5.1 (industry standard)
 - What a miss costs: Stored card numbers in clear text make a breach far more costly through card-brand assessments, card reissue costs and lawsuits.
 - What to do when it's broken: Encrypt or tokenize the stored card numbers now and delete any you do not need.
@@ -3715,7 +3715,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Effective AML program** (Must be in place, answered Yes or No)
 
-- Asks: Is there a written, risk-based AML program with a compliance officer, training and working transaction monitoring?
+- Asks: Is there a written, risk-based anti-money-laundering (AML) program with a compliance officer, training and working transaction monitoring?
 - Rule: 31 U.S.C. 5318(h); 31 CFR 1022.210
 - What a miss costs: AML program failures are the basis of the largest FinCEN and DOJ crypto settlements, with monitorships and forced exits from the U.S. market.
 - What to do when it's broken: Fix the program gaps now: name a qualified compliance officer, turn on monitoring and document the risk assessment.
@@ -3723,7 +3723,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. SAR filed within 30 days** (Maximum 30 days, warns from 20 days; counts days since a date)
 
-- Asks: Days since initial detection of facts that may require a SAR, without filing
+- Asks: Days since first spotting facts that may require a suspicious activity report (SAR), with none filed
 - Rule: 31 CFR 1022.320(a)(2), (b)(3) ($2,000 threshold)
 - What a miss costs: Late or missing SARs are cited in almost every FinCEN enforcement action against money services businesses and draw civil penalties.
 - What to do when it's broken: File the SAR with FinCEN now and document why it was late.
@@ -3747,7 +3747,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. FinCEN MSB registration current** (Must be in place, answered Yes or No)
 
-- Asks: Is the business registered with FinCEN as an MSB, with renewal filed on its two-year cycle?
+- Asks: Is the business registered with FinCEN as a money services business (MSB), with renewal filed on its two-year cycle?
 - Rule: 31 CFR 1022.380; 18 U.S.C. 1960
 - What a miss costs: Operating as an unregistered MSB draws FinCEN civil penalties and is a federal crime.
 - What to do when it's broken: File or renew the FinCEN MSB registration (Form 107) now.
@@ -3763,7 +3763,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Travel Rule for $3,000+ transmittals** (Must be in place, answered Yes or No)
 
-- Asks: For transmittals of $3,000 or more, is the required sender and recipient information recorded and passed to the next institution?
+- Asks: For transfers of $3,000 or more, is the required sender and recipient information recorded and passed to the next institution?
 - Rule: 31 CFR 1010.410(e), (f)
 - What a miss costs: Missing originator and beneficiary information on transmittals is a recurring FinCEN finding that draws civil penalties.
 - What to do when it's broken: Hold qualifying transmittals until the required information is recorded and can be sent with the transfer.
@@ -3771,7 +3771,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. CTR for cash over $10,000** (Maximum 15 days, warns from 10 days; counts days since a date)
 
-- Asks: Days since a cash transaction (or same-day aggregate) over $10,000, without filing a CTR
+- Asks: Days since a cash transaction over $10,000 (or several on one day adding up to it), without filing a currency transaction report (CTR)
 - Rule: 31 CFR 1022.310; 31 CFR 1010.311; 31 CFR 1010.306(a)(1)
 - What a miss costs: Failing to file currency transaction reports draws FinCEN civil penalties and can support structuring charges.
 - What to do when it's broken: File the CTR with FinCEN now.
@@ -3787,7 +3787,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. BSA records kept five years** (Must be in place, answered Yes or No)
 
-- Asks: Are BSA records (SARs, CTRs, transmittal and identity records) kept for at least five years?
+- Asks: Are BSA records (SARs, CTRs, transfer and identity records) kept for at least five years?
 - Rule: 31 CFR 1010.430(d)
 - What a miss costs: Destroyed or missing BSA records draw civil penalties and leave the business unable to defend itself in exams and investigations.
 - What to do when it's broken: Stop any deletion of BSA records and set retention to at least five years.
@@ -3821,7 +3821,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Closing Disclosure 3 days before close** (Minimum 3 business days, warns from 3 business days)
 
-- Asks: Business days between the consumer's receipt of the Closing Disclosure and consummation
+- Asks: Business days between the consumer's receipt of the Closing Disclosure and the loan signing (consummation)
 - Rule: 12 CFR 1026.19(f)(1)(ii)(A)
 - What a miss costs: Closing before the waiting period ends is a TRID violation that forces delayed closings, cures and borrower damages.
 - What to do when it's broken: Move the closing date so the consumer has the Closing Disclosure at least three business days before.
@@ -3895,7 +3895,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Validation notice within 5 days** (Maximum 5 days, warns from 4 days; counts days since a date)
 
-- Asks: Days since the initial communication, without sending the validation notice
+- Asks: Days since first contacting the consumer about the debt, without sending the validation notice
 - Rule: 15 U.S.C. 1692g(a); 12 CFR 1006.34(a)(1)
 - What a miss costs: A missing or late validation notice is a common FDCPA lawsuit claim and draws CFPB and state enforcement.
 - What to do when it's broken: Send the validation notice now and pause collection until the validation period is set.
@@ -3943,7 +3943,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. No credit reporting before contact** (Must never happen, answered Yes or No)
 
-- Asks: Was the debt reported to a credit bureau before speaking to the consumer or sending a notice and waiting for undeliverability?
+- Asks: Was the debt reported to a credit bureau before talking to the consumer, or before sending a notice and waiting to see if it came back undelivered?
 - Rule: 12 CFR 1006.30(a)(1)
 - What a miss costs: Reporting a debt before contacting the consumer (passive debt collection) violates Reg F and invites lawsuits and enforcement.
 - What to do when it's broken: Pull the tradeline, contact the consumer, and wait a reasonable time (such as 14 days) for any undeliverable notice.
@@ -3961,7 +3961,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. CUI safeguarded per NIST SP 800-171** (Must be in place, answered Yes or No)
 
-- Asks: Do all company systems that process, store or send CUI meet NIST SP 800-171, with any open gaps tracked in a current plan of action?
+- Asks: Do all company systems that process, store or send Controlled Unclassified Information (CUI) meet NIST SP 800-171, with any open gaps tracked in a current plan of action?
 - Rule: DFARS 252.204-7012(b); NIST SP 800-171
 - What a miss costs: Claiming cyber compliance that is not in place exposes the contractor to False Claims Act suits, lost awards and contract termination.
 - What to do when it's broken: Stop representing full compliance; document gaps in a plan of action, fix them and correct any inaccurate SPRS score.
@@ -3969,7 +3969,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Certified cost or pricing data** (Must be in place, answered Yes or No)
 
-- Asks: For each negotiated action over the TINA threshold with no exception, was current, accurate and complete cost or pricing data submitted and certified?
+- Asks: For each negotiated contract or change over the TINA threshold, with no exception, was current, accurate and complete cost or pricing data submitted and certified?
 - Rule: 10 U.S.C. 3702; FAR 15.403-4; FAR 52.215-10
 - What a miss costs: Defective pricing data leads to government price reductions with interest, and knowing errors can bring False Claims Act liability.
 - What to do when it's broken: Hold the price agreement; update the cost or pricing data to the agreed date and certify it before award.
@@ -3993,7 +3993,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. CMMC level required by contract** (Must be in place, answered Yes or No)
 
-- Asks: Does the company hold a current CMMC status, at the level the solicitation or contract requires, for each system handling FCI or CUI?
+- Asks: Does the company hold a current CMMC status, at the level the solicitation or contract requires, for each system handling federal contract information (FCI) or CUI?
 - Rule: 32 CFR Part 170; DFARS 252.204-7021
 - What a miss costs: Without the CMMC status the contract requires, the company is ineligible for award and can lose new work and options.
 - What to do when it's broken: Do not bid or process FCI/CUI on the system; complete the required CMMC assessment and affirmation.
@@ -4043,7 +4043,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Environmental pathogen monitoring** (Must be in place, answered Yes or No)
 
-- Asks: For ready-to-eat food exposed to the environment before packaging, is environmental pathogen monitoring done, recorded and acted on?
+- Asks: For ready-to-eat food exposed to the plant environment before packaging, is the environment tested for pathogens, with results recorded and acted on?
 - Rule: 21 CFR 117.165(a)(3); 21 CFR 117.150
 - What a miss costs: Listeria or Salmonella in ready-to-eat food leads to recalls, outbreak lawsuits, plant shutdowns and FDA warning letters.
 - What to do when it's broken: Start swabbing food-contact and nearby zones now, hold affected product and document corrective actions.
@@ -4059,7 +4059,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Written food safety plan by a PCQI** (Must be in place, answered Yes or No)
 
-- Asks: Does the facility have a written food safety plan prepared or overseen by a preventive controls qualified individual?
+- Asks: Does the facility have a written food safety plan prepared or overseen by a preventive controls qualified individual (PCQI)?
 - Rule: 21 CFR 117.126; 21 CFR 117.180
 - What a miss costs: Operating without a written food safety plan is a common FDA warning letter finding and can lead to registration suspension.
 - What to do when it's broken: Have a PCQI prepare the hazard analysis and written food safety plan now and review production against it.
@@ -4107,7 +4107,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Foreign supplier verification (FSVP)** (Must be in place, answered Yes or No)
 
-- Asks: As the importer, does the company have a Foreign Supplier Verification Program for each imported food and foreign supplier?
+- Asks: As the importer, does the company have a Foreign Supplier Verification Program (FSVP) for each imported food and foreign supplier?
 - Rule: 21 CFR 1.502; 21 CFR Part 1 Subpart L
 - What a miss costs: Importing without an FSVP draws FDA warning letters and import alerts that stop shipments at the border.
 - What to do when it's broken: Do not import the food; develop the FSVP hazard analysis and supplier verification for it first.
@@ -4133,7 +4133,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. 510(k) or PMA before marketing** (Must never happen, answered Yes or No)
 
-- Asks: Is any device, or significant change to a device, being marketed without the required 510(k), De Novo or PMA?
+- Asks: Is any device, or significant change to a device, being sold without the FDA clearance or approval it needs (510(k), De Novo or PMA)?
 - Rule: 21 U.S.C. 360(k); 21 CFR 807.81; 21 U.S.C. 360e; 21 CFR Part 814
 - What a miss costs: Selling a device or changed device without required clearance or approval makes it adulterated and misbranded, risking seizure and recall.
 - What to do when it's broken: Stop distributing the device and file the required submission; consult regulatory counsel on product in the field.
@@ -4141,7 +4141,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Complaints handled and evaluated** (Must be in place, answered Yes or No)
 
-- Asks: Is every complaint recorded, evaluated for MDR reportability, and investigated where needed, with records kept?
+- Asks: Is every complaint recorded, checked for whether it must be reported to FDA (MDR), and investigated where needed, with records kept?
 - Rule: 21 CFR 820.10 (ISO 13485:2016 clause 8.2.2); 21 CFR 820.35(a)
 - What a miss costs: Weak complaint handling is a top FDA inspection finding, hides reportable events and leads to warning letters and recalls.
 - What to do when it's broken: Log and review all open complaints now, document the MDR decision for each and start needed investigations.
@@ -4149,7 +4149,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. MDR report within 30 days** (Maximum 30 days, warns from 25 days; counts days since a date)
 
-- Asks: Calendar days since becoming aware of a reportable death, serious injury or malfunction, without filing an MDR
+- Asks: Calendar days since becoming aware of a reportable death, serious injury or malfunction, without filing a medical device report (MDR)
 - Rule: 21 CFR 803.50(a)
 - What a miss costs: Late or missing Medical Device Reports are cited in warning letters and can support civil money penalties and misbranding charges.
 - What to do when it's broken: File the MDR (Form 3500A) through eMDR now and document why it was late.
@@ -4181,7 +4181,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **8. 5-day MDR report** (Maximum 5 work days, warns from 4 work days; counts business days since a date)
 
-- Asks: Work days since becoming aware of an event needing remedial action to prevent substantial harm (or an FDA 5-day request), without reporting
+- Asks: Work days since becoming aware of an event that needs action to prevent substantial harm (or of an FDA request for a 5-day report), without reporting
 - Rule: 21 CFR 803.53
 - What a miss costs: Missing a 5-day report on an event needing remedial action is cited in warning letters and can support civil money penalties.
 - What to do when it's broken: File the 5-day MDR report through eMDR now.
@@ -4189,7 +4189,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Annual registration and listing** (Must be in place, answered Yes or No)
 
-- Asks: Was establishment registration renewed (with the user fee paid) and device listing reviewed between October 1 and December 31 last year?
+- Asks: Was the FDA establishment registration renewed (with the user fee paid) and the device listing reviewed between October 1 and December 31 last year?
 - Rule: 21 CFR 807.22(b); 21 U.S.C. 360
 - What a miss costs: Devices from an unregistered or unlisted establishment are misbranded and can be refused at import or held from sale.
 - What to do when it's broken: Pay the registration user fee and complete registration and listing in FURLS now.
@@ -4197,7 +4197,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **10. UDI on labels and in GUDID** (Must be in place, answered Yes or No)
 
-- Asks: Does each device label and package carry a UDI, with device data submitted to GUDID, unless an exception applies?
+- Asks: Does each device label and package carry a unique device identifier (UDI), with device data sent to FDA's GUDID database, unless an exception applies?
 - Rule: 21 CFR 801.20; 21 CFR 830.300
 - What a miss costs: Devices without a required UDI or GUDID record are misbranded and can be refused by hospitals, distributors and at import.
 - What to do when it's broken: Stop shipping unlabeled units; apply UDIs and submit the GUDID records.
@@ -4239,7 +4239,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. PSM compliance audit every 3 years** (Maximum 1,095 days, warns from 1,000 days; counts days since a date)
 
-- Asks: Days since the last PSM compliance audit was certified
+- Asks: Days since the last process safety management (PSM) compliance audit was certified
 - Rule: 29 CFR 1910.119(o)(1); 40 CFR 68.79(a)
 - What a miss costs: Missed compliance audits are cited by OSHA and EPA and let program gaps grow unnoticed until an incident.
 - What to do when it's broken: Schedule and certify a PSM compliance audit now and respond to findings in writing.
@@ -4255,7 +4255,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **7. Tier II report filed by March 1** (Must be in place, answered Yes or No)
 
-- Asks: Was the Tier II inventory for last year submitted to the SERC, LEPC and local fire department by March 1?
+- Asks: Was the Tier II chemical inventory for last year sent to the state and local emergency planning bodies (SERC and LEPC) and the local fire department by March 1?
 - Rule: 40 CFR 370.45
 - What a miss costs: Missing or late EPCRA Tier II reports draw EPA civil penalties and leave fire departments unaware of stored hazards.
 - What to do when it's broken: File the Tier II report with the SERC, LEPC and fire department now.
@@ -4332,12 +4332,12 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - Asks: Gallons of non-acute hazardous waste at this satellite accumulation area
 - Rule: 40 CFR 262.15(a)
 - What a miss costs: Exceeding satellite limits is a common RCRA citation and turns the area into one that must meet full storage rules.
-- What to do when it's broken: Date the excess and move it to the central accumulation area within 3 consecutive calendar days.
+- What to do when it's broken: Date the excess and move it to the central accumulation area within 3 calendar days in a row.
 - Example reading used in demos: 40 gal
 
 **7. SQG 180-day accumulation limit** (Maximum 180 days, warns from 160 days; counts days since a date)
 
-- Asks: Days since this hazardous waste began accumulating on site (180-day limit; 270 days only if the TSDF is over 200 miles away)
+- Asks: Days since this hazardous waste began accumulating on site (180-day limit; 270 days only if the waste facility it goes to is over 200 miles away)
 - Rule: 40 CFR 262.16(b)(1); 40 CFR 262.16(d)
 - What a miss costs: Holding waste past the limit makes a small quantity generator an unpermitted storage facility subject to RCRA penalties.
 - What to do when it's broken: Ship the waste to a permitted facility now, or request an extension from the regulator if allowed.
@@ -4353,7 +4353,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. Manifest exception report** (Maximum 45 days, warns from 35 days; counts days since a date)
 
-- Asks: Days since the initial transporter took the waste, without receiving the signed manifest copy from the destination facility
+- Asks: Days since the first transporter took the waste, without getting back the signed manifest copy from the destination facility
 - Rule: 40 CFR 262.42(a)
 - What a miss costs: Not following up on unconfirmed shipments is a RCRA violation and leaves the generator liable if waste is misdelivered.
 - What to do when it's broken: Contact the transporter and facility, and file an exception report with the EPA Region or state now.
@@ -4371,7 +4371,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Security patch evaluation cycle** (Maximum 35 days, warns from 28 days; counts days since a date)
 
-- Asks: Days since the last evaluation of security patches for applicability
+- Asks: Days since security patches were last checked for whether they apply
 - Rule: NERC CIP-007 R2.2
 - What a miss costs: Late patch evaluations are frequently cited CIP violations and draw NERC civil penalties and mitigation plans.
 - What to do when it's broken: Evaluate all released security patches now and document the result for each applicable BES Cyber Asset.
@@ -4379,7 +4379,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Access removed after termination** (Maximum 24 h, warns from 16 h; counts hours since a date and time)
 
-- Asks: Hours since a termination action without removing unescorted physical and Interactive Remote Access
+- Asks: Hours since a person was let go, without removing their unescorted physical access and Interactive Remote Access
 - Rule: NERC CIP-004 R5.1
 - What a miss costs: Former staff who keep unescorted physical or remote access are a frequent CIP finding that draws NERC penalties.
 - What to do when it's broken: Remove the person's badge access and Interactive Remote Access now and record the time removed.
@@ -4387,7 +4387,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **3. Vegetation inside clearance distance** (Must never happen, answered Yes or No)
 
-- Asks: Has vegetation been found inside the Minimum Vegetation Clearance Distance of an applicable line?
+- Asks: Has vegetation been found closer to a covered line than its Minimum Vegetation Clearance Distance?
 - Rule: NERC FAC-003
 - What a miss costs: Vegetation encroachment on covered transmission lines can cause outages and draws some of the largest NERC penalties.
 - What to do when it's broken: Dispatch crews to clear the encroachment, notify the Reliability Coordinator if required, and log the event.
@@ -4403,7 +4403,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Configuration baseline updated** (Maximum 30 days, warns from 21 days; counts days since a date)
 
-- Asks: Days since a change that deviates from the baseline, without updating the baseline
+- Asks: Days since a change that differs from the approved baseline configuration, without updating the baseline
 - Rule: NERC CIP-010 R1.3
 - What a miss costs: Out-of-date baselines are a common CIP-010 finding that leads to NERC penalties and costly re-baselining.
 - What to do when it's broken: Update the baseline configuration for the changed asset and record the authorization for the change.
@@ -4477,7 +4477,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **4. Residual entering distribution** (Minimum 0.2 mg/L, warns from 0.3 mg/L)
 
-- Asks: Lowest disinfectant residual in water entering the distribution system
+- Asks: Lowest disinfectant level left (residual) in water entering the distribution system
 - Rule: 40 CFR 141.72 (surface water systems)
 - What a miss costs: Low disinfectant residual at the entry point is a treatment technique violation that requires public notice and enforcement.
 - What to do when it's broken: Raise the disinfectant dose now; the residual may not stay below 0.2 mg/L for more than 4 hours. Notify the state.
@@ -4485,7 +4485,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. Filtered water turbidity** (Maximum 1 NTU, warns from 0.3 NTU)
 
-- Asks: Highest combined filter effluent turbidity reading this month
+- Asks: Highest cloudiness (turbidity) reading of the combined filtered water this month
 - Rule: 40 CFR 141.173(a) (conventional or direct filtration)
 - What a miss costs: A combined filter effluent turbidity spike is a treatment technique violation that can require public notice and a boil order.
 - What to do when it's broken: Take the filter offline or adjust treatment now, consult the state, and prepare public notice.
@@ -4493,7 +4493,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **6. NPDES permit effluent limit** (Maximum 100%, warns from 90%)
 
-- Asks: Highest effluent result this period as a percent of its NPDES permit limit
+- Asks: Highest discharge result this period, as a percent of its NPDES permit limit
 - Rule: 40 CFR 122.41(a); Clean Water Act 309
 - What a miss costs: Discharges over permit limits bring Clean Water Act penalties, consent decrees and citizen suits.
 - What to do when it's broken: Report the exceedance as the permit requires, find the cause, and adjust treatment before the next sample.
@@ -4535,7 +4535,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Limitations deadlines docketed** (Must be in place, answered Yes or No; policy)
 
-- Asks: Is every open matter's statute of limitations and court deadline entered in the docket with reminders?
+- Asks: Is every open matter's statute of limitations and court deadline entered in the firm's calendar (docket) with reminders?
 - Rule: ABA Model Rule 1.3 (state versions vary); docketing is firm policy
 - What a miss costs: Missed statutes of limitations and court deadlines are a common cause of malpractice claims and discipline.
 - What to do when it's broken: Enter the missing deadlines now, have a second person verify them, and set advance reminders.
@@ -4543,7 +4543,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **2. Three-way trust reconciliation** (Maximum 31 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
 
-- Asks: Days since the last three-way reconciliation of the client trust account
+- Asks: Days since the last three-way reconciliation of the client trust account (bank statement, trust ledger and client ledgers)
 - Rule: ABA Model Rule 1.15 (state versions vary; monthly is common)
 - What a miss costs: Unreconciled trust accounts hide shortfalls that lead to disbarment, restitution and client security fund claims.
 - What to do when it's broken: Reconcile the bank statement, trust ledger and client ledgers now and fix any difference.
@@ -4599,7 +4599,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **9. CLE hours by the deadline** (Minimum 0 days, warns from 60 days; policy, a company can set its own limit)
 
-- Asks: Days left before the CLE deadline for any lawyer still short of required hours
+- Asks: Days left before the continuing legal education (CLE) deadline for any lawyer still short of required hours
 - Rule: State CLE rules (vary by state)
 - What a miss costs: Lawyers who miss CLE deadlines face late fees and administrative suspension, which stops billable work.
 - What to do when it's broken: Enroll the lawyer in approved courses now or request an extension from the state bar.
@@ -4617,7 +4617,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. Return of Title IV funds in 45 days** (Maximum 45 days, warns from 35 days; counts days since a date)
 
-- Asks: Days since the date of determination that a student withdrew, without returning unearned Title IV funds
+- Asks: Days since the school determined that a student withdrew, without returning unearned federal student aid (Title IV) funds
 - Rule: 34 CFR 668.22(j)(1)
 - What a miss costs: Late returns of Title IV funds are a top program review finding, bringing liabilities, fines and risk to aid eligibility.
 - What to do when it's broken: Return the unearned funds now and document the calculation and return date in the student file.
@@ -5027,7 +5027,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **1. CTR filed within 15 days** (Maximum 15 days, warns from 12 days; counts days since a date)
 
-- Asks: Days since a patron's cash in or cash out went over $10,000 in a gaming day, without filing a CTR
+- Asks: Days since a patron's cash in or cash out went over $10,000 in a gaming day, without filing a currency transaction report (CTR)
 - Rule: 31 CFR 1021.311; 31 CFR 1010.306(a)(1)
 - What a miss costs: Missed CTRs are a core BSA failure that brings FinCEN penalties and enforcement actions against casinos.
 - What to do when it's broken: File the Currency Transaction Report with FinCEN now.
@@ -5038,12 +5038,12 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - Asks: Are all cash transactions by the same patron in a gaming day added together (cage, pit, slots) to check the $10,000 threshold?
 - Rule: 31 CFR 1021.313
 - What a miss costs: Failing to aggregate a patron's cash transactions misses required CTRs and is a common finding in casino BSA exams.
-- What to do when it's broken: Turn on cross-department aggregation in the casino management system and review today's gaming day.
+- What to do when it's broken: Turn on adding up across departments (aggregation) in the casino management system and review today's gaming day.
 - Example reading used in demos: Yes
 
 **3. SAR filed within 30 days** (Maximum 30 days, warns from 25 days; counts days since a date)
 
-- Asks: Days since suspicious activity of $5,000 or more was detected, without filing a SAR
+- Asks: Days since suspicious activity of $5,000 or more was detected, without filing a suspicious activity report (SAR)
 - Rule: 31 CFR 1021.320(a)(2), (b)(3)
 - What a miss costs: Late or missing suspicious activity reports are a common basis for FinCEN civil money penalties against casinos.
 - What to do when it's broken: File the SAR with FinCEN today and document why it was late.
@@ -5059,7 +5059,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 **5. BSA training for gaming staff** (Must be in place, answered Yes or No)
 
-- Asks: Has every cage, pit, slot and host employee completed BSA/AML training?
+- Asks: Has every cage, pit, slot and host employee completed anti-money-laundering (BSA/AML) training?
 - Rule: 31 CFR 1021.210(b)(2)(iii)
 - What a miss costs: Untrained cage, pit and slot staff miss reportable activity, a frequent root cause cited in casino enforcement actions.
 - What to do when it's broken: Train untrained employees before their next shift on the floor or cage.

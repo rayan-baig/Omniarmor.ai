@@ -273,3 +273,42 @@ class TestEmptyStates(AppTestCase):
         self.signup(industries=(2,))
         page = text(self.client.get("/app/academy"))
         self.assertIn(f"The first one starts your free {self.app.config['ACADEMY_TRIAL_DAYS']}-day trial", page)
+
+
+class TestPlainQuestions(AppTestCase):
+    """Every check's question and what-to-do text in plain words. The words
+    changed; the way each check is counted, its limits and its citation did
+    not (test_rule_dates checks those against the handbook)."""
+
+    LEGALESE = re.compile(r"\be\.g\.|\bi\.e\.|prior to|utiliz|consecutive|\bensure\b|commenc|pursuant|in accordance"
+                          r"|aggregated|effluent|thereof|herein|\bshall\b|\bvia\b|properly executed|rendered", re.I)
+
+    def test_no_legalese_in_questions_or_actions(self):
+        for industry_id, rules in CATALOG.items():
+            for r in rules:
+                for field in ("input", "action"):
+                    self.assertIsNone(self.LEGALESE.search(getattr(r, field)), (industry_id, r.key, field))
+
+    def test_yes_no_checks_ask_a_question(self):
+        for rules in CATALOG.values():
+            for r in rules:
+                if r.kind in ("required", "forbidden"):
+                    self.assertIn("?", r.input, r.key)
+
+    def test_every_way_of_counting_is_kept(self):
+        from collections import Counter
+        from omniarmor_app.catalog import counts_first_day, date_unit
+        counted = Counter((date_unit(r), date_mode(r)) for rules in CATALOG.values() for r in rules)
+        self.assertEqual(counted, Counter({(None, None): 315, ("days", "since"): 115, ("hours", "since"): 22,
+                                           ("business days", "since"): 16, ("months", "since"): 15,
+                                           ("days", "until"): 11, ("calendar months", "since"): 3,
+                                           ("minutes", "since"): 2, ("years", "since"): 1}))
+        self.assertEqual(sum(counts_first_day(r) for rules in CATALOG.values() for r in rules), 1)
+
+    def test_abbreviations_are_spelled_out_where_they_are_asked(self):
+        def asks(i, key):
+            return next(r for r in CATALOG[i] if r.key == key).input
+        self.assertIn("temperature control for safety (TCS food)", asks(2, "cold_holding"))
+        self.assertIn("protected health information (PHI)", asks(5, "breach_notification_60_days"))
+        self.assertIn("suspicious activity report (SAR)", asks(18, "sar_filing_deadline"))
+        self.assertIn("10 hours in a row off duty", asks(1, "hos_11_hour"))
