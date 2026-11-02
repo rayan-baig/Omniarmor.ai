@@ -170,7 +170,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 ### 2.6 A company's own limits
 
-47 checks use a limit that comes from an industry standard or a common policy, not from law. On those, an owner can set the company's own limit and warning point. The app makes sure the warning point makes sense: for a maximum it must be at or below the limit, and for a minimum at or above it. "Reset" brings the default back. Every change of limit is written to the audit trail. Limits set by law cannot be changed; the app answers "This limit comes from the rule itself and cannot be changed."
+47 checks use a limit that comes from an industry standard or a common policy, not from law. On those, an owner can set the company's own limit and warning point. The app makes sure the warning point makes sense: for a maximum it must be at or below the limit, and for a minimum at or above it. "Reset" brings the default back. Every change of limit is written to the audit trail. A limit with a part in it, such as 365.5 days or 10.3 years, gives a due date that is the last day still within it and a first Warning day that has really reached the warning point. Limits set by law cannot be changed; the app answers "This limit comes from the rule itself and cannot be changed."
 
 ### 2.7 What each screen shows
 

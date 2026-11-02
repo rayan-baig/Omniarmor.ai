@@ -318,25 +318,43 @@ def _elapsed(start, end, unit):
     return months / 12 if unit == "years" else months
 
 
-def _deadline(day, amount, unit, sign):
-    """The last day a reading counted from `day` stays within `amount` units."""
+def _whole(amount, up):
+    """`amount` rounded to a whole number, up or down, ignoring float dust
+    (0.1 * 30 is 3.0000000000000004, which is still 3)."""
+    return math.ceil(amount - 1e-9) if up else math.floor(amount + 1e-9)
+
+
+def _deadline(day, amount, unit, sign, reached=False):
+    """The last day a reading counted from `day` stays within `amount` units
+    (the due date), or with `reached`, the first day the reading gets to
+    `amount` (the day a check turns to Warning at its warning point).
+
+    Either one rounds a part of a day the safe way: a due date never falls on
+    a day that is already Blocked, and the warning day is never a day that is
+    still Cleared. Counting up (since), the due date rounds down and the
+    warning day up; counting down (until), the other way round."""
+    up = reached == (sign > 0)
     if unit == "days":
-        return _shifted(day, sign * _whole_days(amount))
+        return _shifted(day, sign * max(-MAX_DAYS, min(MAX_DAYS, _whole(amount, up))))
     if unit == "business days":
         if sign < 0:
             return None  # no check counts business days until a date
         try:
-            return _add_business_days(day, max(0, min(MAX_SPAN[unit], math.floor(amount))))
+            return _add_business_days(day, max(0, min(MAX_SPAN[unit], _whole(amount, up))))
         except (OverflowError, ValueError):
             return None
     amount = max(-MAX_SPAN[unit], min(MAX_SPAN[unit], amount)) * (12 if unit == "years" else 1)
     try:
         if unit == "calendar months" and sign > 0:
+            first = day.replace(day=1)
+            if reached:
+                # The count is whole months, so it gets there on the 1st.
+                return _add_months(first, _whole(amount, True))
             # Good through the end of the last month counted.
-            return _add_months(day.replace(day=1), math.floor(amount) + 1) - timedelta(days=1)
-        whole = math.floor(sign * amount)
+            return _add_months(first, _whole(amount, False) + 1) - timedelta(days=1)
+        whole = math.floor(sign * amount + 1e-9)
         begins, ends = _add_months(day, whole), _add_months(day, whole + 1)
-        return begins + timedelta(days=round((sign * amount - whole) * (ends - begins).days))
+        return begins + timedelta(days=_whole((sign * amount - whole) * (ends - begins).days, up))
     except (OverflowError, ValueError):
         return None
 
@@ -387,7 +405,7 @@ def compute_state(industry_id, rule, row, today, now=None, tz=None):
         sign = 1 if mode == "since" else -1
         due_date = _deadline(origin, eff.limit, unit, sign)
         if eff.warn is not None:
-            warn_date = _deadline(origin, eff.warn, unit, sign)
+            warn_date = _deadline(origin, eff.warn, unit, sign, reached=True)
     return ItemState(
         industry_id=industry_id, rule=rule, effective=eff, mode=mode, value=value, level=level,
         status=status, message=message, value_date=value_date, due_date=due_date, warn_date=warn_date,
