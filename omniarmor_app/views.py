@@ -5,7 +5,8 @@ notifications and settings."""
 import csv
 import io
 
-from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import (Blueprint, Response, abort, flash, g, redirect, render_template, request, session,
+                   stream_with_context, url_for)
 
 from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
@@ -85,11 +86,13 @@ def change(industry_id, rule_key):
 def audit():
     # Past SQLite's integer range a page number crashed the query; no trail is that long.
     page = min(max(1, request.args.get("page", 1, type=int)), 10 ** 9)
-    rows = _audit_rows(limit=AUDIT_PAGE + 1, offset=(page - 1) * AUDIT_PAGE)
+    rows = list(_audit_rows(limit=AUDIT_PAGE + 1, offset=(page - 1) * AUDIT_PAGE))
     return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE)
 
 
 def _audit_rows(limit=None, offset=0):
+    """The company's audit rows, newest first, one at a time (a long trail is
+    never held in memory all at once)."""
     sql = ("SELECT audit.*, COALESCE(users.name, audit.user_name) AS user_name FROM audit"
            " LEFT JOIN users ON users.id = audit.user_id"
            " WHERE audit.org_id = ? ORDER BY audit.at DESC, audit.id DESC")
@@ -97,12 +100,10 @@ def _audit_rows(limit=None, offset=0):
     if limit is not None:
         sql += " LIMIT ? OFFSET ?"
         params += [limit, offset]
-    rows = []
     for r in get_db().execute(sql, params):
         rule = find_rule(r["industry_id"], r["rule_key"]) if r["industry_id"] else None
-        rows.append({**dict(r), "industry": INDUSTRIES.get(r["industry_id"], {}).get("brand", ""),
-                     "rule_title": rule.title if rule else ""})
-    return rows
+        yield {**dict(r), "industry": INDUSTRIES.get(r["industry_id"], {}).get("brand", ""),
+               "rule_title": rule.title if rule else ""}
 
 
 def _csv_cell(value):
@@ -111,24 +112,36 @@ def _csv_cell(value):
     return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
 
 
+CSV_CHUNK_ROWS = 1000
+
+
 def _csv_response(filename, header, rows):
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    writer.writerow(header)
-    for row in rows:
-        writer.writerow([_csv_cell(v) for v in row])
-    return Response(buf.getvalue(), mimetype="text/csv",
+    """Sends a CSV as it is written, CSV_CHUNK_ROWS rows at a time. The whole
+    file used to be built in memory first: a workspace with half a million
+    audit rows took the server to 830 MB for one export (over the smallest
+    hosting plans' memory) and sent nothing for 10 seconds or more."""
+    def chunks():
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(header)
+        for n, row in enumerate(rows, 1):
+            writer.writerow([_csv_cell(v) for v in row])
+            if n % CSV_CHUNK_ROWS == 0:
+                yield buf.getvalue()
+                buf.seek(0)
+                buf.truncate()
+        yield buf.getvalue()
+    return Response(stream_with_context(chunks()), mimetype="text/csv",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @bp.route("/audit.csv")
 @login_required
 def audit_csv():
-    rows = _audit_rows()
     return _csv_response("omniarmor-audit-trail.csv",
                          ["Time (UTC)", "Person", "Action", "Industry", "Check", "Before", "After", "Summary"],
-                         [[r["at"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
-                           r["before"], r["after"], r["summary"]] for r in rows])
+                         ([r["at"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
+                           r["before"], r["after"], r["summary"]] for r in _audit_rows()))
 
 
 @bp.route("/report")

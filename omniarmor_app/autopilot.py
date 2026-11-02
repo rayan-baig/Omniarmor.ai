@@ -43,6 +43,13 @@ DISK_MIN_FREE = 1024 ** 3       # 1 GB
 DISK_MIN_SHARE = 0.05
 WAL_CHECKPOINT_BYTES = 64 * 1024 ** 2
 REMIND_AFTER = timedelta(hours=24)
+# A problem that cleared up and came back within this long is one problem
+# flapping (free disk space hovering at the limit, say), not news: it is kept
+# on the record, not emailed again, and its next "Fixed" isn't either.
+FLAP_WINDOW = timedelta(hours=1)
+# Whatever happens, Autopilot sends the operator at most this many emails an
+# hour; past it, the messages go to the server log only.
+MAX_EMAILS_PER_HOUR = 10
 KEEP_ERRORS = timedelta(days=30)
 KEEP_EVENTS = timedelta(days=180)
 SLOT_MINUTES = 10
@@ -155,7 +162,14 @@ def find_problems(conn, cfg, deep=False):
                              "Reminders and password resets are being saved, not sent.",
                              "Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD (see docs/OPERATIONS.md, section 2)."))
 
-    bugs, more = bugfinder.new_bugs(conn, iso(now - BUG_WINDOW))
+    # The 5 most frequent bugs, plus any already reported that are still
+    # happening. Ranked alone, a reported bug pushed out of the top 5 by
+    # another one's count was mailed as "Fixed" and, when it climbed back,
+    # as a new bug: with six or more bugs trading places, every pass.
+    reported = {key[4:] for key in open_alerts(conn) if key.startswith("bug:")}
+    every, _ = bugfinder.new_bugs(conn, iso(now - BUG_WINDOW), limit=None)
+    bugs = [b for i, b in enumerate(every) if i < BUG_LIMIT or b[0] in reported]
+    more = len(every) - len(bugs)
     for signature, count, location, error, paths, trace, first in bugs:
         times = "once" if count == 1 else f"{count} times"
         found.append(Finding(f"bug:{signature}", f"Bug: {error[:90]}",
@@ -257,6 +271,38 @@ def _alert_body(f):
 
 # Findings from the slower checks that only run on the day's first pass.
 DEEP_KEYS = {"selftest", "content", "data", "database"}
+BUG_LIMIT = 5   # bugs emailed one by one; the rest are counted in one line
+
+
+def _resolved_within(conn, key, since):
+    """Whether this problem was last called fixed after `since`."""
+    return conn.execute("SELECT 1 FROM autopilot_events WHERE check_key = ? AND level = 'resolved' AND at >= ?"
+                        " LIMIT 1", (key, iso(since))).fetchone() is not None
+
+
+def _operator_heard(conn, key):
+    """Whether the operator was told about this problem since it was last
+    fixed: its first alert wasn't a flap kept quiet, or any reminder about it
+    was emailed. Only then is its "Fixed" news."""
+    last_fixed = conn.execute("SELECT id, at FROM autopilot_events WHERE check_key = ? AND level = 'resolved'"
+                              " ORDER BY id DESC LIMIT 1", (key,)).fetchone()
+    alerts = conn.execute("SELECT at, emailed FROM autopilot_events WHERE check_key = ? AND level = 'alert' AND id > ?"
+                          " ORDER BY id", (key, last_fixed["id"] if last_fixed else 0)).fetchall()
+    if not alerts:
+        return False
+    if any(a["emailed"] for a in alerts):
+        return True
+    return last_fixed is None or _parse(alerts[0]["at"]) - _parse(last_fixed["at"]) >= FLAP_WINDOW
+
+
+def _tell(conn, cfg, subject, body):
+    """tell_operator, within MAX_EMAILS_PER_HOUR."""
+    sent = conn.execute("SELECT COUNT(*) FROM autopilot_events WHERE emailed = 1 AND at >= ?",
+                        (iso(utcnow() - timedelta(hours=1)),)).fetchone()[0]
+    if sent >= MAX_EMAILS_PER_HOUR:
+        log.error("AUTOPILOT (not emailed: %d emails in the last hour already): %s\n%s", sent, subject, body)
+        return False
+    return tell_operator(cfg, subject, body)
 
 
 def report(conn, cfg, found, deep=True):
@@ -271,16 +317,22 @@ def report(conn, cfg, found, deep=True):
     for key, f in current.items():
         previous = already.get(key)
         if previous is None:
-            emailed = tell_operator(cfg, f.title, _alert_body(f))
+            if _resolved_within(conn, key, now - FLAP_WINDOW):
+                log.warning("AUTOPILOT: back within the hour, not emailed again: %s", f.title)
+                emailed = False
+            else:
+                emailed = _tell(conn, cfg, f.title, _alert_body(f))
             record(conn, key, "alert", f.title, _alert_body(f), emailed)
         elif _parse(previous["at"]) < now - REMIND_AFTER:
-            emailed = tell_operator(cfg, "Still open: " + f.title, _alert_body(f))
+            emailed = _tell(conn, cfg, "Still open: " + f.title, _alert_body(f))
             record(conn, key, "alert", f.title, _alert_body(f), emailed)
     for key, previous in already.items():
         if key not in current:
             title = "Fixed: " + previous["title"]
-            emailed = tell_operator(cfg, title, "This has cleared up" + (" (it hasn't happened for a day)"
-                                    if key.startswith("bug:") else "") + ". Nothing more to do.")
+            emailed = False
+            if _operator_heard(conn, key):
+                emailed = _tell(conn, cfg, title, "This has cleared up" + (" (it hasn't happened for a day)"
+                                if key.startswith("bug:") else "") + ". Nothing more to do.")
             record(conn, key, "resolved", title, "", emailed)
 
 

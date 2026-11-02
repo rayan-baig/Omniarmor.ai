@@ -45,10 +45,13 @@ def render():
     return template.replace(PLACEHOLDER, data)
 
 
-def build():
-    with open(OUTPUT, "w", encoding="utf-8") as f:
+def build(output=OUTPUT):
+    """Writes the page. The same catalog and template give the same bytes on
+    any computer: the newline is always "\n" (text mode would write "\r\n"
+    on Windows), whatever the template was checked out with."""
+    with open(output, "w", encoding="utf-8", newline="\n") as f:
         f.write(render())
-    return OUTPUT
+    return output
 
 
 if __name__ == "__main__":

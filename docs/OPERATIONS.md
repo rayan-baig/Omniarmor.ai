@@ -59,7 +59,8 @@ claimed in the database first, so it only happens once. To run it by hand:
 
 ## 4. Backups and restore
 
-Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`.
+Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. Each one is checked
+before it gets that name and is a single file, so it can be copied and restored on its own.
 Copy them off the server regularly (for example, a nightly sync to cloud
 storage), because a backup on the same disk doesn't survive losing the disk.
 
@@ -83,7 +84,9 @@ day. Set `OPERATOR_EMAIL` (and email, section 2) and it runs every 10 minutes:
 | | Email not set up in production |
 
 Each big problem is emailed once, with what to do. While it lasts you get one
-reminder a day, and a "Fixed" email when it clears up. On Mondays you get a
+reminder a day, and a "Fixed" email when it clears up. One that comes back
+within the hour is not emailed again, and Autopilot never sends more than 10
+emails an hour. On Mondays you get a
 short report of what it fixed, only if it fixed something. Without
 `OPERATOR_EMAIL`, the same messages go to the server log.
 

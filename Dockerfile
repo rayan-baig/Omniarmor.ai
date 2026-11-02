@@ -29,4 +29,8 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=20s \
   CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT','8000'), timeout=4).status == 200 else 1)"
 # One process with threads keeps memory low (fits a free or smallest VM).
 # Raise WEB_CONCURRENCY only if one process can't keep up.
+# With threads, gunicorn's --timeout only restarts a worker that stopped
+# responding or took over 60 s to start (schema upgrades run at start-up:
+# about 2 s for a million audit rows); it never cuts a page off. The slowest
+# page, a 500,000-row audit CSV, streams its first bytes at once.
 CMD ["sh", "-c", "exec gunicorn --workers ${WEB_CONCURRENCY} --threads ${WEB_THREADS} --timeout 60 --bind 0.0.0.0:${PORT} --access-logfile - --logger-class omniarmor_app.access_log.RedactingLogger wsgi:app"]

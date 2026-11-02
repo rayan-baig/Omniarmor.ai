@@ -303,7 +303,7 @@ The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject,
 
 A built-in timer runs inside the app; there is no separate cron or queue service. Every minute it sends any time-limit alerts that are due (above), and every 10 minutes it checks whether the daily job is due. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
 
-1. **Backup.** It takes a consistent copy of the database using SQLite's online backup, names it `omniarmor-YYYYMMDD-HHMMSS-*.db`, and keeps the newest 14 copies (`BACKUP_KEEP`).
+1. **Backup.** It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `omniarmor-YYYYMMDD-HHMMSS-*.db` only then, as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
 2. **Reminders** for every company, as above.
 3. **Cleanup.** It deletes:
    - sign-in failure records older than a day;
@@ -603,7 +603,7 @@ Every fix is written to Autopilot's log.
 - **Low disk space**: under 1 GB or under 5% free.
 - **Database damage**, found by SQLite's quick check once a day.
 
-Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. On Mondays it sends a short weekly report, but only if anything happened that week (something fixed, or any alert); a quiet week sends nothing.
+Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. A problem that comes back within an hour of clearing up (free disk space hovering at the limit, say) is the same problem flapping: it is written to the log, not emailed again, and neither is its next "Fixed". A bug already emailed stays open while it keeps happening, even when five others happen more often. Whatever happens, Autopilot sends at most 10 emails an hour; past that, the messages go to the server log. On Mondays it sends a short weekly report, but only if anything happened that week (something fixed, or any alert); a quiet week sends nothing.
 
 The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up, the same messages go to the server log.
 
@@ -761,12 +761,13 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 407 tests in 16 files.
+- `tests/`: 433 tests in 18 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
+  - `test_rule_dates.py` (11: every check against the handbook's Appendix A and its example reading; every date-counted check's due date and warning day from month ends and leap days; every hour and minute clock at its warning and due minute) and `test_operations.py` (11: the backup restore drill, schema upgrades on real data, streamed exports, Autopilot's email limits, a byte-for-byte dashboard build).
   - `test_academy_fixes.py` (20), `test_autopilot.py` (20) and `test_armo.py` (14).
-  - `test_quiz_checks.py` (13), `test_review_fixes.py` (8) and `test_stats.py` (3).
+  - `test_quiz_checks.py` (17), `test_review_fixes.py` (8) and `test_stats.py` (3).
   - `test_academy_bank.py` (2, which check every bank entry).
   - `test_parity.py` (1: dashboard against engine, run with Node).
 - `docs/`:
@@ -858,7 +859,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 407 tests
+python3 -m unittest discover -s tests     # 433 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -889,7 +890,7 @@ The Docker image:
 - keeps the database and backups in `/data`;
 - has a built-in health check against `/healthz`;
 - writes an access log with password-reset and invite tokens, and the Stripe Checkout id a payer comes back with, replaced by `[hidden]` (also when they sit percent-encoded inside another address, such as a sign-in page's `next`), so the hosting dashboard never holds a working link.
-- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs.
+- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs. Its 60-second timeout restarts a worker that stopped responding or took that long to start; with threads it never cuts a page off. The slowest pages in a big workspace (all 50 industries, half a million audit rows) were measured: the audit CSV takes about 10 seconds and streams from the first moment, deep audit pages about 1.5 seconds, every other page well under a second.
 
 ### 9.3 Email
 
@@ -1026,7 +1027,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 407 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 433 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.

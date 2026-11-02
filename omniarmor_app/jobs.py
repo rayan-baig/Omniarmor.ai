@@ -69,18 +69,61 @@ def backup_database(cfg, fresh=False):
     existing = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{today}-*.db")))
     if existing and not fresh:
         return existing[-1]
+    _remove_stale_partials(cfg["BACKUP_DIR"])
     dest = os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
-    src = sqlite3.connect(cfg["DATABASE"])
-    dst = sqlite3.connect(dest)
+    # Written under another name and only named omniarmor-*.db once it is
+    # complete and checked. A copy that failed half-way (a full disk) used to
+    # stay under the real name: every later run that day took it for today's
+    # backup, Autopilot saw a fresh backup, and the restore drill found a
+    # broken file.
+    partial = dest + PARTIAL
     try:
-        src.backup(dst)
-    finally:
-        dst.close()
-        src.close()
+        _copy_checked(cfg["DATABASE"], partial)
+    except BaseException:
+        _remove(partial)
+        raise
+    os.replace(partial, dest)
     copies = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
     for old in copies[:-cfg["BACKUP_KEEP"]] if cfg["BACKUP_KEEP"] > 0 else []:
         os.remove(old)
     return dest
+
+
+PARTIAL = ".partial"
+
+
+def _copy_checked(source, target):
+    """Copies the database with SQLite's online backup, checks the copy, and
+    leaves it as one file that needs nothing beside it to be restored."""
+    src = sqlite3.connect(source)
+    try:
+        dst = sqlite3.connect(target)
+        try:
+            src.backup(dst)
+            result = dst.execute("PRAGMA quick_check").fetchone()[0]
+            if result != "ok":
+                raise sqlite3.DatabaseError(f"the backup copy failed its check: {result[:200]}")
+            dst.execute("PRAGMA journal_mode = DELETE")
+        finally:
+            dst.close()
+    finally:
+        src.close()
+
+
+def _remove(path):
+    for name in (path, path + "-journal", path + "-wal", path + "-shm"):
+        try:
+            os.remove(name)
+        except FileNotFoundError:
+            pass
+
+
+def _remove_stale_partials(folder):
+    """Copies left half-made by a server that stopped mid-backup."""
+    cutoff = time.time() - STALE_AFTER.total_seconds()
+    for path in glob.glob(os.path.join(folder, "omniarmor-*.db" + PARTIAL)):
+        if os.path.getmtime(path) < cutoff:
+            _remove(path)
 
 
 def cleanup(conn):

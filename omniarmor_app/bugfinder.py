@@ -43,10 +43,12 @@ def fingerprint(exc):
 
 
 def new_bugs(conn, since, limit=5):
-    """Crash fingerprints seen since a time: [(signature, count, location, error, paths, trace, first_seen)]."""
+    """Crash fingerprints seen since a time, most frequent first: ([(signature,
+    count, location, error, paths, trace, first_seen)], how many more past
+    `limit`). limit=None returns them all."""
     rows = conn.execute(
         "SELECT signature, COUNT(*) AS n, MAX(id) AS last_id FROM app_errors WHERE at >= ? AND signature != ''"
-        " GROUP BY signature ORDER BY n DESC", (since,)).fetchall()
+        " GROUP BY signature ORDER BY n DESC, signature", (since,)).fetchall()
     found = []
     for r in rows:
         last = conn.execute("SELECT * FROM app_errors WHERE id = ?", (r["last_id"],)).fetchone()
@@ -54,6 +56,8 @@ def new_bugs(conn, since, limit=5):
                                             (r["signature"], since))]
         first = conn.execute("SELECT MIN(at) FROM app_errors WHERE signature = ?", (r["signature"],)).fetchone()[0]
         found.append((r["signature"], r["n"], last["location"], last["error"], paths, last["trace"], first))
+    if limit is None:
+        return found, 0
     return found[:limit], max(0, len(found) - limit)
 
 
