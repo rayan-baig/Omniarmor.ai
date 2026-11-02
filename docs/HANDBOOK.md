@@ -141,6 +141,7 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - The industry page shows "Due in 5 h 20 min", "Due now" or "2 h 5 min overdue", with the due date and time, for example "2026-11-04 17:00 EST". Longer clocks read "Due in 2 days 23 h".
 - The time entered is read in the company's timezone and shown back in it; it is stored in UTC, so moving the company to another timezone keeps the same moment. Across a change to or from daylight time the hours are real hours: 72 hours from noon on the Saturday before clocks go back end at 11:00 on the Tuesday. A time that happens twice the night clocks go back is taken the first time (the earlier moment); a time skipped the night clocks go forward, such as 2:30, is read as 3:30.
 - One that ran out earlier today counts as overdue, not "due today", in reminders and in Armo's alerts.
+- Besides the daily digest, each one gets an email when it reaches its warning point and another when it becomes overdue (section 3.3).
 
 Two more count **minutes since** something happened: "Minutes since the last welfare check of the person in restrictive housing" (30 minutes) and "Minutes since a reportable accident was known, without calling MSHA" (15 minutes). They work the same way, in minutes, and are what "hour checks" below means too.
 
@@ -242,7 +243,7 @@ Every date-tracked check moves through windows as its deadline gets closer:
 
 The first daily run that finds a check in a new window sends one reminder for it. The same window is never reminded twice for the same due date; this is tracked per company, industry, check, due date and window.
 
-**Hour checks** use the same windows, by the date their due time falls on, and the email gives the due time: "Report a work fatality in 8 hours, 2 h 5 min overdue (2026-11-04 17:00 EST)". The digest goes out once a day, so a clock of a few hours can start and run out between two digests; the industry page, HQ and Armo show it the moment it does.
+**Hour checks** use the same windows, by the date their due time falls on, and the email gives the due time: "Report a work fatality in 8 hours, 2 h 5 min overdue (2026-11-04 17:00 EST)". The digest goes out once a day, so a clock of a few hours can start and run out between two digests; that is what the time-limit alerts (section 3.3) are for. A clock that already had a time-limit alert the same day (in the company's timezone) is left out of that day's digest and its window counts as reminded: an overdue window is left out after the overdue alert, a coming-due window after either alert. A digest on another day still lists it, so an overdue clock is reminded about again a week later, as any other check.
 
 **Catch-up:** if the server was down on a given morning, the next run finds the check in its current window and sends it then.
 
@@ -270,9 +271,37 @@ Open your checks: https://your-domain/app
 You get this email because reminders are on in your OmniArmor settings.
 ```
 
-### 3.3 The daily job
+### 3.3 Time-limit alerts
 
-A built-in timer runs inside the app; there is no separate cron or queue service. Every 10 minutes it checks whether the daily job is due. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
+The 22 hour clocks and 2 minute clocks run out in as little as 15 minutes (MSHA's accident call), 1 hour (the pipeline call to the National Response Center, NERC CIP-008) or 2 hours (a nursing-home abuse report), too fast for a digest that goes out once a day. So the app's timer checks them **every minute** and emails at most twice per clock, each time it starts:
+
+1. **Warning:** when it reaches its warning point (the rule's "warns from", or the company's own), for example 6 hours into the 8-hour OSHA fatality report.
+2. **Overdue:** the minute after its due time, when it turns Blocked.
+
+Each email is about one clock and goes to the same people as the digest (everyone in the company with reminders on). Times are in the company's timezone:
+
+```
+Subject: OmniArmor: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)
+
+Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.
+
+- HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). Report the fatality to OSHA now by phone or in person, and preserve the scene.
+
+Open it: https://your-domain/app/industry/30#rule-fatality_report_8h
+
+You get this email because reminders are on in your OmniArmor settings.
+```
+
+The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject, "overdue, was due 2026-11-04 17:00 EST".
+
+- **Once each:** each email is recorded in `reminder_marks` by the clock's due moment (in UTC) and its stage (`clock-warning` or `clock-overdue`), so neither is sent twice. Done now, or a new start time, gives the clock a new due moment, and both emails can go out again for it.
+- **Only news:** only the stage the clock is in now is sent: a clock entered after it ran out gets the overdue email only. A stage reached more than 24 hours ago (the server was down, or the clock was entered days late) is left to the digest.
+- **Retry:** as with the digest, an alert only counts as sent once at least one email went out (or was saved when email isn't set up). If every send failed, the next check, a minute later, tries again. A failed copy is sent again in place, so Radar keeps one copy per person with its number of attempts, and a copy Autopilot already got through is not sent again.
+- **Several server processes:** each alert is claimed in `reminder_marks` before it is sent, so only one process sends it.
+
+### 3.4 The daily job
+
+A built-in timer runs inside the app; there is no separate cron or queue service. Every minute it sends any time-limit alerts that are due (above), and every 10 minutes it checks whether the daily job is due. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
 
 1. **Backup.** It takes a consistent copy of the database using SQLite's online backup, names it `omniarmor-YYYYMMDD-HHMMSS-*.db`, and keeps the newest 14 copies (`BACKUP_KEEP`).
 2. **Reminders** for every company, as above.
@@ -286,7 +315,7 @@ Several server processes can run at once safely: each day's run is first claimed
 
 The job can be run by hand with `flask --app wsgi run-daily --force`.
 
-### 3.4 The record
+### 3.5 The record
 
 Everything that changes a company's data writes an audit row: who, when, what kind of change, which industry and check, the value before and after, and a one-line summary. Reports and the audit trail can be printed or exported at any time.
 
@@ -702,8 +731,8 @@ omniarmor_app (Flask)
    ├── views.py        HQ, industry checks, report, audit trail, Radar, settings
    ├── tracking.py     turns stored readings into today's status
    ├── catalog.py      the 50 industries and 500 rules, as the app uses them
-   ├── reminders.py    daily digests per company
-   ├── jobs.py         the daily timer: reminders, backup, cleanup; CLI commands
+   ├── reminders.py    daily digests per company, and time-limit alerts for the hour clocks
+   ├── jobs.py         the timer: time-limit alerts each minute; reminders, backup, cleanup each day; CLI commands
    ├── notify.py       email, or the saved log when email isn't set up
    ├── armo.py         Armo's issue list, tips and page help
    ├── armo_lines.py   the 14 personalities and their lines
@@ -731,7 +760,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 296 tests in 13 files.
+- `tests/`: 308 tests in 13 files.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
   - `test_academy_fixes.py` (20), `test_autopilot.py` (20) and `test_armo.py` (14).
@@ -756,7 +785,7 @@ SQLite database (one file on a persistent disk) + daily backups
 2. `security.py` checks the token and the sign-in. The route checks that the industry belongs to the company and the rule exists.
 3. `tracking.apply_change` validates the input, writes the reading, and writes an audit row with who, when, before and after.
 4. When any page loads, `tracking.states_for_org` reads the company's readings. For date-tracked rules it counts days from today in the company's timezone; hour clocks count the minutes from their stored UTC start to now. Then `omni_armor_rules.evaluate` gives Cleared, Warning or Blocked: the same answer the engine and the demo dashboard give.
-5. Each morning, `jobs.run_daily` claims the day. `reminders.run_reminders` then finds deadlines at 30, 7, 1 and 0 days or overdue (an hour check past its due time is overdue), records each window so it's sent once, and emails each team member a digest.
+5. Each morning, `jobs.run_daily` claims the day. `reminders.run_reminders` then finds deadlines at 30, 7, 1 and 0 days or overdue (an hour check past its due time is overdue), records each window so it's sent once, and emails each team member a digest. Every minute, `jobs.run_alerts` calls `reminders.run_clock_alerts`, which emails a clock's warning and overdue alerts as they come (section 3.3).
 
 ### 8.4 The data model
 
@@ -774,7 +803,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
 - `audit`: every change, with person, time, action, industry, rule, before and after, and a summary. The person's name is stored on the row, so a removed team member's changes still show who made them.
 - `notifications`: every email sent or saved, with status, error and number of attempts.
-- `reminder_marks`: which reminder windows were already sent, for which due date.
+- `reminder_marks`: which reminder windows were already sent, for which due date, and which time-limit alerts, for which due moment.
 - `invites` and `password_resets`: one-time links, stored as hashes.
 - `login_failures`: recent failed sign-ins and reset requests, for rate limiting.
 - `job_runs`: one row per run of the daily job and of Autopilot's passes, so each runs once.
@@ -827,7 +856,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 296 tests
+python3 -m unittest discover -s tests     # 308 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -862,7 +891,7 @@ The Docker image:
 
 ### 9.3 Email
 
-Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day.
+Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
 
 ### 9.4 Backups and restore
 
@@ -902,7 +931,7 @@ What the app does to stay cheap:
 - static files cached for a year, with links that change when the file changes;
 - inline SVG instead of images;
 - Academy levels generated, not stored;
-- at most one reminder email per person per company per day;
+- at most one reminder email per person per company per day, plus the time-limit alerts;
 - daily cleanup of old records.
 
 ---
@@ -995,7 +1024,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 296 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 308 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
@@ -5917,7 +5946,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SMTP_STARTTLS` | 1 | Use STARTTLS with the email provider. |
 | `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. |
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
-| `SCHEDULER_ENABLED` | 1 | Run the built-in daily timer (and Autopilot) inside the app. |
+| `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. |
 | `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizon console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://<your domain>/api/stats`. |
@@ -5942,6 +5971,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 - **Done today**: the button that restarts a recurring duty's cycle.
 - **Window**: one of the reminder stages (30, 7 and 1 days out, due today, overdue each week).
 - **Digest**: the daily reminder email.
+- **Time-limit alert**: the email an hour or minute clock sends when it reaches its warning point, and when it becomes overdue.
 - **Workspace**: one company's account, with its owners and members.
 - **HQ, Intel, Vault, Radar, Academy, Armory**: the overview, report, audit trail, reminder log, Academy and settings.
 - **Armo**: the shield mascot and helper.

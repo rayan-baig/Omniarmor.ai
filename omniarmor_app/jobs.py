@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""The work that runs by itself every day: reminders, a database backup and
-cleanup. Autopilot (autopilot.py) rides on the same timer every 10 minutes. A built-in timer runs it once a day; several server processes can run
-the timer safely because each day's run is claimed in the database first."""
+"""The work that runs by itself: every day reminders, a database backup and
+cleanup; every minute the time-limit alerts for the hour and minute clocks.
+Autopilot (autopilot.py) rides on the same timer every 10 minutes. A built-in
+timer runs it all; several server processes can run the timer safely because
+each day's run is claimed in the database first, and each alert is claimed
+before it is sent."""
 
 import glob
 import logging
@@ -14,10 +17,11 @@ from datetime import timedelta
 import click
 
 from .db import connect, iso, migrate, now_iso, utcnow
-from .reminders import run_reminders
+from .reminders import run_clock_alerts, run_reminders
 
 log = logging.getLogger("omniarmor.jobs")
-CHECK_EVERY_SECONDS = 600
+CHECK_EVERY_SECONDS = 600   # the daily job's check and Autopilot
+ALERTS_EVERY_SECONDS = 60   # the time-limit alerts: the shortest clock is 15 minutes, due to the minute
 STALE_AFTER = timedelta(hours=1)
 
 
@@ -137,21 +141,43 @@ def run_daily(cfg, force=False):
         conn.close()
 
 
+def run_alerts(cfg, now=None):
+    """Sends the time-limit alerts due now (reminders.run_clock_alerts)."""
+    conn = connect(cfg["DATABASE"])
+    try:
+        migrate(conn)
+        summary = run_clock_alerts(conn, cfg, now=now)
+        if summary["alerts"] or summary["errors"]:
+            log.info("time-limit alerts: %s", summary)
+        return summary
+    finally:
+        conn.close()
+
+
 def start_scheduler(cfg):
     from . import autopilot
 
     def loop():
+        last_check = None
         while True:
+            # First, so a clock that just ran out is alerted about before
+            # today's digest is put together.
             try:
-                run_daily(cfg)
-            except Exception:  # keep the timer alive; the failure is logged above
-                pass
-            if cfg.get("AUTOPILOT_ENABLED", True):
+                run_alerts(cfg)
+            except Exception:
+                log.exception("time-limit alerts failed")
+            if last_check is None or time.monotonic() - last_check >= CHECK_EVERY_SECONDS:
+                last_check = time.monotonic()
                 try:
-                    autopilot.run(cfg)
-                except Exception:
-                    log.exception("autopilot pass failed")
-            time.sleep(CHECK_EVERY_SECONDS)
+                    run_daily(cfg)
+                except Exception:  # keep the timer alive; the failure is logged above
+                    pass
+                if cfg.get("AUTOPILOT_ENABLED", True):
+                    try:
+                        autopilot.run(cfg)
+                    except Exception:
+                        log.exception("autopilot pass failed")
+            time.sleep(ALERTS_EVERY_SECONDS)
     thread = threading.Thread(target=loop, name="omniarmor-daily", daemon=True)
     thread.start()
     return thread

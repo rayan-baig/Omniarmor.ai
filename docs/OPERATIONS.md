@@ -49,8 +49,12 @@ After `DAILY_JOB_HOUR_UTC` (default 11:00 UTC), once per day:
 3. **Cleanup.** Old sign-in failures, used reset links and expired invites are
    removed.
 
-Several server processes can run at once: each day's run is claimed in the
-database first, so it only happens once. To run it by hand:
+Every minute, the same timer also sends **time-limit alerts** for the hour
+and minute clocks (such as a 1-hour or 8-hour report deadline): one email when
+a clock reaches its warning point and one when it becomes overdue.
+
+Several server processes can run at once: each day's run, and each alert, is
+claimed in the database first, so it only happens once. To run it by hand:
 `flask --app wsgi run-daily --force`.
 
 ## 4. Backups and restore

@@ -880,3 +880,237 @@ class TestMinuteClocks(ClockTestCase):
         s = self.state(16, "welfare_check_interval", "2026-11-04T14:00:00+00:00", "2026-11-04T09:13",
                        limit_override=15, warn_override=12)
         self.assertEqual((s.value, s.level, s.due_label), (13, "WARNING", "2026-11-04 09:15 EST"))
+
+
+class TestTimeLimitAlerts(ClockTestCase):
+    """Reminder digests go out once a day, so a clock of a few hours (the NRC
+    call in 1 hour, an abuse report in 2, an OSHA fatality report in 8) could
+    start and run out between two digests with no email at all. Every minute,
+    each hour or minute clock now gets one email when it reaches its warning
+    point and one when it becomes overdue."""
+
+    def setUp(self):
+        super().setUp()
+        self.signup(industries=(30, 23))
+        with self.db() as conn:
+            self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
+
+    def start(self, industry_id, key, started):
+        """Starts a clock at `started`, a UTC moment ("2026-11-04T14:00:00+00:00")."""
+        with self.db() as conn:
+            conn.execute("INSERT OR REPLACE INTO items (org_id, industry_id, rule_key, value_date) VALUES (?, ?, ?, ?)",
+                         (self.org_id, industry_id, key, started))
+            conn.commit()
+
+    def run_at(self, now, tz=ClockTestCase.NY, cfg=None):
+        """Runs the alerts at `now`, a wall-clock time in `tz` (or an aware datetime)."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from omniarmor_app.reminders import run_clock_alerts
+        if isinstance(now, str):
+            now = datetime.fromisoformat(now).replace(tzinfo=ZoneInfo(tz))
+        with self.db() as conn:
+            return run_clock_alerts(conn, cfg or dict(self.app.config), now=now)
+
+    def notes(self):
+        with self.db() as conn:
+            return [dict(r) for r in conn.execute(
+                "SELECT subject, body, status, attempts FROM notifications WHERE kind = 'reminder' ORDER BY id")]
+
+    def marks(self):
+        with self.db() as conn:
+            return [tuple(r) for r in conn.execute(
+                "SELECT rule_key, due_date, threshold FROM reminder_marks ORDER BY rowid")]
+
+    def test_an_email_when_the_clock_reaches_its_warning_point(self):
+        # OSHA: a work death reported within 8 hours, warns from 6. Learned of at 9:00.
+        self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
+        self.assertEqual(self.run_at("2026-11-04T14:59")["alerts"], 0)
+        self.assertEqual(self.notes(), [])
+        self.assertEqual(self.run_at("2026-11-04T15:00")["alerts"], 1)
+        [note] = self.notes()
+        self.assertEqual(note["subject"],
+                         "OmniArmor: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)")
+        self.assertEqual(note["status"], "logged")
+        lines = note["body"].splitlines()
+        self.assertEqual(lines[0], "Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.")
+        self.assertTrue(lines[2].startswith(
+            "- HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). "), lines[2])
+        self.assertIn("Open it: https://omniarmor.test/app/industry/30#rule-fatality_report_8h", note["body"])
+        self.assertIn("reminders are on in your OmniArmor settings", note["body"])
+        self.assertEqual(self.marks(), [("fatality_report_8h", "2026-11-04T22:00:00+00:00", "clock-warning")])
+
+    def test_an_email_when_it_becomes_overdue(self):
+        self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
+        self.run_at("2026-11-04T15:00")
+        self.assertEqual(self.run_at("2026-11-04T17:00")["alerts"], 0)  # the due minute is still a Warning
+        self.assertEqual(self.run_at("2026-11-04T17:01")["alerts"], 1)
+        notes = self.notes()
+        self.assertEqual(len(notes), 2)
+        self.assertEqual(notes[1]["subject"], "OmniArmor: Report a work fatality in 8 hours, overdue,"
+                                              " was due 2026-11-04 17:00 EST (Acme Logistics)")
+        self.assertTrue(notes[1]["body"].startswith("Time limit overdue for Acme Logistics, 2026-11-04 17:01 EST."))
+        self.assertIn("- HRArmor: Report a work fatality in 8 hours, 1 min overdue (2026-11-04 17:00 EST).",
+                      notes[1]["body"])
+        self.assertEqual([m[2] for m in self.marks()], ["clock-warning", "clock-overdue"])
+
+    def test_each_stage_is_sent_once(self):
+        self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
+        for now in ("2026-11-04T15:00", "2026-11-04T15:00", "2026-11-04T15:30", "2026-11-04T16:59",
+                    "2026-11-04T17:01", "2026-11-04T17:02", "2026-11-04T23:00", "2026-11-05T10:00"):
+            self.run_at(now)
+        self.assertEqual(len(self.notes()), 2)
+
+    def test_a_stage_already_passed_or_long_gone_is_not_sent(self):
+        # Entered after it ran out: only the overdue email, no warning.
+        self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
+        self.assertEqual(self.run_at("2026-11-04T19:30")["alerts"], 1)
+        self.assertEqual([m[2] for m in self.marks()], ["clock-overdue"])
+        # Overdue for more than a day is not news any more; the daily digest covers it.
+        self.start(23, "accident_notice", "2026-11-02T14:00:00+00:00")
+        self.assertEqual(self.run_at("2026-11-04T19:31")["alerts"], 0)
+        # Day checks never get these emails.
+        with self.db() as conn:
+            conn.execute("INSERT INTO items (org_id, industry_id, rule_key, value_date) VALUES (?, 30, ?, ?)",
+                         (self.org_id, "cobra_election_notice", "2026-11-01"))
+            conn.commit()
+        self.assertEqual(self.run_at("2026-11-04T19:32")["alerts"], 0)
+
+    def test_starting_the_clock_again_re_arms_both_emails(self):
+        from datetime import datetime, timedelta, timezone
+        from omniarmor_app.db import iso
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        self.start(30, "fatality_report_8h", iso(now - timedelta(hours=8, minutes=5)))
+        self.assertEqual(self.run_at(now)["alerts"], 1)  # overdue
+        self.change(30, "fatality_report_8h", action="done_today")  # Done now: the clock starts again
+        started = datetime.fromisoformat(self.reading("fatality_report_8h")["value_date"])
+        self.assertEqual(self.run_at(started + timedelta(hours=5))["alerts"], 0)
+        self.assertEqual(self.run_at(started + timedelta(hours=6))["alerts"], 1)
+        self.assertEqual(self.run_at(started + timedelta(hours=8, minutes=1))["alerts"], 1)
+        self.assertEqual([m[2] for m in self.marks()], ["clock-overdue", "clock-warning", "clock-overdue"])
+        self.assertEqual(len({m[1] for m in self.marks()}), 2)  # kept by each start's due moment
+        self.assertEqual(len(self.notes()), 3)
+
+    def test_a_failed_send_is_tried_again_on_the_next_run(self):
+        from datetime import datetime, timedelta, timezone
+        from omniarmor_app.db import iso
+        broken = dict(self.app.config, SMTP_HOST="127.0.0.1", SMTP_PORT=1)
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        self.start(30, "fatality_report_8h", iso(now - timedelta(hours=6, minutes=5)))
+        self.assertEqual(self.run_at(now, cfg=broken)["alerts"], 0)
+        self.assertEqual(self.marks(), [])
+        self.assertEqual(self.run_at(now + timedelta(minutes=1), cfg=broken)["alerts"], 0)
+        self.assertEqual(self.run_at(now + timedelta(minutes=2))["alerts"], 1)
+        # Sent again in place: one row on Radar, not one per run for Autopilot to re-send.
+        [note] = self.notes()
+        self.assertEqual((note["status"], note["attempts"]), ("logged", 3))
+        self.assertIn("due in 1 h 53 min", note["body"])  # the email says how long is left now
+        self.assertEqual(self.run_at(now + timedelta(minutes=3))["alerts"], 0)
+        self.assertEqual(len(self.notes()), 1)
+
+    def test_a_copy_autopilot_got_through_is_not_sent_again(self):
+        from datetime import datetime, timedelta, timezone
+        from omniarmor_app.db import iso
+        broken = dict(self.app.config, SMTP_HOST="127.0.0.1", SMTP_PORT=1)
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        self.start(30, "fatality_report_8h", iso(now - timedelta(hours=6, minutes=5)))
+        self.run_at(now, cfg=broken)
+        with self.db() as conn:
+            conn.execute("UPDATE notifications SET status = 'sent', attempts = 2")  # Autopilot's retry worked
+            conn.commit()
+        self.assertEqual(self.run_at(now + timedelta(minutes=1), cfg=broken)["alerts"], 1)
+        self.assertEqual([n["status"] for n in self.notes()], ["sent"])
+
+    def test_no_one_with_reminders_on(self):
+        self.post("/app/settings/reminders", {})
+        self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
+        self.assertEqual(self.run_at("2026-11-04T15:00"), {"orgs": 1, "alerts": 1, "emails": 0, "errors": 0})
+        self.assertEqual(self.notes(), [])
+        self.assertEqual(self.run_at("2026-11-04T15:01")["alerts"], 0)
+
+    def test_minute_clocks(self):
+        # 30 CFR 50.10: call MSHA within 15 minutes, warns from 10.
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from omniarmor_app.jobs import run_alerts
+        self.start(23, "accident_notice", "2026-11-04T14:00:00+00:00")
+        at = lambda wall: datetime.fromisoformat(wall).replace(tzinfo=ZoneInfo(self.NY))  # noqa: E731
+        cfg = dict(self.app.config)
+        self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:09"))["alerts"], 0)
+        self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:10"))["alerts"], 1)
+        self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:15"))["alerts"], 0)
+        self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:16"))["alerts"], 1)
+        warning, overdue = self.notes()
+        self.assertIn("- MineArmor: Call MSHA within 15 minutes, due in 5 min (2026-11-04 09:15 EST).", warning["body"])
+        self.assertIn("- MineArmor: Call MSHA within 15 minutes, 1 min overdue (2026-11-04 09:15 EST).", overdue["body"])
+
+    def test_a_workspace_in_another_timezone(self):
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET timezone = 'Asia/Tokyo'")
+            conn.commit()
+        self.start(30, "fatality_report_8h", "2026-01-10T00:00:00+00:00")  # 09:00 in Tokyo
+        self.assertEqual(self.run_at("2026-01-10T14:59", tz="Asia/Tokyo")["alerts"], 0)
+        self.assertEqual(self.run_at("2026-01-10T15:00", tz="Asia/Tokyo")["alerts"], 1)
+        self.assertEqual(self.run_at("2026-01-10T17:01", tz="Asia/Tokyo")["alerts"], 1)
+        warning, overdue = self.notes()
+        self.assertEqual(warning["subject"],
+                         "OmniArmor: Report a work fatality in 8 hours, due 2026-01-10 17:00 JST (Acme Logistics)")
+        self.assertTrue(warning["body"].startswith("Time limit warning for Acme Logistics, 2026-01-10 15:00 JST."))
+        self.assertIn("1 min overdue (2026-01-10 17:00 JST)", overdue["body"])
+        self.assertEqual(self.marks()[0][1], "2026-01-10T08:00:00+00:00")
+
+    def test_the_digest_leaves_out_a_clock_alerted_about_the_same_day(self):
+        from datetime import date
+        from omniarmor_app.reminders import run_reminders
+        # Due 11:00 on 4 November, alerted at 11:01; the digest that day (counted at noon) leaves it out.
+        self.start(30, "fatality_report_8h", "2026-11-04T08:00:00+00:00")
+        self.run_at("2026-11-04T11:01")
+        # Due 23:15 on 3 November and alerted then: the next day's digest still lists it.
+        self.start(23, "accident_notice", "2026-11-04T04:00:00+00:00")
+        self.run_at("2026-11-03T23:16")
+        self.assertEqual(len(self.notes()), 2)
+        with self.db() as conn:
+            summary = run_reminders(conn, dict(self.app.config), today_for=lambda org: date(2026, 11, 4))
+            again = run_reminders(conn, dict(self.app.config), today_for=lambda org: date(2026, 11, 5))
+        self.assertEqual((summary["reminders"], again["reminders"]), (1, 0))
+        digest = self.notes()[2]
+        self.assertIn("Call MSHA within 15 minutes", digest["body"])
+        self.assertNotIn("Report a work fatality", digest["body"])
+        self.assertIn(("fatality_report_8h", "2026-11-04", "overdue-week-0"), self.marks())  # counted as reminded
+
+    def test_the_timer_checks_every_minute(self):
+        from unittest import mock
+        from omniarmor_app import jobs
+
+        class Stop(Exception):
+            pass
+
+        ticks = {"n": 0}
+
+        def sleep(seconds):
+            self.assertEqual(seconds, 60)
+            ticks["n"] += 1
+            if ticks["n"] == 25:
+                raise Stop
+
+        class InlineThread:
+            def __init__(self, target, **_):
+                self.target = target
+
+            def start(self):
+                try:
+                    self.target()
+                except Stop:
+                    pass
+
+        clock = iter(range(0, 10 ** 6, 60))
+        with mock.patch.object(jobs, "run_alerts") as alerts, mock.patch.object(jobs, "run_daily") as daily, \
+                mock.patch("omniarmor_app.autopilot.run") as autopilot, \
+                mock.patch.object(jobs.time, "sleep", side_effect=sleep), \
+                mock.patch.object(jobs.time, "monotonic", side_effect=lambda: next(clock)), \
+                mock.patch.object(jobs.threading, "Thread", InlineThread):
+            jobs.start_scheduler(dict(self.app.config))
+        self.assertEqual(alerts.call_count, 25)
+        self.assertEqual(daily.call_count, 3)  # minutes 0, 10 and 20
+        self.assertEqual(autopilot.call_count, 3)
+
