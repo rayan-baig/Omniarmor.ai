@@ -146,7 +146,8 @@ def confirm_checkout(conn, cfg, org, session_id):
     owner = _org_for(conn, obj, "checkout.session.completed")
     if owner is None or owner["id"] != org["id"]:
         return False
-    return _apply_checkout(conn, owner, obj, None) is not None
+    created = obj.get("created") if isinstance(obj.get("created"), int) else None
+    return _apply_checkout(conn, owner, obj, None, started=created) is not None
 
 
 def portal_url(cfg, org, return_url):
@@ -296,12 +297,29 @@ def apply_event(conn, event):
     return None
 
 
-def _apply_checkout(conn, org, obj, created):
+# Where a subscription can end up after its first payment. A checkout is
+# that first payment, so it never moves a subscription back from one of these.
+LATER_STATES = {"past_due", "unpaid", "canceled", "incomplete_expired"}
+
+
+def _apply_checkout(conn, org, obj, created, started=None):
     """A completed checkout turns the plan on, unless the workspace is already
-    paid through another subscription (a duplicate checkout)."""
+    paid through another subscription (a duplicate checkout).
+
+    Nor does it turn a plan back on that has since ended, or hide a failed
+    payment: Stripe retries an undelivered checkout event for days, and the
+    page Stripe sends a family back to can be opened again from history long
+    after they cancel. `created` is when the event happened; `started` is when
+    the checkout began, for the return page, which has no event."""
     subscription = obj.get("subscription")
     current_sub = org["stripe_subscription_id"]
-    if (org["academy_status"] or "none") in PAID_STATES and current_sub and subscription != current_sub:
+    state = org["academy_status"] or "none"
+    when = created if created is not None else started
+    last = org["stripe_event_at"]
+    if state in LATER_STATES and (subscription == current_sub
+                                  or (when is not None and last is not None and when < last)):
+        return None
+    if state in PAID_STATES and current_sub and subscription != current_sub:
         # A second checkout while already paid: keep following the first subscription.
         conn.execute("UPDATE orgs SET stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
                      (obj.get("customer"), org["id"]))

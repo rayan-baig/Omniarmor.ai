@@ -463,7 +463,7 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
 
 ### 5.7 Practice, goals, ranks and certificates
 
-- **Practice my mistakes.** Every missed question is saved. Practice serves up to 8 at a time. A mistake answered right comes back after 1 day, then 3 days, then 7 days; after that it's mastered and removed. Only due mistakes are graded, and resubmitting an old practice page does nothing.
+- **Practice my mistakes.** Every missed question is saved. Practice serves up to 8 at a time. A mistake answered right comes back after 1 day, then 3 days, then 7 days; after that it's mastered and removed. Only due mistakes are graded, and resubmitting an old practice page does nothing. Each question is one practice card, even one that can come with a different right answer (a family in two industries is asked "What kind of work does Acme do?" with either as the answer), so practice never asks the same question twice in a row.
 - **Daily goal and streak.** The daily goal is 3 levels. Playing at least one level a day builds a streak.
 - **Ranks**, which grow with the track's size:
   - Rookie (from 0 levels)
@@ -498,7 +498,7 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
 
 ### 5.9 Kids' own devices
 
-A grown-up can make a single-use **join code** for a learner, valid for 7 days. On the kid's phone, tablet or computer, the kid opens the Kids page and types the code. That device gets an Academy-only session: no business pages, no email, no password, and only that one learner in that one family. "Sign out on every device" ends all of a learner's device sessions at once. A device can also leave on its own ("Leave the Academy on this device").
+A grown-up can make a single-use **join code** for a learner, valid for 7 days. If two devices type the same code at once, only the one that uses it up gets in. On the kid's phone, tablet or computer, the kid opens the Kids page and types the code. That device gets an Academy-only session: no business pages, no email, no password, and only that one learner in that one family. "Sign out on every device" ends all of a learner's device sessions at once. A device can also leave on its own ("Leave the Academy on this device").
 
 ### 5.10 The Academy plan
 
@@ -559,7 +559,7 @@ All Academy content is written, not generated on the fly, and checked by tests:
 - **1,333** written questions and true-or-false facts in the question banks for the 27 newer worlds, each graded easy (1), medium (2) or hard (3), with lesson cards for each world.
 - **255** leadership scenarios across nine pools: speaking like a pro, owning it, never giving up, respect, hiring, tough calls, customers, competition and pro moves.
 - **201** words in the Word Bank.
-- Questions built from the company's own name, industries and checks, and from the 500-rule catalog for Rule Quests.
+- Questions built from the company's own name, industries and checks, and from the 500-rule catalog for Rule Quests. A Rule Quest's wrong answers never come from the same duty in another industry under another title (the DEA's biennial inventory is a check for drug makers and for pharmacies), and never read almost like the right answer, so each question has exactly one right answer.
 
 The test rules for the question banks:
 
@@ -698,6 +698,7 @@ Every point below is in the code today.
   - Each webhook is checked against Stripe's signature and must be no more than 5 minutes old.
   - Repeats are ignored, and so are events older than the last one applied.
   - Events about a different subscription than the active one are ignored.
+  - A checkout never turns a plan back on once it has ended, or hides a failed payment: not a checkout event Stripe retries days later, and not the "thank you" page opened again from browser history.
 
 ### 7.6 Bugs fixed in a security review
 
@@ -760,7 +761,8 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 308 tests in 13 files.
+- `tests/`: 407 tests in 16 files.
+  - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
   - `test_academy_fixes.py` (20), `test_autopilot.py` (20) and `test_armo.py` (14).
@@ -856,7 +858,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 308 tests
+python3 -m unittest discover -s tests     # 407 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -1024,7 +1026,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 308 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 407 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
