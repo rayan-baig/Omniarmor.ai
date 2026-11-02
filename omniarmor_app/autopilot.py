@@ -324,8 +324,11 @@ def run(cfg, force=False):
             log.info("autopilot fixed: %s", title)
         found = find_problems(conn, cfg, deep=daily)
         report(conn, cfg, found)
-        if daily and now.weekday() == 0:
-            weekly_summary(conn, cfg)
+        # Once each Monday, even when passes are forced: each forced pass
+        # counts as the day's first, and every one used to resend the report.
+        if daily and now.weekday() == 0 and claim_run(conn, "autopilot-weekly", now.date().isoformat()):
+            _safely("weekly report", weekly_summary, conn, cfg)
+            finish_run(conn, "autopilot-weekly", now.date().isoformat(), "sent")
         if daily:
             finish_run(conn, "autopilot-daily", now.date().isoformat(), f"open={len(found)}")
         result = f"fixed={len(fixed)} open={len(found)}"

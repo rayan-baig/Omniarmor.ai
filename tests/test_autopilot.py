@@ -48,8 +48,10 @@ class AutopilotTest(unittest.TestCase):
                      (iso(utcnow() - timedelta(minutes=minutes_ago)), attempts))
         conn.commit()
 
-    def operator_mail(self):
-        return [s for s in self.sent if s[0] == "owner@omniarmor.test"]
+    def operator_mail(self, weekly=True):
+        """What the operator was sent; weekly=False leaves out the Monday report."""
+        return [s for s in self.sent if s[0] == "owner@omniarmor.test"
+                and (weekly or s[1] != "[OmniArmor] Weekly Autopilot report")]
 
     def test_all_clear_sends_nothing(self):
         result = autopilot.run(self.cfg, force=True)
@@ -107,7 +109,7 @@ class AutopilotTest(unittest.TestCase):
             self.crash(f"/app/page{i}")
         autopilot.run(self.cfg, force=True)
         autopilot.run(self.cfg, force=True)
-        mail = self.operator_mail()
+        mail = self.operator_mail(weekly=False)
         self.assertEqual(len(mail), 1)
         self.assertIn("Bug: KeyError: 'missing'", mail[0][1])
         self.assertIn("Happened 6 times in the last day", mail[0][2])
@@ -118,13 +120,13 @@ class AutopilotTest(unittest.TestCase):
         conn.commit()
         self.crash()
         autopilot.run(self.cfg, force=True)
-        self.assertTrue(self.operator_mail()[-1][1].startswith("[OmniArmor] Still open: Bug:"))
+        self.assertTrue(self.operator_mail(weekly=False)[-1][1].startswith("[OmniArmor] Still open: Bug:"))
         # It stops happening for a day: a "Fixed" email, then silence.
         conn.execute("UPDATE app_errors SET at = ?", (iso(utcnow() - timedelta(hours=25)),))
         conn.commit()
         autopilot.run(self.cfg, force=True)
         autopilot.run(self.cfg, force=True)
-        mail = self.operator_mail()
+        mail = self.operator_mail(weekly=False)
         self.assertEqual(len(mail), 3)
         self.assertTrue(mail[-1][1].startswith("[OmniArmor] Fixed: Bug:"))
         self.assertIn("hasn't happened for a day", mail[-1][2])
@@ -225,6 +227,20 @@ class AutopilotTest(unittest.TestCase):
         autopilot.record(conn, "fix", "fixed", "Re-sent 2 emails that failed the first time.")
         self.assertTrue(autopilot.weekly_summary(conn, self.cfg))
         self.assertIn("fixed 1 small thing", self.operator_mail()[0][2])
+
+    def test_weekly_report_goes_out_once_on_a_monday(self):
+        # Every forced pass (the autopilot command, or a test) counted as the
+        # day's first, so each one on a Monday mailed the weekly report again.
+        now = utcnow()
+        monday = now - timedelta(days=now.weekday())
+        conn = self.db()
+        autopilot.record(conn, "fix", "fixed", "Re-sent 2 emails that failed the first time.")
+        with mock.patch("omniarmor_app.autopilot.utcnow", return_value=monday):
+            autopilot.run(self.cfg, force=True)
+            autopilot.run(self.cfg, force=True)
+            autopilot.run(self.cfg)
+        reports = [m for m in self.operator_mail() if m[1] == "[OmniArmor] Weekly Autopilot report"]
+        self.assertEqual(len(reports), 1)
 
     def test_cli(self):
         runner = self.app.test_cli_runner()
