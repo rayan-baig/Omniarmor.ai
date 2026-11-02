@@ -62,6 +62,12 @@
           {% else %}
             <p class="hint">Online sign-up is coming soon. Contact us to start the Academy plan.</p>
           {% endif %}
+          {% if has_customer and stripe %}
+            <form method="post" action="{{ url_for('academy.plan_manage') }}" class="mt-s">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="linkbtn" type="submit">Past invoices and billing</button>
+            </form>
+          {% endif %}
         {% endif %}
       {% else %}
         <p class="hint">Only the workspace owner can change the plan.</p>

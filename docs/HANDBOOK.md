@@ -467,6 +467,7 @@ The Academy has its own subscription, separate from the compliance service.
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.
   - **Cancelled in the portal:** Stripe keeps the plan on until the paid period ends. The plan page says "Cancelled · ends" with the date instead of a renewal date, and the workspace can be deleted right away, since nothing more will be charged.
+  - **After the plan ends:** a workspace that has paid before keeps a "Past invoices and billing" link on the plan page, beside the button to start again, so the owner can still open Stripe's portal for receipts or to fix the card on an unpaid plan.
 - **Webhook safety:**
   - Events are de-duplicated by event id, and events older than the last one applied are ignored.
   - Events about a different subscription than the active one are ignored, so a cancelled duplicate can't switch off a paid plan.

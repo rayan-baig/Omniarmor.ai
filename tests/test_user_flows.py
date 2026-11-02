@@ -449,3 +449,35 @@ class TestReadyToEatFoodSevenDays(AppTestCase):
         page = self.client.get("/app/industry/2?only=problems").data.decode()
         self.assertIn('id="rule-date_marking"', page)
         self.assertIn("1 day overdue", page)
+
+
+class TestBillingHistoryAfterThePlanEnds(AppTestCase):
+    """Once a cancelled plan ran out, the plan page offered only a new
+    checkout: the owner had no way back to Stripe's billing page for past
+    invoices and receipts, or to fix the card on a plan Stripe gave up on."""
+
+    def setUp(self):
+        super().setUp()
+        self.signup()
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test", ACADEMY_STRIPE_PRICE="price_1")
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_status = 'canceled', stripe_customer_id = 'cus_1',"
+                         " stripe_subscription_id = 'sub_1', academy_trial_ends = '2000-01-01T00:00:00+00:00'")
+            conn.commit()
+
+    def test_the_owner_can_open_billing_history(self):
+        from unittest import mock
+        from omniarmor_app import academy_plan
+        page = self.client.get("/app/academy/plan").data.decode()
+        self.assertIn('action="/app/academy/plan/manage"', page)
+        self.assertIn('action="/app/academy/plan/checkout"', page)  # and can start again
+        with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://billing.stripe.test/p"}):
+            response = self.post("/app/academy/plan/manage")
+        self.assertEqual(response.headers["Location"], "https://billing.stripe.test/p")
+
+    def test_no_billing_button_without_a_stripe_customer(self):
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET stripe_customer_id = NULL")
+            conn.commit()
+        self.assertNotIn('action="/app/academy/plan/manage"', self.client.get("/app/academy/plan").data.decode())
