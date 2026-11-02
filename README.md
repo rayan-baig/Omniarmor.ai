@@ -10,7 +10,7 @@ deadline, a threshold or a checklist. That is 500 checks in all.
 Companies sign up, pick their industries and enter each date or reading once.
 From then on OmniArmor:
 
-- **Tracks deadlines by itself:** it counts the days from each saved date, every day, in the company's timezone.
+- **Tracks deadlines by itself:** it counts the days from each saved date, every day, in the company's timezone, and the hours from each saved start time for the checks that run in hours.
 - **Sends reminders:** one email per team member when something is 30, 7 or 1 day from due, due today, or overdue (weekly). Missed days catch up, and failed emails are retried.
 - **Restarts recurring duties:** pressing Done today starts the next cycle.
 - **Keeps the record:** every change is in the audit trail with who and when. Printable reports and CSV exports are ready for inspectors.
@@ -27,7 +27,7 @@ a compliance professional for your jurisdiction.
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 256 tests
+python3 -m unittest discover -s tests     # 296 tests
 ```
 
 Everything about OmniArmor in plain language, from every feature to all 500 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).

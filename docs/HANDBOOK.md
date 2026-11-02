@@ -731,10 +731,10 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 256 tests in 13 files.
-  - `test_webapp.py` (50) and `test_academy.py` (47).
-  - `test_omni_armor_platform.py` (29), `test_user_flows.py` (28, bugs a person using the app would hit) and `test_rule_catalog.py` (23).
-  - `test_academy_fixes.py` (20), `test_autopilot.py` (18) and `test_armo.py` (14).
+- `tests/`: 296 tests in 13 files.
+  - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
+  - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
+  - `test_academy_fixes.py` (20), `test_autopilot.py` (20) and `test_armo.py` (14).
   - `test_quiz_checks.py` (13), `test_review_fixes.py` (8) and `test_stats.py` (3).
   - `test_academy_bank.py` (2, which check every bank entry).
   - `test_parity.py` (1: dashboard against engine, run with Node).
@@ -827,7 +827,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 256 tests
+python3 -m unittest discover -s tests     # 296 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -995,7 +995,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 256 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 296 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
