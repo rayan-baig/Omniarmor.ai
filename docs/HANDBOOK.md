@@ -561,7 +561,7 @@ Every fix is written to Autopilot's log.
 - **Low disk space**: under 1 GB or under 5% free.
 - **Database damage**, found by SQLite's quick check once a day.
 
-Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. On Mondays it sends a short weekly report, but only if it fixed something that week.
+Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. On Mondays it sends a short weekly report, but only if anything happened that week (something fixed, or any alert); a quiet week sends nothing.
 
 The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up, the same messages go to the server log.
 
