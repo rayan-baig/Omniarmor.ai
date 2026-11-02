@@ -481,3 +481,59 @@ class TestBillingHistoryAfterThePlanEnds(AppTestCase):
             conn.execute("UPDATE orgs SET stripe_customer_id = NULL")
             conn.commit()
         self.assertNotIn('action="/app/academy/plan/manage"', self.client.get("/app/academy/plan").data.decode())
+
+
+class TestBusinessDayClocks(AppTestCase):
+    """Ten checks count business days since something happened (the I-9's
+    three business days, Reg E's ten, CAN-SPAM's ten...). They took only a
+    typed number that never grew: an I-9 entered as "1" stayed Cleared for good."""
+
+    def state(self, industry_id, key, value_date, today):
+        from datetime import date
+        from omniarmor_app.catalog import find_rule
+        from omniarmor_app.tracking import compute_state
+        row = {"value_num": None, "value_bool": None, "value_date": value_date, "limit_override": None,
+               "warn_override": None, "updated_at": None, "updated_by_name": None}
+        return compute_state(industry_id, find_rule(industry_id, key), row, date.fromisoformat(today))
+
+    def test_every_business_day_clock_takes_a_date(self):
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import date_mode
+        counted = [r for rules in CATALOG.values() for r in rules
+                   if r.unit == "business days" and "business days since" in r.input.lower()]
+        self.assertEqual(len(counted), 10)
+        for r in counted:
+            self.assertEqual(date_mode(r), "since", r.key)
+
+    def test_weekdays_count_and_weekends_do_not(self):
+        # I-9 Section 2 within 3 business days of a Monday start: due Thursday.
+        cases = {"2026-11-02": (0, "CLEARED"), "2026-11-04": (2, "WARNING"), "2026-11-05": (3, "WARNING"),
+                 "2026-11-06": (4, "BLOCKED"), "2026-11-07": (4, "BLOCKED")}
+        for today, (count, level) in cases.items():
+            s = self.state(30, "i9_section_2", "2026-11-02", today)
+            self.assertEqual((s.value, s.level, s.due_date.isoformat()), (count, level, "2026-11-05"), today)
+        # A Friday start: the weekend doesn't count, nor Veterans Day (Wednesday 11 November).
+        s = self.state(30, "i9_section_2", "2026-11-06", "2026-11-11")
+        self.assertEqual((s.value, s.due_date.isoformat()), (2, "2026-11-12"))
+
+    def test_holidays_observed_on_a_weekday(self):
+        # 4 July 2026 is a Saturday, so the holiday is Friday 3 July.
+        self.assertEqual(self.state(30, "i9_section_2", "2026-07-02", "2026-07-05").value, 0)
+        self.assertEqual(self.state(30, "i9_section_2", "2026-07-02", "2026-07-06").value, 1)
+        # Thanksgiving, the fourth Thursday of November, and New Year's Day.
+        self.assertEqual(self.state(30, "i9_section_2", "2026-11-25", "2026-11-27").value, 1)
+        self.assertEqual(self.state(30, "i9_section_2", "2026-12-31", "2027-01-04").value, 1)
+
+    def test_same_business_day_rule(self):
+        # ATF Form 3310.4 is due the day of the multiple handgun sale.
+        s = self.state(48, "multiple_handgun_report", "2026-11-02", "2026-11-02")
+        self.assertEqual((s.level, s.due_date.isoformat()), ("CLEARED", "2026-11-02"))
+        self.assertEqual(self.state(48, "multiple_handgun_report", "2026-11-02", "2026-11-03").level, "BLOCKED")
+
+    def test_through_the_app(self):
+        self.signup(industries=(30,))
+        self.assertIn('id="f-i9_section_2-d"', self.client.get("/app/industry/30").data.decode())
+        self.change(30, "i9_section_2", date="2026-01-05")
+        page = self.client.get("/app/industry/30?only=problems").data.decode()
+        self.assertIn('id="rule-i9_section_2"', page)
+        self.assertIn("days overdue", page)

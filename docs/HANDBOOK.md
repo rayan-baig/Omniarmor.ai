@@ -133,6 +133,8 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - **Calendar months** (3 AeroArmor checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
 - **Years** (1 check) count like months, in years.
 
+10 checks count **business days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. A business day is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday.
+
 A number typed instead of a date stays as typed.
 
 Days are counted in the company's own timezone, so a deadline flips at local midnight, not in London or California.
@@ -1019,7 +1021,7 @@ These are the habits the project was built with. Keep them:
 ---
 
 ## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 127 checks counted in days from a date; the 19 checks counted in months or years since a date (section 2.3) can be tracked from a date too.
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 127 checks counted in days from a date; the 19 checks counted in months or years and the 10 counted in business days since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -2457,7 +2459,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Hold the transaction and screen all parties now; block and report any confirmed match to OFAC.
 - Example reading used in demos: Yes
 
-**6. Reg E error investigation** (Maximum 10 business days, warns from 8 business days)
+**6. Reg E error investigation** (Maximum 10 business days, warns from 8 business days; counts business days since a date)
 
 - Asks: Business days since the customer reported an EFT error without a decision or provisional credit
 - Rule: 12 CFR 1005.11(c)(1)-(2)
@@ -3253,7 +3255,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Take a complete inventory of all controlled substances now and keep it on file for DEA inspection.
 - Example reading used in demos: 700 days
 
-**3. Theft or loss reported to DEA** (Maximum 1 business days, warns from 1 business days)
+**3. Theft or loss reported to DEA** (Maximum 1 business days, warns from 1 business days; counts business days since a date)
 
 - Asks: Business days since discovering a theft or significant loss of controlled substances without notifying DEA in writing
 - Rule: 21 CFR 1301.76(b)
@@ -3425,7 +3427,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Raise the rate to at least the federal minimum (or higher state or local rate) and pay the difference owed.
 - Example reading used in demos: $12
 
-**4. Form I-9 done within 3 business days** (Maximum 3 business days, warns from 2 business days)
+**4. Form I-9 done within 3 business days** (Maximum 3 business days, warns from 2 business days; counts business days since a date)
 
 - Asks: Business days since the new hire's first day of work without a completed I-9 Section 2
 - Rule: 8 CFR 274a.2(b)(1)(ii)
@@ -3457,7 +3459,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Send the COBRA election notice to the employee and dependents now by a trackable method.
 - Example reading used in demos: 50 days
 
-**8. FMLA notice within 5 business days** (Maximum 5 business days, warns from 4 business days)
+**8. FMLA notice within 5 business days** (Maximum 5 business days, warns from 4 business days; counts business days since a date)
 
 - Asks: Business days since the employee requested leave or the employer learned of a possible FMLA reason, without a notice
 - Rule: 29 CFR 825.300(b)(1), (c)
@@ -3629,7 +3631,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Encrypt or tokenize the stored card numbers now and delete any you do not need.
 - Example reading used in demos: Yes
 
-**9. Reg E error investigation timing** (Maximum 10 business days, warns from 8 business days)
+**9. Reg E error investigation timing** (Maximum 10 business days, warns from 8 business days; counts business days since a date)
 
 - Asks: Business days since the consumer reported the error, without finishing the investigation or giving provisional credit
 - Rule: 12 CFR 1005.11(c)
@@ -3745,7 +3747,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop the payments, end the arrangement and have counsel review any marketing services agreements.
 - Example reading used in demos: No
 
-**3. Loan Estimate in 3 business days** (Maximum 3 business days, warns from 2 business days)
+**3. Loan Estimate in 3 business days** (Maximum 3 business days, warns from 2 business days; counts business days since a date)
 
 - Asks: Business days since the application was received, without delivering or mailing the Loan Estimate
 - Rule: 12 CFR 1026.19(e)(1)(iii)(A)
@@ -3785,7 +3787,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop the originator from taking applications until the license or registration is active in NMLS.
 - Example reading used in demos: Yes
 
-**8. Resolve notices of error** (Maximum 30 business days, warns from 25 business days)
+**8. Resolve notices of error** (Maximum 30 business days, warns from 25 business days; counts business days since a date)
 
 - Asks: Business days since a notice of error was received, without correcting it or responding in writing
 - Rule: 12 CFR 1024.35(e)(3)(i)(C) (30 business days for most errors; shorter for payoff and foreclosure errors)
@@ -4893,7 +4895,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop transfers without a proceed or elapsed wait, and report any transfer after a denial to ATF.
 - Example reading used in demos: No
 
-**3. Acquisition logged next business day** (Maximum 1 business days, warns from 1 business days)
+**3. Acquisition logged next business day** (Maximum 1 business days, warns from 1 business days; counts business days since a date)
 
 - Asks: Business days since a firearm was received without an entry in the acquisition and disposition record
 - Rule: 27 CFR 478.125(e)
@@ -4909,7 +4911,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Record the disposition today with the buyer's name and address or the Form 4473 serial number.
 - Example reading used in demos: 9 days
 
-**5. Multiple handgun sale reported** (Maximum 0 business days)
+**5. Multiple handgun sale reported** (Maximum 0 business days; counts business days since a date)
 
 - Asks: Business days since a sale of two or more handguns to one buyer within five business days, without filing ATF Form 3310.4
 - Rule: 18 U.S.C. 923(g)(3)(A); 27 CFR 478.126a
@@ -5097,7 +5099,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Register with the state and start collecting sales tax on orders shipped there.
 - Example reading used in demos: 94%
 
-**8. Unsubscribes honored in 10 days** (Maximum 10 business days, warns from 8 business days)
+**8. Unsubscribes honored in 10 days** (Maximum 10 business days, warns from 8 business days; counts business days since a date)
 
 - Asks: Business days since an unsubscribe request while marketing emails are still being sent
 - Rule: CAN-SPAM Act, 15 U.S.C. 7704(a)(4)

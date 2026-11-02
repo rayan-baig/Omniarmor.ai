@@ -20,8 +20,9 @@ _YEARS_SINCE = re.compile(r"\byears? since\b", re.I)
 
 def date_unit(rule):
     """What a date-tracked reading counts: 'days', 'months', 'calendar months'
-    (whole months by the calendar, as in "the preceding 12 calendar months")
-    or 'years'. None when the reading is not tracked by date."""
+    (whole months by the calendar, as in "the preceding 12 calendar months"),
+    'years' or 'business days' (Monday to Friday, not US federal holidays).
+    None when the reading is not tracked by date."""
     if rule.kind not in ("max", "min"):
         return None
     if rule.unit in ("days", "calendar days"):
@@ -30,6 +31,8 @@ def date_unit(rule):
         return "calendar months" if re.search(r"\bcalendar months? since\b", rule.input, re.I) else "months"
     if rule.unit == "years" and _YEARS_SINCE.search(rule.input):
         return "years"
+    if rule.unit == "business days" and re.search(r"\bbusiness days? since\b", rule.input, re.I):
+        return "business days"
     return None
 
 

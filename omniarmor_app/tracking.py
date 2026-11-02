@@ -109,7 +109,65 @@ def _shifted(day, days):
 
 
 # The longest limit a company can set, per unit a date-tracked check counts.
-MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100}
+MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100, "business days": 26000}
+
+
+# --- Business days: Monday to Friday, not counting US federal holidays -------
+
+def _nth_weekday(year, month, weekday, n):
+    """The nth `weekday` (0 = Monday) of a month; n = -1 for the last one."""
+    if n > 0:
+        first = date(year, month, 1)
+        return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+    last = date(year, month, calendar.monthrange(year, month)[1])
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def _observed(day):
+    """A holiday on a Saturday is kept the Friday before; on a Sunday, the Monday after."""
+    return day - timedelta(days=1) if day.weekday() == 5 else day + timedelta(days=1) if day.weekday() == 6 else day
+
+
+_HOLIDAYS = {}
+
+
+def federal_holidays(year):
+    """The days US federal offices are closed for a holiday in `year` (5 U.S.C. 6103)."""
+    if year not in _HOLIDAYS:
+        days = set()
+        for y in (year, year + 1):  # 1 January on a Saturday is kept on 31 December
+            fixed = [date(y, 1, 1), date(y, 7, 4), date(y, 11, 11), date(y, 12, 25)]
+            if y >= 2021:
+                fixed.append(date(y, 6, 19))
+            days |= {_observed(d) for d in fixed}
+            days |= {_nth_weekday(y, 2, 0, 3), _nth_weekday(y, 5, 0, -1), _nth_weekday(y, 9, 0, 1),
+                     _nth_weekday(y, 10, 0, 2), _nth_weekday(y, 11, 3, 4)}
+            if y >= 1986:
+                days.add(_nth_weekday(y, 1, 0, 3))
+        _HOLIDAYS[year] = frozenset(d for d in days if d.year == year)
+    return _HOLIDAYS[year]
+
+
+def _business_days(start, end):
+    """Business days after `start`, up to and including `end` (end >= start)."""
+    total = end.toordinal() - start.toordinal()
+    count = total // 7 * 5
+    for n in range(total % 7):
+        if (start.weekday() + 1 + n) % 7 < 5:
+            count += 1
+    for year in range(start.year, end.year + 1):
+        count -= sum(1 for h in federal_holidays(year) if start < h <= end and h.weekday() < 5)
+    return count
+
+
+def _add_business_days(day, count):
+    """The day `count` business days after `day` (`day` itself when count is 0)."""
+    end = day + timedelta(days=count // 5 * 7 + 7)  # past the answer, before holidays
+    while _business_days(day, end) < count:
+        end += timedelta(days=7)
+    while end > day and _business_days(day, end - timedelta(days=1)) >= count:
+        end -= timedelta(days=1)
+    return end
 
 
 def _add_months(day, months):
@@ -136,6 +194,8 @@ def _elapsed(start, end, unit):
         return (end - start).days
     if end < start:
         return -_elapsed(end, start, unit)
+    if unit == "business days":
+        return _business_days(start, end)
     if unit == "calendar months":
         # "Within the preceding 12 calendar months": a check any day in June
         # 2025 is good through June 30, 2026, so only the months are counted.
@@ -148,6 +208,13 @@ def _deadline(day, amount, unit, sign):
     """The last day a reading counted from `day` stays within `amount` units."""
     if unit == "days":
         return _shifted(day, sign * _whole_days(amount))
+    if unit == "business days":
+        if sign < 0:
+            return None  # no check counts business days until a date
+        try:
+            return _add_business_days(day, max(0, min(MAX_SPAN[unit], math.floor(amount))))
+        except (OverflowError, ValueError):
+            return None
     amount = max(-MAX_SPAN[unit], min(MAX_SPAN[unit], amount)) * (12 if unit == "years" else 1)
     try:
         if unit == "calendar months" and sign > 0:
