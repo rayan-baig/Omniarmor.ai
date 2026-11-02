@@ -169,6 +169,59 @@ class TestMigrationsTenAndEleven(unittest.TestCase):
         conn.close()
 
 
+class TestMigrationTwelve(unittest.TestCase):
+    def test_the_audit_index_on_a_populated_version_11_database(self):
+        """Deep audit pages took about 1.5 s at half a million rows: the only
+        index had the time but not the id the trail is also sorted by, so each
+        page sorted again and read every row it skipped from the table.
+        Migration 12 adds an index holding the whole sort order. Run on a
+        database with data in it, from version 11."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, "v11.db")
+        with mock.patch("omniarmor_app.db.MIGRATIONS", [m for m in MIGRATIONS if m[0] <= 11]):
+            conn = connect(path)
+            self.assertEqual(migrate(conn), 11)
+        self.addCleanup(conn.close)
+        now = iso(utcnow())
+        conn.executemany("INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, 'x', ?)",
+                         [(i, f"u{i}@example.com", f"Person {i}", now) for i in range(1, 6)])
+        conn.executemany("INSERT INTO orgs (id, name, created_at) VALUES (?, ?, ?)",
+                         [(i, f"Company {i}", now) for i in (1, 2)])
+        # Several rows a second, as a busy workspace writes them, so the id
+        # decides the order within each second.
+        conn.executemany("INSERT INTO audit (org_id, user_id, user_name, at, action, summary)"
+                         " VALUES (?, ?, ?, ?, 'reading', ?)",
+                         [(n % 2 + 1, n % 6 or None, f"Person {n % 6}" if n % 6 else None,
+                           f"2026-01-01T00:{n // 600 % 60:02d}:{n // 10 % 60:02d}+00:00", f"row {n}")
+                          for n in range(30000)])
+        conn.commit()
+        page = views.AUDIT_QUERY + " LIMIT ? OFFSET ?"
+        before = [tuple(r) for r in conn.execute(page, (1, 101, 14000))]
+        plan = " / ".join(r["detail"] for r in conn.execute("EXPLAIN QUERY PLAN " + page, (1, 101, 14000)))
+        self.assertIn("TEMP B-TREE", plan)
+
+        self.assertEqual(migrate(conn), SCHEMA_VERSION)
+        indexes = {r["name"]: r["sql"] for r in conn.execute("SELECT name, sql FROM sqlite_master WHERE type = 'index'"
+                                                              " AND tbl_name = 'audit'")}
+        self.assertIn("audit_org_at_id", indexes)
+        self.assertNotIn("audit_org_at", indexes)  # replaced; the new one starts with the same columns
+        plan = [r["detail"] for r in conn.execute("EXPLAIN QUERY PLAN " + page, (1, 101, 14000))]
+        self.assertTrue(any("audit USING INDEX audit_org_at_id (org_id=?)" in step for step in plan), plan)
+        self.assertFalse(any("TEMP B-TREE" in step for step in plan), plan)
+        # The full export walks the same index.
+        plan = [r["detail"] for r in conn.execute("EXPLAIN QUERY PLAN " + views.AUDIT_QUERY, (1,))]
+        self.assertFalse(any("TEMP B-TREE" in step for step in plan), plan)
+        # Same rows, same order.
+        self.assertEqual([tuple(r) for r in conn.execute(page, (1, 101, 14000))], before)
+        self.assertEqual(len(before), 101)
+        ids = [r["id"] for r in conn.execute(views.AUDIT_QUERY, (2,))]
+        self.assertEqual(len(ids), 15000)
+        ats = {r["id"]: r["at"] for r in conn.execute("SELECT id, at FROM audit WHERE org_id = 2")}
+        self.assertEqual(ids, sorted(ids, key=lambda i: (ats[i], i), reverse=True))
+        self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+
+
 # --- Long exports --------------------------------------------------------------------------
 
 class TestCsvExportsStream(AppTestCase):

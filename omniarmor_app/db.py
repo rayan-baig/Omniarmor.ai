@@ -257,6 +257,15 @@ MIGRATIONS = [
     ALTER TABLE items ADD COLUMN updated_by_name TEXT;
     UPDATE items SET updated_by_name = (SELECT name FROM users WHERE users.id = items.updated_by);
     """),
+    # The audit trail pages are sorted by time and then id, newest first. The
+    # old index had only the time, so every page sorted each second's rows
+    # again, and a deep page read every row it skipped from the table. This
+    # one holds the whole sort order and the person's id (all the skipped rows
+    # need for the join), and replaces the old one, which it starts with.
+    (12, """
+    CREATE INDEX audit_org_at_id ON audit (org_id, at DESC, id DESC, user_id);
+    DROP INDEX audit_org_at;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

@@ -761,7 +761,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 433 tests in 18 files.
+- `tests/`: 434 tests in 18 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes). `e2e_helpers.py` reads pages the way a browser does.
   - `test_user_flows.py` (63, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
@@ -792,7 +792,7 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 11), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 12), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
@@ -859,7 +859,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 ```sh
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 433 tests
+python3 -m unittest discover -s tests     # 434 tests
 python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
 ```
 
@@ -890,7 +890,7 @@ The Docker image:
 - keeps the database and backups in `/data`;
 - has a built-in health check against `/healthz`;
 - writes an access log with password-reset and invite tokens, and the Stripe Checkout id a payer comes back with, replaced by `[hidden]` (also when they sit percent-encoded inside another address, such as a sign-in page's `next`), so the hosting dashboard never holds a working link.
-- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs. Its 60-second timeout restarts a worker that stopped responding or took that long to start; with threads it never cuts a page off. The slowest pages in a big workspace (all 50 industries, half a million audit rows) were measured: the audit CSV takes about 10 seconds and streams from the first moment, deep audit pages about 1.5 seconds, every other page well under a second.
+- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs. Its 60-second timeout restarts a worker that stopped responding or took that long to start; with threads it never cuts a page off. The slowest pages in a big workspace (all 50 industries, half a million audit rows) were measured: the audit CSV takes about 10 seconds and streams from the first moment, every page well under a second. Deep audit pages took about 1.5 seconds until an index holding the trail's whole sort order (schema version 12) made them about five times faster.
 
 ### 9.3 Email
 
@@ -1027,7 +1027,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 433 tests pass, and pyflakes is clean. No pull request has been opened yet.
+- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 434 tests pass, and pyflakes is clean. No pull request has been opened yet.
 - **Database schema** is at version 11.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.

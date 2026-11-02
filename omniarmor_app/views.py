@@ -90,12 +90,16 @@ def audit():
     return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE)
 
 
+# Newest first. The index audit_org_at_id (migration 12) holds this order.
+AUDIT_QUERY = ("SELECT audit.*, COALESCE(users.name, audit.user_name) AS user_name FROM audit"
+               " LEFT JOIN users ON users.id = audit.user_id"
+               " WHERE audit.org_id = ? ORDER BY audit.at DESC, audit.id DESC")
+
+
 def _audit_rows(limit=None, offset=0):
     """The company's audit rows, newest first, one at a time (a long trail is
     never held in memory all at once)."""
-    sql = ("SELECT audit.*, COALESCE(users.name, audit.user_name) AS user_name FROM audit"
-           " LEFT JOIN users ON users.id = audit.user_id"
-           " WHERE audit.org_id = ? ORDER BY audit.at DESC, audit.id DESC")
+    sql = AUDIT_QUERY
     params = [g.org["id"]]
     if limit is not None:
         sql += " LIMIT ? OFFSET ?"
