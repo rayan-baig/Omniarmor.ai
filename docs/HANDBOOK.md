@@ -929,13 +929,13 @@ To restore:
 
 ### 9.5 Monitoring
 
-- `GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and database are working (and the schema is current). Point an uptime monitor at it.
+- `GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and database are working (and the schema is current), with the schema version and the release number (`omniarmor_app/version.py`, also shown in Settings under About) and nothing else. Point an uptime monitor at it.
 - Set `OPERATOR_EMAIL` so Autopilot can email problems.
 - The server log records each daily run, each Autopilot fix, and any failure.
 
 ### 9.6 Upgrades
 
-Back up first, then deploy the new version. The schema upgrades itself at start-up. Run the tests before every deploy; GitHub Actions does it on every push.
+Back up first, then deploy the new version. Raise the number in `omniarmor_app/version.py` and add its section at the top of `CHANGELOG.md` with each release (a test checks the two agree). The schema upgrades itself at start-up. Run the tests before every deploy; GitHub Actions does it on every push.
 
 ### 9.7 What it costs to run
 

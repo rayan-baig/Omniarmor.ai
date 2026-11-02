@@ -21,6 +21,7 @@ from .jobs import register_cli, start_scheduler
 from .redact import RedactingFilter, redact
 from .security import check_csrf, csrf_token, load_user, security_headers
 from .tracking import format_quantity, local_date
+from .version import __version__
 
 SLOGAN = "Catch the fine before it catches you."
 
@@ -165,7 +166,8 @@ def healthz():
         ok = version == SCHEMA_VERSION
     except Exception:  # report unhealthy rather than crash the health check
         ok, version = False, None
-    return jsonify(status="ok" if ok else "error", schema=version), (200 if ok else 503)
+    # The release and the schema, and nothing else: this answers anyone.
+    return jsonify(status="ok" if ok else "error", schema=version, version=__version__), (200 if ok else 503)
 
 
 class OmniArmorFlask(Flask):
@@ -205,7 +207,7 @@ def create_app(**overrides):
     app.before_request(load_user)
     app.before_request(check_csrf)
     app.after_request(security_headers)
-    app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN)
+    app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 

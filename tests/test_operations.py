@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from omniarmor_app import autopilot, create_app, jobs, views  # noqa: E402
 from omniarmor_app.autopilot import Finding  # noqa: E402
 from omniarmor_app.db import MIGRATIONS, SCHEMA_VERSION, connect, iso, migrate, utcnow  # noqa: E402
+from omniarmor_app.version import __version__  # noqa: E402
 from test_webapp import PASSWORD, AppTestCase  # noqa: E402
 
 
@@ -66,7 +67,8 @@ class TestBackupDrill(AppTestCase):
         # 4. Start the app again.
         app = create_app(TESTING=True, DATABASE=self.db_path, SCHEDULER_ENABLED=False, BACKUP_DIR=cfg["BACKUP_DIR"])
         client = app.test_client()
-        self.assertEqual(client.get("/healthz").get_json(), {"status": "ok", "schema": SCHEMA_VERSION})
+        self.assertEqual(client.get("/healthz").get_json(),
+                         {"status": "ok", "schema": SCHEMA_VERSION, "version": __version__})
         self.assertEqual(self.readings(self.db_path)["annual_mvr_review"], 12)
         with client.session_transaction() as s:
             s["_csrf"] = "t"

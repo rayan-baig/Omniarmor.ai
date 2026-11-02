@@ -134,8 +134,9 @@ short report of what it fixed, only if it fixed something. Without
 - `flask --app wsgi autopilot` runs the checks now and prints what it found.
 - `flask --app wsgi autopilot --log` shows what it fixed and reported in the last 30 days.
 
-`GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and
-database are working. Point an uptime monitor (UptimeRobot, Better Stack) at
+`GET /healthz` returns `{"status": "ok", "schema": ..., "version": "..."}`
+with HTTP 200 when the app and database are working: the schema version and
+the release (from `omniarmor_app/version.py`), and nothing else. Point an uptime monitor (UptimeRobot, Better Stack) at
 it so you get a text or email if the site goes down. The server log records
 each daily run and any failure.
 

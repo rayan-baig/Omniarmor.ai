@@ -76,4 +76,8 @@
     <button class="btn danger" type="submit">Delete workspace</button>
   </form>
 {% endif %}
+
+<h2 id="about">About</h2>
+<p class="row"><span>OmniArmor version <span class="mono" data-version>{{ APP_VERSION }}</span> · A product of MTRX Horizyn</span>
+  <span><a href="{{ url_for('public.terms') }}">Terms</a> · <a href="{{ url_for('public.privacy') }}">Privacy</a></span></p>
 {% endblock %}
