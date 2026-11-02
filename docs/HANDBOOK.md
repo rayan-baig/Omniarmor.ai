@@ -142,6 +142,8 @@ Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls
 - The time entered is read in the company's timezone and shown back in it; it is stored in UTC, so moving the company to another timezone keeps the same moment. Across a change to or from daylight time the hours are real hours: 72 hours from noon on the Saturday before clocks go back end at 11:00 on the Tuesday. A time that happens twice the night clocks go back is taken the first time (the earlier moment); a time skipped the night clocks go forward, such as 2:30, is read as 3:30.
 - One that ran out earlier today counts as overdue, not "due today", in reminders and in Armo's alerts.
 
+Two more count **minutes since** something happened: "Minutes since the last welfare check of the person in restrictive housing" (30 minutes) and "Minutes since a reportable accident was known, without calling MSHA" (15 minutes). They work the same way, in minutes, and are what "hour checks" below means too.
+
 "Hours driven since..." (the 11-hour driving limit) and "Hours in service since..." (the 100-hour aircraft inspection) count hours of driving or flying, not time passed, so they still take a typed number.
 
 A number typed instead of a date stays as typed. The page sends a saved date or number back with every save: a number typed next to the unchanged saved date (or date and time) replaces it, a date picked next to the unchanged saved number replaces that, and a new number with a new date is refused with "Enter a number or a date, not both."
@@ -2266,7 +2268,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ### 16. JailArmor (Prison Compliance)
 
-**1. Restrictive housing welfare checks** (Maximum 30 min, warns from 24 min; policy, a company can set its own limit)
+**1. Restrictive housing welfare checks** (Maximum 30 min, warns from 24 min; policy, a company can set its own limit; counts minutes since a date and time)
 
 - Asks: Minutes since the last welfare check of the person in restrictive housing
 - Rule: Corrections standards (e.g., ACA): checks at least every 30 minutes at irregular times; common policy, set to yours
@@ -2864,7 +2866,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop work in the area until a competent person examines it and records the exam.
 - Example reading used in demos: Yes
 
-**4. Call MSHA within 15 minutes** (Maximum 15 min, warns from 10 min)
+**4. Call MSHA within 15 minutes** (Maximum 15 min, warns from 10 min; counts minutes since a date and time)
 
 - Asks: Minutes since a reportable accident was known, without calling MSHA
 - Rule: 30 CFR 50.10

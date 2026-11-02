@@ -17,15 +17,17 @@ _UNTIL = re.compile(r"\bdays? until\b", re.I)
 _MONTHS_SINCE = re.compile(r"\bmonths? since\b", re.I)
 _YEARS_SINCE = re.compile(r"\byears? since\b", re.I)
 _HOURS_SINCE = re.compile(r"\bhours? since\b", re.I)
+_MINUTES_SINCE = re.compile(r"\bminutes? since\b", re.I)
 
 
 def date_unit(rule):
     """What a date-tracked reading counts: 'days', 'months', 'calendar months'
     (whole months by the calendar, as in "the preceding 12 calendar months"),
     'years', 'business days' (Monday to Friday, not US federal holidays; the
-    rules say "business days", "working days" or "work days") or 'hours'
-    (real hours since a date and time, such as "Hours since becoming aware of
-    a personal data breach"). None when the reading is not tracked by date.
+    rules say "business days", "working days" or "work days"), 'hours' (real
+    hours since a date and time, such as "Hours since becoming aware of a
+    personal data breach") or 'minutes' (the same, in minutes). None when the
+    reading is not tracked by date.
 
     Only "hours since" counts by the clock: "Hours driven since..." or "Hours
     in service since..." are hours of driving or flying, not time passed."""
@@ -42,6 +44,8 @@ def date_unit(rule):
         return "business days"
     if rule.unit == "h" and _HOURS_SINCE.search(rule.input):
         return "hours"
+    if rule.unit == "min" and _MINUTES_SINCE.search(rule.input):
+        return "minutes"
     return None
 
 
@@ -71,8 +75,8 @@ def counts_first_day(rule):
 
 def counts_time(rule):
     """Whether a check counts the time since a moment (a date and a time of
-    day), not since a day: the hour clocks."""
-    return date_unit(rule) == "hours"
+    day), not since a day: the hour and minute clocks."""
+    return date_unit(rule) in ("hours", "minutes")
 
 
 def rules_for(industry_id):

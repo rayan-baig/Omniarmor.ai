@@ -566,12 +566,8 @@ class TestWorkingDayClocks(AppTestCase):
         self.assertEqual(rule.unit, "working days")
 
 
-class TestHourClocks(AppTestCase):
-    """Twenty-two checks are asked as "Hours since ..." (a breach reported in
-    72 hours, a work death reported to OSHA in 8...). They took only a typed
-    number, which never grew: a breach saved as "10 hours" stayed Cleared
-    forever, with no due time, no reminder and never Blocked. They now take
-    the date and time the clock started and count real hours from it."""
+class ClockTestCase(AppTestCase):
+    """Helpers for the checks that count time since a date and time."""
 
     NY = "America/New_York"
 
@@ -596,6 +592,14 @@ class TestHourClocks(AppTestCase):
         from omniarmor_app.tracking import org_now
         with self.db() as conn:
             return org_now(conn.execute("SELECT * FROM orgs").fetchone())
+
+
+class TestHourClocks(ClockTestCase):
+    """Twenty-two checks are asked as "Hours since ..." (a breach reported in
+    72 hours, a work death reported to OSHA in 8...). They took only a typed
+    number, which never grew: a breach saved as "10 hours" stayed Cleared
+    forever, with no due time, no reminder and never Blocked. They now take
+    the date and time the clock started and count real hours from it."""
 
     def test_every_hours_since_check_takes_a_date_and_time(self):
         from omni_armor_rules import CATALOG
@@ -834,3 +838,45 @@ class TestHourClocks(AppTestCase):
         row = {"value_num": None, "value_bool": None, "value_date": "2026-01-01T10:00:00+00:00", "limit_override": None,
                "warn_override": None, "updated_at": None, "updated_by_name": None}
         self.assertEqual(compute_state(1, find_rule(1, "annual_mvr_review"), row, date(2026, 1, 11)).value, 10)
+
+
+class TestMinuteClocks(ClockTestCase):
+    """Two more clocks are asked as "Minutes since ...": the restrictive housing
+    welfare check (every 30 minutes) and MSHA's 15-minute accident call. They
+    had the same typed number that never grew, and count like the hour clocks."""
+
+    def test_both_take_a_date_and_time(self):
+        from omni_armor_rules import CATALOG
+        from omniarmor_app.catalog import counts_time, date_mode, date_unit
+        counted = [r for rules in CATALOG.values() for r in rules if r.input.lower().startswith("minutes since ")]
+        self.assertEqual(sorted(r.key for r in counted), ["accident_notice", "welfare_check_interval"])
+        for r in counted:
+            self.assertEqual((date_mode(r), date_unit(r), counts_time(r)), ("since", "minutes", True), r.key)
+
+    def test_minutes_count_to_the_limit(self):
+        # 30 CFR 50.10: call MSHA within 15 minutes (warns from 10).
+        start = "2026-11-04T14:00:00+00:00"  # 09:00 in New York
+        cases = {"2026-11-04T09:09:59": (9, "CLEARED", "Due in 6 min"), "2026-11-04T09:10": (10, "WARNING", "Due in 5 min"),
+                 "2026-11-04T09:15:30": (15, "WARNING", "Due now"), "2026-11-04T09:16": (16, "BLOCKED", "1 min overdue"),
+                 "2026-11-04T11:16": (136, "BLOCKED", "2 h 1 min overdue")}
+        for now, (minutes, level, due) in cases.items():
+            s = self.state(23, "accident_notice", start, now)
+            self.assertEqual((s.value, s.level, s.due_text, s.due_label), (minutes, level, due, "2026-11-04 09:15 EST"), now)
+        self.assertIn("16 min is over the 15 min limit", self.state(23, "accident_notice", start, "2026-11-04T09:16").message)
+
+    def test_a_welfare_check_round_through_the_app(self):
+        from datetime import timedelta
+        self.signup(industries=(16,))
+        page = self.client.get("/app/industry/16").data.decode()
+        self.assertIn('type="datetime-local" id="f-welfare_check_interval-d"', page)
+        started = (self.org_now() - timedelta(minutes=40)).strftime("%Y-%m-%dT%H:%M")
+        self.change(16, "welfare_check_interval", date=started)
+        page = self.client.get("/app/industry/16?only=problems").data.decode()
+        self.assertRegex(page, r"1[01] min overdue")
+        self.change(16, "welfare_check_interval", action="done_today")  # a check was just made
+        self.assertNotIn('id="rule-welfare_check_interval"', self.client.get("/app/industry/16?only=problems").data.decode())
+        # A facility on 15-minute watch sets its own limit, in minutes.
+        self.change(16, "welfare_check_interval", action="override", limit="15", warn="12")
+        s = self.state(16, "welfare_check_interval", "2026-11-04T14:00:00+00:00", "2026-11-04T09:13",
+                       limit_override=15, warn_override=12)
+        self.assertEqual((s.value, s.level, s.due_label), (13, "WARNING", "2026-11-04 09:15 EST"))

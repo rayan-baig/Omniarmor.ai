@@ -73,8 +73,9 @@ class ItemState:
     today: date
     updated_at: object
     updated_by: object
-    # Hour clocks only, in the company's timezone: when the clock started, when
-    # it is due and when it warns, and whole minutes left (negative once overdue).
+    # Hour and minute clocks only: when the clock started, when it is due and
+    # when it warns (in the company's timezone), and whole minutes left
+    # (negative once overdue).
     value_at: object = None
     due_at: object = None
     warn_at: object = None
@@ -177,10 +178,10 @@ def _shifted(day, days):
 
 # The longest limit a company can set, per unit a date-tracked check counts.
 MAX_SPAN = {"days": MAX_DAYS, "months": 1200, "calendar months": 1200, "years": 100, "business days": 26000,
-            "hours": MAX_DAYS * 24}
+            "hours": MAX_DAYS * 24, "minutes": MAX_DAYS * 24 * 60}
 
 
-# --- Hour clocks: real time since a moment, counted in whole minutes ---------
+# --- Hour and minute clocks: real time since a moment, in whole minutes -----
 
 def _moment_text(moment):
     """A moment as the company reads it, e.g. "2026-11-02 14:30 EST"."""
@@ -206,18 +207,22 @@ def _moment_on(today, tz):
     return now if now.date() == today else datetime.combine(today, time(12), tz)
 
 
-def _whole_minutes(amount):
-    """A limit in hours as whole minutes. Floored, so the due minute is the
-    last one still within the limit."""
-    return max(0, min(MAX_SPAN["hours"] * 60, math.floor(amount * 60 + 1e-9)))
+def _whole_minutes(amount, unit):
+    """A limit in hours or minutes as whole minutes. Floored, so the due minute
+    is the last one still within the limit."""
+    per = 60 if unit == "hours" else 1
+    return max(0, min(MAX_SPAN["minutes"], math.floor(amount * per + 1e-9)))
 
 
-def _hours_since(start, now):
-    """Hours from start to now, counted in whole minutes: exactly 72 for the
-    whole 72nd-hour minute, a little over from the next minute. Real hours:
-    worked out in UTC, as Python counts by the wall clock within one timezone
-    (a night when clocks go back would lose an hour)."""
+def _time_since(start, now, unit):
+    """Hours (or minutes) from start to now, counted in whole minutes: exactly
+    72 hours for the whole 72nd-hour minute, a little over from the next
+    minute. Returns the reading and the minutes. Real time: worked out in UTC,
+    as Python counts by the wall clock within one timezone (a night when
+    clocks go back would lose an hour)."""
     minutes = math.floor((now.astimezone(timezone.utc) - start.astimezone(timezone.utc)).total_seconds() / 60)
+    if unit == "minutes":
+        return minutes, minutes
     return minutes // 60 if minutes % 60 == 0 else minutes / 60, minutes
 
 
@@ -353,7 +358,7 @@ def compute_state(industry_id, rule, row, today, now=None, tz=None):
             value_at = _stored_moment(row["value_date"], tz)
             if value_at is not None:
                 now = (now or _moment_on(today, tz)).astimezone(tz)
-                value, elapsed = _hours_since(value_at, now)
+                value, elapsed = _time_since(value_at, now, unit)
                 value_date = value_at.date()
         elif mode and row["value_date"]:
             value_date = date.fromisoformat(row["value_date"][:10])
@@ -371,12 +376,12 @@ def compute_state(industry_id, rule, row, today, now=None, tz=None):
 
     due_date = warn_date = due_at = warn_at = minutes_left = None
     if value_at is not None:
-        start = value_at.astimezone(timezone.utc)  # real hours, see _hours_since
-        limit_minutes = _whole_minutes(eff.limit)
+        start = value_at.astimezone(timezone.utc)  # real time, see _time_since
+        limit_minutes = _whole_minutes(eff.limit, unit)
         due_at = (start + timedelta(minutes=limit_minutes)).astimezone(tz)
         due_date, minutes_left = due_at.date(), limit_minutes - elapsed
         if eff.warn is not None:
-            warn_at = (start + timedelta(minutes=_whole_minutes(eff.warn))).astimezone(tz)
+            warn_at = (start + timedelta(minutes=_whole_minutes(eff.warn, unit))).astimezone(tz)
             warn_date = warn_at.date()
     elif value_date is not None:
         sign = 1 if mode == "since" else -1
