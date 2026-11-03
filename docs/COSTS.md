@@ -64,3 +64,4 @@ services that sleep or lose their disk aren't suitable.
 
 Upgrade the server when pages slow down at busy times, and the email plan when
 you near its free sending limit. Both are settings changes, not code changes.
+[LOAD-TEST.md](LOAD-TEST.md) has the measured limits and when to take each step.

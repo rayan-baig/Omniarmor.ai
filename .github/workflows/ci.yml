@@ -22,7 +22,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt -c constraints.txt pyflakes pip-audit
       - name: Lint
-        run: python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py
+        run: python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py tools
       - name: Tests
         run: python -m unittest discover -s tests -v
       - name: Known security holes in dependencies

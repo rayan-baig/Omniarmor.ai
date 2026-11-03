@@ -32,7 +32,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 571 tests
+python3 -m unittest discover -s tests     # 578 tests
 ```
 
 A virtual environment is needed on most systems: Ubuntu 24.04, Debian 12 and
@@ -44,7 +44,8 @@ Everything about OmniArmor in plain language, from every feature to all 500 chec
 Production: see [docs/OPERATIONS.md](docs/OPERATIONS.md) (Render one-click
 blueprint, Docker, or `docker compose up -d` on one small server with free
 HTTPS; email setup, backups, monitoring). To run it for close to nothing:
-[docs/COSTS.md](docs/COSTS.md). How the pieces fit:
+[docs/COSTS.md](docs/COSTS.md). How much it handles and when to grow:
+[docs/LOAD-TEST.md](docs/LOAD-TEST.md). How the pieces fit:
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Layout
@@ -56,6 +57,7 @@ HTTPS; email setup, backups, monitoring). To run it for close to nothing:
 | `omni_armor_rules/` | The 500 rules (`group_1.py` … `group_10.py`) and the one `evaluate` every rule uses |
 | `omni_armor_platform.py` | The original engine: 25 detailed checks and the console demo |
 | `dashboard/` | A standalone demo page of all 500 checks, built from the catalog |
+| `tools/load_test.py` | The load test and the timing of the scheduled sweeps ([docs/LOAD-TEST.md](docs/LOAD-TEST.md)) |
 | `tests/` | Tests for the engine, the catalog, the web app and the dashboard |
 | `Dockerfile`, `docker-compose.yml`, `Caddyfile`, `render.yaml`, `.github/workflows/ci.yml` | Packaging, hosting and automatic test runs |
 

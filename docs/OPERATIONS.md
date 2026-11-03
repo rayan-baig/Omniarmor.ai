@@ -89,29 +89,74 @@ After `DAILY_JOB_HOUR_UTC` (default 11:00 UTC), once per day:
 1. **Reminders.** Each company's team gets one digest listing checks that are
    30, 7 or 1 day from due, due today, or overdue (the first day, then weekly).
    The same reminder is never sent twice for the same due date.
-2. **Backup.** A consistent copy of the database goes to `BACKUP_DIR`; the
-   newest `BACKUP_KEEP` copies are kept.
-3. **Cleanup.** Old sign-in failures, used reset links and expired invites are
+2. **Cleanup.** Old sign-in failures, used reset links and expired invites are
    removed.
+3. **Backup.** A consistent copy of the database goes to `BACKUP_DIR`; the
+   newest `BACKUP_KEEP` copies are kept. It is taken last, so it holds the
+   day's reminders as sent, and restoring it never sends them again.
 
 Every minute, the same timer also sends **time-limit alerts** for the hour
 and minute clocks (such as a 1-hour or 8-hour report deadline): one email when
-a clock reaches its warning point and one when it becomes overdue.
+a clock reaches its warning point and one when it becomes overdue. The alerts
+run in a thread of their own, so a long daily run never holds them up.
 
-Several server processes can run at once: each day's run, and each alert, is
-claimed in the database first, so it only happens once. To run it by hand:
-`flask --app wsgi run-daily --force`.
+Several server processes can run at once: each sweep (the alerts, the daily
+job, Autopilot) holds a lock in the database while it runs, so no two
+processes run the same one at once however long it takes, and each day's run
+and each alert is claimed in the database too, so it only happens once. To
+run it by hand: `flask --app wsgi run-daily --force` (it says so and does
+nothing if the server is running it right then). How long the sweeps take
+with many companies: [LOAD-TEST.md](LOAD-TEST.md).
 
 ## 4. Backups and restore
 
-Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. Each one is checked
-before it gets that name and is a single file, so it can be copied and restored on its own.
-Copy them off the server regularly (for example, a nightly sync to cloud
-storage), because a backup on the same disk doesn't survive losing the disk.
+Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` (the time in UTC) in
+`BACKUP_DIR`, `/data/backups` in the Docker image. Each one is checked before
+it gets that name and is a single file, so it can be copied and restored on
+its own. To make one now: `flask --app wsgi backup` (on Docker,
+`docker compose exec app flask --app wsgi backup`; on Render, in the
+service's Shell tab). Copy them off the server regularly (for example, a
+nightly sync to cloud storage), because a backup on the same disk doesn't
+survive losing the disk.
 
-To restore: stop the app, copy the chosen backup over `DATABASE_PATH`, delete
-any `omniarmor.db-wal` and `omniarmor.db-shm` files next to it, and start
-the app again.
+### Restore checklist (about 10 minutes)
+
+The backup goes into a fresh file beside the current database, and the app is
+pointed at it. The current database is left as it is, so going back is one
+setting. Rehearsed end to end in [LOAD-TEST.md](LOAD-TEST.md), section 3, and
+by `tests/test_operations.py` (`TestRestoreRehearsal`).
+
+Below, `run` means the command on the server: `docker compose exec app ...`
+with Docker Compose, the Shell tab on Render, or a shell on any other host.
+
+1. **Pick the backup (1 min).** `run ls -l /data/backups`. Take the newest
+   one from before the problem started. Everything after it is lost.
+2. **Copy it to a fresh file (1 min).** With today's date in the name:
+   `run cp /data/backups/omniarmor-20261103-110012-123456.db /data/omniarmor-restored-20261103.db`.
+   Never copy over the database the app is using while it runs.
+3. **Check the copy (1 min).**
+   `run python -c "import sqlite3; print(sqlite3.connect('/data/omniarmor-restored-20261103.db').execute('PRAGMA integrity_check').fetchone()[0])"`
+   must print `ok`. Anything else: pick an older backup and go back to step 2.
+4. **Point the app at it (2 min).** Set `DATABASE_PATH=/data/omniarmor-restored-20261103.db`:
+   in `.env`, then `docker compose up -d` (it restarts the app with the new
+   setting); on Render, under Environment, then save (it redeploys). Leave
+   `BACKUP_DIR` as it is. The app upgrades an older backup's schema by
+   itself as it starts.
+5. **Check it works (3 min).** `/healthz` answers `"status": "ok"`. Sign in
+   (passwords and sessions are as they were at the backup). Open an industry
+   page and see its readings, the Vault (the audit trail ends at the backup's
+   time), and the Academy with each learner's progress.
+6. **Tell the customers (2 min)** what was lost: every change made after the
+   backup's time has to be entered again. Reminders already sent are not
+   sent again.
+7. **Afterwards.** Keep the old database file for a week, in case something
+   in it is needed, then delete it. To go back to it, set `DATABASE_PATH` back.
+
+Restoring over the same file instead (stop the app, copy the backup over
+`DATABASE_PATH`) also works, but delete the `-wal` and `-shm` files next to
+the database **before** starting the app again, or SQLite replays the old
+database's last changes onto the restored copy. With Docker, the volume can
+only be reached through a container, so the fresh-file way above is simpler.
 
 ## 5. Monitoring
 
