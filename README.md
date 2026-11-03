@@ -32,7 +32,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 488 tests
+python3 -m unittest discover -s tests     # 524 tests
 ```
 
 A virtual environment is needed on most systems: Ubuntu 24.04, Debian 12 and

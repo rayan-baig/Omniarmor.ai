@@ -31,6 +31,9 @@ The first release for launch. It gathers the work of the last few days.
   a plain-text part with the same words, ending with "OmniArmor is a product
   of MTRX Horizyn." Reminders link to the page where you choose which
   reminder emails you get, and the password reset email has a clear button.
+- An end-to-end test of the Academy plan against a fake Stripe server: free
+  trial, trial over, paid, a failed payment, cancelled and paid again, with
+  what the family sees checked at every step.
 
 ### Deadlines and clocks
 
