@@ -236,11 +236,13 @@ with made-up names: Juniper Lane Pharmacy, tracking Pharmacies and Employers
 overdue, a few weeks of audit trail, the morning's reminder digest in Radar
 (kept, never sent), an Academy with two learners partway through (one with a
 certificate) on the Academy plan, and Autopilot's history with one real pass
-run at the end (which makes the first backup).
+run at the end (which makes the first backup, in a folder of its own beside
+the demo file: `omniarmor-demo-backups` for `omniarmor-demo.db`, never the
+live backups).
 
 ```sh
 flask --app wsgi seed-demo --force demo/omniarmor-demo.db     # a new file of its own
-DATABASE_PATH=demo/omniarmor-demo.db flask --app wsgi run --port 8000
+DATABASE_PATH=demo/omniarmor-demo.db BACKUP_DIR=demo/omniarmor-demo-backups flask --app wsgi run --port 8000
 ```
 
 It prints the two sign-in addresses (on the reserved `.example` domain,

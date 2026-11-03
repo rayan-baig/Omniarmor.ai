@@ -416,7 +416,11 @@ def register_cli(app):
                                            "To seed the app's own empty database, leave --force out.")
             if not demo.is_empty(path):
                 raise click.ClickException(f"{path} already holds accounts or workspaces. Name a new file.")
-            cfg.update(DATABASE=path, BACKUP_DIR=os.path.join(os.path.dirname(path), "backups"))
+            # Its backups get a folder of their own: "backups" beside it is the
+            # live database's folder when the two files sit together (/data in
+            # production), and the live daily job took the demo's copy there
+            # for its own backup of the day.
+            cfg.update(DATABASE=path, BACKUP_DIR=os.path.splitext(path)[0] + "-backups")
         elif cfg["ENV_NAME"] == "production":
             raise click.ClickException("This is production: the demo never goes into the app's own database, even "
                                        "an empty one. Use a separate new file: flask --app wsgi seed-demo --force "
@@ -447,4 +451,5 @@ def register_cli(app):
         click.echo(f"  Password for both: {facts['password']}")
         if fresh_path:
             click.echo("")
-            click.echo(f"Start the app on it: DATABASE_PATH={cfg['DATABASE']} flask --app wsgi run --port 8000")
+            click.echo(f"Start the app on it: DATABASE_PATH={cfg['DATABASE']} BACKUP_DIR={cfg['BACKUP_DIR']}"
+                       " flask --app wsgi run --port 8000")

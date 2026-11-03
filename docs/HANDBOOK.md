@@ -815,7 +815,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 619 tests in 37 files.
+- `tests/`: 623 tests in 37 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
   - `test_user_flows.py` (75, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
@@ -825,8 +825,8 @@ SQLite database (one file on a persistent disk) + daily backups
   - `test_quiz_checks.py` (17), `test_review_fixes.py` (8) and `test_stats.py` (3).
   - `test_academy_bank.py` (2, which check every bank entry).
   - Features added for launch: `test_bulk_entry.py` (15: several checks at once, all or nothing, with the same checks and audit rows as one), `test_help_page.py` (6), `test_plan_page.py` (5), `test_parent_view.py` (9: the progress report, and who can't open it), `test_first_lesson.py` (5: the steps to the first results), `test_certificate_print.py` (2) and `test_quiz_fairness.py` (5: no guessing by length, slot or "True").
-  - `test_sweeps.py` (7: the sweep locks, a daily run or Autopilot pass that runs long never started twice, the alerts in their own thread, schema version 14).
-  - Version 1.1.0: `test_seed_demo.py` (15: the demo workspace's mix of checks, audit trail, Academy and Autopilot, signing in to it, and every way it refuses to mix into real data), `test_error_reports.py` (13: what an error report says, that a request with an email address in its query, form and cookie leaks none of them, the hourly and daily limits across a restart, and delivery through the outbox when mail is down) and `test_usage_counts.py` (13: schema version 15, each count, operator only, `/api/stats`, the Privacy page, and Settings showing the plan, the version and where to get help).
+  - `test_sweeps.py` (10: the sweep locks, a daily run or Autopilot pass that runs long never started twice, the alerts in their own thread, schema version 14, and the timer only in the server, never in a one-off command).
+  - Version 1.1.0: `test_seed_demo.py` (16: the demo workspace's mix of checks, audit trail, Academy and Autopilot, signing in to it, every way it refuses to mix into real data, and backups kept apart from the live ones), `test_error_reports.py` (13: what an error report says, that a request with an email address in its query, form and cookie leaks none of them, the hourly and daily limits across a restart, and delivery through the outbox when mail is down) and `test_usage_counts.py` (13: schema version 15, each count, operator only, `/api/stats`, the Privacy page, and Settings showing the plan, the version and where to get help).
   - `test_parity.py` (1: dashboard against engine, run with Node).
   - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
@@ -923,7 +923,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 619 tests
+python3 -m unittest discover -s tests     # 623 tests
 python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py tools  # the lint CI runs
 ```
 
@@ -1105,8 +1105,8 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Branch:** `claude/wonderful-heisenberg-77tbq9`, the live default branch. Everything above is on it.
-- **Version** 1.1.0 (`omniarmor_app/version.py`, `CHANGELOG.md`).
-- **Tests:** 619 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
+- **Version** 1.1.1 (`omniarmor_app/version.py`, `CHANGELOG.md`).
+- **Tests:** 623 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
 - **Database schema** is at version 15.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
@@ -6032,7 +6032,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SMTP_STARTTLS` | 1 | Use STARTTLS with the email provider. |
 | `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. |
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
-| `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. |
+| `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. It runs in the server only (gunicorn or `flask run`), never in a one-off `flask` command. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. The account with this address also sees the usage counts in Settings. |
 | `ERRORS_EMAIL` | (none) | One inbox for a short report of each server error, with no personal data: one per distinct error an hour, at most 20 a day (section 6.6). Without it, none are written or sent. |

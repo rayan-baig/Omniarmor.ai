@@ -3,6 +3,24 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.1.1 (3 November 2026)
+
+Two fixes from a review of the last day's changes.
+
+- The demo workspace keeps its backups in a folder of its own beside the
+  demo file. Seeded next to the live database, as for production
+  (`--force /data/omniarmor-demo.db`), its backup went into the live backup
+  folder, where the live daily job took it for that day's backup and made
+  none of its own, and the newest copy to restore was the demo.
+- The built-in timer runs only in the server (gunicorn or `flask run`), never
+  in a one-off command such as `flask --app wsgi backup`, `autopilot` or
+  `seed-demo`. Those started it too, against the live database, and ended
+  with its sweeps half done: a time-limit alert claimed and never sent, or a
+  digest half sent and sent again later.
+- A test of the workspace's dates used a join code that expired at a fixed
+  moment (3 November 2026, 02:30 UTC) and failed from then on; it uses a
+  code that is still valid.
+
 ## 1.1.0 (3 November 2026)
 
 For selling it and running it: a demo workspace, error reports to one inbox,

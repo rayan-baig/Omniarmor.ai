@@ -138,6 +138,8 @@ class TestDatesAreTheWorkspaces(AppTestCase):
     3 November in UTC. Pages printed the UTC date, a day late."""
 
     EVENING = "2026-11-03T02:30:00+00:00"
+    # A join code only shows while it is valid, so its evening is in the future.
+    LATER_EVENING = "2099-11-03T02:30:00+00:00"
 
     def setUp(self):
         super().setUp()
@@ -150,7 +152,7 @@ class TestDatesAreTheWorkspaces(AppTestCase):
             conn.execute("UPDATE orgs SET timezone = 'America/Los_Angeles', academy_status = 'active',"
                          " academy_renews_at = ?", (self.EVENING,))
             conn.execute("UPDATE items SET updated_at = ?", (self.EVENING,))
-            conn.execute("UPDATE join_codes SET expires_at = ?", (self.EVENING,))
+            conn.execute("UPDATE join_codes SET expires_at = ?", (self.LATER_EVENING,))
             conn.commit()
 
     def test_report_and_check_pages(self):
@@ -167,7 +169,7 @@ class TestDatesAreTheWorkspaces(AppTestCase):
         with self.db() as conn:
             conn.execute("UPDATE learners SET track = 'launchpad', track_chosen = 1")
             conn.commit()
-        self.assertIn("Works once, until 2026-11-02", self.client.get("/app/academy/1").get_data(as_text=True))
+        self.assertIn("Works once, until 2099-11-02", self.client.get("/app/academy/1").get_data(as_text=True))
 
     def test_utc_only_where_it_says_so(self):
         audit = self.client.get("/app/audit").get_data(as_text=True)

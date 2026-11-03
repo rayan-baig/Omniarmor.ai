@@ -10,6 +10,7 @@ import os
 import time
 from datetime import timedelta
 
+import click
 from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request,
                    send_from_directory, url_for)
 from markupsafe import escape
@@ -400,7 +401,18 @@ def create_app(**overrides):
                              f" cookie={request.cookies.get('note')}")
 
     # Start the daily timer once per server process (not in tests, not in the reloader's parent).
-    if app.config["SCHEDULER_ENABLED"] and not app.config["TESTING"] and \
+    if app.config["SCHEDULER_ENABLED"] and not app.config["TESTING"] and _serving() and \
             (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true"):
         start_scheduler(dict(app.config))
     return app
+
+
+def _serving():
+    """Whether this process is here to serve pages: gunicorn (no Flask command
+    line around it) or `flask run`. A one-off command (`flask --app wsgi
+    backup`, `autopilot`, `seed-demo`...) loads the app too, and used to start
+    the timer with it: its threads swept the live database beside the
+    server's and were killed mid-sweep when the command ended, leaving an
+    alert claimed and never sent, or a digest half sent."""
+    ctx = click.get_current_context(silent=True)
+    return ctx is None or ctx.info_name == "run"

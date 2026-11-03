@@ -187,5 +187,52 @@ class TestTheTimer(SweepCase):
             self.assertEqual((alerts.call_count, daily.call_count, pilot.call_count), (25, 3, 3))
 
 
+class TestTimerOnlyWhereThePagesAre(unittest.TestCase):
+    """The timer runs in the processes that serve the pages (gunicorn, `flask
+    run`), never in a one-off command. Every `flask --app wsgi backup`,
+    `autopilot`, `run-daily` or `seed-demo` used to start it as well, against
+    the live database, and the command's end killed its threads mid-sweep: a
+    time-limit alert already claimed was never sent (and left out of the
+    digest), a digest half sent went out again an hour later."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.settings = dict(DATABASE=os.path.join(tmp.name, "live.db"), BACKUP_DIR=os.path.join(tmp.name, "backups"),
+                             SECRET_KEY="x" * 32, SCHEDULER_ENABLED=True)
+        environ = mock.patch.dict(os.environ, {})   # FlaskGroup sets FLASK_RUN_FROM_CLI
+        environ.start()
+        self.addCleanup(environ.stop)
+
+    def command(self, *args):
+        from click.testing import CliRunner
+        from flask.cli import FlaskGroup
+
+        from omniarmor_app import create_app
+        group = FlaskGroup(create_app=lambda: create_app(**self.settings))
+        with mock.patch("omniarmor_app.start_scheduler") as started:
+            result = CliRunner().invoke(group, list(args))
+        return result, started
+
+    def test_a_command_never_starts_the_timer(self):
+        for args in (["autopilot", "--log"], ["backup"], ["init-db"]):
+            result, started = self.command(*args)
+            self.assertEqual(result.exit_code, 0, (args, result.output))
+            started.assert_not_called()
+
+    def test_the_development_server_starts_it(self):
+        with mock.patch("flask.cli.run_simple") as served:
+            result, started = self.command("run", "--port", "8123")
+        self.assertEqual(result.exit_code, 0, result.output)
+        served.assert_called_once()
+        started.assert_called_once()
+
+    def test_gunicorn_starts_it(self):
+        from omniarmor_app import create_app
+        with mock.patch("omniarmor_app.start_scheduler") as started:
+            create_app(**self.settings)   # wsgi.py, imported by gunicorn
+        started.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()

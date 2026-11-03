@@ -5,4 +5,4 @@ The Settings page and /healthz show it, and CHANGELOG.md has a section for
 it. Raise it with each release and add that section (a test checks both).
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"

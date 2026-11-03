@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from omniarmor_app import create_app, demo  # noqa: E402
 from omniarmor_app.db import connect  # noqa: E402
+from omniarmor_app.jobs import backup_database  # noqa: E402
 from omniarmor_app.tracking import states_for_org  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
@@ -45,7 +46,7 @@ class TestSeedDemo(SeedCase):
 
     def demo_client(self):
         app = create_app(TESTING=True, DATABASE=self.path, SCHEDULER_ENABLED=False,
-                         BACKUP_DIR=os.path.join(self.shared.name, "backups"), BASE_URL="https://omniarmor.test")
+                         BACKUP_DIR=os.path.join(self.shared.name, "demo-backups"), BASE_URL="https://omniarmor.test")
         return app.test_client()
 
     def password(self):
@@ -68,6 +69,7 @@ class TestSeedDemo(SeedCase):
         self.assertIn(demo.PHARMACIST[1], out)
         self.assertRegex(out, r"Password for both: \S{8,}")
         self.assertIn(f"DATABASE_PATH={self.path}", out)
+        self.assertIn(f"BACKUP_DIR={os.path.join(self.shared.name, 'demo-backups')}", out)
 
     def test_made_up_names_on_a_reserved_domain(self):
         conn = connect(self.path)
@@ -125,7 +127,7 @@ class TestSeedDemo(SeedCase):
         self.assertGreaterEqual(fixed, 3)
         self.assertGreaterEqual(runs, 7)
         self.assertEqual(slot, 1)
-        self.assertTrue(os.listdir(os.path.join(self.shared.name, "backups")))
+        self.assertTrue(os.listdir(os.path.join(self.shared.name, "demo-backups")))
 
     def test_the_morning_digest_is_kept_not_sent(self):
         conn = connect(self.path)
@@ -188,6 +190,25 @@ class TestRefusals(SeedCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("at least", result.output)
         self.assertFalse(os.path.exists(path))
+
+    def test_the_demo_never_backs_up_into_the_live_backups(self):
+        # The demo file beside the app's own database, as OPERATIONS.md says
+        # for production (/data/omniarmor.db and /data/omniarmor-demo.db): the
+        # demo's backup used to land in the live backup folder, where the
+        # live daily job took it for today's backup and made none of its own,
+        # and the newest copy to restore was the demo.
+        live_backups = self.app.config["BACKUP_DIR"]
+        self.assertEqual(os.path.dirname(live_backups), os.path.dirname(self.db_path))
+        self.signup()
+        result = self.seed("--force", os.path.join(self.tmp.name, "omniarmor-demo.db"))
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertEqual(os.listdir(live_backups) if os.path.isdir(live_backups) else [], [])
+        copy = backup_database(dict(self.app.config))
+        conn = connect(copy)
+        try:
+            self.assertEqual([r[0] for r in conn.execute("SELECT name FROM orgs")], ["Acme Logistics"])
+        finally:
+            conn.close()
 
     def test_is_empty_never_creates_a_file(self):
         path = os.path.join(self.tmp.name, "nothing-here.db")
