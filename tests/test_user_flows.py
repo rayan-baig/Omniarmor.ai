@@ -998,7 +998,7 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertTrue(lines[2].startswith(
             "- HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). "), lines[2])
         self.assertIn("Open it: https://omniarmor.test/app/industry/30#rule-fatality_report_8h", note["body"])
-        self.assertIn("reminders are on in your OmniArmor settings", note["body"])
+        self.assertIn("time-limit alerts are on in your OmniArmor settings", note["body"])
         self.assertEqual(self.marks(), [("fatality_report_8h", "2026-11-04T22:00:00+00:00", "clock-warning")])
 
     def test_an_email_when_it_becomes_overdue(self):

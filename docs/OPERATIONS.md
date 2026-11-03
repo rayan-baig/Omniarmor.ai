@@ -128,7 +128,9 @@ Each big problem is emailed once, with what to do. While it lasts you get one
 reminder a day, and a "Fixed" email when it clears up. One that comes back
 within the hour is not emailed again, and Autopilot never sends more than 10
 emails an hour. On Mondays you get a
-short report of what it fixed, only if it fixed something. Without
+short report of what it fixed, only if it fixed something. To stop the
+weekly report, sign up (or sign in) with the `OPERATOR_EMAIL` address and
+untick it under Settings, "Your reminder emails"; problems are still emailed. Without
 `OPERATOR_EMAIL`, the same messages go to the server log.
 
 - `flask --app wsgi autopilot` runs the checks now and prints what it found.

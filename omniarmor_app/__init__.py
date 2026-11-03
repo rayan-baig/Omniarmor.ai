@@ -81,7 +81,7 @@ def industry_page(slug):
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "2 November 2026"
+RULES_UPDATED = "3 November 2026"
 
 
 def _rules_facts():

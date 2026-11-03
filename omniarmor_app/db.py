@@ -266,6 +266,16 @@ MIGRATIONS = [
     CREATE INDEX audit_org_at_id ON audit (org_id, at DESC, id DESC, user_id);
     DROP INDEX audit_org_at;
     """),
+    # Each person chooses which reminder emails they get. email_reminders,
+    # which used to turn every reminder email on or off, now means the daily
+    # digest; the time-limit alerts get their own choice, which starts the
+    # way the old one was set; and the operator's account can turn off the
+    # weekly Autopilot report.
+    (13, """
+    ALTER TABLE users ADD COLUMN email_alerts INTEGER NOT NULL DEFAULT 1;
+    UPDATE users SET email_alerts = email_reminders;
+    ALTER TABLE users ADD COLUMN email_weekly INTEGER NOT NULL DEFAULT 1;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

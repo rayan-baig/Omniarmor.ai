@@ -131,9 +131,9 @@ def tips(conn, org, user, state, mail_ready):
     if members == 1:
         found.append({"text": "You're the only one here. Invite your team in the Armory so reminders reach everyone.",
                       "url": url_for("app.settings")})
-    if not user["email_reminders"]:
+    if not user["email_reminders"] and not user["email_alerts"]:
         found.append({"text": "Your email reminders are off. Turn them on in the Armory so a deadline never "
-                              "sneaks up on you.", "url": url_for("app.settings")})
+                              "sneaks up on you.", "url": url_for("app.settings", _anchor="reminders")})
     if not mail_ready:
         found.append({"text": "Email isn't set up yet, so reminders are saved in Radar instead of sent.",
                       "url": url_for("app.notifications")})

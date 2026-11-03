@@ -3,7 +3,7 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
-## 1.0.0 (2 November 2026)
+## 1.0.0 (3 November 2026)
 
 The first release for launch. It gathers the work of the last few days.
 
@@ -22,6 +22,11 @@ The first release for launch. It gathers the work of the last few days.
   robots.txt keeps search engines out of the app, the Academy, Settings,
   password reset and invite links and the kids' join page, and every page
   that isn't public says `noindex`.
+- Each person chooses their own reminder emails in Settings: the daily
+  digest, the time-limit alerts, both or neither (people who had reminders
+  off keep both off). The account that gets Autopilot's emails can also turn
+  off the weekly Autopilot report. A clock already alerted about still
+  reaches, in the digest, someone who turned the alerts off.
 
 ### Deadlines and clocks
 

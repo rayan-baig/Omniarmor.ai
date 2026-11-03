@@ -5,7 +5,7 @@ notifications and settings."""
 import csv
 import io
 
-from flask import (Blueprint, Response, abort, flash, g, redirect, render_template, request, session,
+from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
 
 from .academy_plan import charges_again, plan_status
@@ -252,18 +252,32 @@ def settings():
     ).fetchone()[0]
     return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           plan=plan_status(g.org))
+                           plan=plan_status(g.org), operator=is_operator(g.user))
+
+
+def is_operator(user):
+    """Whether this account has the address Autopilot emails (OPERATOR_EMAIL):
+    only that person gets the weekly Autopilot report, so only they see its choice."""
+    to = (current_app.config.get("OPERATOR_EMAIL") or "").strip().lower()
+    return bool(to) and user["email"].lower() == to
+
+
+# The reminder emails a person can choose, as (form field and users column, name).
+EMAIL_CHOICES = [("email_reminders", "daily digest"), ("email_alerts", "time-limit alerts")]
 
 
 @bp.route("/settings/reminders", methods=["POST"])
 @login_required
 def settings_reminders():
-    on = request.form.get("email_reminders") == "on"
+    choices = EMAIL_CHOICES + ([("email_weekly", "weekly Autopilot report")] if is_operator(g.user) else [])
+    picked = {field: request.form.get(field) == "on" for field, _ in choices}
     conn = get_db()
-    conn.execute("UPDATE users SET email_reminders = ? WHERE id = ?", (1 if on else 0, g.user["id"]))
+    conn.execute(f"UPDATE users SET {', '.join(f'{field} = ?' for field in picked)} WHERE id = ?",
+                 (*(int(on) for on in picked.values()), g.user["id"]))
     conn.commit()
-    flash("Email reminders are " + ("on." if on else "off."), "ok")
-    return redirect(url_for("app.settings"))
+    said = ", ".join(f"{name} {'on' if picked[field] else 'off'}" for field, name in choices)
+    flash(f"Saved: {said[0].upper()}{said[1:]}.", "ok")
+    return redirect(url_for("app.settings", _anchor="reminders"))
 
 
 @bp.route("/settings/company", methods=["POST"])

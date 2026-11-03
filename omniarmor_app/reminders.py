@@ -12,7 +12,11 @@ A clock of a few hours can start and run out between two daily digests, so the
 hour and minute clocks also get alerts, checked every minute (jobs.py): one
 email when a clock reaches its warning point and one when it becomes overdue,
 each once per start of the clock. They follow the same rule for failed sends,
-and the digest leaves out a clock already alerted about the same day.
+and the digest leaves out a clock already alerted about the same day (for the
+people who get the alerts).
+
+Each person chooses in Settings which of the two they get: the digest goes to
+those with email_reminders on, the alerts to those with email_alerts on.
 """
 
 import logging
@@ -67,16 +71,23 @@ def build_digest(org, triggered, all_states, base_url, today):
         f" {counts['NONE']} without a reading.",
         f"Open your checks: {base_url}/app",
         "",
-        "You get this email because reminders are on in your OmniArmor settings.",
+        "You get this email because the daily digest is on in your OmniArmor settings.",
     ]
     return subject, "\n".join(lines)
 
 
-def _recipients(conn, org_id):
-    """Everyone in the company who has reminder emails on."""
+# Which reminder emails a person gets: their choices in Settings.
+DIGEST = "email_reminders"      # the daily digest
+ALERTS = "email_alerts"         # the time-limit alerts
+
+
+def _recipients(conn, org_id, choice):
+    """Everyone in the company who chose to get this kind of email."""
+    if choice not in (DIGEST, ALERTS):
+        raise ValueError(choice)
     return conn.execute(
         "SELECT users.* FROM users JOIN memberships ON memberships.user_id = users.id"
-        " WHERE memberships.org_id = ? AND users.email_reminders = 1",
+        f" WHERE memberships.org_id = ? AND users.{choice} = 1 ORDER BY users.id",
         (org_id,),
     ).fetchall()
 
@@ -104,24 +115,31 @@ def _remind_org(conn, cfg, org, today):
         window = reminder_window(s.days_left)
         if window is not None and not _already_reminded(conn, org["id"], s, window):
             pending.append((s, window))
-    # A clock alerted about earlier today would only be the same news again:
-    # its window counts as reminded and it stays out of today's digest.
-    covered = [(s, w) for s, w in pending if _alerted_today(conn, org, s, w, today)]
-    if covered:
-        _mark_windows(conn, org["id"], covered)
-        pending = [p for p in pending if p not in covered]
     if not pending:
         return 0, 0
-    recipients = _recipients(conn, org["id"])
-    delivered = 0
-    if recipients:
-        subject, body = build_digest(org, [s for s, _ in pending], states, cfg["BASE_URL"], today)
-        for user in recipients:
-            status = notify(conn, cfg, "reminder", user["email"], subject, body, org_id=org["id"], user_id=user["id"])
-            delivered += status in ("sent", "logged")
-    if delivered or not recipients:
+    # A clock alerted about earlier today would only be the same news again
+    # for the people who get the alerts: their digest leaves it out. Someone
+    # who turned the alerts off still finds it in theirs.
+    covered = {i for i, (s, w) in enumerate(pending) if _alerted_today(conn, org, s, w, today)}
+    news_for_all = set(range(len(pending))) - covered
+    included = set(news_for_all)
+    delivered = wanted = 0
+    for user in _recipients(conn, org["id"], DIGEST):
+        news = [i for i in range(len(pending)) if not (user[ALERTS] and i in covered)]
+        if not news:
+            continue
+        wanted += 1
+        included.update(news)
+        subject, body = build_digest(org, [pending[i][0] for i in news], states, cfg["BASE_URL"], today)
+        status = notify(conn, cfg, "reminder", user["email"], subject, body, org_id=org["id"], user_id=user["id"])
+        delivered += status in ("sent", "logged")
+    if delivered or not wanted:
         _mark_windows(conn, org["id"], pending)
-        return len(pending), delivered
+        return len(included), delivered
+    # Every digest failed: the next run tries again. The clocks already
+    # alerted about count as reminded, unless a digest was their only way out.
+    if included == news_for_all:
+        _mark_windows(conn, org["id"], [pending[i] for i in covered])
     return 0, 0
 
 
@@ -190,7 +208,7 @@ def build_clock_alert(org, state, stage, base_url, now):
         "",
         f"Open it: {base_url}/app/industry/{state.industry_id}#rule-{state.rule.key}",
         "",
-        "You get this email because reminders are on in your OmniArmor settings.",
+        "You get this email because time-limit alerts are on in your OmniArmor settings.",
     ]
     return subject, "\n".join(lines)
 
@@ -237,7 +255,7 @@ def _alert_org(conn, cfg, org, now):
         delivered = 0
         try:
             if recipients is None:
-                recipients = _recipients(conn, org["id"])
+                recipients = _recipients(conn, org["id"], ALERTS)
             subject, body = build_clock_alert(org, s, stage, cfg["BASE_URL"], now)
             for user in recipients:
                 delivered += _send_alert(conn, cfg, org, user, subject, body, reached) in ("sent", "logged")

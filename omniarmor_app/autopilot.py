@@ -336,8 +336,21 @@ def report(conn, cfg, found, deep=True):
             record(conn, key, "resolved", title, "", emailed)
 
 
+def operator_wants_weekly(conn, cfg):
+    """Whether the operator still wants the weekly report. An OmniArmor
+    account with the operator's address can turn it off in Settings; with
+    no such account it goes out."""
+    to = cfg.get("OPERATOR_EMAIL") or ""
+    row = conn.execute("SELECT email_weekly FROM users WHERE email = ?", (to,)).fetchone() if to else None
+    return row is None or bool(row["email_weekly"])
+
+
 def weekly_summary(conn, cfg):
-    """A short Monday note, only when Autopilot did something that week."""
+    """A short Monday note, only when Autopilot did something that week, and
+    only if the operator hasn't turned it off."""
+    if not operator_wants_weekly(conn, cfg):
+        log.info("AUTOPILOT: weekly report not sent: turned off in Settings")
+        return False
     since = iso(utcnow() - timedelta(days=7))
     rows = conn.execute("SELECT level, title FROM autopilot_events WHERE at >= ? ORDER BY id", (since,)).fetchall()
     if not rows:

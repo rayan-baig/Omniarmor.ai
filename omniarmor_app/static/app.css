@@ -88,7 +88,7 @@ textarea{padding:12px;min-height:120px}
 .hint{font-size:13.5px;color:var(--faint)}
 .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px;margin:8px 0 16px}
 .check{display:flex;align-items:center;gap:10px;min-height:40px;font-size:15px;cursor:pointer}
-.check input{width:18px;height:18px;accent-color:var(--accent)}
+.check input{flex:none;width:18px;height:18px;accent-color:var(--accent)}
 
 /* Status */
 .tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}

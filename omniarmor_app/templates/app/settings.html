@@ -8,10 +8,13 @@
   </div>
 </div>
 
-<h2>Your reminders</h2>
+<h2 id="reminders">Your reminder emails</h2>
+<p class="muted">Sent to {{ g.user.email }}. Everyone on the team chooses their own. Radar keeps a copy of each.</p>
 <form method="post" action="{{ url_for('app.settings_reminders') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Email me the daily reminder digest ({{ g.user.email }})</label>
+  <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Daily digest: checks coming due in 30, 7 and 1 days, due today, and each week they stay overdue</label>
+  <label class="check"><input type="checkbox" name="email_alerts" {% if g.user.email_alerts %}checked{% endif %}> Time-limit alerts: an hour or minute clock reaching its warning point, and when it's overdue</label>
+  {% if operator %}<label class="check"><input type="checkbox" name="email_weekly" {% if g.user.email_weekly %}checked{% endif %}> Weekly Autopilot report: what Autopilot fixed and what still needs you (problems are always emailed)</label>{% endif %}
   <button class="btn quiet mt-s" type="submit">Save</button>
 </form>
 

@@ -205,7 +205,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Armory (settings).**
 
-- **Everyone:** their own daily email switch and their Armo personality.
+- **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the account with the operator's address also chooses whether to get the weekly Autopilot report), their Armo personality, and About (the version number).
 - **Owners also:**
   - change the company name, timezone and industries;
   - invite people and remove members;
@@ -257,7 +257,7 @@ Every date-tracked check moves through windows as its deadline gets closer:
 
 The first daily run that finds a check in a new window sends one reminder for it. The same window is never reminded twice for the same due date; this is tracked per company, industry, check, due date and window.
 
-**Hour checks** use the same windows, by the date their due time falls on, and the email gives the due time: "Report a work fatality in 8 hours, 2 h 5 min overdue (2026-11-04 17:00 EST)". The digest goes out once a day, so a clock of a few hours can start and run out between two digests; that is what the time-limit alerts (section 3.3) are for. A clock that already had a time-limit alert the same day (in the company's timezone) is left out of that day's digest and its window counts as reminded: an overdue window is left out after the overdue alert, a coming-due window after either alert. A digest on another day still lists it, so an overdue clock is reminded about again a week later, as any other check.
+**Hour checks** use the same windows, by the date their due time falls on, and the email gives the due time: "Report a work fatality in 8 hours, 2 h 5 min overdue (2026-11-04 17:00 EST)". The digest goes out once a day, so a clock of a few hours can start and run out between two digests; that is what the time-limit alerts (section 3.3) are for. A clock that already had a time-limit alert the same day (in the company's timezone) is left out of that day's digest for the people who get the alerts (someone with alerts off still finds it there), and its window counts as reminded: an overdue window is left out after the overdue alert, a coming-due window after either alert. A digest on another day still lists it, so an overdue clock is reminded about again a week later, as any other check.
 
 **Catch-up:** if the server was down on a given morning, the next run finds the check in its current window and sends it then.
 
@@ -265,7 +265,7 @@ The first daily run that finds a check in a new window sends one reminder for it
 
 ### 3.2 The digest email
 
-Each person in the company who has reminders on gets one email per day at most: a digest of everything that entered a new window. It looks like this:
+Each person in the company who has the daily digest on (Settings, "Your reminder emails"; it starts on) gets one email per day at most: a digest of everything that entered a new window. It looks like this:
 
 ```
 Subject: OmniArmor: 1 overdue, 3 coming due for Acme Logistics
@@ -282,7 +282,7 @@ COMING DUE
 Right now: 3 blocked, 5 warnings, 9 cleared, 3 without a reading.
 Open your checks: https://your-domain/app
 
-You get this email because reminders are on in your OmniArmor settings.
+You get this email because the daily digest is on in your OmniArmor settings.
 ```
 
 ### 3.3 Time-limit alerts
@@ -292,7 +292,7 @@ The 22 hour clocks and 2 minute clocks run out in as little as 15 minutes (MSHA'
 1. **Warning:** when it reaches its warning point (the rule's "warns from", or the company's own), for example 6 hours into the 8-hour OSHA fatality report.
 2. **Overdue:** the minute after its due time, when it turns Blocked.
 
-Each email is about one clock and goes to the same people as the digest (everyone in the company with reminders on). Times are in the company's timezone:
+Each email is about one clock and goes to everyone in the company with time-limit alerts on (a choice of its own in Settings, next to the digest; it starts on). Times are in the company's timezone:
 
 ```
 Subject: OmniArmor: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)
@@ -303,7 +303,7 @@ Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.
 
 Open it: https://your-domain/app/industry/30#rule-fatality_report_8h
 
-You get this email because reminders are on in your OmniArmor settings.
+You get this email because time-limit alerts are on in your OmniArmor settings.
 ```
 
 The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject, "overdue, was due 2026-11-04 17:00 EST".
@@ -617,7 +617,7 @@ Every fix is written to Autopilot's log.
 - **Low disk space**: under 1 GB or under 5% free.
 - **Database damage**, found by SQLite's quick check once a day.
 
-Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. A problem that comes back within an hour of clearing up (free disk space hovering at the limit, say) is the same problem flapping: it is written to the log, not emailed again, and neither is its next "Fixed". A bug already emailed stays open while it keeps happening, even when five others happen more often. Whatever happens, Autopilot sends at most 10 emails an hour; past that, the messages go to the server log. On Mondays it sends a short weekly report, but only if anything happened that week (something fixed, or any alert); a quiet week sends nothing.
+Each problem is emailed once, with a title, the details and "What to do". While it lasts, Autopilot sends one reminder a day ("Still open: …"). When it clears up, it sends "Fixed: …", once. A problem that comes back within an hour of clearing up (free disk space hovering at the limit, say) is the same problem flapping: it is written to the log, not emailed again, and neither is its next "Fixed". A bug already emailed stays open while it keeps happening, even when five others happen more often. Whatever happens, Autopilot sends at most 10 emails an hour; past that, the messages go to the server log. On Mondays it sends a short weekly report, but only if anything happened that week (something fixed, or any alert); a quiet week sends nothing. If the operator's address has an OmniArmor account, its Settings page has a box to turn the weekly report off; problems are always emailed.
 
 The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up, the same messages go to the server log.
 
@@ -5932,7 +5932,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/settings/delete` | Delete the workspace (owners) |
 | POST | `/app/settings/invite` | Invite a teammate (owners) |
 | POST | `/app/settings/member/<int:user_id>/remove` | Remove a teammate (owners) |
-| POST | `/app/settings/reminders` | Turn one's own reminder email on or off |
+| POST | `/app/settings/reminders` | Choose one's own reminder emails: daily digest, time-limit alerts (and the weekly Autopilot report, for the operator's account) |
 | POST | `/billing/stripe/webhook` | Stripe webhook (signed) |
 | GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | The icon phones ask for at the root |
 | GET | `/favicon.ico` | Favicon |

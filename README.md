@@ -15,7 +15,7 @@ Companies sign up, pick their industries and enter each date or reading once.
 From then on OmniArmor:
 
 - **Tracks deadlines by itself:** it counts the days from each saved date, every day, in the company's timezone, and the hours from each saved start time for the checks that run in hours.
-- **Sends reminders:** one email per team member when something is 30, 7 or 1 day from due, due today, or overdue (weekly). Missed days catch up, and failed emails are retried. Hour and minute clocks also email when they reach their warning point and when they become overdue, checked every minute.
+- **Sends reminders:** one email per team member when something is 30, 7 or 1 day from due, due today, or overdue (weekly). Missed days catch up, and failed emails are retried. Hour and minute clocks also email when they reach their warning point and when they become overdue, checked every minute. Each person chooses in Settings whether they get the daily digest, the time-limit alerts, both or neither.
 - **Restarts recurring duties:** pressing Done today starts the next cycle.
 - **Keeps the record:** every change is in the audit trail with who and when. Printable reports and CSV exports are ready for inspectors.
 - **Backs itself up:** daily database backups, with old copies pruned.
