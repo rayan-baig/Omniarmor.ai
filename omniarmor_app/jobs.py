@@ -23,6 +23,7 @@ from datetime import timedelta
 
 import click
 
+from . import usage
 from .db import connect, iso, migrate, now_iso, utcnow
 from .reminders import run_clock_alerts, run_reminders
 
@@ -216,6 +217,7 @@ def cleanup(conn):
     conn.execute("DELETE FROM join_codes WHERE expires_at < ?", (iso(utcnow()),))
     # Answers kept from a quiz nobody finished (academy_views.QUIZ_CHECK_DAYS).
     conn.execute("DELETE FROM quiz_checks WHERE at < ?", (iso(utcnow() - timedelta(days=30)),))
+    usage.trim(conn)
     conn.commit()
 
 
@@ -394,3 +396,55 @@ def register_cli(app):
     def backup_command():
         """Back up the database now."""
         click.echo(backup_database(dict(app.config), fresh=True) or "Nothing to back up.")
+
+    @app.cli.command("seed-demo")
+    @click.option("--force", "fresh_path", metavar="NEW_DATABASE",
+                  help="Seed this new, empty database file instead of the app's own (DATABASE_PATH).")
+    @click.option("--password", help="The demo accounts' password (default: a random one, printed at the end).")
+    def seed_demo_command(fresh_path, password):
+        """Make a demo workspace for screenshots and sales calls (made-up names).
+
+        Refuses unless the database is empty. In production, only into a
+        separate new file: --force /data/omniarmor-demo.db"""
+        from . import demo
+        cfg = dict(app.config)
+        live = os.path.abspath(cfg["DATABASE"])
+        if fresh_path:
+            path = os.path.abspath(fresh_path)
+            if path == live:
+                raise click.ClickException("--force must name a new database file, not the one the app uses. "
+                                           "To seed the app's own empty database, leave --force out.")
+            if not demo.is_empty(path):
+                raise click.ClickException(f"{path} already holds accounts or workspaces. Name a new file.")
+            cfg.update(DATABASE=path, BACKUP_DIR=os.path.join(os.path.dirname(path), "backups"))
+        elif cfg["ENV_NAME"] == "production":
+            raise click.ClickException("This is production: the demo never goes into the app's own database, even "
+                                       "an empty one. Use a separate new file: flask --app wsgi seed-demo --force "
+                                       "/data/omniarmor-demo.db")
+        elif not demo.is_empty(cfg["DATABASE"]):
+            raise click.ClickException(f"{cfg['DATABASE']} already holds accounts or workspaces, so the demo would "
+                                       "mix into real data. Nothing was changed. Use a new file: --force demo.db")
+        try:
+            facts = demo.seed(cfg, password=password)
+        except demo.NotEmpty:
+            raise click.ClickException("Someone signed up while the demo was being made. Nothing was changed.")
+        except ValueError as exc:
+            raise click.ClickException(str(exc))
+        checks = facts["checks"]
+        click.echo(f"Demo workspace ready: {facts['business']} ({' and '.join(facts['industries'])}), all made up.")
+        click.echo(f"  Database: {cfg['DATABASE']}")
+        click.echo(f"  Checks: {checks['done']} done, {checks['soon']} coming due, {checks['overdue']} overdue,"
+                   f" {checks['empty']} without a reading. Audit trail: {facts['audit_rows']} entries.")
+        for kid in facts["learners"]:
+            cert = f", certificate: {kid['certificate']}" if kid["certificate"] else ""
+            click.echo(f"  Academy: {kid['nickname']}, {kid['levels']} levels passed{cert}")
+        click.echo(f"  Reminder digests kept in Radar (not sent): {facts['digests']}")
+        click.echo(f"  Autopilot: {facts['autopilot']}")
+        click.echo("")
+        click.echo(f"Sign in at {cfg['BASE_URL']}/login")
+        click.echo(f"  Owner:      {facts['owner'][1]}  ({facts['owner'][0]})")
+        click.echo(f"  Pharmacist: {facts['member'][1]}  ({facts['member'][0]}, a team member)")
+        click.echo(f"  Password for both: {facts['password']}")
+        if fresh_path:
+            click.echo("")
+            click.echo(f"Start the app on it: DATABASE_PATH={cfg['DATABASE']} flask --app wsgi run --port 8000")

@@ -35,6 +35,10 @@ log = logging.getLogger("omniarmor.autopilot")
 
 EMAIL_RETRY_AFTER = [timedelta(minutes=10), timedelta(hours=1), timedelta(hours=6)]  # after attempt 1, 2, 3
 EMAIL_RETRY_WINDOW = timedelta(days=2)
+# An email queued for a first try in a thread of its own (an error report,
+# errormail.py) has attempts 0; it is retried here only if that try hasn't
+# happened after this long (the process stopped first).
+QUEUED_GRACE = timedelta(minutes=2)
 EMAIL_FAILURES_ALERT = 3        # emails still failing after every retry, in a day
 BUG_WINDOW = timedelta(hours=24)  # a bug counts as fixed once it hasn't happened for this long
 BACKUP_MAX_AGE = timedelta(hours=26)
@@ -74,13 +78,20 @@ def retry_failed_emails(conn, cfg):
                         (len(EMAIL_RETRY_AFTER), iso(now - EMAIL_RETRY_WINDOW))).fetchall()
     sent = 0
     for row in rows:
-        due = _parse(row["created_at"]) + sum(EMAIL_RETRY_AFTER[:row["attempts"]], timedelta())
+        due = _parse(row["created_at"]) + (sum(EMAIL_RETRY_AFTER[:row["attempts"]], timedelta()) if row["attempts"]
+                                           else QUEUED_GRACE)
         if due > now:
             continue
         if row["kind"] == "password_reset" and _parse(row["created_at"]) + timedelta(hours=RESET_HOURS) <= now:
             continue  # the link inside has expired; resending it would only send a dead link
+        # Claimed before it is sent, so a queued first try starting now can't send it too.
+        if conn.execute("UPDATE notifications SET attempts = attempts + 1 WHERE id = ? AND attempts = ?",
+                        (row["id"], row["attempts"])).rowcount != 1:
+            conn.commit()
+            continue
+        conn.commit()
         status, error = send_email(cfg, row["recipient"], row["subject"], row["body"], kind=row["kind"])
-        conn.execute("UPDATE notifications SET status = ?, error = ?, attempts = attempts + 1 WHERE id = ?",
+        conn.execute("UPDATE notifications SET status = ?, error = ? WHERE id = ?",
                      (status if status != "logged" else "failed", error or row["error"], row["id"]))
         conn.commit()
         sent += status == "sent"
@@ -113,6 +124,9 @@ def make_missing_backup(cfg):
 def tidy(conn, cfg):
     """Trims old logs and keeps the database file compact. Returns what it did, or ''."""
     conn.execute("DELETE FROM app_errors WHERE at < ?", (iso(utcnow() - KEEP_ERRORS),))
+    # The copies of emailed error reports (errormail.py) are error reports too.
+    conn.execute("DELETE FROM notifications WHERE kind = 'error_report' AND created_at < ?",
+                 (iso(utcnow() - KEEP_ERRORS),))
     conn.execute("DELETE FROM autopilot_events WHERE at < ?", (iso(utcnow() - KEEP_EVENTS),))
     conn.execute("DELETE FROM job_runs WHERE job = 'autopilot' AND run_date < ?",
                  (iso(utcnow() - timedelta(days=2)),))

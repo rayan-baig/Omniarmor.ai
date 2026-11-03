@@ -48,12 +48,13 @@ SQLite database (one file on a persistent disk) + daily backups
 | `org_industries` | Which of the 50 industries each company tracks |
 | `items` | One row per company and rule: the number, yes/no or date, plus any policy-limit override |
 | `audit` | Every change, with person, time, before and after |
-| `notifications` | Every email sent or saved, with status and error |
+| `notifications` | Every email sent or saved, with status and error: the outbox, which Autopilot retries from (error reports to `ERRORS_EMAIL` included) |
 | `reminder_marks` | Which reminders were already sent for which due date |
 | `invites`, `password_resets` | One-time links, stored only as hashes |
 | `login_failures` | Recent failed sign-ins, for rate limiting |
 | `job_runs` | One row per day of the daily job, so it runs once |
 | `job_locks` | The lock each sweep (alerts, daily job, Autopilot) holds while it runs, so two server processes never run the same one at once |
+| `usage_counts` | One total per feature per day (checks updated, lessons passed, Help page views...), with no user, workspace or learner id |
 | `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
 | `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
 | `join_codes`, `learner_days`, `learner_mistakes` | Kid device codes, daily streaks, and missed questions for spaced practice |

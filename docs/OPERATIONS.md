@@ -33,7 +33,10 @@ other site (a sibling app included) can read its pages from a browser.
    end). Every link in an email is built from it.
 5. **MTRX Horizyn:** in MTRX Horizyn's settings, OmniArmor's address is
    `https://omniarmor.example.com` and its stats address is
-   `https://omniarmor.example.com/api/stats` (see `STATS_KEY`).
+   `https://omniarmor.example.com/api/stats` (see `STATS_KEY`). It answers
+   only a request carrying that key (`Authorization: Bearer <STATS_KEY>`),
+   and doesn't exist without it: the number of accounts, how many were used
+   in the last 30 days, and the daily usage counts (section 5).
 
 **Render (easiest):** push this repo to GitHub, then in Render choose
 New > Blueprint and pick the repo. `render.yaml` creates the web service, a
@@ -185,19 +188,84 @@ untick it under Settings, "Your reminder emails"; problems are still emailed. Wi
 - `flask --app wsgi autopilot` runs the checks now and prints what it found.
 - `flask --app wsgi autopilot --log` shows what it fixed and reported in the last 30 days.
 
+**Error reports to one inbox (optional).** Set `ERRORS_EMAIL` to an address
+and every page that fails with an unexpected error (a 500) sends it a short
+report straight away: the time (UTC), the version, the request's method and
+path with the query string removed, the kind of error, its message and the
+stack trace, with file paths relative to the project (`omniarmor_app/views.py`,
+`flask/app.py`). It carries no personal data: never the request's body,
+form, cookies, headers or IP address, nor who was signed in, and anything in
+the path or message that looks like an email address, an IP address, a token
+or a secret is replaced (`[email]`, `[ip]`, `[token]`, `[hidden]`).
+
+- **Limits:** one email per distinct error an hour (the same fingerprint
+  Autopilot uses) and at most 20 in any 24 hours. They are kept in the
+  database, so a restart or a second server process doesn't reset them.
+- **Delivery:** like every email, through the outbox (the notifications
+  table). It is sent from a thread, so the error page isn't held up; if the
+  send fails, or the server stops first, Autopilot sends it again (after 10
+  minutes, 1 hour, 6 hours). Without email set up (section 2) the reports
+  are kept in the database, not sent. Copies are deleted after 30 days, like
+  Autopilot's own error records.
+- **Off when unset:** without `ERRORS_EMAIL` nothing is written or sent.
+- It adds to Autopilot, it doesn't replace it: every crash is still
+  recorded and Autopilot still emails `OPERATOR_EMAIL` about new bugs. The
+  two can be the same address.
+
+**Usage counts.** OmniArmor counts how often a few features are used, one
+total per feature per day (UTC): checks updated (one at a time or in bulk),
+bulk updates, lessons started (a lesson page opened) and passed,
+certificates earned, Help page views and sign-ups. Nothing else is kept: no
+cookie, no account, workspace or learner id, no IP address, and no outside
+analytics service. The last 30 days are on the Settings page of the account
+signed in with the `OPERATOR_EMAIL` address (nobody else sees them), and in
+`/api/stats` under `usage`. Totals older than 400 days are deleted by the
+daily job.
+
 `GET /healthz` returns `{"status": "ok", "schema": ..., "version": "..."}`
 with HTTP 200 when the app and database are working: the schema version and
 the release (from `omniarmor_app/version.py`), and nothing else. Point an uptime monitor (UptimeRobot, Better Stack) at
 it so you get a text or email if the site goes down. The server log records
 each daily run and any failure.
 
-## 6. Upgrades
+## 6. A demo workspace
+
+For screenshots and sales calls, one command makes a believable workspace
+with made-up names: Juniper Lane Pharmacy, tracking Pharmacies and Employers
+& HR, with an owner and a pharmacist on the team, checks done, coming due and
+overdue, a few weeks of audit trail, the morning's reminder digest in Radar
+(kept, never sent), an Academy with two learners partway through (one with a
+certificate) on the Academy plan, and Autopilot's history with one real pass
+run at the end (which makes the first backup).
+
+```sh
+flask --app wsgi seed-demo --force demo/omniarmor-demo.db     # a new file of its own
+DATABASE_PATH=demo/omniarmor-demo.db flask --app wsgi run --port 8000
+```
+
+It prints the two sign-in addresses (on the reserved `.example` domain,
+which never receives email) and a random password for both; `--password`
+sets your own. It never mixes into real data:
+
+- Without `--force` it seeds the app's own database only if that holds no
+  accounts, workspaces or learners at all, and checks again inside the
+  write, so a sign-up at the same moment is never mixed in.
+- `--force` must name a new or empty file, never the database the app uses.
+- In production (`OMNIARMOR_ENV=production`) it refuses the app's own
+  database even when it is empty, since a new deployment's empty database is
+  about to become the real one. Seed a separate file there, such as
+  `--force /data/omniarmor-demo.db`, and run a separate service on it.
+
+The dates are counted from the day it is seeded, so seed a fresh file before
+each demo.
+
+## 7. Upgrades
 
 Deploy the new version; the database schema upgrades itself at start-up.
 Back up first. Run the tests before every deploy: `python3 -m unittest
 discover -s tests` (GitHub Actions does this on every push).
 
-## 7. Things only you can do
+## 8. Things only you can do
 
 - Form the company, MTRX Horizyn (see the README), and open a business bank
   account.

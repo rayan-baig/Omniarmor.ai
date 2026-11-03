@@ -18,7 +18,7 @@ from functools import wraps
 from flask import (Blueprint, abort, current_app, flash, g, jsonify, redirect, render_template, request,
                    url_for)
 
-from . import academy, academy_plan, armo
+from . import academy, academy_plan, armo, usage
 from .catalog import INDUSTRIES
 from .db import get_db, iso, now_iso, utcnow
 from .security import (clean_text, client_ip, flash_error, new_device_epoch, owner_required, rate_limited,
@@ -502,6 +502,7 @@ def play(learner_id, world_number, stage):
     needed = academy.pass_mark(t, w, stage)
 
     if request.method == "GET":
+        usage.count(get_db(), "lessons_started")
         return render_template("academy/level.html", learner=learner, world=w, stage=stage, attempt=attempt,
                                cards=academy.story(t, world_number, stage, company, industry_ids), track=t,
                                stage_count=t.stages(w), boss=academy.is_boss(w, stage),
@@ -534,6 +535,10 @@ def play(learner_id, world_number, stage):
     conn.commit()
     after = _summary(learner)
     passed = stars >= 1
+    if passed:
+        usage.count(conn, "lessons_passed")
+    if after["certificate"] and after["certificate"] != before["certificate"]:
+        usage.count(conn, "certificates")
     next_stage = stage + 1 if stage < t.stages(w) else None
     return render_template(
         "academy/result.html", learner=learner, world=w, stage=stage, results=results, score=score,

@@ -31,11 +31,17 @@ services:
       # only reach the server log, which nobody reads.
       - key: OPERATOR_EMAIL
         sync: false
+      # Optional: one inbox for a short report of each server error, with no
+      # personal data (one per distinct error an hour, at most 20 a day).
+      # Unset, none are sent.
+      - key: ERRORS_EMAIL
+        sync: false
       # An address people can write to for help, named on the Help page (/help).
       - key: SUPPORT_EMAIL
         sync: false
       # The same value as MTRX Horizyn's MTRX_STATS_KEY, to show user counts
-      # in the owner's console. Unset, /api/stats does not exist.
+      # and daily feature use in the owner's console. Unset, /api/stats does
+      # not exist.
       - key: STATS_KEY
         sync: false
       # The Academy plan's card payments (optional: without them, switch a

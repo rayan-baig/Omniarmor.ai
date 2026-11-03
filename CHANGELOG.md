@@ -3,6 +3,33 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.1.0 (3 November 2026)
+
+For selling it and running it: a demo workspace, error reports to one inbox,
+privacy-friendly usage counts, and Settings that answer the basics.
+
+- A demo workspace in one command: `flask --app wsgi seed-demo`. A made-up
+  community pharmacy tracking Pharmacies and Employers & HR, with checks
+  done, coming due and overdue, weeks of audit trail, two Academy learners
+  partway through (one with a certificate) and a running Autopilot. It
+  prints the sign-in details, and it refuses any database that holds an
+  account, a workspace or a learner, and in production the app's own
+  database altogether: `--force` names a new file instead.
+- Error reports to one inbox: set `ERRORS_EMAIL` and each server error
+  sends a short report (time, version, method, path without its query,
+  error and a stack trace with relative paths) with no personal data, at
+  most once an hour per error and 20 a day. It goes through the outbox, so
+  Autopilot retries it when mail is down. Autopilot's own bug emails are
+  unchanged.
+- Usage counts: one total a day for checks updated, bulk updates, lessons
+  started and passed, certificates, Help page views and sign-ups, with no
+  cookie, no ids and no outside service. The operator sees the last 30 days
+  in Settings, and MTRX Horizyn's console in `/api/stats` (schema version
+  15). The Privacy page says so.
+- Settings shows the Academy plan to everyone on the team, not only the
+  owner, says the compliance tracker is free, and under About says where to
+  get help: the Help page, and `SUPPORT_EMAIL` when it is set.
+
 ## 1.0.1 (3 November 2026)
 
 Reliability under load. Measured in `docs/LOAD-TEST.md`.

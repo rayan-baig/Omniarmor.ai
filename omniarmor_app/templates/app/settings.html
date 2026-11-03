@@ -66,11 +66,14 @@
     <button class="btn ghost" type="submit">Create invite link</button>
     {% if open_invites %}<span class="hint">{{ open_invites }} unused invite link{{ 's' if open_invites != 1 }} still open.</span>{% endif %}
   </form>
+{% endif %}
 
-  <h2>Academy plan</h2>
-  <p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. Update your card to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at|local_date }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at|local_date }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
-    <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if plan.access == 'paid' else 'See the Academy plan' }}</a></p>
+<h2>Academy plan</h2>
+<p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. {{ 'Update your card' if g.role == 'owner' else 'The workspace owner can update the card' }} to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at|local_date }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at|local_date }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
+  <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if plan.access == 'paid' and g.role == 'owner' else 'See the Academy plan' }}</a></p>
+<p class="muted" data-plan-note>The compliance tracker is free. The Academy plan is a separate subscription{% if g.role != 'owner' %}, and only the workspace owner can change it{% endif %}.</p>
 
+{% if g.role == 'owner' %}
   <h2>Delete workspace</h2>
   <form method="post" action="{{ url_for('app.delete_workspace') }}" class="narrow">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -80,7 +83,36 @@
   </form>
 {% endif %}
 
+{% if usage %}
+  <h2 id="usage">Usage, last {{ usage.days|length }} days</h2>
+  <p class="muted">Only you see this, as the operator. Daily totals for everyone together, in UTC: nothing here says who or which workspace.</p>
+  <div class="table-wrap">
+    <table data-usage>
+      <thead><tr><th scope="col">Feature</th><th scope="col">Today</th><th scope="col">7 days</th><th scope="col">{{ usage.days|length }} days</th></tr></thead>
+      <tbody>
+        {% for key, name in usage_events %}
+          <tr><td>{{ name }}</td><td class="num">{{ usage.days[0][key] }}</td><td class="num">{{ usage.days[:7]|sum(attribute=key) }}</td><td class="num">{{ usage.totals[key] }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <details class="mt-s">
+    <summary>By day</summary>
+    <div class="table-wrap">
+      <table data-usage-days>
+        <thead><tr><th scope="col">Day</th>{% for key, name in usage_events %}<th scope="col">{{ name }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for day in usage.days %}
+            <tr><td class="num mono">{{ day.day }}</td>{% for key, name in usage_events %}<td class="num">{{ day[key] }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+{% endif %}
+
 <h2 id="about">About</h2>
 <p class="row"><span>OmniArmor version <span class="mono" data-version>{{ APP_VERSION }}</span> · A product of MTRX Horizyn</span>
   <span><a href="{{ url_for('public.help') }}">Help</a> · <a href="{{ url_for('public.terms') }}">Terms</a> · <a href="{{ url_for('public.privacy') }}">Privacy</a></span></p>
+<p class="muted" id="get-help">Need help? The <a href="{{ url_for('public.help') }}">Help page</a> answers the common questions{% if support_email %}, or write to <a href="mailto:{{ support_email }}">{{ support_email }}</a>{% endif %}.</p>
 {% endblock %}

@@ -36,8 +36,12 @@ def load_config(**overrides):
         # Autopilot fixes small problems itself and emails big ones here.
         "AUTOPILOT_ENABLED": _flag("AUTOPILOT_ENABLED", True),
         "OPERATOR_EMAIL": env.get("OPERATOR_EMAIL", "").strip(),
+        # One inbox that gets a short report of each server error (a 500),
+        # with no personal data (errormail.py). Unset, none are sent.
+        "ERRORS_EMAIL": env.get("ERRORS_EMAIL", "").strip(),
         # The private key MTRX Horizyn's console sends to /api/stats (the same
-        # value as its MTRX_STATS_KEY). Unset, that address does not exist.
+        # value as its MTRX_STATS_KEY) for user counts and daily feature use.
+        # Unset, that address does not exist.
         "STATS_KEY": env.get("STATS_KEY", "").strip(),
         # Where people can write for help, shown on the Help page. Unset, the
         # page names the help inside the app only.

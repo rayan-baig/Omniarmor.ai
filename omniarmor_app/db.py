@@ -289,6 +289,19 @@ MIGRATIONS = [
         expires_at TEXT NOT NULL
     );
     """),
+    # How often a few features are used, as one total per day and feature
+    # (usage.py). Nothing in it says who: no user, workspace or learner id.
+    # And an index for the error reports' limits (errormail.py), which count
+    # the reports already in the outbox by kind and time.
+    (15, """
+    CREATE TABLE usage_counts (
+        day TEXT NOT NULL,
+        event TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (day, event)
+    );
+    CREATE INDEX notifications_kind ON notifications (kind, created_at);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

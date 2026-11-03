@@ -15,7 +15,7 @@ from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, r
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, armo_views, autopilot, auth, views
+from . import academy_views, armo_views, autopilot, auth, errormail, usage, views
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -91,6 +91,7 @@ def _rules_facts():
     from .academy_plan import FREE_WORLDS
     from .academy_views import JOIN_CODE_DAYS, QUIZ_CHECK_DAYS
     from .autopilot import KEEP_ERRORS, MAX_EMAILS_PER_HOUR
+    from .errormail import MAX_PER_DAY
     from .jobs import ALERTS_EVERY_SECONDS
     from .auth import INVITE_DAYS, RESET_HOURS
     cfg = current_app.config
@@ -107,6 +108,7 @@ def _rules_facts():
         "quiz_check_days": QUIZ_CHECK_DAYS,
         "error_days": KEEP_ERRORS.days,
         "operator_emails_per_hour": MAX_EMAILS_PER_HOUR,
+        "error_emails_per_day": MAX_PER_DAY,
         "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
     }
 
@@ -149,6 +151,7 @@ def _help_facts():
 
 @public.route("/help", endpoint="help")
 def help_page():
+    usage.count(get_db(), "help_views")
     return render_template("help.html", facts=_help_facts())
 
 
@@ -226,10 +229,12 @@ ROOT_ICON_MAX_AGE = 24 * 3600
 
 @public.route("/api/stats")
 def stats():
-    """User counts for the owner's MTRX Horizyn console, and nothing else.
+    """User counts and daily feature use for the owner's MTRX Horizyn
+    console, and nothing else.
 
     Off unless STATS_KEY is set, and answered only to that key. Counts only:
-    no names, no companies, nothing about anyone in particular.
+    no names, no companies, nothing about anyone in particular. `usage` is
+    the last 30 days of usage.py's daily totals, newest day first.
     """
     key = current_app.config.get("STATS_KEY") or ""
     sent = request.headers.get("Authorization", "")
@@ -241,7 +246,7 @@ def stats():
     since = (utcnow() - timedelta(days=30)).date().isoformat()
     users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     active = conn.execute("SELECT COUNT(*) FROM users WHERE last_seen_on >= ?", (since,)).fetchone()[0]
-    return jsonify(users=users, active_users=active)
+    return jsonify(users=users, active_users=active, usage=usage.last_days(conn))
 
 
 @public.route("/healthz")
@@ -365,6 +370,7 @@ def create_app(**overrides):
         if code == 500:
             cause = getattr(err, "original_exception", None) or err
             autopilot.record_error(app.config, request.path, cause)
+            errormail.report(app.config, cause, request.method, request.path)
         title, help_text = ERROR_PAGES.get(code, ERROR_PAGES[500])
         # A message the app wrote for this case (an expired form, say) beats
         # the general one; Werkzeug's own wording, written for developers,
@@ -385,6 +391,13 @@ def create_app(**overrides):
         @app.route("/_test/server-error")
         def _test_server_error():
             raise RuntimeError("test failure at /srv/omniarmor/omniarmor_app/secret.py with SECRET_KEY")
+
+        # One that quotes what the visitor sent in its message, as careless
+        # code might, so tests can see none of it reaches an error report.
+        @app.route("/_test/server-error-echo", methods=["GET", "POST"])
+        def _test_server_error_echo():
+            raise ValueError(f"bad input: {request.query_string.decode()} form={request.form.get('email')}"
+                             f" cookie={request.cookies.get('note')}")
 
     # Start the daily timer once per server process (not in tests, not in the reloader's parent).
     if app.config["SCHEDULER_ENABLED"] and not app.config["TESTING"] and \

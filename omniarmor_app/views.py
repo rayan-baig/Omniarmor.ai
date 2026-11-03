@@ -8,6 +8,7 @@ import io
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
 
+from . import usage
 from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
@@ -126,6 +127,7 @@ def change(industry_id, rule_key):
     action = request.form.get("action", "save")
     try:
         message = apply_change(get_db(), g.org, g.user["id"], industry_id, rule_key, action, request.form)
+        usage.count(get_db(), "checks_updated")
         flash(message, "ok")
     except ValidationError as exc:
         flash_error(str(exc))
@@ -144,6 +146,8 @@ def bulk_change(industry_id):
     try:
         count = apply_bulk(get_db(), g.org, g.user["id"], industry_id, request.form.getlist("keys"), action,
                            request.form.get("date"))
+        usage.count(get_db(), "bulk_updates")
+        usage.count(get_db(), "checks_updated", count)
         flash(f"Updated {count} check{'s' if count != 1 else ''}: {BULK_ACTIONS[action].lower()}"
               + (f" to {request.form.get('date').strip()}." if action == "date" else "."), "ok")
     except ValidationError as exc:
@@ -270,7 +274,9 @@ def settings():
     ).fetchone()[0]
     return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           plan=plan_status(g.org), operator=is_operator(g.user))
+                           plan=plan_status(g.org), operator=is_operator(g.user),
+                           usage=usage.last_days(conn) if is_operator(g.user) else None, usage_events=usage.EVENTS,
+                           support_email=current_app.config.get("SUPPORT_EMAIL", ""))
 
 
 def is_operator(user):

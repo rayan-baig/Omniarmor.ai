@@ -32,7 +32,8 @@ class TestStats(AppTestCase):
             conn.commit()
         self.app.config["STATS_KEY"] = "s3cret-stats-key"
         body = self.app.test_client().get("/api/stats", headers={"Authorization": "Bearer s3cret-stats-key"}).get_json()
-        self.assertEqual(body, {"users": 2, "active_users": 1})
+        # Plus the daily usage totals (tests/test_usage_counts.py).
+        self.assertEqual({k: v for k, v in body.items() if k != "usage"}, {"users": 2, "active_users": 1})
         # Using the app again counts them as active again (once a day).
         other.get("/app")
         body = self.app.test_client().get("/api/stats", headers={"Authorization": "Bearer s3cret-stats-key"}).get_json()

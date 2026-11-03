@@ -8,6 +8,7 @@ from zoneinfo import available_timezones
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from . import usage
 from .catalog import INDUSTRIES, TOP_COUNT
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
@@ -141,6 +142,7 @@ def signup():
                          (user_id, org_id, now))
             record_audit(conn, org_id, user_id, "team", f"{name} joined the team")
         conn.commit()
+        usage.count(conn, "signups")
         start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
         if invite is not None:
             flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")

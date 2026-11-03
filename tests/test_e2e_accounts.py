@@ -264,6 +264,7 @@ class TestDeletingAWorkspace(AppTestCase):
         "autopilot_events": "the operator's health checks",
         "app_errors": "error reports, kept 30 days",
         "stripe_events": "Stripe event ids already handled (no longer tied to the workspace)",
+        "usage_counts": "daily feature totals for everyone together, with nothing that says which workspace",
     }
 
     def fill_workspace(self):

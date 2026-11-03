@@ -31,7 +31,7 @@
   <li>We save the date you last used the app (just the date).</li>
   <li>When someone types a wrong password, asks for a password reset, signs up, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes.</li>
 </ul>
-<p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened.</p>
+<p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened. They can also have a short report of each server error emailed to one inbox, at most {{ facts.error_emails_per_day }} a day: the time, the page address without anything after the "?", and where in our code it failed, with no form, cookie, email address or IP address in it.</p>
 <p><strong>When you pay for the Academy plan:</strong> we keep Stripe's customer and subscription numbers and your plan's status, renewal date and, if you cancel, the date it ends. We never see your card number.</p>
 
 <h2 id="cookies">Cookies</h2>
@@ -47,6 +47,7 @@
   <li>To keep accounts safe: sign-in, limits on wrong guesses, and error reports so we can fix bugs.</li>
   <li>To run the Academy and its plan.</li>
   <li>To count users. We count how many accounts there are and how many were used in the last 30 days. Only those two numbers go to our own admin dashboard. No names, no emails, no companies.</li>
+  <li>To see which features get used, we keep one total a day for each of a few things (checks updated, bulk updates, lessons started and passed, certificates, Help page views and sign-ups), with no cookie and nothing that says who or which workspace, and only the people who run OmniArmor see them.</li>
 </ul>
 
 <h2 id="who">Who else sees it</h2>

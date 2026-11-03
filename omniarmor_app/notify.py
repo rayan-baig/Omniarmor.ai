@@ -53,6 +53,9 @@ def footer_lines(cfg, kind=None):
                      " you about these.")
         if kind == "autopilot_weekly":
             lines.append(f"Turn this weekly report off (signed in with this address): {base}{MANAGE_PATH}")
+    elif kind == "error_report":
+        lines.append(f"Sent by OmniArmor at {base} because a page failed with a server error. It goes to the"
+                     " ERRORS_EMAIL address; unset it to stop these.")
     lines.append(SIGNATURE)
     return lines
 

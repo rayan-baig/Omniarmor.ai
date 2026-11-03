@@ -207,12 +207,13 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Armory (settings).**
 
-- **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the account with the operator's address also chooses whether to get the weekly Autopilot report), their Armo personality, and About (the version number).
+- **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the account with the operator's address also chooses whether to get the weekly Autopilot report), their Armo personality, the Academy plan's status (and that the compliance tracker is free), and About: the version number, and where to get help (the Help page, and the `SUPPORT_EMAIL` address when it is set).
 - **Owners also:**
   - change the company name, timezone and industries;
   - invite people and remove members;
-  - see the Academy plan's status, with a link to manage or cancel it;
+  - manage or cancel the Academy plan from its page;
   - delete the whole workspace, by typing the company name to confirm.
+- **The operator** (the account with the `OPERATOR_EMAIL` address) also sees the usage counts of the last 30 days (section 6.7).
 
 ### 2.8 The public pages
 
@@ -672,6 +673,23 @@ The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up
 
 It is on by default (`AUTOPILOT_ENABLED`). Several server processes are safe: each 10-minute pass and each daily pass is claimed in the database first, and a pass holds the Autopilot lock while it runs, so a slow pass (failed emails re-sent to a provider that times out) never has a second one beside it re-sending the same emails. `flask --app wsgi autopilot` says so if the server is running a pass right then.
 
+### 6.6 Error reports to one inbox
+
+With `ERRORS_EMAIL` set, every page that fails with an unexpected error (a 500) also sends that address a short report straight away, beside Autopilot's own bug emails (which are unchanged). It says:
+
+- the time (UTC) and the version;
+- the request's method and path, with the query string removed;
+- the kind of error, its message and its fingerprint (the same one the bug finder uses);
+- the stack trace, with file paths relative to the project (`omniarmor_app/views.py`) or to the library folder (`flask/app.py`).
+
+It carries no personal data. It is built only from the error and the request's method and path, never the request's body, form, cookies, headers or IP address, nor who was signed in. Anything in the path, the message or a code line that looks like an email address, an IP address, a token or a secret is replaced (`[email]`, `[ip]`, `[token]`, `[hidden]`), and reset and invite links are hidden as in the logs. A test sends a request with an email address in its query string, its form and a cookie, to a page whose error quotes all three, and checks none of them reaches the report.
+
+The same error is emailed at most once an hour, and no more than 20 reports go out in any 24 hours. Both limits are counted from the reports in the database, inside one write, so a restart or a second server process doesn't reset them. The report goes through the outbox like every email: it is saved first and sent from a thread, so the error page isn't held up; if the send fails, or the server stops first, Autopilot's email retry sends it again. The copies are deleted after 30 days, like the app's own error records. Without `ERRORS_EMAIL` nothing is written or sent.
+
+### 6.7 Usage counts
+
+OmniArmor counts how often a few key features are used, as one total per feature per day (UTC): checks updated (one at a time and in bulk), bulk updates, lessons started (a lesson page opened) and passed, certificates earned, Help page views and sign-ups. A count adds one to the day's total; there is no row per use, no cookie, no account, workspace or learner id, no IP address and no outside service. The account with the `OPERATOR_EMAIL` address sees the last 30 days in Settings; MTRX Horizyn's console gets the same days from `/api/stats`, which answers only its `STATS_KEY`. Totals older than 400 days are deleted by the daily job. The Privacy page says so in one sentence.
+
 ---
 
 ## 7. Security and privacy
@@ -697,6 +715,7 @@ Every point below is in the code today.
 - CSV exports are formula-safe.
 - Requests larger than 1 MB are refused.
 - Deleting the workspace deletes its data.
+- Usage counts (section 6.7) are daily totals only, with no id of any person, workspace or learner, and error reports to `ERRORS_EMAIL` (section 6.6) carry no request data beyond the method and the path without its query.
 
 ### 7.3 Web protections
 
@@ -796,7 +815,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 578 tests in 34 files.
+- `tests/`: 619 tests in 37 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
   - `test_user_flows.py` (75, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
@@ -807,6 +826,7 @@ SQLite database (one file on a persistent disk) + daily backups
   - `test_academy_bank.py` (2, which check every bank entry).
   - Features added for launch: `test_bulk_entry.py` (15: several checks at once, all or nothing, with the same checks and audit rows as one), `test_help_page.py` (6), `test_plan_page.py` (5), `test_parent_view.py` (9: the progress report, and who can't open it), `test_first_lesson.py` (5: the steps to the first results), `test_certificate_print.py` (2) and `test_quiz_fairness.py` (5: no guessing by length, slot or "True").
   - `test_sweeps.py` (7: the sweep locks, a daily run or Autopilot pass that runs long never started twice, the alerts in their own thread, schema version 14).
+  - Version 1.1.0: `test_seed_demo.py` (15: the demo workspace's mix of checks, audit trail, Academy and Autopilot, signing in to it, and every way it refuses to mix into real data), `test_error_reports.py` (13: what an error report says, that a request with an email address in its query, form and cookie leaks none of them, the hourly and daily limits across a restart, and delivery through the outbox when mail is down) and `test_usage_counts.py` (13: schema version 15, each count, operator only, `/api/stats`, the Privacy page, and Settings showing the plan, the version and where to get help).
   - `test_parity.py` (1: dashboard against engine, run with Node).
   - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
@@ -833,7 +853,7 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 14), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 15), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
@@ -846,7 +866,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - `org_industries`: which of the 50 industries each company tracks.
 - `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
 - `audit`: every change, with person, time, action, industry, rule, before and after, and a summary. The person's name is stored on the row, so a removed team member's changes still show who made them.
-- `notifications`: every email sent or saved, with status, error and number of attempts.
+- `notifications`: every email sent or saved, with status, error and number of attempts. It is the outbox: Autopilot sends failed ones again from here, error reports (section 6.6) included.
 - `reminder_marks`: which reminder windows were already sent, for which due date, and which time-limit alerts, for which due moment.
 - `invites` and `password_resets`: one-time links, stored as hashes.
 - `login_failures`: recent failed sign-ins and reset requests, for rate limiting.
@@ -867,6 +887,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - `autopilot_events`: Autopilot's log of fixes, alerts and resolutions.
 - `app_errors`: recorded server errors, with page, error, fingerprint, code location and traceback.
 - `stripe_events`: Stripe event ids already applied.
+- `usage_counts`: one total per feature per day (section 6.7), with no user, workspace or learner id.
 
 ### 8.5 World numbering in the Academy
 
@@ -902,7 +923,7 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 578 tests
+python3 -m unittest discover -s tests     # 619 tests
 python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py tools  # the lint CI runs
 ```
 
@@ -913,6 +934,7 @@ Command-line tools:
 - `flask --app wsgi backup`: back up the database now.
 - `flask --app wsgi academy-plan <workspace id> active|none|canceled`: switch a workspace's Academy plan by hand.
 - `flask --app wsgi autopilot [--log]`: run Autopilot's checks now, or show its log.
+- `flask --app wsgi seed-demo [--force NEW_FILE] [--password ...]`: make the demo workspace for screenshots and sales calls (section 9.8).
 - `python3 dashboard/build_dashboard.py`: rebuild the standalone Risk Console after changing a rule.
 - `python3 tools/load_test.py http` and `python3 tools/load_test.py sweep`: the load test and the sweep timings, on a throwaway database (`docs/LOAD-TEST.md`).
 
@@ -951,7 +973,7 @@ To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: cop
 ### 9.5 Monitoring
 
 - `GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and database are working (and the schema is current), with the schema version and the release number (`omniarmor_app/version.py`, also shown in Settings under About) and nothing else. Point an uptime monitor at it.
-- Set `OPERATOR_EMAIL` so Autopilot can email problems.
+- Set `OPERATOR_EMAIL` so Autopilot can email problems, and optionally `ERRORS_EMAIL` for a short report of each server error (section 6.6).
 - The server log records each daily run, each Autopilot fix, and any failure.
 
 ### 9.6 Upgrades
@@ -978,6 +1000,10 @@ What the app does to stay cheap:
 - at most one reminder email per person per company per day, plus the time-limit alerts;
 - daily cleanup of old records.
 
+
+### 9.8 A demo workspace
+
+`flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking PharmacyArmor and HRArmor, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept in Radar (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
 ---
 
 ## 10. Design and writing style
@@ -1067,6 +1093,7 @@ The project was built in steps, each one a commit on GitHub:
     - one look for every email, friendly error pages, icons, share previews, the sitemap and robots.txt;
     - a version number in Settings and `/healthz`, and the changelog.
 16. **Reliability (1.0.1):** a load test of 500 workspaces at once, the sweeps timed at up to 2,000 workspaces, a lock so no sweep runs twice at once, the alerts in a thread of their own, the daily backup taken after the reminders, and a rehearsed 10-minute restore checklist (`docs/LOAD-TEST.md`).
+17. **For selling and running it (1.1.0):** a demo workspace in one command, error reports to one inbox with no personal data, privacy-friendly daily usage counts for the operator, and Settings showing the plan, the version and where to get help to everyone on the team.
 
 Previews, the playable lesson pages and this handbook's companion brief were published as private pages in the original account.
 
@@ -1078,9 +1105,9 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Branch:** `claude/wonderful-heisenberg-77tbq9`, the live default branch. Everything above is on it.
-- **Version** 1.0.1 (`omniarmor_app/version.py`, `CHANGELOG.md`).
-- **Tests:** 578 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
-- **Database schema** is at version 14.
+- **Version** 1.1.0 (`omniarmor_app/version.py`, `CHANGELOG.md`).
+- **Tests:** 619 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
+- **Database schema** is at version 15.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
   - **Back up** the database first, as always.
@@ -5925,7 +5952,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | Method | Address | What it is |
 |---|---|---|
 | GET | `/` | Landing page |
-| GET | `/api/stats` | User counts for MTRX Horizyn's console (only with `STATS_KEY`, and only to that key) |
+| GET | `/api/stats` | User counts and the last 30 days of usage counts for MTRX Horizyn's console (only with `STATS_KEY`, and only to that key) |
 | GET | `/app` | HQ, the overview |
 | GET | `/app/academy` | Academy home for grown-ups |
 | GET | `/app/academy/<int:learner_id>` | A learner's map |
@@ -6007,9 +6034,10 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
 | `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
-| `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. |
+| `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. The account with this address also sees the usage counts in Settings. |
+| `ERRORS_EMAIL` | (none) | One inbox for a short report of each server error, with no personal data: one per distinct error an hour, at most 20 a day (section 6.6). Without it, none are written or sent. |
 | `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer. Without it, the page points to the help inside the app. |
-| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
+| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts and daily usage counts, nothing about anyone) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |
