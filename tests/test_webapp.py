@@ -65,6 +65,13 @@ class AppTestCase(unittest.TestCase):
     def db(self):
         return connect(self.db_path)
 
+    def make_operator(self, email="owner@example.com", *args):
+        """Runs `flask --app wsgi make-operator EMAIL` on this app, as the
+        owner does on the server. Returns the command's output."""
+        result = self.app.test_cli_runner().invoke(args=["make-operator", email, *args])
+        self.assertEqual(result.exit_code, 0, result.output)
+        return result.output
+
     def change(self, industry_id, key, action="save", client=None, **fields):
         return self.post(f"/app/industry/{industry_id}/rule/{key}", {"action": action, **fields}, client=client)
 

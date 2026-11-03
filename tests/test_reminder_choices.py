@@ -94,6 +94,7 @@ class TestTheSettingsPage(ChoicesCase):
 
     def test_only_the_operator_sees_and_sets_the_weekly_report(self):
         self.app.config["OPERATOR_EMAIL"] = "Owner@Example.com"
+        self.make_operator("OWNER@example.com")
         page = self.client.get("/app/settings").get_data(as_text=True)
         self.assertIn("Weekly Autopilot report", page)
         self.assertNotIn("Weekly Autopilot report", self.member.get("/app/settings").get_data(as_text=True))
@@ -154,6 +155,7 @@ class TestTheSendersRespectThem(ChoicesCase):
 
     def test_the_operator_can_turn_off_the_weekly_report(self):
         self.app.config["OPERATOR_EMAIL"] = "owner@example.com"
+        self.make_operator()
         cfg = dict(self.app.config, SMTP_HOST="smtp.example.com")
         with self.db() as conn:
             autopilot.record(conn, "fix", "fixed", "Re-sent 1 email that failed the first time.")

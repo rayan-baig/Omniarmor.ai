@@ -363,6 +363,36 @@ def register_cli(app):
         conn.close()
         click.echo(f"Workspace {org_id}: Academy plan {status}.")
 
+    @app.cli.command("make-operator")
+    @click.argument("email")
+    @click.option("--revoke", is_flag=True, help="Take operator status away from this account instead.")
+    def make_operator_command(email, revoke):
+        """Make the account with the OPERATOR_EMAIL address the operator.
+
+        The operator's account sees the usage counts and the weekly Autopilot
+        report's switch in Settings. Signing up with the address is not
+        enough: only this command, run on the server, gives it. --revoke
+        takes it away."""
+        from .auth import OperatorRefused, set_operator
+        conn = connect(app.config["DATABASE"])
+        try:
+            migrate(conn)
+            user = set_operator(conn, app.config, email, on=not revoke)
+            orgs = [r[0] for r in conn.execute("SELECT orgs.name FROM memberships JOIN orgs ON orgs.id ="
+                                               " memberships.org_id WHERE memberships.user_id = ?", (user["id"],))]
+        except OperatorRefused as exc:
+            raise click.ClickException(str(exc))
+        finally:
+            conn.close()
+        if revoke:
+            click.echo(f"{user['email']} is not the operator any more.")
+            return
+        click.echo(f"{user['email']} is now the operator.")
+        click.echo(f"  Account created {user['created_at']}, name {user['name']!r},"
+                   f" workspace: {', '.join(orgs) or '(none)'}.")
+        click.echo("  If you didn't make this account yourself, run this again with --revoke, then use"
+                   " 'Forgot your password?' with this address: the link comes to your inbox.")
+
     @app.cli.command("autopilot")
     @click.option("--log", "show_log", is_flag=True, help="Show what Autopilot fixed and reported in the last 30 days.")
     def autopilot_command(show_log):

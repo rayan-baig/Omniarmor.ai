@@ -3,6 +3,35 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.1.2 (3 November 2026)
+
+A security fix: operator status comes from the server, not from an email
+address.
+
+- The operator's account (the one that sees the usage counts and the weekly
+  Autopilot report's switch in Settings) was any account with the
+  `OPERATOR_EMAIL` address. Sign-up doesn't verify addresses, so a stranger
+  who registered that address first, say on a new deployment before the
+  owner signed up, got the operator's view and could turn the weekly report
+  off. Now it is a flag on the account that only
+  `flask --app wsgi make-operator EMAIL` sets, run on the server. It refuses
+  any address but `OPERATOR_EMAIL`, prints the account's creation date, name
+  and workspace so the owner can check it is theirs, keeps one operator at a
+  time, and `--revoke` takes it away. The flag counts only while the
+  account's address is still `OPERATOR_EMAIL`.
+- **One step after upgrading:** the upgrade (schema version 16) gives nobody
+  the flag, not even an account that already has the operator's address,
+  because the database can't tell who made it. Run
+  `flask --app wsgi make-operator <the OPERATOR_EMAIL address>` once
+  (docs/OPERATIONS.md, sections 5 and 7). Until then the usage counts and
+  the weekly report's switch are hidden, and the weekly report goes out.
+- Emails to `OPERATOR_EMAIL` (problems, the weekly report) go to that inbox
+  as before: they need no account.
+- Autopilot's "Bug:" emails carried the error's message and traceback as
+  they were. They are now scrubbed like the error reports to `ERRORS_EMAIL`:
+  email addresses, IP addresses, tokens, secrets and reset or invite links
+  are replaced, and file paths are relative.
+
 ## 1.1.1 (3 November 2026)
 
 Two fixes from a review of the last day's changes.

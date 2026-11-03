@@ -181,12 +181,38 @@ reminder a day, and a "Fixed" email when it clears up. One that comes back
 within the hour is not emailed again, and Autopilot never sends more than 10
 emails an hour. On Mondays you get a
 short report of what it fixed, only if it fixed something. To stop the
-weekly report, sign up (or sign in) with the `OPERATOR_EMAIL` address and
-untick it under Settings, "Your reminder emails"; problems are still emailed. Without
+weekly report, untick it in the operator's account (below) under Settings,
+"Your reminder emails"; problems are still emailed. Without
 `OPERATOR_EMAIL`, the same messages go to the server log.
 
 - `flask --app wsgi autopilot` runs the checks now and prints what it found.
 - `flask --app wsgi autopilot --log` shows what it fixed and reported in the last 30 days.
+
+Autopilot's emails about a bug carry the error's message and the end of its
+traceback, scrubbed the same way as the error reports below: anything that
+looks like an email address, an IP address, a token, a secret or a reset or
+invite link is replaced, and file paths are relative.
+
+**The operator's account.** One OmniArmor account can be the operator's: its
+Settings page shows the usage counts (below) and the switch for the weekly
+Autopilot report. Having the `OPERATOR_EMAIL` address is not enough to get
+it, because sign-up doesn't check that an address is yours, and a stranger
+could register it before you do. You give it on the server, once:
+
+1. Sign up (or sign in) with the `OPERATOR_EMAIL` address.
+2. On the server run `flask --app wsgi make-operator you@example.com` with
+   that address (on Docker, `docker compose exec app flask --app wsgi
+   make-operator you@example.com`; on Render, in the service's Shell tab).
+
+It refuses any other address. It prints when the account was made, its name
+and its workspace: if that isn't yours, someone signed up with your address
+first. Run it again with `--revoke`, then use "Forgot your password?" with
+the address (the link comes to your inbox) and check the account before
+giving it again. `--revoke` takes the status away at any time, and if
+`OPERATOR_EMAIL` changes, the old account stops counting as the operator
+until you run the command for the new address. Emails to `OPERATOR_EMAIL`
+(problems, the weekly report) go to that inbox either way: they need no
+account.
 
 **Error reports to one inbox (optional).** Set `ERRORS_EMAIL` to an address
 and every page that fails with an unexpected error (a 500) sends it a short
@@ -217,8 +243,8 @@ total per feature per day (UTC): checks updated (one at a time or in bulk),
 bulk updates, lessons started (a lesson page opened) and passed,
 certificates earned, Help page views and sign-ups. Nothing else is kept: no
 cookie, no account, workspace or learner id, no IP address, and no outside
-analytics service. The last 30 days are on the Settings page of the account
-signed in with the `OPERATOR_EMAIL` address (nobody else sees them), and in
+analytics service. The last 30 days are on the Settings page of the
+operator's account (above; nobody else sees them), and in
 `/api/stats` under `usage`. Totals older than 400 days are deleted by the
 daily job.
 
@@ -267,8 +293,20 @@ Deploy the new version; the database schema upgrades itself at start-up.
 Back up first. Run the tests before every deploy: `python3 -m unittest
 discover -s tests` (GitHub Actions does this on every push).
 
+**Upgrading from 1.1.1 or earlier: one step.** Until 1.1.2 any account with
+the `OPERATOR_EMAIL` address was the operator's. After the upgrade no account
+is, not even yours, so the usage counts and the weekly report's switch are
+gone from Settings (the weekly report itself still goes out). Once the new
+version is running, run `flask --app wsgi make-operator you@example.com`
+with the `OPERATOR_EMAIL` address (section 5, "The operator's account") and
+check that the account it prints is yours.
+
 ## 8. Things only you can do
 
+- Make your account the operator's, once, on the server: sign up with the
+  `OPERATOR_EMAIL` address, then `flask --app wsgi make-operator
+  you@example.com` (section 5, "The operator's account"). After an upgrade
+  from 1.1.1 or earlier, run it once even if you did nothing before (section 7).
 - Form the company, MTRX Horizyn (see the README), and open a business bank
   account.
 - Get a lawyer to write your Terms of Service and Privacy Policy, and to

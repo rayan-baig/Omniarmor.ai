@@ -265,3 +265,48 @@ def create_invite(conn, org_id, user_id):
     record_audit(conn, org_id, user_id, "team", f"Invite link created (valid {INVITE_DAYS} days)")
     conn.commit()
     return f"{current_app.config['BASE_URL']}{url_for('auth.signup', invite=token)}"
+
+
+# --- Operator status ---------------------------------------------------------------
+#
+# The operator's account sees the usage counts and the weekly Autopilot
+# report's switch in Settings. Signing up with the OPERATOR_EMAIL address is
+# not enough to get it: sign-up doesn't prove an address is yours, so a
+# stranger could register it before the owner does. Only the make-operator
+# command, run on the server, sets the flag, and the account must still have
+# the OPERATOR_EMAIL address for the flag to count.
+
+def is_operator(user, cfg):
+    """Whether this account is the operator's: flagged by make-operator, and
+    its address is still OPERATOR_EMAIL."""
+    to = normalize_email(cfg.get("OPERATOR_EMAIL"))
+    return bool(to) and user is not None and bool(user["is_operator"]) and normalize_email(user["email"]) == to
+
+
+class OperatorRefused(Exception):
+    """make-operator said no; the message says why."""
+
+
+def set_operator(conn, cfg, email, on=True):
+    """Gives operator status to the account with this address (on=True), or
+    takes it away (on=False). Giving it needs the OPERATOR_EMAIL address and
+    takes it from any other account, so there is one operator at a time.
+    Returns the account's row; raises OperatorRefused."""
+    email = normalize_email(email)
+    to = normalize_email(cfg.get("OPERATOR_EMAIL"))
+    if on and not to:
+        raise OperatorRefused("OPERATOR_EMAIL is not set. Set it, restart the app, then run this again.")
+    if on and email != to:
+        raise OperatorRefused("That address is not OPERATOR_EMAIL. Only the account with the OPERATOR_EMAIL "
+                              "address can be the operator. Nothing was changed.")
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if user is None:
+        raise OperatorRefused("No account has that address. Sign up with it first (or, to take the status "
+                              "away, check the spelling). Nothing was changed.")
+    if on:
+        conn.execute("UPDATE users SET is_operator = (id = ?) WHERE is_operator = 1 OR id = ?",
+                     (user["id"], user["id"]))
+    else:
+        conn.execute("UPDATE users SET is_operator = 0 WHERE id = ?", (user["id"],))
+    conn.commit()
+    return conn.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()

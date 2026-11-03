@@ -7,7 +7,7 @@ Counting a use adds one to that day's total (UTC) in usage_counts; there is
 no row per use to trace back to anyone.
 
 Only the operator sees the totals: the last 30 days are on the Settings page
-of the account signed in with OPERATOR_EMAIL, and in /api/stats, which only
+of the operator's account (auth.is_operator), and in /api/stats, which only
 answers MTRX Horizyn's console with STATS_KEY. Totals older than KEEP_DAYS
 are deleted by the daily job.
 """

@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from . import bugfinder
+from .errormail import scrub
 from .redact import redact
 from .db import connect, iso, migrate, now_iso, utcnow
 from .auth import RESET_HOURS
@@ -186,9 +187,13 @@ def find_problems(conn, cfg, deep=False):
     more = len(every) - len(bugs)
     for signature, count, location, error, paths, trace, first in bugs:
         times = "once" if count == 1 else f"{count} times"
-        found.append(Finding(f"bug:{signature}", f"Bug: {error[:90]}",
-                             f"Happened {times} in the last day, on {', '.join(paths)}. First seen {first}.\n"
-                             f"Where: {location}\n\nTraceback (end):\n{_tail(trace, 14)}",
+        # The error's message and traceback can quote what a person typed (an
+        # email address, a token, a link): scrubbed the way the error reports
+        # to ERRORS_EMAIL are (errormail.scrub).
+        found.append(Finding(f"bug:{signature}", f"Bug: {scrub(error)[:90]}",
+                             f"Happened {times} in the last day, on {', '.join(scrub(p) for p in paths)}."
+                             f" First seen {first}.\n"
+                             f"Where: {location}\n\nTraceback (end):\n{_tail(scrub(trace), 14)}",
                              f"Fix the code at {location} and deploy. You'll get a 'Fixed' email once it "
                              f"hasn't happened for a day."))
     if more:
@@ -213,7 +218,7 @@ def find_problems(conn, cfg, deep=False):
         except Exception as exc:
             _, location, _ = bugfinder.fingerprint(exc)
             found.append(Finding("selftest", "The daily self-test itself crashed",
-                                 f"{type(exc).__name__}: {exc} ({location})", "Look at the server log."))
+                                 scrub(f"{type(exc).__name__}: {exc} ({location})"), "Look at the server log."))
         content = bugfinder.check_content()
         if content:
             found.append(Finding("content", f"{len(content)} broken Academy quiz{'zes' if len(content) != 1 else ''}",
@@ -340,7 +345,8 @@ def report(conn, cfg, found, deep=True):
             record(conn, key, "alert", f.title, _alert_body(f), emailed)
     for key, previous in already.items():
         if key not in current:
-            title = "Fixed: " + previous["title"]
+            # A bug's title from before 1.1.2 still holds its raw message.
+            title = "Fixed: " + (scrub(previous["title"]) if key.startswith("bug:") else previous["title"])
             emailed = False
             if _operator_heard(conn, key):
                 emailed = _tell(conn, cfg, title, "This has cleared up" + (" (it hasn't happened for a day)"
@@ -349,11 +355,14 @@ def report(conn, cfg, found, deep=True):
 
 
 def operator_wants_weekly(conn, cfg):
-    """Whether the operator still wants the weekly report. An OmniArmor
-    account with the operator's address can turn it off in Settings; with
-    no such account it goes out."""
-    to = cfg.get("OPERATOR_EMAIL") or ""
-    row = conn.execute("SELECT email_weekly FROM users WHERE email = ?", (to,)).fetchone() if to else None
+    """Whether the operator still wants the weekly report. The operator's
+    account (the one with the OPERATOR_EMAIL address that make-operator
+    flagged) can turn it off in Settings; without one it goes out. An
+    unflagged account with that address has no say: anyone could sign up
+    with it."""
+    to = (cfg.get("OPERATOR_EMAIL") or "").strip()
+    row = conn.execute("SELECT email_weekly FROM users WHERE email = ? AND is_operator = 1",
+                       (to,)).fetchone() if to else None
     return row is None or bool(row["email_weekly"])
 
 

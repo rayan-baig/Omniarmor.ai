@@ -302,6 +302,15 @@ MIGRATIONS = [
     );
     CREATE INDEX notifications_kind ON notifications (kind, created_at);
     """),
+    # Operator status (the usage counts and the weekly Autopilot report's
+    # switch in Settings) is a flag that only `flask --app wsgi make-operator`
+    # sets, on the server. Having the OPERATOR_EMAIL address used to be
+    # enough, but sign-up doesn't prove an address is yours, so a stranger
+    # could register it first. Nobody starts with the flag, not even an
+    # account that already has the address: the owner runs the command once.
+    (16, """
+    ALTER TABLE users ADD COLUMN is_operator INTEGER NOT NULL DEFAULT 0;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

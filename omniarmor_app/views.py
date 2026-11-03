@@ -10,7 +10,7 @@ from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, 
 
 from . import usage
 from .academy_plan import charges_again, plan_status
-from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
+from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, login_required, owner_required
@@ -272,18 +272,14 @@ def settings():
         "SELECT COUNT(*) FROM invites WHERE org_id = ? AND used_at IS NULL AND expires_at > ?",
         (g.org["id"], now_iso()),
     ).fetchone()[0]
+    # Only the account make-operator flagged (auth.is_operator), never just
+    # anyone who signed up with the OPERATOR_EMAIL address.
+    operator = is_operator(g.user, current_app.config)
     return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           plan=plan_status(g.org), operator=is_operator(g.user),
-                           usage=usage.last_days(conn) if is_operator(g.user) else None, usage_events=usage.EVENTS,
+                           plan=plan_status(g.org), operator=operator,
+                           usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
                            support_email=current_app.config.get("SUPPORT_EMAIL", ""))
-
-
-def is_operator(user):
-    """Whether this account has the address Autopilot emails (OPERATOR_EMAIL):
-    only that person gets the weekly Autopilot report, so only they see its choice."""
-    to = (current_app.config.get("OPERATOR_EMAIL") or "").strip().lower()
-    return bool(to) and user["email"].lower() == to
 
 
 # The reminder emails a person can choose, as (form field and users column, name).
@@ -293,7 +289,8 @@ EMAIL_CHOICES = [("email_reminders", "daily digest"), ("email_alerts", "time-lim
 @bp.route("/settings/reminders", methods=["POST"])
 @login_required
 def settings_reminders():
-    choices = EMAIL_CHOICES + ([("email_weekly", "weekly Autopilot report")] if is_operator(g.user) else [])
+    weekly = [("email_weekly", "weekly Autopilot report")] if is_operator(g.user, current_app.config) else []
+    choices = EMAIL_CHOICES + weekly
     picked = {field: request.form.get(field) == "on" for field, _ in choices}
     conn = get_db()
     conn.execute(f"UPDATE users SET {', '.join(f'{field} = ?' for field in picked)} WHERE id = ?",

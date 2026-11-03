@@ -39,7 +39,7 @@ class TestMigrationFifteen(unittest.TestCase):
             self.assertEqual(migrate(conn), 14)
         conn.execute("INSERT INTO orgs (id, name, created_at) VALUES (1, 'Acme', ?)", (iso(utcnow()),))
         conn.commit()
-        self.assertEqual(SCHEMA_VERSION, 15)
+        self.assertGreaterEqual(SCHEMA_VERSION, 15)
         self.assertEqual(migrate(conn), SCHEMA_VERSION)
         # Only a day, a feature and a number: nothing that could say who.
         self.assertEqual([r[1] for r in conn.execute("PRAGMA table_info(usage_counts)")], ["day", "event", "count"])
@@ -124,6 +124,7 @@ class TestOperatorOnly(AppTestCase):
         super().setUp()
         self.app.config["OPERATOR_EMAIL"] = "owner@example.com"
         self.signup()
+        self.make_operator()
         self.client.get("/help")
 
     def test_the_operator_sees_the_last_30_days_in_settings(self):
