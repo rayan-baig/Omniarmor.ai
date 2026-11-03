@@ -27,14 +27,14 @@
   <h2 class="ac-h2">Tracks and certificates</h2>
   <div class="table-wrap">
   <table class="ac-report">
-    <thead><tr><th>Track</th><th>Levels passed</th><th>Stars</th><th>Rank</th><th>Certificate</th></tr></thead>
+    <thead><tr><th>Track</th><th>Levels passed</th><th class="ac-wide-only">Stars</th><th class="ac-wide-only">Rank</th><th>Certificate</th></tr></thead>
     <tbody>
       {% for row in tracks %}
         <tr>
           <td><span class="ac-report-track">{{ emblem(row.track.key, 28) }} {{ row.track.name }}</span>{% if row.current %} <span class="ac-tag">Now</span>{% endif %}</td>
           <td>{{ "{:,}".format(row.done) }} of {{ "{:,}".format(row.track.total) }}</td>
-          <td>{{ row.stars }}</td>
-          <td>{{ row.rank }}</td>
+          <td class="ac-wide-only">{{ row.stars }}</td>
+          <td class="ac-wide-only">{{ row.rank }}</td>
           <td>{% if row.certificate %}{% if row.current %}<a href="{{ url_for('academy.certificate', learner_id=learner.id) }}">{{ row.certificate }}</a>{% else %}{{ row.certificate }}{% endif %}{% else %}<span class="muted">Not yet: pass stage 1 of the Owner's Challenge</span>{% endif %}</td>
         </tr>
       {% endfor %}
@@ -47,16 +47,16 @@
     <p class="muted">{{ tried }} lesson{{ 's' if tried != 1 }} played, newest passes first. The score is the best try.{% if more %} Showing the newest {{ lessons|length }}.{% endif %}</p>
     <div class="table-wrap">
     <table class="ac-report">
-      <thead><tr><th>Lesson</th><th>Track</th><th>Best score</th><th>Stars</th><th>Tries</th><th>Passed on</th></tr></thead>
+      <thead><tr><th>Lesson</th><th class="ac-wide-only">Track</th><th>Best score</th><th>Stars</th><th class="ac-wide-only">Tries</th><th>Passed on</th></tr></thead>
       <tbody>
         {% for x in lessons %}
           <tr>
             <td>{{ x.world.title }}, stage {{ x.stage }}</td>
-            <td>{{ x.track.name }}</td>
+            <td class="ac-wide-only">{{ x.track.name }}</td>
             <td>{{ x.score }} of {{ x.questions }}</td>
             <td>{{ stars(x.stars, 13) }}<span class="sr">{{ x.stars }} of 3 stars</span></td>
-            <td>{{ x.tries }}</td>
-            <td>{{ x.on|local_date if x.passed else 'Not passed yet' }}</td>
+            <td class="ac-wide-only">{{ x.tries }}</td>
+            <td class="ac-nowrap">{{ x.on|local_date if x.passed else 'Not passed yet' }}</td>
           </tr>
         {% endfor %}
       </tbody>

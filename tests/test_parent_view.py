@@ -72,7 +72,7 @@ class TestProgressReport(ProgressCase):
         self.assertIn("2 lessons passed", words(page))
         self.assertIn("90%", page)          # (5/5 + 4/5) / 2
         rows = [r for r in page.split("<tr>") if "Meet Your Company, stage 2" in r]
-        self.assertIn("<td>2</td>", rows[0])   # two tries
+        self.assertIn('<td class="ac-wide-only">2</td>', rows[0])   # two tries
 
     def test_a_level_never_passed_says_so(self):
         self.play(1, 1, right=0)

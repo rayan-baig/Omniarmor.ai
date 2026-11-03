@@ -518,7 +518,10 @@
 .ac-report{margin-top:8px}
 .ac-report th{font-weight:600;color:var(--muted);white-space:nowrap}
 .ac-report td{vertical-align:middle}
+.ac-report .ac-nowrap{white-space:nowrap}
 .ac-report-track{display:inline-flex;align-items:center;gap:8px;font-weight:600}
 @media (max-width:560px){
   .ac-stats-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ac-report .ac-wide-only{display:none}
+  .ac-report th,.ac-report td{padding-inline:6px}
 }

@@ -136,8 +136,9 @@
     </form>
   {% else %}
     <section class="ac-card ac-grownups" id="grown-ups">
-      <p><a class="btn quiet" href="{{ url_for('academy.progress_report', learner_id=lid) }}">{{ summary.learner.nickname }}'s progress report</a></p>
-      <h2 class="ac-h3">For grown-ups: {{ summary.learner.nickname }}'s own device</h2>
+      <h2 class="ac-h3">For grown-ups</h2>
+      <p class="hint">Lessons, quiz scores and certificates on every track: <a href="{{ url_for('academy.progress_report', learner_id=lid) }}">{{ summary.learner.nickname }}'s progress report</a>.</p>
+      <h3 class="ac-h3 mt-s">{{ summary.learner.nickname }}'s own device</h3>
       <p class="hint">Make a join code, then open <strong>{{ url_for('kids.join', _external=True) }}</strong> on {{ summary.learner.nickname }}'s phone, tablet or computer and type it in. That device gets the Academy only: no business pages, no email or password.</p>
       {% if join %}
         <p class="ac-code" aria-label="Join code">{{ join.code }}</p>

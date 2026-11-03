@@ -7,6 +7,32 @@ lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
 The first release for launch. It gathers the work of the last few days.
 
+### Teams, families and answers
+
+- Update several checks at once: tick Select on an industry page's checks,
+  then mark them done today, answer Yes or No, or set one date. Each check
+  gets the same checks and its own audit row as a single update, and if one
+  can't take the change, nothing is saved.
+- A kid's first lesson is shorter: the track is picked on the add form and
+  Start the first lesson opens it, 13 steps from opening the Academy to the
+  first results instead of 15. A kid joining on their own device with
+  nothing played yet lands on the first lesson too.
+- A progress report for the family's grown-ups: lessons played, best quiz
+  scores, tries, stars and certificates on every track. A kid's device and
+  other workspaces can't open it.
+- Certificates print on one landscape page (A4 or US Letter) with nothing of
+  the app around them.
+- The quizzes can't be guessed from their shape: the right answer is no
+  longer usually the longest option in the first worlds, true-or-false
+  questions are true about half the time, and a test checks every track.
+- The Academy plan page explains the compliance tracker, the free Academy
+  and the Academy plan side by side, every number read from the code.
+- A Help page (`/help`) with 15 questions, from the free trial and prices
+  to reminder emails, the Autopilot, the Academy and your data. Every
+  number on it comes from the code; an optional `SUPPORT_EMAIL` adds an
+  address to write to. It is in the sitemap and linked from every footer,
+  the landing page and Settings.
+
 ### Launch polish
 
 - One version number, shown in Settings under About and in `/healthz`, and

@@ -182,6 +182,8 @@ On each industry page, every check has its own small form:
 
 Below the inputs, the page shows the limit and the warning point, for example "Limit 365 days · warns from 335 days". The app checks every input. A number that isn't a number, or that is infinite, is refused with a message that says what to enter.
 
+**Several at once.** Each check also has a **Select** box. Tick several, then choose one change in "Update several at once" at the top of the page: **Mark done today** (duties that repeat), **Answer Yes** or **Answer No** (yes-or-no checks) or **Set the date** (date-counted checks; hour clocks still need their start time on their own). Each check goes through the same code as a single update, so it gets the same checks and its own audit row. It is all or nothing: if one ticked check can't take the change, or its date is refused, nothing is saved and the page says which check and why. Anyone on the team can use it, as with single updates; a kid's Academy device cannot.
+
 ### 2.6 A company's own limits
 
 47 checks use a limit that comes from an industry standard or a common policy, not from law. On those, an owner can set the company's own limit and warning point. The app makes sure the warning point makes sense: for a maximum it must be at or below the limit, and for a minimum at or above it. "Reset" brings the default back. Every change of limit is written to the audit trail. A limit with a part in it, such as 365.5 days or 10.3 years, gives a due date that is the last day still within it and a first Warning day that has really reached the warning point. Limits set by law cannot be changed; the app answers "This limit comes from the rule itself and cannot be changed."
@@ -220,9 +222,10 @@ Visitors who aren't signed in see:
 - a list of all 50 industries;
 - one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
+- a Help page (`/help`) with 15 questions and answers: the free trial, prices, a card at sign-up, what a check is, the three lights, Done today, updating several checks, when reminder emails go out and how to choose them, the Autopilot, the Academy, a kid's progress report, downloading and deleting data, and getting help. Every number on it is read from the code and settings, like the plan page's, and `SUPPORT_EMAIL`, when set, adds an address to write to. It is linked from every page's footer, the landing page and Settings;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
-The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 50 industry pages, sign up, sign in, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
+The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 50 industry pages, sign up, sign in, Help, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
 
 ### 2.9 Team, invites and roles
 
@@ -387,7 +390,9 @@ Family businesses are often handed down, but the next generation rarely learns h
 
 ### 5.2 Learners
 
-A grown-up in the workspace adds a **learner** from the Academy home page. A learner is only a nickname and a picture; there is no email, password or birthday. There are 9 pictures to choose from: Rocket, Star, Bolt, Crown, Gem, Shield, Paw, Leaf and Planet. A workspace can have up to 12 learners. On first visit, each learner picks a track (5.3).
+A grown-up in the workspace adds a **learner** from the Academy home page. A learner is only a nickname and a picture; there is no email, password or birthday. There are 9 pictures to choose from: Rocket, Star, Bolt, Crown, Gem, Shield, Paw, Leaf and Planet. A workspace can have up to 12 learners. The add form also picks the track (5.3), Launchpad unless changed, and **Start the first lesson** opens stage 1 of the track's first world: from opening the Academy to the first results takes 13 steps (it took 15, with a track page and the map in between; `tests/test_first_lesson.py` walks it and counts). A kid who joins on their own device with nothing played yet lands on that first lesson too. Learners added before this pick their track on their first visit.
+
+**Progress report.** For the grown-ups in the workspace, each learner has a progress report (linked from the Academy home and the learner's map): lessons passed, the average best score, the streak, questions waiting in practice, each track's levels, stars, rank and certificate, and every lesson played with its best score, stars, tries and the day it was passed. A kid's own device can't open it, and another workspace gets "not found".
 
 ### 5.3 The four tracks
 
@@ -508,7 +513,7 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
   - Gold Future Owner (500)
   - Platinum Business Legend (every level)
 
-  On tracks other than Launchpad the title includes the track, for example "Titan Mastery Platinum Business Legend". The certificate page prints.
+  On tracks other than Launchpad the title includes the track, for example "Titan Mastery Platinum Business Legend". The certificate prints on one landscape page, A4 or US Letter, with nothing of the app around it (`certificate-print.css`, loaded only for printing).
 - **Word Bank.** A glossary of 201 business words, each with a kid-friendly meaning, open from the map.
 
 ### 5.8 Friends and duels
@@ -532,6 +537,7 @@ The Academy has its own subscription, separate from the compliance service.
 
 - **Free trial.** Every workspace gets a free trial of the whole Academy when it adds its first learner, 14 days by default (`ACADEMY_TRIAL_DAYS`). Workspaces that already had learners when the plan was introduced get the trial automatically.
 - **After the trial**, the first three Launchpad worlds stay free, and everything else needs the plan.
+- **The plan page** explains the compliance tracker, the free Academy and the Academy plan side by side in plain words. Every number and name on it comes from `plan_facts()` in `academy_views.py`, read from the settings and the code that enforces the plan, and a test checks that the template has no number typed into its words.
 - **Finding the plan.** The Academy home always links to the plan page: to start it, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in the Armory.
 - **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
@@ -594,6 +600,8 @@ The test rules for the question banks:
 - The text must be plain ASCII, with no braces, no curly quotes, no em dashes, and never "all of the above" or "none of the above".
 - No question may repeat, and the three options must differ.
 - The right answer may be the longest option in at most 40% of questions, so kids can't guess by length. After a rebalancing pass, most worlds sit near 25 to 33%, about what pure chance gives with three options.
+
+`tests/test_quiz_fairness.py` checks the quizzes kids actually get, every track's topic worlds and the Owner's Challenge from many seeds, including the questions written into `academy.py` for the first worlds: every question has different options and one right answer; the right answer is the longest option in at most 45% of a world's worded questions and 33% overall; each slot of a three-option question holds at least 20% of the right answers; and true-or-false questions are true 30% to 70% of the time (bank worlds pick a true or a false fact at even odds, and the first worlds draw from mixed pools of facts).
 
 ---
 
