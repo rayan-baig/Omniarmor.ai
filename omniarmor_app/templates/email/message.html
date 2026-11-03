@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F4F1EC;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ preheader }}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F4F1EC;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="{{ width }}" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:{{ width }}px;background-color:#FFFFFF;border:1px solid #E6E0D7;border-radius:12px;">
+        <tr>
+          <td style="background-color:#0F0E0D;border-radius:12px 12px 0 0;padding:20px 32px;">
+            <span style="font-family:'Big Shoulders Display','Arial Narrow',Arial,sans-serif;font-size:24px;line-height:1;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:#E9E2D8;">OmniArmor<span style="color:#ABA297;">.ai</span></span>
+          </td>
+        </tr>
+        <tr>
+          <td height="4" style="height:4px;line-height:4px;font-size:0;background-color:#F07030;background-image:linear-gradient(100deg,#E5261C 0%,#FF6A36 45%,#F59234 100%);">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="padding:28px 32px 12px;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1A1816;word-break:break-word;">
+            {% for block in blocks %}
+            {% if block.kind == "heading" %}
+            <p style="margin:20px 0 8px;font-family:'IBM Plex Mono',Menlo,Consolas,monospace;font-size:12px;line-height:1.4;font-weight:600;letter-spacing:.1em;color:#B4321F;">{{ block.text }}</p>
+            {% elif block.kind == "list" %}
+            <ul style="margin:0 0 16px;padding:0 0 0 20px;">
+              {% for item in block["items"] %}
+              <li style="margin:0 0 10px;">{{ item }}</li>
+              {% endfor %}
+            </ul>
+            {% elif block.kind == "button" %}
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px;">
+              <tr>
+                <td style="border-radius:8px;background-color:#F7743A;">
+                  <a href="{{ block.url }}" style="display:inline-block;padding:12px 22px;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;line-height:1.2;color:#0F0E0D;text-decoration:none;border-radius:8px;">{{ block.label }}</a>
+                </td>
+              </tr>
+            </table>
+            {% else %}
+            <p style="margin:0 0 16px;">{% for line in block.lines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</p>
+            {% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 24px;border-top:1px solid #E6E0D7;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#6B635A;word-break:break-word;">
+            {% for line in footer %}
+            <p style="margin:0 0 6px;">{{ line }}</p>
+            {% endfor %}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

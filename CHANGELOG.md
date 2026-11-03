@@ -27,6 +27,10 @@ The first release for launch. It gathers the work of the last few days.
   off keep both off). The account that gets Autopilot's emails can also turn
   off the weekly Autopilot report. A clock already alerted about still
   reaches, in the digest, someone who turned the alerts off.
+- Every email has one look: a 600-pixel column in the site's colors, beside
+  a plain-text part with the same words, ending with "OmniArmor is a product
+  of MTRX Horizyn." Reminders link to the page where you choose which
+  reminder emails you get, and the password reset email has a clear button.
 
 ### Deadlines and clocks
 

@@ -227,7 +227,7 @@ def _send_alert(conn, cfg, org, user, subject, body, since):
         return notify(conn, cfg, "reminder", user["email"], subject, body, org_id=org["id"], user_id=user["id"])
     if row["status"] != "failed":
         return row["status"]
-    status, error = send_email(cfg, user["email"], subject, body)
+    status, error = send_email(cfg, user["email"], subject, body, kind="reminder")
     conn.execute("UPDATE notifications SET status = ?, error = ?, body = ?, attempts = attempts + 1 WHERE id = ?",
                  (status, error, body, row["id"]))
     conn.commit()

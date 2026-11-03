@@ -114,7 +114,7 @@ class TestWhoIsBehindIt(AppTestCase):
             # A retried email whose stored body already carries it gets it once.
             notify.send_email(cfg, "pat@example.com", "Hi", notify.signed("Body."))
         for msg in sent:
-            body = msg.get_content()
+            body = msg.get_body(("plain",)).get_content()
             self.assertEqual(body.count("OmniArmor is a product of MTRX Horizyn."), 1, body)
 
 

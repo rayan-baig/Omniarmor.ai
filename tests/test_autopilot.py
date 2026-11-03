@@ -30,7 +30,7 @@ class AutopilotTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def fake_send(self, cfg, to, subject, body):
+    def fake_send(self, cfg, to, subject, body, kind=None):
         if not self.smtp_works:
             return "failed", "SMTPAuthenticationError: bad password"
         self.sent.append((to, subject, body))

@@ -279,7 +279,7 @@ class TestAutopilotEmails(unittest.TestCase):
         self.cfg = dict(app.config)
         self.sent = []
         patcher = mock.patch("omniarmor_app.autopilot.send_email",
-                             side_effect=lambda cfg, to, subject, body: self.sent.append(subject) or ("sent", None))
+                             side_effect=lambda cfg, to, subject, body, kind=None: self.sent.append(subject) or ("sent", None))
         patcher.start()
         self.addCleanup(patcher.stop)
         self.conn = connect(self.db_path)

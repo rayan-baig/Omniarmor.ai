@@ -215,11 +215,18 @@ def forgot():
             conn.commit()
             link = f"{current_app.config['BASE_URL']}{url_for('auth.reset', token=token)}"
             notify(conn, current_app.config, "password_reset", user["email"], "Reset your OmniArmor password",
-                   f"Hi {user['name']},\n\nUse this link within {RESET_HOURS} hour to set a new password:\n{link}\n\n"
-                   "If you didn't ask for this, you can ignore this email.", user_id=user["id"])
+                   reset_email(user["name"], link), user_id=user["id"])
         flash("If that email has an account, a reset link is on its way.", "ok")
         return redirect(url_for("auth.login"))
     return render_template("auth/forgot.html")
+
+
+def reset_email(name, link):
+    """The password reset email's body."""
+    hours = f"{RESET_HOURS} hour{'s' if RESET_HOURS != 1 else ''}"
+    return (f"Hi {name},\n\nSomeone, we hope you, asked to reset your OmniArmor password. The link works for {hours},"
+            f" once.\n\nSet a new password: {link}\n\n"
+            "If you didn't ask for this, you can ignore this email. Your password stays as it is.")
 
 
 @bp.route("/reset/<token>", methods=["GET", "POST"])

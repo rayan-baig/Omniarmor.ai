@@ -79,7 +79,7 @@ def retry_failed_emails(conn, cfg):
             continue
         if row["kind"] == "password_reset" and _parse(row["created_at"]) + timedelta(hours=RESET_HOURS) <= now:
             continue  # the link inside has expired; resending it would only send a dead link
-        status, error = send_email(cfg, row["recipient"], row["subject"], row["body"])
+        status, error = send_email(cfg, row["recipient"], row["subject"], row["body"], kind=row["kind"])
         conn.execute("UPDATE notifications SET status = ?, error = ?, attempts = attempts + 1 WHERE id = ?",
                      (status if status != "logged" else "failed", error or row["error"], row["id"]))
         conn.commit()
@@ -250,19 +250,17 @@ def open_alerts(conn):
     return {r["check_key"]: r for r in rows}
 
 
-def tell_operator(cfg, subject, body):
-    """Emails the operator. Without OPERATOR_EMAIL (or SMTP) it goes to the server log instead."""
+def tell_operator(cfg, subject, body, kind="autopilot"):
+    """Emails the operator. Without OPERATOR_EMAIL (or SMTP) it goes to the server log instead.
+    The footer (notify.footer_lines) says Autopilot sent it."""
     to = cfg.get("OPERATOR_EMAIL")
     if not to or not cfg.get("SMTP_HOST"):
         log.error("AUTOPILOT: %s\n%s", subject, body)
         return False
-    status, error = send_email(cfg, to, f"[OmniArmor] {subject}", body + _FOOTER.format(base=cfg["BASE_URL"]))
+    status, error = send_email(cfg, to, f"[OmniArmor] {subject}", body, kind=kind)
     if status != "sent":
         log.error("AUTOPILOT: couldn't email %s (%s): %s\n%s", to, error, subject, body)
     return status == "sent"
-
-
-_FOOTER = "\n\n--\nSent by OmniArmor Autopilot at {base}. It fixes small problems by itself and only emails you about these."
 
 
 def _alert_body(f):
@@ -364,7 +362,7 @@ def weekly_summary(conn, cfg):
     lines.append("")
     lines.append("Open problems: none. Everything is running." if not alerts else
                  "Still needs you:\n" + "\n".join(f"  - {a['title']}" for a in alerts.values()))
-    return tell_operator(cfg, "Weekly Autopilot report", "\n".join(lines))
+    return tell_operator(cfg, "Weekly Autopilot report", "\n".join(lines), kind="autopilot_weekly")
 
 
 # --- The run --------------------------------------------------------------------------

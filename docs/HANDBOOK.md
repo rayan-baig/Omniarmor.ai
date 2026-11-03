@@ -283,6 +283,10 @@ Right now: 3 blocked, 5 warnings, 9 cleared, 3 without a reading.
 Open your checks: https://your-domain/app
 
 You get this email because the daily digest is on in your OmniArmor settings.
+
+--
+Choose which reminder emails you get: https://your-domain/app/settings#reminders
+OmniArmor is a product of MTRX Horizyn.
 ```
 
 ### 3.3 Time-limit alerts
@@ -304,6 +308,10 @@ Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.
 Open it: https://your-domain/app/industry/30#rule-fatality_report_8h
 
 You get this email because time-limit alerts are on in your OmniArmor settings.
+
+--
+Choose which reminder emails you get: https://your-domain/app/settings#reminders
+OmniArmor is a product of MTRX Horizyn.
 ```
 
 The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject, "overdue, was due 2026-11-04 17:00 EST".
@@ -313,7 +321,11 @@ The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject,
 - **Retry:** as with the digest, an alert only counts as sent once at least one email went out (or was saved when email isn't set up). If every send failed, the next check, a minute later, tries again. A failed copy is sent again in place, so Radar keeps one copy per person with its number of attempts, and a copy Autopilot already got through is not sent again.
 - **Several server processes:** each alert is claimed in `reminder_marks` before it is sent, so only one process sends it.
 
-### 3.4 The daily job
+### 3.4 How every email looks
+
+Every email OmniArmor sends (the digest, the time-limit alerts, password reset links and Autopilot's emails to the operator) has two parts with the same words: plain text, as above, and HTML, one column 600 pixels wide in the site's colors, with the OmniArmor.ai name on black, the red-to-orange line under it, and a button for each "Open ...:" or "Set a new password:" link. Both are made from the one plain-text body (`omniarmor_app/notify.py`, `templates/email/message.html`), which is also the copy Radar keeps. Under a line, every email ends with "OmniArmor is a product of MTRX Horizyn."; reminders add the link to choose which reminder emails you get (and a `List-Unsubscribe` header pointing there), Autopilot's emails say Autopilot sent them, and the weekly report says where to turn it off. If the HTML part ever fails to draw, the email goes out as plain text rather than not at all. `tests/test_emails.py` makes the app send one of each and checks them all.
+
+### 3.5 The daily job
 
 A built-in timer runs inside the app; there is no separate cron or queue service. Every minute it sends any time-limit alerts that are due (above), and every 10 minutes it checks whether the daily job is due. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
 
@@ -329,7 +341,7 @@ Several server processes can run at once safely: each day's run is first claimed
 
 The job can be run by hand with `flask --app wsgi run-daily --force`.
 
-### 3.5 The record
+### 3.6 The record
 
 Everything that changes a company's data writes an audit row: who, when, what kind of change, which industry and check, the value before and after, and a one-line summary. Reports and the audit trail can be printed or exported at any time.
 
