@@ -191,10 +191,10 @@ class TestAcademyPages(AppTestCase):
         self.signup()
 
     def add(self, nickname="Sam", avatar="rocket", client=None, track="launchpad"):
-        response = self.post("/app/academy/learners", {"nickname": nickname, "avatar": avatar}, client=client)
-        if track and response.headers.get("Location", "").endswith("/track"):
-            self.post(response.headers["Location"], {"track": track}, client=client)
-        return response
+        data = {"nickname": nickname, "avatar": avatar}
+        if track:
+            data["track"] = track
+        return self.post("/app/academy/learners", data, client=client)
 
     def learner_id(self, nickname="Sam"):
         with self.db() as conn:
@@ -231,11 +231,13 @@ class TestAcademyPages(AppTestCase):
         page = self.client.get("/app/academy")
         self.assertEqual(page.status_code, 200)
         self.assertIn(b"15,700", page.data)
+        for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery"):
+            self.assertIn(f'name="track" value="{name.split()[0].lower()}"', page.data.decode())
         response = self.add(track=None)
         lid = self.learner_id()
-        self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{lid}/track"))
-        # The first visit asks for a track.
-        self.assertTrue(self.client.get(f"/app/academy/{lid}").headers["Location"].endswith("/track"))
+        # The track is picked on the add form (Launchpad unless changed): straight to the first lesson.
+        self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{lid}/world/1/stage/1"))
+        self.assertEqual(self.client.get(f"/app/academy/{lid}").status_code, 200)
         picker = self.client.get(f"/app/academy/{lid}/track").data.decode()
         for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery", "1,350", "2,700", "5,400", "15,700"):
             self.assertIn(name, picker)
@@ -435,8 +437,7 @@ class TestAcademyPlan(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "trailblazer"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "trailblazer"})
         with self.db() as conn:
             self.lid = conn.execute("SELECT id FROM learners").fetchone()[0]
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
@@ -527,8 +528,7 @@ class TestKidDevices(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         self.post("/app/academy/learners", {"nickname": "Ava", "avatar": "star"})
         with self.db() as conn:
             ids = dict(conn.execute("SELECT nickname, id FROM learners").fetchall())
@@ -548,7 +548,8 @@ class TestKidDevices(AppTestCase):
         code = self.code()
         self.assertIn(code, self.client.get(f"/app/academy/{self.sam}").data.decode())
         response = self.join(code.lower())
-        self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{self.sam}"))
+        # Nothing played yet: the kid starts on the first lesson.
+        self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{self.sam}/world/1/stage/1"))
         page = self.kid.get(f"/app/academy/{self.sam}").data.decode()
         self.assertIn("Sam&#39;s Academy", page.replace("Sam's Academy", "Sam&#39;s Academy"))
         self.assertNotIn("tabbar", page)

@@ -4,6 +4,7 @@
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='certificate-print.css') }}" media="print">
 {% endblock %}
 {% block content %}
 {% set buddy = armo_personality(summary.learner.armo, 'sweet') %}
@@ -18,6 +19,6 @@
     <p class="ac-cert-rank">{{ summary.certificate }} of {{ g.org.name }}</p>
     <p class="ac-cert-meta">{{ summary.stars }} stars earned · Rank: {{ summary.rank }} · First earned {{ earned or today.isoformat() }}</p>
   </article>
-  <p class="mt no-print"><a href="{{ url_for('academy.level_map', learner_id=summary.learner.id) }}">← Back to the map</a> · Use your browser's Print to print it out.</p>
+  <p class="mt no-print"><a href="{{ url_for('academy.level_map', learner_id=summary.learner.id) }}">← Back to the map</a> · Use your browser's Print to print it on one landscape page.</p>
 </div>
 {% endblock %}

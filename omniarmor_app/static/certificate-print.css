@@ -1,0 +1,32 @@
+/* A certificate on paper: one landscape page, nothing of the app around it.
+   Loaded with media="print" by academy/certificate.html. The page is sized
+   to fit both A4 and US Letter in landscape (the shorter of the two pages,
+   less the margins, is about 190 mm tall). */
+@page{size:landscape;margin:10mm}
+
+html,body{background:#fff!important;color:#000}
+body,body.has-tabs,body.has-tabs:has(> .companion){padding:0!important;margin:0}
+.topbar,footer.site,.tabbar,.companion,.flashes,.skip,.no-print{display:none!important}
+main{padding:0!important}
+.wrap{max-width:none;padding:0!important}
+.ac{margin:0;padding:0}
+.ac *,.ac *::before,.ac *::after{animation:none!important;transition:none!important}
+
+.ac-cert{
+  box-sizing:border-box;width:100%;height:186mm;margin:0;padding:12mm 18mm;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  break-inside:avoid;page-break-inside:avoid;overflow:hidden;
+  border:5px solid transparent;border-radius:8mm;color:#000;
+  background-image:linear-gradient(#fff,#fff),linear-gradient(135deg,#E5261C,#F59234);
+  background-origin:border-box;background-clip:padding-box,border-box;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.ac-cert::after{content:"";position:absolute;inset:4mm;border:1px solid #c9c2bb;border-radius:5mm;pointer-events:none}
+.ac-cert-art{margin-bottom:4mm}
+.ac-cert-art svg{max-height:30mm;width:auto}
+.ac-cert .ac-kicker{color:#5a524b;background:none;border:0;font-size:11pt;letter-spacing:.02em}
+.ac-cert-title{font-size:30pt;margin:2mm 0 6mm;color:#000}
+.ac-cert-line{font-size:13pt;color:#333}
+.ac-cert-name{font-size:40pt;margin:2mm 0;color:#000}
+.ac-cert-rank{font-size:22pt;margin:3mm 0 6mm;color:#C8231A;background:none;-webkit-text-fill-color:#C8231A}
+.ac-cert-meta{font-size:11pt;color:#555}

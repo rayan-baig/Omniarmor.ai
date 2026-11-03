@@ -26,8 +26,7 @@ class TestKidSessions(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         with self.db() as conn:
             self.sam = conn.execute("SELECT id FROM learners").fetchone()[0]
         self.kid = self.app.test_client()
@@ -248,8 +247,7 @@ class TestPracticeAndIds(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         with self.db() as conn:
             self.sam = conn.execute("SELECT id FROM learners").fetchone()[0]
             question = json.dumps({"prompt": "P?", "options": ["a", "b"], "answer": 0, "explain": "e", "kind": "choice"})

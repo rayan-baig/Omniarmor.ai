@@ -63,7 +63,7 @@
     <div class="ac-speech">
       {{ armo(64, 'happy', buddy.accessory) }}
       <p>{{ buddy.hello|random }} Up next: <strong>{{ up_next.world.title }}, stage {{ up_next.next }}</strong>.
-        <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=lid, world_number=up_next.world.number, stage=up_next.next) }}">Continue</a></p>
+        <a class="btn ac-btn ac-go" href="{{ url_for('academy.play', learner_id=lid, world_number=up_next.world.number, stage=up_next.next) }}">{{ 'Start' if not summary.done else 'Continue' }}</a></p>
     </div>
   {% endif %}
   <p class="ac-callout ac-quick">
@@ -136,6 +136,7 @@
     </form>
   {% else %}
     <section class="ac-card ac-grownups" id="grown-ups">
+      <p><a class="btn quiet" href="{{ url_for('academy.progress_report', learner_id=lid) }}">{{ summary.learner.nickname }}'s progress report</a></p>
       <h2 class="ac-h3">For grown-ups: {{ summary.learner.nickname }}'s own device</h2>
       <p class="hint">Make a join code, then open <strong>{{ url_for('kids.join', _external=True) }}</strong> on {{ summary.learner.nickname }}'s phone, tablet or computer and type it in. That device gets the Academy only: no business pages, no email or password.</p>
       {% if join %}

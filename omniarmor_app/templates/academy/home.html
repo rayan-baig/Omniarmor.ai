@@ -79,12 +79,25 @@
         {% endfor %}
       </div>
     </fieldset>
-    <button class="btn ac-btn" type="submit">Start learning</button>
+    <fieldset class="plain">
+      <legend class="plain">Pick a track (you can switch anytime)</legend>
+      <div class="ac-track-picks">
+        {% for t in tracks %}
+          <label class="ac-track-pick">
+            <input type="radio" name="track" value="{{ t.key }}" {% if loop.first %}checked{% endif %}>
+            {{ emblem(t.key, 36) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.total) }} levels</small></span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <button class="btn ac-btn" type="submit">Start the first lesson</button>
     <p class="hint mt-s">For grown-ups: kids learn inside your account and don't need their own email or password. We only save the nickname and picture you choose, plus their progress.</p>
   </form>
   {% endif %}
 
   {% if summaries %}
+  <p class="ac-callout">Progress reports for grown-ups:
+    {% for s in summaries %}<a href="{{ url_for('academy.progress_report', learner_id=s.learner.id) }}">{{ s.learner.nickname }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p>
   <details class="ac-manage">
     <summary>Manage learners</summary>
     <ul class="list">

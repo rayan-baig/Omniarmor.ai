@@ -362,8 +362,7 @@ class TestPracticeGradesTheRightQuestion(AppTestCase):
     def test_answers_stay_with_their_questions(self):
         import json
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         with self.db() as conn:
             sam = conn.execute("SELECT id FROM learners").fetchone()[0]
             ids = []

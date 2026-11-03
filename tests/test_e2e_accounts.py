@@ -409,8 +409,7 @@ class TestCsrfEverywhere(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup(industries=(1,))
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         with self.db() as conn:
             self.lid = conn.execute("SELECT id FROM learners").fetchone()[0]
             self.uid = conn.execute("SELECT id FROM users").fetchone()[0]

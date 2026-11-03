@@ -271,6 +271,7 @@ def add_learner():
     nickname = clean_text(request.form.get("nickname"), 30)
     avatar = request.form.get("avatar", "")
     buddy = request.form.get("armo", armo.DEFAULT_KID)
+    track_key = request.form.get("track", academy.DEFAULT_TRACK)
     count = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (g.org["id"],)).fetchone()[0]
     if nickname is None:
         flash_error("Pick a nickname up to 30 characters.")
@@ -278,19 +279,28 @@ def add_learner():
         flash_error("Pick a picture.")
     elif buddy not in armo.PERSONALITIES:
         flash_error("Pick an Armo for your learner.")
+    elif track_key not in academy.TRACKS:
+        flash_error("Pick a track.")
     elif count >= academy.MAX_LEARNERS:
         flash_error(f"A workspace can have up to {academy.MAX_LEARNERS} learners.")
     else:
+        # The track is picked on this form (Launchpad unless changed), so a new
+        # learner goes straight to the first lesson, not a track page and a map.
         learner_id = conn.execute(
-            "INSERT INTO learners (org_id, nickname, avatar, armo, created_by, created_at, device_epoch)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (g.org["id"], nickname, avatar, buddy, g.user["id"], now_iso(), new_device_epoch()),
+            "INSERT INTO learners (org_id, nickname, avatar, armo, track, track_chosen, created_by, created_at,"
+            " device_epoch) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)",
+            (g.org["id"], nickname, avatar, buddy, track_key, g.user["id"], now_iso(), new_device_epoch()),
         ).lastrowid
         academy_plan.start_trial(conn, g.org["id"], current_app.config["ACADEMY_TRIAL_DAYS"])
         conn.commit()
-        flash(f"Welcome to the Academy, {nickname}! Pick your track to begin.", "ok")
-        return redirect(url_for("academy.choose_track", learner_id=learner_id))
+        flash(f"Welcome to the Academy, {nickname}! Here's your first lesson.", "ok")
+        return redirect(_first_lesson(academy.TRACKS[track_key], learner_id))
     return redirect(url_for("academy.home"))
+
+
+def _first_lesson(t, learner_id):
+    """Stage 1 of a track's first world: where a learner with nothing done yet starts."""
+    return url_for("academy.play", learner_id=learner_id, world_number=t.topic_worlds[0].number, stage=1)
 
 
 @bp.route("/<int:learner_id>/armo", methods=["POST"])
@@ -614,6 +624,57 @@ def certificate(learner_id):
                            today=org_today(g.org), avatars=academy.AVATARS)
 
 
+# --- A grown-up's view of a learner's progress ------------------------------------
+
+PROGRESS_ROWS = 60      # the most recent lessons the progress page lists
+
+
+def _level_parts(level):
+    """A stored level id back into (track, world, stage), or None if it no longer exists."""
+    index, rest = divmod(level, 1_000_000)
+    t = next((t for t in academy.TRACK_LIST if t.index == index), None)
+    w = academy.world(rest // 1000)
+    if t is None or w is None or not t.has(w) or not 1 <= rest % 1000 <= t.stages(w):
+        return None
+    return t, w, rest % 1000
+
+
+@bp.route("/<int:learner_id>/progress")
+@grown_ups_only
+def progress_report(learner_id):
+    """For the family's grown-ups only: lessons done, quiz scores and
+    certificates, on every track. A kid's device and other workspaces never
+    see it (grown_ups_only and _learner_or_404)."""
+    learner = _learner_or_404(learner_id)
+    rows = get_db().execute("SELECT * FROM learner_progress WHERE learner_id = ?"
+                            " ORDER BY completed_at IS NULL, completed_at DESC, level DESC", (learner_id,)).fetchall()
+    tracks, lessons = [], []
+    for t in academy.TRACK_LIST:
+        progress = {r["level"]: r for r in rows if r["level"] // 1_000_000 == t.index}
+        if not progress and t.key != learner["track"]:
+            continue
+        passed = _passed(progress)
+        final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
+        tracks.append({"track": t, "done": len(passed), "stars": sum(r["best_stars"] for r in progress.values()),
+                       "rank": academy.rank_for(len(passed), t),
+                       "certificate": academy.certificate_for(len(passed), final_passed, t),
+                       "current": t.key == learner["track"]})
+    for r in rows:
+        parts = _level_parts(r["level"])
+        if parts is None:
+            continue
+        t, w, stage = parts
+        lessons.append({"track": t, "world": w, "stage": stage, "score": r["best_score"],
+                        "questions": academy.question_count(t, w, stage), "stars": r["best_stars"],
+                        "tries": r["attempts"], "passed": r["best_stars"] >= 1, "on": r["completed_at"]})
+    scored = [x for x in lessons if x["questions"]]
+    average = round(100 * sum(x["score"] / x["questions"] for x in scored) / len(scored)) if scored else None
+    return render_template("academy/progress.html", learner=learner, tracks=tracks, avatars=academy.AVATARS,
+                           lessons=lessons[:PROGRESS_ROWS], more=max(0, len(lessons) - PROGRESS_ROWS),
+                           tried=len(lessons), passed=sum(1 for x in lessons if x["passed"]), average=average,
+                           streak=_streak(learner_id, org_today(g.org)), mistakes=_mistakes_due(learner_id))
+
+
 # --- A kid's own device: join codes ------------------------------------------------
 
 @bp.route("/<int:learner_id>/join-code", methods=["POST"])
@@ -675,6 +736,9 @@ def join():
             return render_template("kids/join.html"), 400
         start_kid_session(row)
         flash(f"Welcome, {row['nickname']}! This device is ready for the Academy.", "ok")
+        started = conn.execute("SELECT 1 FROM learner_progress WHERE learner_id = ? LIMIT 1", (row["id"],)).fetchone()
+        if row["track_chosen"] and started is None:
+            return redirect(_first_lesson(academy.track(row["track"]), row["id"]))
         return redirect(url_for("academy.level_map", learner_id=row["id"]))
     return render_template("kids/join.html")
 

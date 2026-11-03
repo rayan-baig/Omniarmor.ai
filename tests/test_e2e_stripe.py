@@ -199,8 +199,7 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
             self.addCleanup(patcher.stop)
         self.stripe_side = self.app.test_client()       # Stripe's own connection to the app
         self.signup()
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "trailblazer"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "trailblazer"})
         with self.db() as conn:
             self.lid = conn.execute("SELECT id FROM learners").fetchone()[0]
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]

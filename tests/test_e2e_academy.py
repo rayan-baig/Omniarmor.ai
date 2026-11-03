@@ -225,8 +225,7 @@ class AcademyCase(AppTestCase):
     def setUp(self):
         super().setUp()
         self.signup()   # Acme Logistics, in two industries
-        response = self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.post(response.headers["Location"], {"track": "launchpad"})
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
         with self.db() as conn:
             self.lid = conn.execute("SELECT id FROM learners").fetchone()[0]
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
@@ -477,7 +476,7 @@ class TestKidCannotReachTheGrownUps(KidCase):
 class TestJoinCodes(KidCase):
     def test_a_code_works_on_one_device_once(self):
         code = self.join_code()
-        self.assertTrue(self.join(code.lower()).headers["Location"].endswith(f"/app/academy/{self.lid}"))
+        self.assertTrue(self.join(code.lower()).headers["Location"].endswith(f"/app/academy/{self.lid}/world/1/stage/1"))
         second = self.app.test_client()
         response = self.join(code, client=second)
         self.assertEqual(response.status_code, 400)
