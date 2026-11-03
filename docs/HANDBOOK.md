@@ -4,7 +4,7 @@
 
 This handbook explains OmniArmor from top to bottom in plain language: what it is, who it's for, how every part works, how the code is laid out, how to run it, how it was built, where things stand today, and what is left to do. The appendices at the end list every one of the 500 compliance checks, every Academy world, every Armo personality, every web address the app answers, and every setting.
 
-**If you are a Claude model reading this in a new account:** this document is the project's memory. The code lives in the GitHub repository `rayan-baig/omniarmor.ai`. The latest work is on the branch `claude/wonderful-heisenberg-77tbq9`. Part 12 explains how to keep working on the project the same way it has been built so far.
+**If you are picking this project up in a new account:** this document is the project's memory. The code lives in the GitHub repository `rayan-baig/omniarmor.ai`. The latest work is on the branch `claude/wonderful-heisenberg-77tbq9`. Part 12 explains how to keep working on the project the same way it has been built so far.
 
 ---
 
@@ -322,7 +322,7 @@ The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject,
 - **Once each:** each email is recorded in `reminder_marks` by the clock's due moment (in UTC) and its stage (`clock-warning` or `clock-overdue`), so neither is sent twice. Done now, or a new start time, gives the clock a new due moment, and both emails can go out again for it.
 - **Only news:** only the stage the clock is in now is sent: a clock entered after it ran out gets the overdue email only. A stage reached more than 24 hours ago (the server was down, or the clock was entered days late) is left to the digest.
 - **Retry:** as with the digest, an alert only counts as sent once at least one email went out (or was saved when email isn't set up). If every send failed, the next check, a minute later, tries again. A failed copy is sent again in place, so Radar keeps one copy per person with its number of attempts, and a copy Autopilot already got through is not sent again.
-- **Several server processes:** each alert is claimed in `reminder_marks` before it is sent, so only one process sends it.
+- **Several server processes:** only one process runs the alerts sweep at a time (it holds a lock in the database while it runs, section 3.5), and each alert is claimed in `reminder_marks` before it is sent, so only one process sends it.
 
 ### 3.4 How every email looks
 
@@ -330,19 +330,19 @@ Every email OmniArmor sends (the digest, the time-limit alerts, password reset l
 
 ### 3.5 The daily job
 
-A built-in timer runs inside the app; there is no separate cron or queue service. Every minute it sends any time-limit alerts that are due (above), and every 10 minutes it checks whether the daily job is due. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
+A built-in timer runs inside the app; there is no separate cron or queue service. It has two threads: one sends any time-limit alerts that are due every minute (above), the other checks every 10 minutes whether the daily job is due and runs Autopilot. So a long daily run (thousands of digests through a slow email provider) never holds the minute alerts up. The job runs once a day, after the hour set by `DAILY_JOB_HOUR_UTC` (11:00 UTC by default). It does three things:
 
-1. **Backup.** It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `omniarmor-YYYYMMDD-HHMMSS-*.db` only then, as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
-2. **Reminders** for every company, as above.
-3. **Cleanup.** It deletes:
+1. **Reminders** for every company, as above.
+2. **Cleanup.** It deletes:
    - sign-in failure records older than a day;
    - used or expired password reset links;
    - invites that expired over 30 days ago;
    - expired Academy friend codes and join codes.
+3. **Backup**, last, so the copy holds the day's reminders as sent and restoring it never sends them again. It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `omniarmor-YYYYMMDD-HHMMSS-*.db` only then, as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
 
-Several server processes can run at once safely: each day's run is first claimed in the database, so it happens only once. If a run crashes halfway (for example the server restarted), its claim goes stale after an hour and the next check can claim it again. If any step fails, the run releases its claim and tries again in about 10 minutes; reminders already sent are not repeated.
+Several server processes can run at once safely. Each sweep (the alerts, the daily job, Autopilot) holds a lock in the database (`job_locks`) while it runs, renewed every 20 seconds, so no two processes run the same sweep at once however long it takes; a process that dies loses its lock within 2 minutes. Each day's run is also claimed in the database, so it happens only once. If a run crashes halfway (for example the server restarted), its claim goes stale after an hour and the next check can claim it again. If any step fails, the run releases its claim and tries again in about 10 minutes; reminders already sent are not repeated.
 
-The job can be run by hand with `flask --app wsgi run-daily --force`.
+The job can be run by hand with `flask --app wsgi run-daily --force`; if the server is running it at that moment, the command says so and does nothing. How long the sweeps take with 100 to 2,000 companies is in `docs/LOAD-TEST.md`.
 
 ### 3.6 The record
 
@@ -670,7 +670,7 @@ The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up
 - `flask --app wsgi autopilot` runs every check now and prints what it fixed and what needs a person.
 - `flask --app wsgi autopilot --log` shows what it fixed and reported in the last 30 days.
 
-It is on by default (`AUTOPILOT_ENABLED`). Several server processes are safe: each 10-minute pass and each daily pass is claimed in the database first.
+It is on by default (`AUTOPILOT_ENABLED`). Several server processes are safe: each 10-minute pass and each daily pass is claimed in the database first, and a pass holds the Autopilot lock while it runs, so a slow pass (failed emails re-sent to a provider that times out) never has a second one beside it re-sending the same emails. `flask --app wsgi autopilot` says so if the server is running a pass right then.
 
 ---
 
@@ -767,7 +767,7 @@ omniarmor_app (Flask)
    ├── tracking.py     turns stored readings into today's status
    ├── catalog.py      the 50 industries and 500 rules, as the app uses them
    ├── reminders.py    daily digests per company, and time-limit alerts for the hour clocks
-   ├── jobs.py         the timer: time-limit alerts each minute; reminders, backup, cleanup each day; CLI commands
+   ├── jobs.py         the timer: time-limit alerts each minute; reminders, cleanup, backup each day; sweep locks; CLI commands
    ├── notify.py       email, or the saved log when email isn't set up
    ├── armo.py         Armo's issue list, tips and page help
    ├── armo_lines.py   the 14 personalities and their lines
@@ -796,15 +796,17 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 524 tests in 26 files.
+- `tests/`: 578 tests in 34 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
-  - `test_user_flows.py` (76, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
+  - `test_user_flows.py` (75, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
   - `test_omni_armor_platform.py` (29) and `test_rule_catalog.py` (23).
-  - `test_rule_dates.py` (11: every check against the handbook's Appendix A and its example reading; every date-counted check's due date and warning day from month ends and leap days; every hour and minute clock at its warning and due minute) and `test_operations.py` (12: the backup restore drill, schema upgrades on real data, streamed exports, Autopilot's email limits, a byte-for-byte dashboard build).
+  - `test_rule_dates.py` (16: every check against the handbook's Appendix A and its example reading; every date-counted check's due date and warning day from month ends and leap days; every hour and minute clock at its warning and due minute) and `test_operations.py` (13: the backup restore drill and the restore rehearsal of docs/OPERATIONS.md, schema upgrades on real data, streamed exports, Autopilot's email limits, a byte-for-byte dashboard build).
   - `test_academy_fixes.py` (20), `test_autopilot.py` (20) and `test_armo.py` (14).
   - `test_quiz_checks.py` (17), `test_review_fixes.py` (8) and `test_stats.py` (3).
   - `test_academy_bank.py` (2, which check every bank entry).
+  - Features added for launch: `test_bulk_entry.py` (15: several checks at once, all or nothing, with the same checks and audit rows as one), `test_help_page.py` (6), `test_plan_page.py` (5), `test_parent_view.py` (9: the progress report, and who can't open it), `test_first_lesson.py` (5: the steps to the first results), `test_certificate_print.py` (2) and `test_quiz_fairness.py` (5: no guessing by length, slot or "True").
+  - `test_sweeps.py` (7: the sweep locks, a daily run or Autopilot pass that runs long never started twice, the alerts in their own thread, schema version 14).
   - `test_parity.py` (1: dashboard against engine, run with Node).
   - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
@@ -831,11 +833,11 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 12), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 14), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
-- `users`: email, name, password hash, reminder switch, Armo personality, and a session counter.
+- `users`: email, name, password hash, reminder choices (the daily digest, the time-limit alerts, and the weekly Autopilot report for the operator's account), Armo personality, the day last seen, and a session counter.
 - `orgs`: companies, with their name, timezone and Academy plan fields:
   - status, trial end, renewal date, and the end date of a cancelled plan;
   - Stripe customer and subscription ids;
@@ -849,6 +851,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - `invites` and `password_resets`: one-time links, stored as hashes.
 - `login_failures`: recent failed sign-ins and reset requests, for rate limiting.
 - `job_runs`: one row per run of the daily job and of Autopilot's passes, so each runs once.
+- `job_locks`: the lock each sweep (alerts, daily job, Autopilot) holds while it runs, as a lease its holder renews.
 
 **Academy:**
 
@@ -899,8 +902,8 @@ New worlds are always added at the end of the list, so existing progress keeps i
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 524 tests
-python -m pyflakes omniarmor_app wsgi.py  # the lint CI runs
+python3 -m unittest discover -s tests     # 578 tests
+python -m pyflakes omni_armor_platform.py omni_armor_rules/rule.py omniarmor_app dashboard/build_dashboard.py wsgi.py tools  # the lint CI runs
 ```
 
 Command-line tools:
@@ -911,6 +914,7 @@ Command-line tools:
 - `flask --app wsgi academy-plan <workspace id> active|none|canceled`: switch a workspace's Academy plan by hand.
 - `flask --app wsgi autopilot [--log]`: run Autopilot's checks now, or show its log.
 - `python3 dashboard/build_dashboard.py`: rebuild the standalone Risk Console after changing a rule.
+- `python3 tools/load_test.py http` and `python3 tools/load_test.py sweep`: the load test and the sweep timings, on a throwaway database (`docs/LOAD-TEST.md`).
 
 ### 9.2 Hosting options
 
@@ -932,7 +936,7 @@ The Docker image:
 - keeps the database and backups in `/data`;
 - has a built-in health check against `/healthz`;
 - writes an access log with password-reset and invite tokens, and the Stripe Checkout id a payer comes back with, replaced by `[hidden]` (also when they sit percent-encoded inside another address, such as a sign-in page's `next`), so the hosting dashboard never holds a working link. Every other log line (the app's own, Autopilot's, a crash's traceback, and the development server's access log) goes through the same filter, which also shortens each email address to its first letter and domain (`p***@example.com`). Log times are UTC and say so.
-- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs. Its 60-second timeout restarts a worker that stopped responding or took that long to start; with threads it never cuts a page off. The slowest pages in a big workspace (all 50 industries, half a million audit rows) were measured: the audit CSV takes about 10 seconds and streams from the first moment, every page well under a second. Deep audit pages took about 1.5 seconds until an index holding the trail's whole sort order (schema version 12) made them about five times faster.
+- runs gunicorn with one process and 8 threads by default (`WEB_CONCURRENCY`, `WEB_THREADS`), which fits the smallest VMs. Its 60-second timeout restarts a worker that stopped responding or took that long to start; with threads it never cuts a page off. The slowest pages in a big workspace (all 50 industries, half a million audit rows) were measured: the audit CSV takes about 10 seconds and streams from the first moment, every page well under a second. Deep audit pages took about 1.5 seconds until an index holding the trail's whole sort order (schema version 12) made them about five times faster. Under load (`docs/LOAD-TEST.md`), one process serves about 90 to 100 requests a second; the first thing to give is response time, at a few hundred people clicking at once, with no errors or lost changes.
 
 ### 9.3 Email
 
@@ -940,14 +944,9 @@ Without email settings, reminders and password-reset links are saved on Radar in
 
 ### 9.4 Backups and restore
 
-Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
+Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
 
-To restore:
-
-1. Stop the app.
-2. Copy the chosen backup over `DATABASE_PATH`.
-3. Delete any `omniarmor.db-wal` and `omniarmor.db-shm` files next to it.
-4. Start the app again.
+To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: copy the backup to a fresh file beside the database, check it, point `DATABASE_PATH` at it and restart, then check sign-in, the checks, the Academy and the Vault. The old database stays as it was, so going back is one setting. `tests/test_operations.py` rehearses it on every push.
 
 ### 9.5 Monitoring
 
@@ -966,7 +965,7 @@ Back up first, then deploy the new version. Raise the number in `omniarmor_app/v
 - **Reminders and backups:** included, built into the app.
 - **HTTPS:** free (Caddy and Let's Encrypt).
 - **Email:** optional; a free sending tier, or a low per-email price.
-- **Domain name:** recommended; the one yearly cost most setups can't avoid.
+- **Domain name:** nothing to buy: OmniArmor runs on a subdomain of MTRX Horizyn's domain.
 - **Off-server backup copies:** recommended; a free object-storage tier.
 - **Payments:** Stripe's per-payment fee, with no monthly fee.
 
@@ -1059,8 +1058,17 @@ The project was built in steps, each one a commit on GitHub:
     - lesson progress dots, and A/B/C answer letters;
     - a fix for Armo turning dark on every lesson card after the first.
 14. **World scenes and game-like animations**, all switched off for reduced motion.
+15. **Ready for launch (version 1.0.0, `CHANGELOG.md`):**
+    - hour and minute clocks with time-limit alerts, and business-day clocks;
+    - updating several checks at once (bulk entry);
+    - each person's reminder email choices in Settings;
+    - the Help page, the Academy plan page, and a progress report for each learner;
+    - a shorter first lesson and certificates that print on one page;
+    - one look for every email, friendly error pages, icons, share previews, the sitemap and robots.txt;
+    - a version number in Settings and `/healthz`, and the changelog.
+16. **Reliability (1.0.1):** a load test of 500 workspaces at once, the sweeps timed at up to 2,000 workspaces, a lock so no sweep runs twice at once, the alerts in a thread of their own, the daily backup taken after the reminders, and a rehearsed 10-minute restore checklist (`docs/LOAD-TEST.md`).
 
-Previews, the playable lesson pages and this handbook's companion brief were published as private artifacts in the original Claude account.
+Previews, the playable lesson pages and this handbook's companion brief were published as private pages in the original account.
 
 ---
 
@@ -1069,11 +1077,12 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.1 Where things stand
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
-- **Working branch:** `claude/wonderful-heisenberg-77tbq9`, which holds all of the Academy expansion, answer balancing, the Winning Mindset unit, Autopilot and the bug finder, the seven fixes, the graphics and the animations. All 451 tests pass, and pyflakes is clean. No pull request has been opened yet.
-- **Database schema** is at version 11.
+- **Branch:** `claude/wonderful-heisenberg-77tbq9`, the live default branch. Everything above is on it.
+- **Version** 1.0.1 (`omniarmor_app/version.py`, `CHANGELOG.md`).
+- **Tests:** 578 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
+- **Database schema** is at version 14.
 - **Before the next deploy:**
-  - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems.
-  - **Everyone is signed out once.** Existing sessions, for grown-ups and kid devices alike, end on the first deploy of this branch, because sessions now carry the new identity checks. Everyone signs in again once.
+  - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
   - **Back up** the database first, as always.
 
 ### 12.2 Known gaps and good next steps
@@ -1087,14 +1096,14 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
   1. Incorporate (for example as a Delaware C corporation).
   2. Get an EIN, open a business bank account, and assign the code and name to the company.
   3. Have a lawyer review the Terms and Privacy pages and the catalog.
-  4. Buy the domain.
-- **Scale.** The app is built for one small server. It scales up with a bigger server; moving beyond that would mean a different database.
+  4. Add the `omniarmor` subdomain on MTRX Horizyn's domain (docs/OPERATIONS.md, section 1).
+- **Scale.** The app is built for one small server. `docs/LOAD-TEST.md` has the measured limits and when to grow: more processes (`WEB_CONCURRENCY`) and a bigger server first, then a different database (Postgres) at roughly a few thousand busy workspaces or several servers.
 
 ### 12.3 How to keep working on it
 
 These are the habits the project was built with. Keep them:
 
-- **Run the tests and the lint before every commit:** `python3 -m unittest discover -s tests` and `python -m pyflakes omniarmor_app wsgi.py`. Add tests for every fix and feature, close to the files they cover.
+- **Run the tests and the lint before every commit:** `python3 -m unittest discover -s tests` and the pyflakes line in `.github/workflows/ci.yml`. Add tests for every fix and feature, close to the files they cover.
 - **Commit on the working branch** with clear messages. Each message has a short summary line and a body that says what changed and why. Push with `git push -u origin <branch>`. Don't open a pull request unless the owner asks.
 - **New Academy worlds** go at the end of the world list, so existing progress keeps its level ids. Content must pass `tests/test_academy_bank.py`, including the answer-length balance.
 - **Schema changes** are new numbered migrations at the end of `db.py`. Never edit one that has shipped.
@@ -5916,11 +5925,13 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | Method | Address | What it is |
 |---|---|---|
 | GET | `/` | Landing page |
+| GET | `/api/stats` | User counts for MTRX Horizyn's console (only with `STATS_KEY`, and only to that key) |
 | GET | `/app` | HQ, the overview |
 | GET | `/app/academy` | Academy home for grown-ups |
 | GET | `/app/academy/<int:learner_id>` | A learner's map |
 | POST | `/app/academy/<int:learner_id>/armo` | A learner's Armo personality |
 | GET | `/app/academy/<int:learner_id>/certificate` | The learner's certificate |
+| GET | `/app/academy/<int:learner_id>/progress` | A learner's progress report, for the workspace's grown-ups |
 | POST | `/app/academy/<int:learner_id>/delete` | Remove a learner |
 | POST | `/app/academy/<int:learner_id>/devices/sign-out` | Sign a learner out on every device |
 | POST | `/app/academy/<int:learner_id>/duels` | Challenge a friend to a duel |
@@ -5944,6 +5955,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/app/audit` | Vault, the audit trail |
 | GET | `/app/audit.csv` | The audit trail as CSV |
 | GET | `/app/industry/<int:industry_id>` | One industry's ten checks |
+| POST | `/app/industry/<int:industry_id>/bulk` | Update several checks at once: done today, Yes, No or one date |
 | POST | `/app/industry/<int:industry_id>/rule/<rule_key>` | Save, clear, Done today or change a limit on one check |
 | GET | `/app/notifications` | Radar, every reminder email |
 | GET | `/app/report` | Intel, the compliance report |
@@ -5959,6 +5971,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/favicon.ico` | Favicon |
 | GET, POST | `/forgot` | Ask for a password reset link |
 | GET | `/healthz` | Health check for uptime monitors |
+| GET | `/help` | Help: 15 questions and answers |
 | GET | `/industries` | List of all 50 industries |
 | GET | `/industries/<slug>` | Public page for one industry |
 | GET, POST | `/kids` | A kid enters a join code |
@@ -5995,6 +6008,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. |
+| `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer. Without it, the page points to the help inside the app. |
 | `STATS_KEY` | (none) | Turns on `/api/stats` (user counts only) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |

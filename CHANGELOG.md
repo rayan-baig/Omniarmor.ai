@@ -3,6 +3,28 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.0.1 (3 November 2026)
+
+Reliability under load. Measured in `docs/LOAD-TEST.md`.
+
+- A load test (`tools/load_test.py`) of 500 workspaces using the app at once,
+  against gunicorn as the Docker image runs it, and timings of the scheduled
+  sweeps at 100, 500 and 2,000 workspaces. No errors, no lost changes and no
+  locked database; one server process slows down past about 100 requests a
+  second.
+- No sweep runs twice at once. A daily run that took over an hour, or an
+  Autopilot pass that ran past its 10 minutes, could be started again by a
+  second server process beside it and send the same emails twice. Each sweep
+  now holds a lock in the database while it runs (schema version 14).
+- The time-limit alerts have a thread of their own, so a long daily run never
+  holds up a 15-minute clock's alert.
+- The daily backup is taken after the day's reminders. Restoring the morning's
+  backup used to send everyone that day's digest again.
+- A 10-minute restore checklist in docs/OPERATIONS.md, rehearsed end to end
+  and by a test.
+- The handbook is current: bulk entry, the Help page, the progress report,
+  reminder choices, the plan page, `SUPPORT_EMAIL` and every web address.
+
 ## 1.0.0 (3 November 2026)
 
 The first release for launch. It gathers the work of the last few days.

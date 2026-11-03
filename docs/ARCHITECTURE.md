@@ -14,7 +14,7 @@ omniarmor_app (Flask)
    │                                                            ▼
    │                               omni_armor_rules (rule.py: one evaluate() for every rule)
    ├── reminders.py  daily digests per company
-   ├── jobs.py       the daily timer: reminders, backup, cleanup
+   ├── jobs.py       the timer: alerts each minute; reminders, cleanup, backup daily
    ├── notify.py     email, or the saved log when email isn't set up
    └── db.py         SQLite, schema migrations, audit writes
    ▼
@@ -53,6 +53,7 @@ SQLite database (one file on a persistent disk) + daily backups
 | `invites`, `password_resets` | One-time links, stored only as hashes |
 | `login_failures` | Recent failed sign-ins, for rate limiting |
 | `job_runs` | One row per day of the daily job, so it runs once |
+| `job_locks` | The lock each sweep (alerts, daily job, Autopilot) holds while it runs, so two server processes never run the same one at once |
 | `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
 | `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
 | `join_codes`, `learner_days`, `learner_mistakes` | Kid device codes, daily streaks, and missed questions for spaced practice |

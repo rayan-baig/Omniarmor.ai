@@ -31,6 +31,9 @@ services:
       # only reach the server log, which nobody reads.
       - key: OPERATOR_EMAIL
         sync: false
+      # An address people can write to for help, named on the Help page (/help).
+      - key: SUPPORT_EMAIL
+        sync: false
       # The same value as MTRX Horizyn's MTRX_STATS_KEY, to show user counts
       # in the owner's console. Unset, /api/stats does not exist.
       - key: STATS_KEY
