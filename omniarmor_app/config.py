@@ -43,6 +43,11 @@ def load_config(**overrides):
         # value as its MTRX_STATS_KEY) for user counts and daily feature use.
         # Unset, that address does not exist.
         "STATS_KEY": env.get("STATS_KEY", "").strip(),
+        # A copy that is not the live one (staging, a demo service) asks to be
+        # left out of search results entirely: every address says noindex,
+        # robots.txt closes the whole site and the sitemap is empty
+        # (docs/STAGING.md). Unset on the live service.
+        "NOINDEX": _flag("NOINDEX", False),
         # Where people can write for help, shown on the Help page. Unset, the
         # page names the help inside the app only.
         "SUPPORT_EMAIL": env.get("SUPPORT_EMAIL", "").strip(),

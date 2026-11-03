@@ -365,5 +365,46 @@ class TestRobotsAndSitemap(AppTestCase):
         self.assertNotIn("og:title", missing.get_data(as_text=True))
 
 
+class TestNoindexCopy(AppTestCase):
+    """NOINDEX=1, for a copy that is not the live one (docs/STAGING.md):
+    nothing on it is listed, public pages included."""
+
+    def setUp(self):
+        super().setUp()
+        self.app.config["NOINDEX"] = True
+
+    def test_read_from_the_environment_and_off_by_default(self):
+        from omniarmor_app.config import load_config
+        with mock.patch.dict(os.environ, {"NOINDEX": "1"}):
+            self.assertTrue(load_config()["NOINDEX"])
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("NOINDEX", None)
+            self.assertFalse(load_config()["NOINDEX"])
+
+    def test_every_public_page_says_noindex_and_has_no_share_preview(self):
+        for path in PUBLIC:
+            response = self.client.get(path)
+            page = response.get_data(as_text=True)
+            self.assertEqual(response.status_code, 200, path)
+            self.assertEqual(response.headers.get("X-Robots-Tag"), "noindex, nofollow", path)
+            self.assertIn(NOINDEX, page, path)
+            self.assertNotIn("og:title", page, path)
+            self.assertNotIn('rel="canonical"', page, path)
+
+    def test_robots_closes_everything_and_the_sitemap_is_empty(self):
+        robots = self.client.get("/robots.txt")
+        self.assertEqual(robots.get_data(as_text=True), "User-agent: *\nDisallow: /\n")
+        for path in PUBLIC + ["/static/og-image.png"]:
+            self.assertTrue(disallowed(robots.get_data(as_text=True), path), path)
+        sitemap = self.client.get("/sitemap.xml").get_data(as_text=True)
+        self.assertEqual(re.findall(r"<loc>", sitemap), [])
+
+    def test_files_and_robots_carry_the_header_too(self):
+        for path in ("/robots.txt", "/sitemap.xml", "/favicon.ico", "/static/og-image.png", "/healthz"):
+            response = self.client.get(path)
+            response.close()
+            self.assertEqual(response.headers.get("X-Robots-Tag"), "noindex, nofollow", path)
+
+
 if __name__ == "__main__":
     unittest.main()

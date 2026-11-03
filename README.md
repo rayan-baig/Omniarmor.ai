@@ -47,7 +47,8 @@ blueprint, Docker, or `docker compose up -d` on one small server with free
 HTTPS; email setup, backups, monitoring). To run it for close to nothing:
 [docs/COSTS.md](docs/COSTS.md). How much it handles and when to grow:
 [docs/LOAD-TEST.md](docs/LOAD-TEST.md). How the pieces fit:
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). A staging copy to try a change
+on first: [docs/STAGING.md](docs/STAGING.md).
 
 ## Layout
 

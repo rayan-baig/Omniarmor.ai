@@ -287,6 +287,9 @@ sets your own. It never mixes into real data:
 The dates are counted from the day it is seeded, so seed a fresh file before
 each demo.
 
+A staging copy to try changes on before live, with the demo in it:
+[STAGING.md](STAGING.md).
+
 ## 7. Upgrades
 
 Deploy the new version; the database schema upgrades itself at start-up.

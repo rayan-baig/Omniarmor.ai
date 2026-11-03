@@ -3,6 +3,25 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.1.3 (3 November 2026)
+
+A staging copy, and a setting that keeps it out of search results.
+
+- **docs/STAGING.md:** how to run a second copy on Render at
+  `staging.omniarmor.<domain>`, with its own disk, database and secrets, mail
+  that reaches nobody, Stripe in test mode, the demo workspace seeded with
+  its backups in a folder of its own, and a checklist for taking a tested
+  commit to live. It is set up by hand, not in `render.yaml`, so syncing the
+  live Blueprint never touches it.
+- **`NOINDEX=1`**, for a copy that is not the live one: every address
+  (public pages, files and robots.txt included) says
+  `X-Robots-Tag: noindex, nofollow`, every page has the noindex tag and no
+  share previews, robots.txt closes the whole site and the sitemap is empty.
+  Unset, nothing changes. Leave it unset on live.
+- A test of the workspace's dates failed on 3 November 2026 (UTC): the date
+  fields' `max` is today, which matched the UTC date it checks is absent. It
+  ignores that attribute now.
+
 ## 1.1.2 (3 November 2026)
 
 A security fix: operator status comes from the server, not from an email

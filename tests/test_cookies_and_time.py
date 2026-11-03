@@ -161,7 +161,8 @@ class TestDatesAreTheWorkspaces(AppTestCase):
         self.assertTrue(row[-1].startswith("2026-11-02"), row)
         page = self.client.get("/app/industry/1").get_data(as_text=True)
         self.assertIn("Last updated 2026-11-02", page)
-        self.assertNotIn("2026-11-03", page)
+        # The date fields' max="" is today, which is 3 November on that day.
+        self.assertNotIn("2026-11-03", re.sub(r' max="[0-9-]+"', "", page))
 
     def test_plan_and_join_code_dates(self):
         self.assertIn("renews 2026-11-02", self.client.get("/app/settings").get_data(as_text=True))

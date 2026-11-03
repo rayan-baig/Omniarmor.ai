@@ -173,7 +173,10 @@ ROBOTS_DISALLOW = ("/app$", "/app/", "/reset/", "/signup?invite=", "/forgot", "/
 
 def public_page():
     """Whether the page being drawn is one of PUBLIC_PAGES, as a visitor sees
-    it (a sign-up page opened from an invite link is private)."""
+    it (a sign-up page opened from an invite link is private). None is on a
+    copy that is not the live one (NOINDEX)."""
+    if current_app.config.get("NOINDEX"):
+        return False
     return request.endpoint in PUBLIC_PAGES and not request.args.get("invite")
 
 
@@ -187,14 +190,19 @@ def canonical_url():
 
 def robots_header(response):
     """noindex on everything but the public pages, for crawlers that read
-    the header (it also covers the CSV exports, which have no <meta>)."""
-    if request.endpoint not in NOT_PAGES and not (public_page() and response.status_code == 200):
+    the header (it also covers the CSV exports, which have no <meta>). With
+    NOINDEX, on every address, files and robots.txt included."""
+    if current_app.config.get("NOINDEX"):
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    elif request.endpoint not in NOT_PAGES and not (public_page() and response.status_code == 200):
         response.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
     return response
 
 
 @public.route("/robots.txt")
 def robots():
+    if current_app.config.get("NOINDEX"):
+        return Response("User-agent: *\nDisallow: /\n", mimetype="text/plain")
     lines = ["User-agent: *", "Allow: /"] + [f"Disallow: {path}" for path in ROBOTS_DISALLOW]
     lines.append("Sitemap: " + current_app.config["BASE_URL"] + "/sitemap.xml")
     return Response("\n".join(lines) + "\n", mimetype="text/plain")
@@ -207,6 +215,8 @@ def sitemap():
     paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
     paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
               url_for("public.privacy")]
+    if current_app.config.get("NOINDEX"):
+        paths = []
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml += [f"<url><loc>{escape(base + path)}</loc></url>" for path in paths] + ["</urlset>"]
     return Response("\n".join(xml), mimetype="application/xml")
