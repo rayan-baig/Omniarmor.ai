@@ -725,6 +725,40 @@ def _light_question(rule, value, found):
     return Question(prompt, list(LIGHTS), LIGHT_INDEX[found], explain, "light")
 
 
+# True-or-false facts for the first worlds, true and false mixed, so the
+# answer isn't always the same one: (statement, is it true, why).
+COMPANY_FACTS = [
+    ("Following the rules helps keep workers and customers safe.", True,
+     "Rules protect the people who work at the company and the people it serves."),
+    ("Customers are the people who pay a business for what it makes or does.", True,
+     "Customers buy the products or the work. Without them there is no business."),
+    ("A business only has to follow the rules when an inspector is watching.", False,
+     "Rules count every day, not only on inspection day. Accidents don't wait for inspectors."),
+    ("A business can skip a safety rule on a very busy day.", False,
+     "Busy days are when accidents happen most. Safety rules count every day."),
+]
+RULE_FACTS = [
+    ("It's smart to fix a problem as soon as you find it.", True,
+     "Small problems are cheaper and safer to fix early, before they grow."),
+    ("Writing down when a check was done helps show the rule was followed.", True,
+     "A record proves the work was done, so an inspector can see it."),
+    ("A small problem is best left alone until it gets bigger.", False,
+     "Small problems grow. Fixing them early is cheaper and safer."),
+    ("If nobody complains, breaking a rule doesn't matter.", False,
+     "A broken rule can still hurt someone or bring a fine, even when nobody has noticed yet."),
+]
+TEAM_FACTS = [
+    ("A good owner hides mistakes from the team.", False,
+     "Good owners are honest about mistakes and fix them together."),
+    ("A good leader only listens to people who agree with them.", False,
+     "Leaders learn the most from people who see things differently."),
+    ("Good owners own up to mistakes and fix them with the team.", True,
+     "Being honest about a mistake earns trust and gets it fixed sooner."),
+    ("Listening to workers' worries helps keep everyone safe.", True,
+     "Workers often spot a problem first. Listening lets it be fixed early."),
+]
+
+
 # --- Level 1 ------------------------------------------------------------
 
 def _company_questions(rng, company, industry_ids, stage=1):
@@ -740,13 +774,12 @@ def _company_questions(rng, company, industry_ids, stage=1):
         _choice(rng, f"What kind of work does {company} do?", rng.choice(sectors), rng.sample(others, 2),
                 f"{company} works in {', '.join(s.lower() for s in sectors)}."),
         _choice(rng, "What is a business?",
-                "A group of people who make or do something that others pay for",
-                ["A place where you only play games", "A kind of school"],
+                "People who make or do something that others pay for",
+                ["A building where kids go to learn to read and write", "A club where friends meet only to play games"],
                 "A business makes products or does work that customers pay for."),
-        _choice(rng, "Who does a business serve?", "Its customers", ["Only the owner", "Nobody"],
+        _choice(rng, "Who does a business serve?", "Its customers", ["Only its owner", "Nobody at all"],
                 "Businesses exist to help their customers. Happy customers come back."),
-        _truefalse("Following the rules helps keep workers and customers safe.", True,
-                   "Rules protect the people who work at the company and the people it serves."),
+        _truefalse(*rng.choice(COMPANY_FACTS)),
     ]
 
 
@@ -786,20 +819,19 @@ def _words_story(company, industry_ids):
 def _rules_questions(rng, company, industry_ids, stage=1):
     rule = rng.choice(_company_rules(industry_ids))
     return [
-        _choice(rng, "What is a fine?", "Money a business must pay for breaking a rule",
-                ["A prize for doing a good job", "A kind of thin noodle"],
+        _choice(rng, "What is a fine?", "Money paid for breaking a rule",
+                ["A prize given for doing a good job", "A bonus paid to workers each year"],
                 "A fine is a penalty. It costs the company money that could have gone to growing the business."),
-        _choice(rng, "Who checks that a business follows the rules?", "Inspectors",
-                ["Customers' pets", "Nobody ever checks"],
+        _choice(rng, "Whose job is it to check that a business follows the rules?", "Inspectors",
+                ["The customers' pets", "Nobody: no one ever checks"],
                 "Inspectors visit businesses to make sure rules are followed."),
         _choice(rng, f"Here's a real rule for {company}: \"{rule.title}.\" Why do rules like this exist?",
-                "To keep people safe and things fair", ["To make work boring", "So nobody has any fun"],
+                "To keep people safe and be fair", ["To make every job slow and boring", "So the owner never has to pay"],
                 "Rules are written after people learn what keeps others safe."),
         _choice(rng, f"What could happen if {company} ignored an important rule?",
-                "It could pay a fine or have to close for a while", ["Nothing, ever", "It would win a trophy"],
+                "It could be fined or have to close", ["Nothing, because rules are only tips", "It would win a prize for being bold"],
                 "Breaking rules can cost money, customers and even the right to stay open."),
-        _truefalse("It's smart to fix a problem as soon as you find it.", True,
-                   "Small problems are cheaper and safer to fix early, before they grow."),
+        _truefalse(*rng.choice(RULE_FACTS)),
     ]
 
 
@@ -877,7 +909,8 @@ def _calendar_questions(rng, company, industry_ids, stage=1):
                 ["The day after it's late", "Never"],
                 "Reminders go out 30, 7 and 1 day before, on the day, and every week if it's late."),
         _choice(rng, "After a job is finished, someone presses \"Done today.\" What happens?",
-                "The countdown starts over for next time", ["The rule disappears forever", "Nothing happens"],
+                "The countdown starts over for next time", ["The rule is deleted and never comes back",
+                                                            "Nothing changes until an inspector visits"],
                 "Most jobs repeat, like a yearly checkup. Done today starts the next countdown."),
         _choice(rng, f"Today is {WEEKDAYS[start]}. A job is due in {ahead} days. Which day is that?", due_day,
                 rng.sample([d for d in WEEKDAYS if d != due_day], 2),
@@ -918,10 +951,10 @@ def _money_questions(rng, company, industry_ids, stage=1):
                 [f"Paying a fine of {money(penalty)} later"],
                 "Preventing problems is almost always cheaper than paying for them later."),
         _choice(rng, "What is a cost?", "Money the business spends",
-                ["Money customers pay", "A kind of coat"],
+                ["Money that customers pay it", "How long a job takes to finish"],
                 "Costs are what the business pays for, like pay for workers, supplies and rent."),
-        _choice(rng, "What can a business do with its profit?", "Save it, grow the company and reward its people",
-                ["Throw it away", "Nothing at all"],
+        _choice(rng, "What can a business do with its profit?", "Save it, grow and reward its team",
+                ["Nothing: profit must be given back", "Only spend it on the owner's toys"],
                 "Profit helps a company grow, get through hard times, and take care of its team."),
     ]
 
@@ -960,19 +993,18 @@ def _talk_story(company, industry_ids):
 def _team_questions(rng, company, industry_ids, stage=1):
     return [
         _choice(rng, f"Why does {company} keep a record of every change?",
-                "So everyone can see who did what and when", ["To get people in trouble", "Because it's fun to type"],
+                "To show who did what, and when", ["To get people in trouble for slips", "Because typing is fun for the team"],
                 "Records help the team stay honest and show inspectors that the company did its job."),
         _choice(rng, "A worker tells you about a safety problem. What should a good leader do?",
-                "Thank them and get it fixed", ["Ignore it", "Tell them to stop complaining"],
+                "Thank them and get it fixed", ["Ignore it unless someone is hurt", "Tell them to stop complaining"],
                 "Leaders want to hear about problems early, so people stay safe."),
-        _choice(rng, "Who can help when a rule is confusing?", "An expert, like a lawyer or an accountant",
-                ["Guess and hope for the best", "A random video online"],
+        _choice(rng, "Who is the best one to ask when a rule is confusing?", "An expert, like a lawyer",
+                ["A stranger in an online video", "Nobody: just guess and hope"],
                 "Smart owners ask experts. Nobody knows everything."),
         _choice(rng, "What's the best way to treat customers?", "Honestly and fairly",
                 ["Only nicely when they're watching", "However you feel that day"],
                 "Trust is a company's most valuable treasure."),
-        _truefalse("A good owner hides mistakes from the team.", False,
-                   "Good owners are honest about mistakes and fix them together."),
+        _truefalse(*rng.choice(TEAM_FACTS)),
     ]
 
 
@@ -1184,7 +1216,10 @@ def _bank_questions(rng, key, count, progress, t):
     picked = []
     while len(picked) < count and pool:
         if facts and rng.random() < 0.25:
-            statement, truth, why = facts.pop()
+            # True or false at even odds, whatever the bank's mix, so "False"
+            # isn't a safe guess. facts is shuffled: the first of the wanted kind.
+            want = rng.random() < 0.5
+            statement, truth, why = facts.pop(next((n for n, f in enumerate(facts) if f[1] == want), 0))
             picked.append(_truefalse(statement, truth, why))
             continue
         total = sum(weights.get(q[5], 1) for q in pool)

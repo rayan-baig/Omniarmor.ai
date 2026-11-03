@@ -484,7 +484,7 @@ WORLDS = [
         "questions": [
             # Level 1
             ("Which password is the strongest?", "Blue-pizza-river-lamp-7",
-             "password123", "Max2015",
+             "password123456", "MaxTheDog2015",
              "Long passphrases of random words are hard to guess but easy to remember. Simple words and pet names are easy to guess.", 1),
             ("Your friend asks for your password to the shop computer. What should you do?", "Say no, passwords are never shared",
              "Give it, since they are your friend", "Give it, but change it next year",
