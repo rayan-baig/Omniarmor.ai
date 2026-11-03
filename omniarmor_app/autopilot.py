@@ -368,7 +368,19 @@ def weekly_summary(conn, cfg):
 # --- The run --------------------------------------------------------------------------
 
 def run(cfg, force=False):
-    """One Autopilot pass. Several server processes can call this; only one runs per 10-minute slot."""
+    """One Autopilot pass. Several server processes can call this; only one
+    runs per 10-minute slot, and never two at once (jobs.job_lock): a pass
+    that runs past its slot, re-sending failed emails to a provider that
+    times out, used to let the next slot's pass re-send the same emails beside
+    it. Returns None when the pass was skipped."""
+    from .jobs import job_lock
+    with job_lock(cfg, "autopilot") as mine:
+        if not mine:
+            return None
+        return _run(cfg, force)
+
+
+def _run(cfg, force):
     from .jobs import claim_run, finish_run
     now = utcnow()
     slot = now.replace(minute=now.minute - now.minute % SLOT_MINUTES, second=0, microsecond=0)

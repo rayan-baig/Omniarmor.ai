@@ -3,8 +3,10 @@ long exports, Autopilot's emails and a reproducible dashboard build.
 
 Each test here is a fix, shown failing before it was made."""
 
+import glob
 import hashlib
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -132,6 +134,77 @@ class TestBackupDrill(AppTestCase):
 
 
 # --- Schema upgrades on a database with real data -----------------------------------------
+
+class TestRestoreRehearsal(AppTestCase):
+    """docs/OPERATIONS.md, section 4, the 10-minute checklist: a backup made
+    with the app's own command, restored into a fresh copy, and the app
+    started on it with sign-in, checks, the Academy and the audit trail all
+    there. Then the daily job runs on the restored copy and sends nobody the
+    day's digest a second time."""
+
+    def test_backup_restore_and_the_app_works(self):
+        self.signup(industries=(1,))
+        self.change(1, "annual_mvr_review", date="2020-01-02")      # overdue: today's digest has it
+        self.change(1, "eld_in_use", answer="yes")
+        self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket", "track": "launchpad"})
+        with self.db() as conn:
+            lid = conn.execute("SELECT id FROM learners").fetchone()[0]
+        page = self.client.get(f"/app/academy/{lid}/world/1/stage/1").data.decode()
+        attempt = re.search(r'name="attempt" value="(\d+)"', page).group(1)
+        answers = {q: "0" for q in set(re.findall(r'name="(q\d+)"', page))}
+        self.assertEqual(self.post(f"/app/academy/{lid}/world/1/stage/1", dict(answers, attempt=attempt)).status_code,
+                         200)
+        cfg = dict(self.app.config, DAILY_JOB_HOUR_UTC=0)
+        self.assertNotIn("failed", jobs.run_daily(cfg))               # today's digest, then the daily backup
+        daily = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
+        self.assertEqual(len(daily), 1)
+        made = self.app.test_cli_runner().invoke(args=["backup"])     # and one by hand, the same way
+        self.assertEqual(made.exit_code, 0, made.output)
+        self.assertTrue(os.path.basename(made.output.strip()).startswith("omniarmor-"), made.output)
+        # The daily one: the copy holds the day's claim, not yet finished.
+        backup = daily[0]
+        with self.db() as conn:
+            audit_rows = conn.execute("SELECT COUNT(*) FROM audit").fetchone()[0]
+            sent = conn.execute("SELECT COUNT(*) FROM notifications WHERE kind = 'reminder'").fetchone()[0]
+        self.assertEqual(sent, 1)
+
+        # Restore into a fresh copy, beside the old database, and start the app on it.
+        restored = os.path.join(self.tmp.name, "restored", "omniarmor.db")
+        os.makedirs(os.path.dirname(restored))
+        shutil.copyfile(backup, restored)
+        check = sqlite3.connect(restored)
+        self.assertEqual(check.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+        # Taken while the daily job held its lock, the copy holds no lock.
+        self.assertEqual(check.execute("SELECT COUNT(*) FROM job_locks").fetchone()[0], 0)
+        check.close()
+        app = create_app(TESTING=True, DATABASE=restored, SCHEDULER_ENABLED=False, BACKUP_DIR=cfg["BACKUP_DIR"])
+        client = app.test_client()
+        self.assertEqual(client.get("/healthz").get_json()["status"], "ok")
+        with client.session_transaction() as s:
+            s["_csrf"] = "t"
+        signed_in = client.post("/login", data={"email": "owner@example.com", "password": PASSWORD, "csrf_token": "t"})
+        self.assertEqual(signed_in.status_code, 302)
+        industry = client.get("/app/industry/1").data.decode()
+        self.assertIn("2020-01-02", industry)
+        self.assertIn("Sam", client.get(f"/app/academy/{lid}/progress").data.decode())
+        vault = client.get("/app/audit").data.decode()
+        self.assertIn("Workspace created", vault)
+        self.assertIn("Pat Owner", vault)
+        conn = connect(restored)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM audit").fetchone()[0], audit_rows)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM learner_progress").fetchone()[0], 1)
+        conn.close()
+
+        # The restored copy's claim on today goes stale (here at once): the
+        # daily job runs again, and today's digest is not sent twice.
+        restored_cfg = dict(app.config, DAILY_JOB_HOUR_UTC=0)
+        with mock.patch.object(jobs, "STALE_AFTER", timedelta(seconds=-60)):
+            result = jobs.run_daily(restored_cfg)
+        self.assertIn("digests=0", result)
+        conn = connect(restored)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM notifications WHERE kind = 'reminder'").fetchone()[0], 1)
+        conn.close()
+
 
 class TestMigrationsTenAndEleven(unittest.TestCase):
     def test_upgrading_a_populated_version_9_database(self):

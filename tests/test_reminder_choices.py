@@ -17,7 +17,7 @@ from e2e_helpers import flashes, post_forms  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
 from omniarmor_app import autopilot  # noqa: E402
-from omniarmor_app.db import MIGRATIONS, connect, migrate  # noqa: E402
+from omniarmor_app.db import MIGRATIONS, SCHEMA_VERSION, connect, migrate  # noqa: E402
 from omniarmor_app.reminders import run_clock_alerts, run_reminders  # noqa: E402
 
 NY = ZoneInfo("America/New_York")
@@ -194,7 +194,7 @@ class TestTheUpgrade(unittest.TestCase):
         conn.commit()
         conn.close()
         conn = connect(path)
-        self.assertEqual(migrate(conn), 13)
+        self.assertEqual(migrate(conn), SCHEMA_VERSION)
         rows = {r["email"]: (r["email_reminders"], r["email_alerts"], r["email_weekly"])
                 for r in conn.execute("SELECT * FROM users")}
         conn.close()

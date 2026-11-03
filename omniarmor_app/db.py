@@ -276,6 +276,19 @@ MIGRATIONS = [
     UPDATE users SET email_alerts = email_reminders;
     ALTER TABLE users ADD COLUMN email_weekly INTEGER NOT NULL DEFAULT 1;
     """),
+    # A lock per scheduled sweep (the time-limit alerts, the daily job,
+    # Autopilot), held while it runs, so two server processes never run the
+    # same sweep at once however long it takes (jobs.job_lock). It is a lease:
+    # the holder renews expires_at while it works, so a process that died
+    # loses it within minutes.
+    (14, """
+    CREATE TABLE job_locks (
+        name TEXT PRIMARY KEY,
+        holder TEXT NOT NULL,
+        taken_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL
+    );
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

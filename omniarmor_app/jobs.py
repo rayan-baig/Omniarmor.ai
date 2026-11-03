@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """The work that runs by itself: every day reminders, a database backup and
 cleanup; every minute the time-limit alerts for the hour and minute clocks.
-Autopilot (autopilot.py) rides on the same timer every 10 minutes. A built-in
-timer runs it all; several server processes can run the timer safely because
-each day's run is claimed in the database first, and each alert is claimed
-before it is sent."""
+Autopilot (autopilot.py) runs every 10 minutes beside the daily job. A
+built-in timer runs it all, in two threads: one for the minute alerts, one for
+the daily job and Autopilot, so a long daily run (thousands of digests through
+a slow email provider) never holds the alerts up.
+
+Several server processes can run the timer safely. Each sweep holds a lock in
+the database while it runs (job_lock), so no two processes run the same sweep
+at once however long it takes; each day's run is also claimed in the
+database, and each alert is claimed before it is sent."""
 
 import glob
 import logging
@@ -12,6 +17,8 @@ import os
 import sqlite3
 import threading
 import time
+import uuid
+from contextlib import contextmanager
 from datetime import timedelta
 
 import click
@@ -23,6 +30,74 @@ log = logging.getLogger("omniarmor.jobs")
 CHECK_EVERY_SECONDS = 600   # the daily job's check and Autopilot
 ALERTS_EVERY_SECONDS = 60   # the time-limit alerts: the shortest clock is 15 minutes, due to the minute
 STALE_AFTER = timedelta(hours=1)
+# A sweep's lock (job_lock) is a lease this long, renewed every
+# LOCK_RENEW_SECONDS while the sweep runs: a process that dies mid-sweep
+# loses it within LOCK_LEASE, and another process takes the work over.
+LOCK_LEASE = timedelta(minutes=2)
+LOCK_RENEW_SECONDS = 20
+
+
+def _take_lock(conn, name, holder):
+    now = utcnow()
+    cur = conn.execute(
+        "INSERT INTO job_locks (name, holder, taken_at, expires_at) VALUES (?, ?, ?, ?)"
+        " ON CONFLICT (name) DO UPDATE SET holder = excluded.holder, taken_at = excluded.taken_at,"
+        " expires_at = excluded.expires_at WHERE job_locks.expires_at < ?",
+        (name, holder, iso(now), iso(now + LOCK_LEASE), iso(now)),
+    )
+    conn.commit()
+    return cur.rowcount == 1
+
+
+@contextmanager
+def job_lock(cfg, name):
+    """Holds the database lock for one sweep while the block runs. Yields
+    True when this process has it, False when another process is running the
+    same sweep right now (the caller then skips it).
+
+    A day's run used to be claimed with a time stamp that went stale after an
+    hour, and an Autopilot pass per 10-minute slot: a daily run that took
+    longer than an hour (thousands of digests through a slow email provider),
+    or a pass that took longer than 10 minutes (failed emails re-sent to a
+    provider that times out), let a second process start the same work beside
+    it and send the same emails again. The lock is renewed for as long as the
+    sweep runs, by a thread of its own, and let go at the end."""
+    if cfg["DATABASE"] == ":memory:":
+        yield True
+        return
+    holder = uuid.uuid4().hex
+    conn = connect(cfg["DATABASE"])
+    try:
+        migrate(conn)   # the lock's table, on a database no app has opened yet
+        if not _take_lock(conn, name, holder):
+            yield False
+            return
+        stop = threading.Event()
+
+        def renew():
+            keeper = connect(cfg["DATABASE"])
+            try:
+                while not stop.wait(LOCK_RENEW_SECONDS):
+                    try:
+                        keeper.execute("UPDATE job_locks SET expires_at = ? WHERE name = ? AND holder = ?",
+                                       (iso(utcnow() + LOCK_LEASE), name, holder))
+                        keeper.commit()
+                    except Exception:  # try again at the next renewal; the lease has room for it
+                        log.exception("couldn't renew the %s lock", name)
+            finally:
+                keeper.close()
+
+        renewer = threading.Thread(target=renew, name=f"omniarmor-lock-{name}", daemon=True)
+        renewer.start()
+        try:
+            yield True
+        finally:
+            stop.set()
+            renewer.join()
+            conn.execute("DELETE FROM job_locks WHERE name = ? AND holder = ?", (name, holder))
+            conn.commit()
+    finally:
+        conn.close()
 
 
 def claim_run(conn, job, run_date):
@@ -100,6 +175,12 @@ def _copy_checked(source, target):
         dst = sqlite3.connect(target)
         try:
             src.backup(dst)
+            # The sweeps' locks belong to the processes running now, not to a
+            # restored copy: the daily backup is taken while the daily job
+            # holds its lock, and a restored copy kept it for minutes.
+            if dst.execute("SELECT 1 FROM sqlite_master WHERE name = 'job_locks'").fetchone():
+                dst.execute("DELETE FROM job_locks")
+                dst.commit()
             result = dst.execute("PRAGMA quick_check").fetchone()[0]
             if result != "ok":
                 raise sqlite3.DatabaseError(f"the backup copy failed its check: {result[:200]}")
@@ -144,6 +225,16 @@ def run_daily(cfg, force=False):
     if not force and now.hour < cfg["DAILY_JOB_HOUR_UTC"]:
         return None
     run_date = now.date().isoformat()
+    with job_lock(cfg, "daily") as mine:
+        if not mine:
+            return BUSY if force else None
+        return _run_daily(cfg, run_date, force)
+
+
+BUSY = "Another server process is running it right now; nothing was done. Try again when it finishes."
+
+
+def _run_daily(cfg, run_date, force):
     conn = connect(cfg["DATABASE"])
     try:
         migrate(conn)
@@ -151,12 +242,6 @@ def run_daily(cfg, force=False):
         if not claimed and not force:
             return None
         failures = []
-        backup = None
-        try:
-            backup = backup_database(cfg)
-        except Exception:
-            failures.append("backup")
-            log.exception("daily backup failed")
         summary = {"reminders": 0, "digests": 0, "orgs": 0, "errors": 0}
         try:
             summary = run_reminders(conn, cfg)
@@ -168,6 +253,16 @@ def run_daily(cfg, force=False):
         except Exception:
             failures.append("cleanup")
             log.exception("daily cleanup failed")
+        # The backup comes last, so it holds today's reminders as sent. Taken
+        # first, it had none of them: restoring that morning's copy (the
+        # restore rehearsal in docs/LOAD-TEST.md) sent everyone the same
+        # digest again an hour later, when the copied claim on the day went stale.
+        backup = None
+        try:
+            backup = backup_database(cfg)
+        except Exception:
+            failures.append("backup")
+            log.exception("daily backup failed")
         if summary["errors"]:
             failures.append(f"reminders for {summary['errors']} companies")
         result = (f"reminders={summary['reminders']} digests={summary['digests']} orgs={summary['orgs']}"
@@ -189,7 +284,10 @@ def run_alerts(cfg, now=None):
     conn = connect(cfg["DATABASE"])
     try:
         migrate(conn)
-        summary = run_clock_alerts(conn, cfg, now=now)
+        with job_lock(cfg, "alerts") as mine:
+            if not mine:
+                return {"orgs": 0, "alerts": 0, "emails": 0, "errors": 0, "busy": True}
+            summary = run_clock_alerts(conn, cfg, now=now)
         if summary["alerts"] or summary["errors"]:
             log.info("time-limit alerts: %s", summary)
         return summary
@@ -198,32 +296,41 @@ def run_alerts(cfg, now=None):
 
 
 def start_scheduler(cfg):
+    """Starts the timer: the time-limit alerts every minute in one thread, the
+    daily job and Autopilot every 10 minutes in another."""
     from . import autopilot
+    first_alerts = threading.Event()
 
-    def loop():
-        last_check = None
+    def alerts_loop():
         while True:
-            # First, so a clock that just ran out is alerted about before
-            # today's digest is put together.
             try:
                 run_alerts(cfg)
             except Exception:
                 log.exception("time-limit alerts failed")
-            if last_check is None or time.monotonic() - last_check >= CHECK_EVERY_SECONDS:
-                last_check = time.monotonic()
-                try:
-                    run_daily(cfg)
-                except Exception:  # keep the timer alive; the failure is logged above
-                    pass
-                if cfg.get("AUTOPILOT_ENABLED", True):
-                    try:
-                        autopilot.run(cfg)
-                    except Exception:
-                        log.exception("autopilot pass failed")
+            first_alerts.set()
             time.sleep(ALERTS_EVERY_SECONDS)
-    thread = threading.Thread(target=loop, name="omniarmor-daily", daemon=True)
-    thread.start()
-    return thread
+
+    def daily_loop():
+        # After the first alerts pass, so a clock that just ran out is
+        # alerted about before today's digest is put together.
+        first_alerts.wait(ALERTS_EVERY_SECONDS)
+        while True:
+            try:
+                run_daily(cfg)
+            except Exception:  # keep the timer alive; the failure is logged above
+                pass
+            if cfg.get("AUTOPILOT_ENABLED", True):
+                try:
+                    autopilot.run(cfg)
+                except Exception:
+                    log.exception("autopilot pass failed")
+            time.sleep(CHECK_EVERY_SECONDS)
+
+    threads = [threading.Thread(target=alerts_loop, name="omniarmor-alerts", daemon=True),
+               threading.Thread(target=daily_loop, name="omniarmor-daily", daemon=True)]
+    for thread in threads:
+        thread.start()
+    return threads
 
 
 def register_cli(app):
@@ -271,6 +378,9 @@ def register_cli(app):
             click.echo("" if rows else "Nothing in the last 30 days.")
             return
         result = autopilot.run(cfg, force=True)
+        if result is None:
+            click.echo("Autopilot is running in the server right now. Try again in a minute.")
+            return
         for line in result["fixed"]:
             click.echo(f"Fixed: {line}")
         for f in result["problems"]:

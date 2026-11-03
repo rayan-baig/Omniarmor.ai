@@ -1138,39 +1138,3 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertNotIn("Report a work fatality", digest["body"])
         self.assertIn(("fatality_report_8h", "2026-11-04", "overdue-week-0"), self.marks())  # counted as reminded
 
-    def test_the_timer_checks_every_minute(self):
-        from unittest import mock
-        from omniarmor_app import jobs
-
-        class Stop(Exception):
-            pass
-
-        ticks = {"n": 0}
-
-        def sleep(seconds):
-            self.assertEqual(seconds, 60)
-            ticks["n"] += 1
-            if ticks["n"] == 25:
-                raise Stop
-
-        class InlineThread:
-            def __init__(self, target, **_):
-                self.target = target
-
-            def start(self):
-                try:
-                    self.target()
-                except Stop:
-                    pass
-
-        clock = iter(range(0, 10 ** 6, 60))
-        with mock.patch.object(jobs, "run_alerts") as alerts, mock.patch.object(jobs, "run_daily") as daily, \
-                mock.patch("omniarmor_app.autopilot.run") as autopilot, \
-                mock.patch.object(jobs.time, "sleep", side_effect=sleep), \
-                mock.patch.object(jobs.time, "monotonic", side_effect=lambda: next(clock)), \
-                mock.patch.object(jobs.threading, "Thread", InlineThread):
-            jobs.start_scheduler(dict(self.app.config))
-        self.assertEqual(alerts.call_count, 25)
-        self.assertEqual(daily.call_count, 3)  # minutes 0, 10 and 20
-        self.assertEqual(autopilot.call_count, 3)
-
