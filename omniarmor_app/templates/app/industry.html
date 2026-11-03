@@ -17,13 +17,31 @@
 {% set total = 10 %}
 {% include "app/_totals.html" %}
 
+{% if states %}
+<form class="bulk no-print" id="bulk" method="post" action="{{ url_for('app.bulk_change', industry_id=info.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
+  <p class="bulk-title">Update several at once</p>
+  <p class="hint">Tick <b>Select</b> on the checks below, then pick one change for all of them. Each check is saved and recorded in the audit trail as if you'd changed it on its own.</p>
+  <div class="inline">
+    <label><span class="sr">What to do</span>
+      <select name="bulk_action">
+        {% for value, label in bulk_actions.items() %}<option value="{{ value }}">{{ label }}{{ ':' if value == 'date' }}</option>{% endfor %}
+      </select></label>
+    <label><span class="sr">The date</span><input type="date" name="date"></label>
+    <button class="btn quiet" type="submit">Update selected</button>
+  </div>
+</form>
+{% endif %}
+
 <ul class="list mt">
 {% for s in states %}
   {% set r = s.rule %}
   {% set fid = 'f-' ~ r.key %}
   <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}">
     <div class="rule-main">
-      <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span></div>
+      <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span>
+        <label class="pick no-print"><input type="checkbox" name="keys" value="{{ r.key }}" form="bulk"> Select</label></div>
       {% set rank = top_rank(info.id, r.key) %}
       {% if rank %}<p class="why-line"><span class="top-n">Top {{ top_count }} · #{{ rank }}</span>Why this matters: {{ why_line(r) }}</p>{% endif %}
       {% if s.level != 'CLEARED' %}<p class="msg {{ s.level }}">{{ s.message }}</p>{% else %}<p class="sr">{{ s.message }}</p>{% endif %}

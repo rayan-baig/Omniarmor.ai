@@ -309,3 +309,10 @@ legend.plain{padding:0;margin-bottom:4px;color:var(--muted);font-size:15px}
 details.note{padding:12px 0;border-bottom:1px solid var(--line)}
 details.note .title{color:var(--ink);font-weight:600}
 .note-body{white-space:pre-wrap;color:var(--muted);margin:8px 0 0}
+
+/* Industry page: update several checks at once */
+.bulk{margin-top:20px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
+.bulk .hint{margin:4px 0 12px}
+.bulk-title{margin:0;font-weight:600}
+.pick{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--muted);cursor:pointer}
+.pick input{width:18px;height:18px;accent-color:var(--accent)}

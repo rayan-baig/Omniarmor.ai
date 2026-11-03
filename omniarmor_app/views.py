@@ -13,8 +13,8 @@ from .auth import COMMON_TIMEZONES, create_invite, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, login_required, owner_required
-from .tracking import (LEVEL_LABEL, ValidationError, apply_change, org_industry_ids, org_now, org_today,
-                       states_for_org, tally)
+from .tracking import (BULK_ACTIONS, LEVEL_LABEL, ValidationError, apply_bulk, apply_change, org_industry_ids,
+                       org_now, org_today, states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
@@ -102,7 +102,7 @@ def industry(industry_id):
     shown = [s for s in states if s.problem] if only else states
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
                            can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
-                           top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT)
+                           top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS)
 
 
 def page_order(state):
@@ -131,6 +131,24 @@ def change(industry_id, rule_key):
         flash_error(str(exc))
     target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
     return redirect(f"{target}#rule-{rule_key}")
+
+
+@bp.route("/industry/<int:industry_id>/bulk", methods=["POST"])
+@login_required
+def bulk_change(industry_id):
+    """Several checks of one industry at once: done today, Yes, No or one date.
+    The same sign-in, workspace and CSRF checks as a single update, and every
+    check gets its own audit row. All or nothing."""
+    _industry_or_404(industry_id)
+    action = request.form.get("bulk_action", "")
+    try:
+        count = apply_bulk(get_db(), g.org, g.user["id"], industry_id, request.form.getlist("keys"), action,
+                           request.form.get("date"))
+        flash(f"Updated {count} check{'s' if count != 1 else ''}: {BULK_ACTIONS[action].lower()}"
+              + (f" to {request.form.get('date').strip()}." if action == "date" else "."), "ok")
+    except ValidationError as exc:
+        flash_error(f"{exc} Nothing was changed.")
+    return redirect(url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None))
 
 
 @bp.route("/audit")

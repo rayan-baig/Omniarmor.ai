@@ -594,9 +594,10 @@ def _write(conn, org_id, industry_id, rule_key, user_id, **fields):
     return _get_row(conn, org_id, industry_id, rule_key)
 
 
-def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
+def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit=True):
     """Applies one change from the industry page. Returns a confirmation message;
-    raises ValidationError with a message for the person when the input is invalid."""
+    raises ValidationError with a message for the person when the input is invalid.
+    With commit=False the change is left uncommitted, for apply_bulk."""
     rule = find_rule(industry_id, rule_key)
     if rule is None:
         raise LookupError(rule_key)
@@ -689,7 +690,8 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
         summary_after = _limits_text(rule, after)
         record_audit(conn, org_id, user_id, "limit", f"{rule.title}: limit {summary_before} → {summary_after}",
                      industry_id, rule_key, summary_before, summary_after)
-        conn.commit()
+        if commit:
+            conn.commit()
         return "Your limit was saved." if action == "override" else "The default limit is back."
     else:
         raise ValidationError("Unknown action.")
@@ -697,8 +699,71 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form):
     after_text = _describe(rule, after, tz)
     record_audit(conn, org_id, user_id, action_name, f"{rule.title}: {before_text} → {after_text}",
                  industry_id, rule_key, before_text, after_text)
-    conn.commit()
+    if commit:
+        conn.commit()
     return f"{verb}."
+
+
+# What a bulk update can do to several checks at once, as the single change
+# it makes to each one: (label, the action and form a single update sends).
+BULK_ACTIONS = {
+    "done": "Mark done today",
+    "yes": "Answer Yes",
+    "no": "Answer No",
+    "date": "Set the date",
+}
+
+
+def _bulk_step(rule, action, day):
+    """The single change a bulk action makes to one check, as (action, form),
+    or a ValidationError saying why it doesn't fit that check."""
+    mode = date_mode(rule)
+    if action == "done":
+        if mode != "since":
+            raise ValidationError(f"\"{rule.title}\" can't be marked done: it isn't a duty that repeats.")
+        return "done_today", {}
+    if action in ("yes", "no"):
+        if rule.kind not in ("required", "forbidden"):
+            raise ValidationError(f"\"{rule.title}\" isn't a yes-or-no question.")
+        return "save", {"answer": action}
+    if action == "date":
+        if not mode:
+            raise ValidationError(f"\"{rule.title}\" isn't tracked by a date.")
+        if counts_time(rule):
+            raise ValidationError(f"\"{rule.title}\" counts hours from a time of day. Enter when it started on its own.")
+        return "save", {"date": day}
+    raise ValidationError("Pick what to do with the checks you ticked.")
+
+
+def apply_bulk(conn, org, user_id, industry_id, rule_keys, action, day):
+    """One change to several checks of an industry, all or nothing: each check
+    goes through apply_change, so it gets the same checks and its own audit
+    row as a single update. If any check refuses, nothing is saved. Returns
+    the number of checks changed; raises ValidationError with a message."""
+    if action not in BULK_ACTIONS:
+        raise ValidationError("Pick what to do with the checks you ticked.")
+    keys = list(dict.fromkeys(rule_keys))
+    if not keys:
+        raise ValidationError("Tick at least one check first.")
+    rules = [find_rule(industry_id, key) for key in keys]
+    if any(rule is None for rule in rules):
+        raise ValidationError("One of the checks you ticked isn't on this page. Reload the page and try again.")
+    if action == "date":
+        if not (day or "").strip():
+            raise ValidationError("Pick the date to set.")
+        _parse_date(day)
+    steps = [(rule, *_bulk_step(rule, action, day)) for rule in rules]
+    try:
+        for rule, step, form in steps:
+            try:
+                apply_change(conn, org, user_id, industry_id, rule.key, step, form, commit=False)
+            except ValidationError as exc:
+                raise ValidationError(f"\"{rule.title}\": {exc}") from None
+    except Exception:
+        conn.rollback()
+        raise
+    conn.commit()
+    return len(steps)
 
 
 def _limits_text(rule, row):
