@@ -13,25 +13,38 @@
     <div>
       <p class="ac-kicker">Future Owner Academy plan</p>
       <h1 class="ac-title">{% if plan.access == 'paid' %}You have the Academy plan{% elif plan.access == 'trial' %}Your free trial is on{% else %}Unlock the whole Academy{% endif %}</h1>
-      <p class="ac-lead">A separate subscription from your compliance service. One plan covers every learner in {{ g.org.name }}: up to 12 kids, every track and every world, with their own devices.</p>
+      <p class="ac-lead">The Academy is a separate subscription from the compliance tracker. One plan covers every learner in {{ g.org.name }}: up to {{ facts.max_learners }} kids, every track and every world.</p>
     </div>
   </section>
 
+  <p class="ac-banner">Every workspace gets a {{ facts.trial_days }}-day free trial of the whole Academy plan, starting when you add your first learner. No card needed. When it ends, the free part below stays free.</p>
+
   <div class="ac-plan-grid">
     <section class="ac-card">
-      <h2 class="ac-h3">Free</h2>
+      <h2 class="ac-h3">Compliance tracker <span class="ac-price">Free</span></h2>
       <ul class="ac-plan-list">
-        <li>Launchpad: {% for w in free_worlds %}{{ w.title }}{{ ', ' if not loop.last }}{% endfor %}</li>
-        <li>Friends, duels and Armo</li>
-        <li>A {{ trial_days }}-day free trial of everything when you add your first learner</li>
+        <li>Free right now, for your whole team</li>
+        <li>All {{ facts.checks }} checks across {{ facts.industries }} industries: pick the ones your company works in</li>
+        <li>Reminder emails, the audit trail, reports and exports</li>
+        <li>Not part of the Academy plan, and not changed by it</li>
+      </ul>
+    </section>
+    <section class="ac-card">
+      <h2 class="ac-h3">Academy, free <span class="ac-price">Free</span></h2>
+      <ul class="ac-plan-list">
+        <li>{{ facts.free_track.name }} track: its first {{ facts.free_worlds|length }} worlds, {{ facts.free_worlds|map(attribute='title')|join(', ') }}, with all {{ "{:,}".format(facts.free_levels) }} of their levels</li>
+        <li>Up to {{ facts.max_learners }} learners, each on their own device with a join code if you like</li>
+        <li>Practice mode for missed questions, daily streaks and Armo</li>
+        <li>Up to {{ facts.max_friends }} friends each{% if facts.free_duel_worlds %}, and duels in {{ facts.free_duel_worlds|map(attribute='title')|join(', ') }}{% endif %}</li>
       </ul>
     </section>
     <section class="ac-card ac-plan-paid">
-      <h2 class="ac-h3">Academy plan{% if price %} <span class="ac-price">{{ price }}</span>{% endif %}</h2>
+      <h2 class="ac-h3">Academy plan <span class="ac-price">{{ facts.price or 'Price shown at checkout' }}</span></h2>
       <ul class="ac-plan-list">
-        {% for t in tracks %}<li>{{ emblem(t.key, 26) }} {{ t.name }}: {{ "{:,}".format(t.total) }} levels</li>{% endfor %}
-        <li>Practice mode, streaks, certificates and every Rule Quest</li>
-        <li>Cancel anytime</li>
+        {% for t in facts.tracks %}<li>{{ emblem(t.key, 26) }} {{ t.name }} ({{ t.level }}): {{ "{:,}".format(t.total) }} levels</li>{% endfor %}
+        <li>All {{ facts.topic_worlds }} business worlds, the Owner's Challenge and its certificates, and {{ facts.rule_quests }} industry Rule Quests</li>
+        <li>Duels in all {{ facts.duel_worlds }} duel worlds, and everything in the free Academy</li>
+        <li>Cancel anytime: every learner keeps the plan until the end of the time you paid for</li>
       </ul>
       {% if plan.access == 'paid' %}
         {% if plan.ends_at %}

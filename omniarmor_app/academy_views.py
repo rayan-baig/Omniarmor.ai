@@ -244,7 +244,9 @@ def _log_day(conn, learner_id):
 
 @bp.app_context_processor
 def academy_context():
-    return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES}
+    return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES,
+            "free_world_count": len(academy_plan.FREE_WORLDS),
+            "free_track_name": academy.TRACKS[academy_plan.FREE_TRACK].name}
 
 
 # --- Learners --------------------------------------------------------------------
@@ -753,6 +755,30 @@ def leave():
 
 # --- The Academy plan --------------------------------------------------------------
 
+def plan_facts(cfg):
+    """Everything the plan page and the help page say about the plans, read
+    from the code and settings that decide it, so no page types a number."""
+    from .catalog import INDUSTRIES, rules_for
+    free_track = academy.TRACKS[academy_plan.FREE_TRACK]
+    free_worlds = [academy.world(n) for n in sorted(academy_plan.FREE_WORLDS)]
+    return {
+        "price": (cfg.get("ACADEMY_PRICE_LABEL") or "").strip(),
+        "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
+        "max_learners": academy.MAX_LEARNERS,
+        "max_friends": academy.MAX_FRIENDS,
+        "free_track": free_track,
+        "free_worlds": free_worlds,
+        "free_levels": sum(free_track.stages(w) for w in free_worlds),
+        "free_duel_worlds": [w for w in free_worlds if w.number in academy.DUEL_WORLDS],
+        "duel_worlds": len(academy.DUEL_WORLDS),
+        "tracks": academy.TRACK_LIST,
+        "topic_worlds": len(academy.TOPIC_WORLDS),
+        "rule_quests": len(academy.INDUSTRY_WORLDS),
+        "industries": len(INDUSTRIES),
+        "checks": sum(len(rules_for(i)) for i in INDUSTRIES),
+    }
+
+
 @bp.route("/plan")
 @grown_ups_only
 def plan_page():
@@ -774,9 +800,7 @@ def plan_page():
         flash("Thank you! The Academy plan is on for every learner.", "ok")
         return redirect(url_for("academy.plan_page"))
     return render_template("academy/plan.html", plan=plan_now, confirming=welcome,
-                           stripe=academy_plan.stripe_ready(cfg), price=cfg.get("ACADEMY_PRICE_LABEL", ""),
-                           free_worlds=[academy.world(n) for n in sorted(academy_plan.FREE_WORLDS)],
-                           tracks=academy.TRACK_LIST, trial_days=cfg["ACADEMY_TRIAL_DAYS"],
+                           stripe=academy_plan.stripe_ready(cfg), facts=plan_facts(cfg),
                            has_customer=bool(g.org["stripe_customer_id"]))
 
 
