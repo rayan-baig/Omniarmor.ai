@@ -121,12 +121,43 @@ def terms():
     return render_template("terms.html", facts=_rules_facts())
 
 
+def _help_facts():
+    """The numbers and names the Help page quotes, read from the code and
+    settings that decide them, like the plan page's."""
+    from .academy_views import JOIN_CODE_DAYS, plan_facts
+    from .auth import RESET_HOURS
+    from .autopilot import SLOT_MINUTES
+    from .catalog import TOP_COUNT
+    from .jobs import ALERTS_EVERY_SECONDS
+    from .reminders import REMINDER_DAYS
+    cfg = current_app.config
+    facts = plan_facts(cfg)
+    facts.update({
+        "per_industry": len(rules_for(next(iter(INDUSTRIES)))),
+        "top_count": TOP_COUNT,
+        "reminder_days": REMINDER_DAYS,
+        "daily_hour_utc": cfg["DAILY_JOB_HOUR_UTC"],
+        "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
+        "autopilot_minutes": SLOT_MINUTES,
+        "backup_keep": cfg["BACKUP_KEEP"],
+        "reset_hours": RESET_HOURS,
+        "join_code_days": JOIN_CODE_DAYS,
+        "support_email": cfg.get("SUPPORT_EMAIL", ""),
+    })
+    return facts
+
+
+@public.route("/help", endpoint="help")
+def help_page():
+    return render_template("help.html", facts=_help_facts())
+
+
 # The pages anyone can open and search engines may list: the sitemap gives
 # them, and they carry share previews (og: and twitter: tags) and a canonical
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
 PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.terms", "public.privacy",
-                "auth.signup", "auth.login"}
+                "public.help", "auth.signup", "auth.login"}
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
@@ -170,7 +201,8 @@ def sitemap():
     base = current_app.config["BASE_URL"]
     paths = [url_for("public.home"), url_for("public.industries")]
     paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
-    paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.terms"), url_for("public.privacy")]
+    paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
+              url_for("public.privacy")]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml += [f"<url><loc>{escape(base + path)}</loc></url>" for path in paths] + ["</urlset>"]
     return Response("\n".join(xml), mimetype="application/xml")

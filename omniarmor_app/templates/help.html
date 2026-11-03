@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Help and questions{% endblock %}
+{% block description %}Answers about OmniArmor in plain words: the free trial, prices, what a check is, reminder emails, the Autopilot, the Future Owner Academy, your data and getting help.{% endblock %}
+{% block content %}
+{% set days = facts.reminder_days %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Help</p>
+    <h1>Questions and answers</h1>
+    <p class="sub">Plain words. Every answer matches what the app does today.</p>
+  </div>
+</div>
+<div class="plain help">
+
+<nav class="help-toc" aria-label="Questions">
+  <ol>
+    <li><a href="#trial">Is there a free trial?</a></li>
+    <li><a href="#prices">What does it cost?</a></li>
+    <li><a href="#card">Do I need a card to start?</a></li>
+    <li><a href="#check">What is a check?</a></li>
+    <li><a href="#lights">What do Cleared, Warning and Blocked mean?</a></li>
+    <li><a href="#done">What does Done today do?</a></li>
+    <li><a href="#bulk">Can I update several checks at once?</a></li>
+    <li><a href="#reminders">When do reminder emails go out?</a></li>
+    <li><a href="#choose">How do I choose which reminder emails I get?</a></li>
+    <li><a href="#autopilot">What is the Autopilot?</a></li>
+    <li><a href="#academy">What is the Future Owner Academy?</a></li>
+    <li><a href="#progress">How can I see how my kid is doing?</a></li>
+    <li><a href="#download">How do I download my data?</a></li>
+    <li><a href="#delete">How do I delete my data?</a></li>
+    <li><a href="#help">How do I get help?</a></li>
+  </ol>
+</nav>
+
+<h2 id="trial">Is there a free trial?</h2>
+<p>The compliance tracker doesn't need one: it is free right now. The Future Owner Academy has a {{ facts.trial_days }}-day free trial of everything in the Academy plan. It starts when you add your first learner, once per workspace. When it ends, the {{ facts.free_track.name }} track's first {{ facts.free_worlds|length }} worlds stay free.</p>
+
+<h2 id="prices">What does it cost?</h2>
+<ul>
+  <li><strong>Compliance tracker:</strong> free right now, for your whole team, with all {{ facts.checks }} checks across {{ facts.industries }} industries.</li>
+  <li><strong>Academy, free part:</strong> stays free after the trial: {{ facts.free_worlds|map(attribute='title')|join(', ') }} on {{ facts.free_track.name }}, practice, streaks and friends.</li>
+  <li><strong>Academy plan:</strong> {{ facts.price if facts.price else 'the price is shown at checkout, before you pay' }}. One plan covers every learner in the workspace, up to {{ facts.max_learners }}, on all {{ facts.tracks|length }} tracks. Cancel anytime: the plan stays on until the end of the time you paid for.</li>
+</ul>
+<p>The Academy plan page inside the app lists what each plan includes.</p>
+
+<h2 id="card">Do I need a card to start?</h2>
+<p>No. Signing up asks for your name, email, a password, your company name, its time zone and its industries. The Academy trial needs no card either. A card is only asked for if you start the Academy plan, on Stripe's secure checkout page; OmniArmor never sees the card number.</p>
+
+<h2 id="check">What is a check?</h2>
+<p>A check is one compliance rule your business has to keep, such as an inspection that is due every year, a limit that must not be passed, or a yes-or-no control that must be in place. Each industry has {{ facts.per_industry }} checks, the failures that cost businesses in it the most, and each one names the rule it comes from. Start with the top {{ facts.top_count }} of each industry. You enter a date, a number or a yes-or-no answer once, and OmniArmor keeps count from there, every day, in your company's time zone.</p>
+<p>OmniArmor is decision support, not legal advice: confirm each rule with an expert for your area.</p>
+
+<h2 id="lights">What do Cleared, Warning and Blocked mean?</h2>
+<ul>
+  <li><strong>Cleared:</strong> all good for now.</li>
+  <li><strong>Warning:</strong> getting close to the limit or the due date. Plan the fix.</li>
+  <li><strong>Blocked:</strong> past the limit, overdue, or a yes-or-no answer that breaks the rule. Fix it now.</li>
+</ul>
+<p>A check you haven't filled in yet says No reading.</p>
+
+<h2 id="done">What does Done today do?</h2>
+<p>Duties that repeat, like a yearly inspection, have a Done today button. Pressing it saves today as the date it was last done, so the countdown to the next one starts again. Checks counted in hours have Done now instead, which starts the clock again from this minute.</p>
+
+<h2 id="bulk">Can I update several checks at once?</h2>
+<p>Yes. On an industry page, tick Select on the checks you want, then choose Mark done today, Answer Yes, Answer No or Set the date, and press Update selected. Each check is saved and recorded in the audit trail exactly as if you had changed it on its own. If one of the checks can't take that change, nothing is saved and the page says which one and why.</p>
+
+<h2 id="reminders">When do reminder emails go out?</h2>
+<p>Once a day, after {{ '%02d:00' % facts.daily_hour_utc }} UTC, OmniArmor sends each person on the team one email, the daily digest, when a check is {{ days[:-1]|join(', ') }} or {{ days[-1] }} day{{ 's' if days[-1] != 1 }} from due, due today, or overdue (then once a week while it stays overdue). A missed day is caught up the next day. Checks counted in hours or minutes also send a time-limit alert when they reach their warning point and when they become overdue; OmniArmor looks for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
+<p>Every email is also kept in the app, under Radar.</p>
+
+<h2 id="choose">How do I choose which reminder emails I get?</h2>
+<p>In Settings, under Your reminder emails, each person picks for themselves: the daily digest, the time-limit alerts, both or neither. Both start on. Every reminder email has a link to that page.</p>
+
+<h2 id="autopilot">What is the Autopilot?</h2>
+<p>Autopilot looks after the service itself, so it keeps running without someone watching it all day. Every {{ facts.autopilot_minutes }} minutes it checks OmniArmor over. Small problems it fixes on its own: it sends failed emails again, makes a missed backup and tidies old logs. Big problems, ones a person has to decide on, are emailed to the people who run OmniArmor. It never changes your checks or readings.</p>
+<p>Inside the app, your helper is Armo, the little shield above the tab bar. He jumps up when something is blocked, overdue, due soon, or a reminder email failed, with a link that takes you straight to the fix.</p>
+
+<h2 id="academy">What is the Future Owner Academy?</h2>
+<p>A learning game for the kids who may one day run your company. It has {{ facts.tracks|length }} tracks, from {{ "{:,}".format(facts.tracks|map(attribute='total')|min) }} to {{ "{:,}".format(facts.tracks|map(attribute='total')|max) }} levels, across {{ facts.topic_worlds }} business worlds, the Owner's Challenge and {{ facts.rule_quests }} industry Rule Quests built from real rules. Kids don't get accounts: a grown-up adds each one with only a nickname and a picture. A kid can also use the Academy on their own device with a join code that works once, for {{ facts.join_code_days }} days; that device can open the Academy and nothing else.</p>
+
+<h2 id="progress">How can I see how my kid is doing?</h2>
+<p>Open the Academy and choose Progress reports, or the progress report button on your kid's map. It shows the lessons they played, their best quiz scores and tries, their stars and the certificates they earned on every track. Only the grown-ups in your workspace can open it; a kid's own device can't. Certificates print on one landscape page.</p>
+
+<h2 id="download">How do I download my data?</h2>
+<ul>
+  <li><strong>The report</strong> (Intel): every check's status, print it or press Export CSV for a spreadsheet.</li>
+  <li><strong>The audit trail</strong> (Vault): every change, who made it and when; press Export CSV.</li>
+</ul>
+
+<h2 id="delete">How do I delete my data?</h2>
+<ul>
+  <li><strong>Everything:</strong> the workspace owner goes to Settings, Delete workspace, and types the company name. If you pay for the Academy plan, cancel it first. Download your report and audit trail before, if you need them.</li>
+  <li><strong>One team member:</strong> the owner removes them in Settings, under Team.</li>
+  <li><strong>One kid:</strong> open the Academy, then Manage learners, then Remove.</li>
+</ul>
+<p>Deleted means gone from the app right away. Backups keep a copy for {% if facts.backup_keep > 0 %}about {{ facts.backup_keep }} days{% else %}a while{% endif %}. The <a href="{{ url_for('public.privacy') }}#delete">Privacy page</a> has the details.</p>
+
+<h2 id="help">How do I get help?</h2>
+<ul>
+  <li>Start with Armo: his page (See everything) lists what needs attention, with a fix for each.</li>
+  <li>Can't sign in? Use the <a href="{{ url_for('auth.forgot') }}">Forgot your password?</a> link on the sign-in page. The link we email works once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}.</li>
+  <li>Need access, a new invite or a change to the company settings? Ask your workspace owner: only they can invite or remove people and change the company.</li>
+  {% if facts.support_email %}<li>Still stuck? Write to us at <a href="mailto:{{ facts.support_email }}">{{ facts.support_email }}</a>.</li>{% endif %}
+</ul>
+</div>
+{% endblock %}

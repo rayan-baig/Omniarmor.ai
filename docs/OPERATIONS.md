@@ -78,6 +78,10 @@ domain's DMARC covers it. Check the records with any free DMARC checker before
 real customers depend on reminders. Every email ends with "OmniArmor is a
 product of MTRX Horizyn."
 
+The public Help page (`/help`) answers common questions. Set `SUPPORT_EMAIL`
+to an address people can write to, and its last answer names it; without it,
+the page points only to the help inside the app.
+
 ## 3. What runs by itself every day
 
 After `DAILY_JOB_HOUR_UTC` (default 11:00 UTC), once per day:

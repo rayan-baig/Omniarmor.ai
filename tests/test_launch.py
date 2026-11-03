@@ -145,8 +145,8 @@ def png_size(data):
     return struct.unpack(">II", data[16:24])
 
 
-PUBLIC = ["/", "/industries", "/industries/fleetarmor", "/industries/casinoarmor", "/terms", "/privacy", "/signup",
-          "/login"]
+PUBLIC = ["/", "/industries", "/industries/fleetarmor", "/industries/casinoarmor", "/help", "/terms", "/privacy",
+          "/signup", "/login"]
 BASE = "https://omniarmor.test"
 
 

@@ -39,6 +39,9 @@ def load_config(**overrides):
         # The private key MTRX Horizyn's console sends to /api/stats (the same
         # value as its MTRX_STATS_KEY). Unset, that address does not exist.
         "STATS_KEY": env.get("STATS_KEY", "").strip(),
+        # Where people can write for help, shown on the Help page. Unset, the
+        # page names the help inside the app only.
+        "SUPPORT_EMAIL": env.get("SUPPORT_EMAIL", "").strip(),
         # The Academy's own subscription (separate from the compliance service).
         "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
         "ACADEMY_PRICE_LABEL": env.get("ACADEMY_PRICE_LABEL", ""),

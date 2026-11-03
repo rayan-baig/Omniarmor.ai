@@ -30,6 +30,12 @@ from .tracking import org_today, states_for_org, tally
 log = logging.getLogger("omniarmor.reminders")
 
 
+# The days before a due date that reminder_window() opens a window on, for
+# the pages that say when reminders go out. After the due day it reminds
+# weekly while a check stays overdue.
+REMINDER_DAYS = (30, 7, 1)
+
+
 def reminder_window(days_left):
     """The reminder window a deadline is in today, or None when it's more than 30 days out."""
     if days_left is None or days_left > 30:

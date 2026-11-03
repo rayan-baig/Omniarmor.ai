@@ -19,6 +19,7 @@
       <p><b>{{ facts.trial_days }}-day free trial</b> of all {{ facts.tracks }} tracks, from when you add your first kid. Then {{ facts.price if facts.price else 'the Academy plan' }}, or keep the first {{ facts.free_worlds }} {{ facts.free_track }} worlds free.</p>
     </div>
   </div>
+  <p class="hint">Questions about the trial, prices, reminders or your data? <a href="{{ url_for('public.help') }}">Read the help page</a>.</p>
 </section>
 
 <section class="features" aria-label="What OmniArmor does">
