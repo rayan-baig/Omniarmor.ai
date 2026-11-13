@@ -432,6 +432,11 @@ class TestKidCannotReachTheGrownUps(KidCase):
                     continue
                 if endpoint == "plan.stripe_webhook":
                     continue    # signed by Stripe, not a person's page
+                if endpoint == "connect.cyberlogix_daily":
+                    # Signed by a workspace's connection key, not a person's
+                    # page: a kid's cookie is no key.
+                    self.assertEqual(self.kid.post(rule.rule, data={"csrf_token": token}).status_code, 401)
+                    continue
                 if endpoint.startswith("_test_"):
                     continue    # exists only in tests (it always fails, for the error page's test)
                 url = self.url_for_rule(rule)

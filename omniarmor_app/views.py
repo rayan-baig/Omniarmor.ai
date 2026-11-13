@@ -8,7 +8,7 @@ import io
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
 
-from . import usage
+from . import connections, usage
 from .academy_plan import charges_again, plan_status
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
@@ -103,7 +103,42 @@ def industry(industry_id):
     shown = [s for s in states if s.problem] if only else states
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
                            can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
-                           top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS)
+                           top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS,
+                           bundle=_bundle(industry_id))
+
+
+def _bundle(industry_id):
+    """The Kitchen Safety Bundle on an industry page: the connection's status
+    and, per temperature check on the page, its open CyberLogix notes. None
+    when the page has no temperature check."""
+    keys = [key for i, key in connections.TEMPERATURE_CHECKS if i == industry_id]
+    if not keys:
+        return None
+    conn = get_db()
+    info = connections.status(conn, g.org)
+    info["notes"] = {key: connections.open_notes(conn, g.org["id"], industry_id, key) for key in keys}
+    info["latest"] = {key: connections.latest_report(conn, g.org["id"], industry_id, key) for key in keys}
+    info["page_keys"] = set(keys)
+    return info
+
+
+@bp.route("/connections/cyberlogix/review", methods=["POST"])
+@login_required
+def review_note():
+    """Anyone on the team marks a CyberLogix note on a temperature check
+    reviewed. The workspace comes from the session; the check must be one
+    CyberLogix fills in, in an industry the workspace tracks."""
+    industry_id = request.form.get("industry_id", type=int)
+    rule_key = request.form.get("rule_key", "")
+    day = request.form.get("date", "")
+    if (industry_id, rule_key) not in connections.TEMPERATURE_CHECKS:
+        abort(404)
+    _industry_or_404(industry_id)
+    if connections.mark_reviewed(get_db(), g.org["id"], g.user["id"], industry_id, rule_key, day[:10]):
+        flash("Note marked reviewed. It stays in the audit trail.", "ok")
+    else:
+        flash_error("That note was already reviewed or replaced. Reload the page to see the latest.")
+    return redirect(url_for("app.industry", industry_id=industry_id, _anchor=f"rule-{rule_key}"))
 
 
 def page_order(state):
@@ -262,6 +297,12 @@ def notifications():
 @bp.route("/settings", methods=["GET"])
 @login_required
 def settings():
+    return _settings_page()
+
+
+def _settings_page(new_key=None):
+    """The Settings page. new_key is a connection key just made, shown on
+    this one page and never again (only its hash is kept)."""
     conn = get_db()
     members = conn.execute(
         "SELECT users.id, users.name, users.email, memberships.role FROM memberships"
@@ -279,7 +320,37 @@ def settings():
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
                            plan=plan_status(g.org), operator=operator,
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
-                           support_email=current_app.config.get("SUPPORT_EMAIL", ""))
+                           support_email=current_app.config.get("SUPPORT_EMAIL", ""),
+                           connection=connections.status(conn, g.org), new_key=new_key,
+                           all_temperature_checks=[(INDUSTRIES[i], find_rule(i, key))
+                                                   for i, key in connections.TEMPERATURE_CHECKS])
+
+
+@bp.route("/settings/connections/cyberlogix/create", methods=["POST"])
+@owner_required
+def connection_create():
+    key = connections.create_key(get_db(), g.org["id"], g.user["id"])
+    if key is None:
+        flash_error("This workspace already has a CyberLogix connection key. Regenerate it to get a new one.")
+        return redirect(url_for("app.settings", _anchor="connections"))
+    return _settings_page(new_key=key)
+
+
+@bp.route("/settings/connections/cyberlogix/regenerate", methods=["POST"])
+@owner_required
+def connection_regenerate():
+    return _settings_page(new_key=connections.create_key(get_db(), g.org["id"], g.user["id"], replace=True))
+
+
+@bp.route("/settings/connections/cyberlogix/revoke", methods=["POST"])
+@owner_required
+def connection_revoke():
+    if connections.revoke_key(get_db(), g.org["id"], g.user["id"]):
+        flash("The CyberLogix connection key was revoked. CyberLogix can't send reports until you create a new one.",
+              "ok")
+    else:
+        flash_error("There is no active CyberLogix connection key to revoke.")
+    return redirect(url_for("app.settings", _anchor="connections"))
 
 
 # The reminder emails a person can choose, as (form field and users column, name).

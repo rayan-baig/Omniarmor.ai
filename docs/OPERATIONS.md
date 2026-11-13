@@ -304,6 +304,13 @@ version is running, run `flask --app wsgi make-operator you@example.com`
 with the `OPERATOR_EMAIL` address (section 5, "The operator's account") and
 check that the account it prints is yours.
 
+**Upgrading to 1.2.0:** nothing to do. Schema version 17 adds the tables for
+the Kitchen Safety Bundle; CyberLogix reports start once a workspace owner
+creates a connection key in Settings, Connections. CyberLogix calls
+`https://omniarmor.<your domain>/api/connect/cyberlogix/daily`
+([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md)); if a firewall or proxy
+sits in front of the app, let POSTs to that address through.
+
 ## 8. Things only you can do
 
 - Make your account the operator's, once, on the server: sign up with the

@@ -435,8 +435,8 @@ class TestCsrfEverywhere(AppTestCase):
         self.assertGreater(len(routes), 25)
         tried = 0
         for rule in routes:
-            if rule.endpoint == "plan.stripe_webhook":
-                continue    # signed by Stripe instead; checked below
+            if rule.endpoint in ("plan.stripe_webhook", "connect.cyberlogix_daily"):
+                continue    # signed by Stripe, or by a connection key, instead; checked below
             url = self.url(rule)
             fields = {"action": "save", "date": "2026-01-01", "confirm": "Acme Logistics", "name": "Evil",
                       "timezone": "UTC", "industries": "2", "nickname": "Evil", "avatar": "rocket",
@@ -459,6 +459,11 @@ class TestCsrfEverywhere(AppTestCase):
         # The webhook takes no form token, only Stripe's signature.
         self.app.config["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
         self.assertEqual(self.client.post("/billing/stripe/webhook", data=b"{}").status_code, 400)
+        # CyberLogix's report takes no form token, only the workspace's
+        # connection key: the signed-in cookie gets nowhere.
+        response = self.client.post("/api/connect/cyberlogix/daily", data=fields)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.snapshot(), before)
 
     def test_every_post_form_on_every_page_carries_the_token(self):
         with self.client.session_transaction() as s:

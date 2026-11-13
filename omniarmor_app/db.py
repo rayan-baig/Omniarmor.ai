@@ -311,6 +311,45 @@ MIGRATIONS = [
     (16, """
     ALTER TABLE users ADD COLUMN is_operator INTEGER NOT NULL DEFAULT 0;
     """),
+    # The Kitchen Safety Bundle (connections.py): a workspace's connection key
+    # for CyberLogix, MTRX Horizyn's fridge and freezer alarm app, stored as a
+    # hash like invite links, at most one active per workspace and app; and
+    # the daily reports it sent, one row per workspace, check and day, which
+    # is what makes sending the same day twice change nothing. A report holds
+    # temperatures, unit names and roles, never a person's name.
+    (17, """
+    CREATE TABLE connection_keys (
+        id INTEGER PRIMARY KEY,
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        service TEXT NOT NULL,
+        key_hash TEXT NOT NULL UNIQUE,
+        hint TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        revoked_at TEXT,
+        last_used_at TEXT,
+        last_report_date TEXT
+    );
+    CREATE UNIQUE INDEX connection_keys_one_active ON connection_keys (org_id, service) WHERE revoked_at IS NULL;
+    CREATE TABLE connection_reports (
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        service TEXT NOT NULL,
+        industry_id INTEGER NOT NULL,
+        rule_key TEXT NOT NULL,
+        report_date TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        outcome TEXT NOT NULL CHECK (outcome IN ('ticked', 'confirmed', 'note')),
+        reading REAL,
+        summary TEXT NOT NULL,
+        note TEXT,
+        site TEXT,
+        log_url TEXT,
+        received_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        reviewed_at TEXT,
+        PRIMARY KEY (org_id, service, industry_id, rule_key, report_date)
+    );
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
@@ -386,9 +425,14 @@ def user_name(conn, user_id):
     return row["name"] if row else None
 
 
-def record_audit(conn, org_id, user_id, action, summary, industry_id=None, rule_key=None, before=None, after=None):
+def record_audit(conn, org_id, user_id, action, summary, industry_id=None, rule_key=None, before=None, after=None,
+                 actor=None):
+    """One row of the audit trail. `actor` names who made a change that no
+    person made (an app sending a report, such as "CyberLogix"); it is used
+    only when user_id is None."""
+    name = user_name(conn, user_id) if user_id is not None else actor
     conn.execute(
         "INSERT INTO audit (org_id, user_id, user_name, at, action, industry_id, rule_key, before, after, summary)"
         " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (org_id, user_id, user_name(conn, user_id), now_iso(), action, industry_id, rule_key, before, after, summary),
+        (org_id, user_id, name, now_iso(), action, industry_id, rule_key, before, after, summary),
     )

@@ -16,7 +16,7 @@ from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, r
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, armo_views, autopilot, auth, errormail, usage, views
+from . import academy_views, armo_views, autopilot, auth, connections, errormail, usage, views
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -82,7 +82,7 @@ def industry_page(slug):
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "3 November 2026"
+RULES_UPDATED = "13 November 2026"
 
 
 def _rules_facts():
@@ -337,6 +337,7 @@ def create_app(**overrides):
     app.before_request(check_csrf)
     app.after_request(security_headers)
     app.after_request(robots_header)
+    app.after_request(connections.api_headers)
     app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
@@ -367,6 +368,7 @@ def create_app(**overrides):
     app.register_blueprint(academy_views.kids)
     app.register_blueprint(academy_views.plan)
     app.register_blueprint(armo_views.bp)
+    app.register_blueprint(connections.api)
     register_cli(app)
 
     @app.errorhandler(400)
@@ -383,6 +385,10 @@ def create_app(**overrides):
             autopilot.record_error(app.config, request.path, cause)
             errormail.report(app.config, cause, request.method, request.path)
         title, help_text = ERROR_PAGES.get(code, ERROR_PAGES[500])
+        if connections.is_api_request():
+            # A program called: it gets JSON, in the shape the API's own errors have.
+            error = "payload_too_large" if code == 413 else f"http_{code}"
+            return jsonify(ok=False, error=error, message=title), code
         # A message the app wrote for this case (an expired form, say) beats
         # the general one; Werkzeug's own wording, written for developers,
         # never shows. Nothing about a server error ever does.

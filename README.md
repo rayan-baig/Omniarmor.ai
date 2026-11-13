@@ -19,6 +19,7 @@ From then on OmniArmor:
 - **Restarts recurring duties:** pressing Done today starts the next cycle.
 - **Keeps the record:** every change is in the audit trail with who and when. Printable reports and CSV exports are ready for inspectors.
 - **Backs itself up:** daily database backups, with old copies pruned.
+- **Fills in the fridge checks itself (Kitchen Safety Bundle):** connected to CyberLogix, MTRX Horizyn's fridge and freezer alarm app, a restaurant's cold holding check ticks itself from CyberLogix's daily readings, and a breach leaves a note for someone to review. The owner makes the connection key in Settings, Connections; the contract CyberLogix builds against is [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md). A connection sends temperature summaries and roles, never names.
 - **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
 - **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,350 levels), Trailblazer (2,700), Summit (5,400) and Titan Mastery (15,700). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. The Academy has its own subscription, separate from the compliance service.
 
@@ -32,7 +33,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 633 tests
+python3 -m unittest discover -s tests     # 673 tests
 flask --app wsgi seed-demo --force demo.db   # a made-up demo workspace (docs/OPERATIONS.md, section 6)
 ```
 
@@ -55,6 +56,7 @@ on first: [docs/STAGING.md](docs/STAGING.md).
 | Path | What it is |
 |---|---|
 | `omniarmor_app/` | The web app: accounts, workspaces, tracking, reminders, reports, daily jobs |
+| `omniarmor_app/connections.py` | The Kitchen Safety Bundle: CyberLogix's connection key and daily report ([docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md)) |
 | `omniarmor_app/academy.py` | The Future Owner Academy: worlds, lessons and quiz generation (see `docs/academy-preview/`) |
 | `omni_armor_rules/` | The 500 rules (`group_1.py` … `group_10.py`) and the one `evaluate` every rule uses |
 | `omni_armor_platform.py` | The original engine: 25 detailed checks and the console demo |

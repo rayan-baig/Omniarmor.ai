@@ -16,6 +16,7 @@ omniarmor_app (Flask)
    ├── reminders.py  daily digests per company
    ├── jobs.py       the timer: alerts each minute; reminders, cleanup, backup daily
    ├── notify.py     email, or the saved log when email isn't set up
+   ├── connections.py CyberLogix's daily report fills in the temperature checks
    └── db.py         SQLite, schema migrations, audit writes
    ▼
 SQLite database (one file on a persistent disk) + daily backups
@@ -37,6 +38,14 @@ SQLite database (one file on a persistent disk) + daily backups
 5. Each morning `jobs.run_daily` claims the day, then `reminders.run_reminders`
    finds deadlines at 30/7/1/0 days or overdue, records each one in
    `reminder_marks` so it's sent once, and emails each team member a digest.
+
+A reading can also come from CyberLogix, MTRX Horizyn's fridge and freezer
+alarm app (the Kitchen Safety Bundle). Its daily report to
+`/api/connect/cyberlogix/daily` is signed in by the workspace's connection
+key instead of a cookie and form token; `connections.py` checks it, and a
+clean day goes through the same `tracking.apply_change` as step 3, with
+CyberLogix as who made the change. The contract is
+[CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md).
 
 ## Data model
 

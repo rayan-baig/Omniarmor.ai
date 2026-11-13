@@ -575,7 +575,7 @@ def _get_row(conn, org_id, industry_id, rule_key):
     ).fetchone()
 
 
-def _write(conn, org_id, industry_id, rule_key, user_id, **fields):
+def _write(conn, org_id, industry_id, rule_key, user_id, actor=None, **fields):
     names = ["value_num", "value_bool", "value_date", "limit_override", "warn_override"]
     existing = _get_row(conn, org_id, industry_id, rule_key)
     values = {n: (existing[n] if existing is not None else None) for n in names}
@@ -589,15 +589,20 @@ def _write(conn, org_id, industry_id, rule_key, user_id, **fields):
         " updated_at = excluded.updated_at, updated_by = excluded.updated_by,"
         " updated_by_name = excluded.updated_by_name",
         (org_id, industry_id, rule_key, values["value_num"], values["value_bool"], values["value_date"],
-         values["limit_override"], values["warn_override"], now_iso(), user_id, user_name(conn, user_id)),
+         values["limit_override"], values["warn_override"], now_iso(), user_id,
+         user_name(conn, user_id) if user_id is not None else actor),
     )
     return _get_row(conn, org_id, industry_id, rule_key)
 
 
-def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit=True):
+def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit=True, actor=None, summary=None):
     """Applies one change from the industry page. Returns a confirmation message;
     raises ValidationError with a message for the person when the input is invalid.
-    With commit=False the change is left uncommitted, for apply_bulk."""
+    With commit=False the change is left uncommitted, for apply_bulk.
+
+    A connected app (connections.py) makes its changes through here too, as
+    a person would, with user_id None, `actor` naming the app ("CyberLogix")
+    for the record, and `summary` as the audit trail's line for the change."""
     rule = find_rule(industry_id, rule_key)
     if rule is None:
         raise LookupError(rule_key)
@@ -614,7 +619,7 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
             answer = form.get("answer")
             if answer not in ("yes", "no"):
                 raise ValidationError("Choose Yes or No.")
-            after = _write(conn, org_id, industry_id, rule_key, user_id, value_bool=1 if answer == "yes" else 0)
+            after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_bool=1 if answer == "yes" else 0)
         else:
             # An hour clock's date box holds a date and a time ("when it started").
             picked = None if not mode else _parse_moment(form.get("date"), tz) if timed else _parse_date(form.get("date"))
@@ -635,17 +640,17 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
             if picked is not None and timed:
                 if picked[0] > utcnow():
                     raise ValidationError("That time is in the future. Enter when it started.")
-                after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=iso(picked[0]), value_num=None)
+                after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_date=iso(picked[0]), value_num=None)
             elif picked is not None:
                 if mode == "since" and picked > today:
                     raise ValidationError("That date is in the future. Enter the date it last happened.")
-                after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=picked.isoformat(), value_num=None)
+                after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_date=picked.isoformat(), value_num=None)
             else:
                 number = _parse_number(form.get("value"))
                 if number is None:
                     raise ValidationError("Enter a reading" + (" or pick when it started." if timed else
                                                                " or pick a date." if mode else "."))
-                after = _write(conn, org_id, industry_id, rule_key, user_id, value_num=number, value_date=None)
+                after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_num=number, value_date=None)
         action_name, verb = "reading", "Saved"
     elif action == "done_today":
         if mode != "since":
@@ -653,13 +658,13 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
         if timed:
             # An hour clock starts again now, to the minute.
             started = iso(utcnow().replace(second=0, microsecond=0))
-            after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=started, value_num=None)
+            after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_date=started, value_num=None)
             action_name, verb = "done", "Marked done now; the next cycle has started"
         else:
-            after = _write(conn, org_id, industry_id, rule_key, user_id, value_date=today.isoformat(), value_num=None)
+            after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_date=today.isoformat(), value_num=None)
             action_name, verb = "done", "Marked done today; the next cycle has started"
     elif action == "clear":
-        after = _write(conn, org_id, industry_id, rule_key, user_id, value_num=None, value_bool=None, value_date=None)
+        after = _write(conn, org_id, industry_id, rule_key, user_id, actor, value_num=None, value_bool=None, value_date=None)
         action_name, verb = "cleared", "Reading cleared"
     elif action in ("override", "reset_override"):
         if not can_override(rule):
@@ -685,11 +690,11 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
                     raise ValidationError("The warning point must be at or below the limit.")
                 if rule.kind == "min" and final_warn < limit:
                     raise ValidationError("The warning point must be at or above the minimum.")
-        after = _write(conn, org_id, industry_id, rule_key, user_id, limit_override=limit, warn_override=warn)
+        after = _write(conn, org_id, industry_id, rule_key, user_id, actor, limit_override=limit, warn_override=warn)
         summary_before = _limits_text(rule, before)
         summary_after = _limits_text(rule, after)
-        record_audit(conn, org_id, user_id, "limit", f"{rule.title}: limit {summary_before} → {summary_after}",
-                     industry_id, rule_key, summary_before, summary_after)
+        record_audit(conn, org_id, user_id, "limit", summary or f"{rule.title}: limit {summary_before} → {summary_after}",
+                     industry_id, rule_key, summary_before, summary_after, actor=actor)
         if commit:
             conn.commit()
         return "Your limit was saved." if action == "override" else "The default limit is back."
@@ -697,8 +702,8 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
         raise ValidationError("Unknown action.")
 
     after_text = _describe(rule, after, tz)
-    record_audit(conn, org_id, user_id, action_name, f"{rule.title}: {before_text} → {after_text}",
-                 industry_id, rule_key, before_text, after_text)
+    record_audit(conn, org_id, user_id, action_name, summary or f"{rule.title}: {before_text} → {after_text}",
+                 industry_id, rule_key, before_text, after_text, actor=actor)
     if commit:
         conn.commit()
     return f"{verb}."

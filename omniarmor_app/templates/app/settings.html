@@ -68,6 +68,8 @@
   </form>
 {% endif %}
 
+{% include "app/_connections.html" %}
+
 <h2>Academy plan</h2>
 <p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. {{ 'Update your card' if g.role == 'owner' else 'The workspace owner can update the card' }} to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at|local_date }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at|local_date }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
   <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if plan.access == 'paid' and g.role == 'owner' else 'See the Academy plan' }}</a></p>

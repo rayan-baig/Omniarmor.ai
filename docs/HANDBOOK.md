@@ -211,6 +211,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 - **Owners also:**
   - change the company name, timezone and industries;
   - invite people and remove members;
+  - create, regenerate or revoke the CyberLogix connection key under **Connections** (section 2.11; everyone sees whether CyberLogix is connected);
   - manage or cancel the Academy plan from its page;
   - delete the whole workspace, by typing the company name to confirm.
 - **The operator** (the account with the `OPERATOR_EMAIL` address that was made the operator on the server, section 6.8) also sees the usage counts of the last 30 days (section 6.7). Signing up with that address is not enough.
@@ -232,7 +233,7 @@ The site also serves a `sitemap.xml` listing the public pages (home, the industr
 
 There are two roles: **owner** and **member**.
 
-- **Owners** can invite people, remove members, change company settings, and delete the workspace.
+- **Owners** can invite people, remove members, change company settings, manage the CyberLogix connection key, and delete the workspace.
 - **Members** can do everything else: enter readings, use Done today, view reports, and change their own reminder switch and Armo.
 
 An invite is a one-time link valid for 7 days. Only a hash of the link is stored, so a stolen database can't be used to join. The invite is recorded in the Vault.
@@ -244,6 +245,21 @@ An invite is a one-time link valid for 7 days. Only a hash of the link is stored
 - **Sessions** last 14 days.
 
 The full list of protections is in Part 7.
+
+### 2.11 The Kitchen Safety Bundle: CyberLogix fills in the temperature checks
+
+CyberLogix is MTRX Horizyn's fridge and freezer alarm app. Connected, it fills in OmniArmor's temperature-log checks from its own readings, so a restaurant doesn't type in a fridge temperature by hand. Today that is RestoArmor's **Cold holding at 41°F or below** (`TEMPERATURE_CHECKS` in `omniarmor_app/connections.py`); a workspace that doesn't track RestoArmor has nothing for it to fill in.
+
+- **Connecting.** The owner opens Settings, **Connections**, and presses **Create CyberLogix connection key**. The key is shown once, on that page; OmniArmor keeps only its hash (like invite links), so it can't show it again, and afterwards the page shows its last 4 characters, when it was made and when it was last used. One key is active per workspace. **Regenerate key** makes a new one and stops the old one at once; **Revoke key** stops it. Each is in the Vault. Members see the status but can't change the key.
+- **Each day** CyberLogix sends one summary for the site's day to `POST /api/connect/cyberlogix/daily`, with the key as its sign-in: how many units it watches, how many stayed in range all day, the warmest reading, any breaches (unit, times, peak and limit, the role of who acknowledged it, such as "on-call staff", and a code for what was done) and a link to its log. Names never arrive: roles and actions come from fixed lists.
+- **A clean day ticks the check.** When every unit stayed in range, the check gets the day's warmest reading through `tracking.apply_change`, the same code a person's Save goes through, and the Vault says "From CyberLogix: 7 of 7 units in range all day", with CyberLogix as who made the change. OmniArmor judges the reading against its own 41°F limit.
+- **A breach ticks nothing.** It leaves a note on the check, such as "CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit 0°F); acknowledged by on-call staff", with the date, the site and a link to the CyberLogix log, until someone on the team presses **Mark reviewed**. The note is in the Vault too.
+- **Safe to send twice.** Reports are kept per workspace, check and day: the same day again changes nothing, and a corrected report replaces the note. A report never takes a reading away, never overwrites one someone on the team saved that day or later, and an older day never overwrites a newer one.
+- **What it shows.** Until connected, the temperature check and Settings say "Kitchen Safety Bundle: let CyberLogix fill this in automatically", with a link to Connections; once reports arrive, "Connected to CyberLogix · last report 2026-11-12".
+
+The Privacy page says in one line what a connection sends: temperature summaries, unit names and roles, never names.
+
+The full contract the CyberLogix side builds against (the body, every field's limits, responses and error codes, idempotency and rate limits) is [docs/CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md).
 
 ---
 
@@ -718,6 +734,7 @@ Every point below is in the code today.
 - **Sign-in rate limiting:** 5 failures per email or 20 per network address within 15 minutes pauses sign-in.
 - **Password reset links** last 1 hour and work once. Reset requests are limited (3 per email and 20 per network address per hour). Only a hash of each link is stored.
 - **Invite links** last 7 days, and only their hash is stored.
+- **The CyberLogix connection key** is shown once and only its hash is stored. One is active per workspace; regenerating or revoking stops the old one at once. Its address answers only that key in the `Authorization` header (never the sign-in cookie), so it is the one POST besides Stripe's signed webhook without a form token. It allows 60 reports an hour per key and 120 requests an hour per network address, and 10 wrong keys from an address in 15 minutes pause that address (section 2.11).
 - **Sessions** are checked on every request against the person's identity: a session counter plus a key made from the person's id, email and creation time. Changing a password bumps the counter, which signs out every other device. A reused account id can't inherit an old session.
 - **Redirects after sign-in** only go to pages on the same site; anything a browser could read as another site is refused.
 - **Operator status** is never given by an email address alone, because sign-up doesn't verify addresses. Only `flask --app wsgi make-operator`, run on the server, gives it, and only to the account with the `OPERATOR_EMAIL` address (section 6.8).
@@ -726,7 +743,8 @@ Every point below is in the code today.
 
 - Every company's data is looked up through the company in the signed-in session, never by an id the browser sends.
 - Industry pages check that the industry belongs to the company and that the rule exists.
-- Owner-only actions (invites, removing members, company settings, deleting the workspace) are enforced on the server.
+- Owner-only actions (invites, removing members, company settings, the CyberLogix connection key, deleting the workspace) are enforced on the server.
+- A CyberLogix report reaches only the workspace whose key sent it, and carries roles, never names: every field is checked, and roles and actions come from fixed lists.
 - Every change is in the audit trail.
 - Text inputs are cleaned: names with control characters (which could break emails and exports) are refused.
 - CSV exports are formula-safe.
@@ -812,6 +830,7 @@ omniarmor_app (Flask)
    ├── academy_bank/   question banks for the 27 newer worlds
    ├── academy_views.py the Academy pages, kids' devices, friends, duels, practice, plan
    ├── academy_plan.py the Academy subscription and Stripe
+   ├── connections.py  the Kitchen Safety Bundle: CyberLogix's key and daily report
    ├── autopilot.py    the 10-minute health pass: fixes and operator emails
    ├── bugfinder.py    crash fingerprints, daily self-test, content and data checks
    └── db.py           SQLite connection, schema migrations, audit writes
@@ -832,7 +851,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 633 tests in 38 files.
+- `tests/`: 673 tests in 39 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
   - `test_user_flows.py` (75, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
@@ -845,6 +864,7 @@ SQLite database (one file on a persistent disk) + daily backups
   - `test_sweeps.py` (10: the sweep locks, a daily run or Autopilot pass that runs long never started twice, the alerts in their own thread, schema version 14, and the timer only in the server, never in a one-off command).
   - Version 1.1.0: `test_seed_demo.py` (16: the demo workspace's mix of checks, audit trail, Academy and Autopilot, signing in to it, every way it refuses to mix into real data, and backups kept apart from the live ones), `test_error_reports.py` (13: what an error report says, that a request with an email address in its query, form and cookie leaks none of them, the hourly and daily limits across a restart, and delivery through the outbox when mail is down) and `test_usage_counts.py` (13: schema version 15, each count, operator only, `/api/stats`, the Privacy page, and Settings showing the plan, the version and where to get help).
   - Version 1.1.2: `test_operator.py` (10: a stranger who signs up with the operator's address sees no operator data and can't turn the weekly report off; `make-operator` grants, revokes and refuses an address that isn't `OPERATOR_EMAIL`; one operator at a time; a filled version 15 database upgraded with nobody made the operator; and Autopilot's bug emails scrubbed of email addresses, tokens and links).
+  - Version 1.2.0: `test_cyberlogix.py` (36: the connection key made, shown once, hashed, regenerated and revoked, owner only; wrong, missing and revoked keys and a signed-in cookie get 401, and another workspace is never touched; a clean day ticks the cold holding check through `apply_change` with its audit line, a breach adds a note and ticks nothing; the same day twice, corrected reports that replace the note and never untick a person's reading; every bad field refused; the rate limits; a workspace with no temperature check; a filled version 16 database upgraded; and the contract doc's example accepted).
   - `test_parity.py` (1: dashboard against engine, run with Node).
   - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
@@ -871,7 +891,7 @@ SQLite database (one file on a persistent disk) + daily backups
 
 ### 8.4 The data model
 
-The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 16), under SQLite's write lock so several processes starting together don't race.
+The database is one SQLite file in WAL mode with foreign keys on. The schema upgrades itself at start-up through numbered migrations (currently 1 to 17), under SQLite's write lock so several processes starting together don't race.
 
 **Core:**
 
@@ -906,6 +926,11 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - `app_errors`: recorded server errors, with page, error, fingerprint, code location and traceback.
 - `stripe_events`: Stripe event ids already applied.
 - `usage_counts`: one total per feature per day (section 6.7), with no user, workspace or learner id.
+
+**Connections (section 2.11):**
+
+- `connection_keys`: each workspace's CyberLogix keys, as hashes with their last 4 characters, who made each and when, when it was revoked and last used, and the newest report date. At most one per workspace is active (a unique index on the keys not revoked).
+- `connection_reports`: one row per workspace, check and day: the report's fingerprint (so the same report again changes nothing), what it did (ticked, confirmed or a note), the reading, the note, the site, the log link and when the note was reviewed. No person's name.
 
 ### 8.5 World numbering in the Academy
 
@@ -1114,6 +1139,7 @@ The project was built in steps, each one a commit on GitHub:
 16. **Reliability (1.0.1):** a load test of 500 workspaces at once, the sweeps timed at up to 2,000 workspaces, a lock so no sweep runs twice at once, the alerts in a thread of their own, the daily backup taken after the reminders, and a rehearsed 10-minute restore checklist (`docs/LOAD-TEST.md`).
 17. **For selling and running it (1.1.0):** a demo workspace in one command, error reports to one inbox with no personal data, privacy-friendly daily usage counts for the operator, and Settings showing the plan, the version and where to get help to everyone on the team.
 18. **Operator status from the server (1.1.2):** the operator's account is made with `make-operator` on the server, not by signing up with the operator's address, and Autopilot's bug emails are scrubbed like the error reports.
+19. **The Kitchen Safety Bundle (1.2.0):** CyberLogix, MTRX Horizyn's fridge and freezer alarm app, ticks the cold holding check from its daily readings and leaves a note on a breach, through a connection key made in Settings, Connections, and the contract in `docs/CYBERLOGIX-CONNECTION.md`.
 
 Previews, the playable lesson pages and this handbook's companion brief were published as private pages in the original account.
 
@@ -1125,9 +1151,9 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Branch:** `claude/wonderful-heisenberg-77tbq9`, the live default branch. Everything above is on it.
-- **Version** 1.1.2 (`omniarmor_app/version.py`, `CHANGELOG.md`).
-- **Tests:** 633 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
-- **Database schema** is at version 16.
+- **Version** 1.2.0 (`omniarmor_app/version.py`, `CHANGELOG.md`).
+- **Tests:** 673 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
+- **Database schema** is at version 17.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
   - **Run `flask --app wsgi make-operator` once** with the `OPERATOR_EMAIL` address after the deploy (section 6.8): since 1.1.2 nobody is the operator until it is run, and check that the account it prints is yours.
@@ -1136,7 +1162,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 ### 12.2 Known gaps and good next steps
 
 - **Billing for the compliance service** isn't built yet. The Academy plan already uses Stripe, and the same pattern (Checkout, portal, signed webhook) would work.
-- **Integrations.** Readings are entered by hand. Pulling hours from ELDs, temperatures from sensors, or employee data from HR systems would cut data entry.
+- **Integrations.** Most readings are entered by hand. CyberLogix fills in the cold holding check (section 2.11); the same connection pattern could take hot holding and cooling logs from CyberLogix, hours from ELDs, or employee data from HR systems.
 - **One workspace per person.** Consultants and multi-location owners would want several.
 - **English only.**
 - **Rule review.** A compliance professional should review the catalog before selling, especially rules marked as policy. Most rules are US federal, with some state and city rules (California, Illinois, New York City), the GDPR, PCI DSS and NFPA standards, and maritime conventions (MARPOL, SOLAS, STCW, MLC).
@@ -5973,6 +5999,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | Method | Address | What it is |
 |---|---|---|
 | GET | `/` | Landing page |
+| POST | `/api/connect/cyberlogix/daily` | CyberLogix's daily temperature report (JSON, with the workspace's connection key; docs/CYBERLOGIX-CONNECTION.md) |
 | GET | `/api/stats` | User counts and the last 30 days of usage counts for MTRX Horizyn's console (only with `STATS_KEY`, and only to that key) |
 | GET | `/app` | HQ, the overview |
 | GET | `/app/academy` | Academy home for grown-ups |
@@ -6001,6 +6028,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/armo/personality` | Pick Armo's personality |
 | GET | `/app/armo/status` | Armo's live status feed (JSON) |
 | GET | `/app/audit` | Vault, the audit trail |
+| POST | `/app/connections/cyberlogix/review` | Mark a CyberLogix note on a temperature check reviewed |
 | GET | `/app/audit.csv` | The audit trail as CSV |
 | GET | `/app/industry/<int:industry_id>` | One industry's ten checks |
 | POST | `/app/industry/<int:industry_id>/bulk` | Update several checks at once: done today, Yes, No or one date |
@@ -6010,6 +6038,9 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/app/report.csv` | The report as CSV |
 | GET | `/app/settings` | Armory, settings |
 | POST | `/app/settings/company` | Company name, timezone and industries (owners) |
+| POST | `/app/settings/connections/cyberlogix/create` | Create the CyberLogix connection key, shown once (owners) |
+| POST | `/app/settings/connections/cyberlogix/regenerate` | Replace the CyberLogix connection key, shown once (owners) |
+| POST | `/app/settings/connections/cyberlogix/revoke` | Revoke the CyberLogix connection key (owners) |
 | POST | `/app/settings/delete` | Delete the workspace (owners) |
 | POST | `/app/settings/invite` | Invite a teammate (owners) |
 | POST | `/app/settings/member/<int:user_id>/remove` | Remove a teammate (owners) |

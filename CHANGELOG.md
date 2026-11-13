@@ -3,6 +3,42 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.2.0 (13 November 2026)
+
+The Kitchen Safety Bundle: CyberLogix, MTRX Horizyn's fridge and freezer
+alarm app, fills in OmniArmor's temperature checks from its own readings.
+
+- **Settings, Connections:** the workspace owner creates a CyberLogix
+  connection key, shown once and stored only as a hash (like invite links),
+  and can regenerate or revoke it. One active key per workspace. Everyone on
+  the team sees the status; only the owner changes the key.
+- **`POST /api/connect/cyberlogix/daily`:** CyberLogix sends each day's
+  summary with the key as a Bearer token. Every field is checked, and
+  breaches carry roles ("on-call staff"), never names. Rate-limited per key
+  and per address, and wrong keys are limited harder. It is exempt from the
+  form token only because the key, not the cookie, signs it in.
+- **A clean day ticks the check:** every unit in range all day saves the
+  day's warmest reading on the workspace's temperature-log check (RestoArmor's
+  "Cold holding at 41°F or below") through the same code as a person's Save,
+  shown in the audit trail as "From CyberLogix: 7 of 7 units in range all
+  day". **A breach ticks nothing:** it adds a note to the check, such as
+  "CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F",
+  until someone marks it reviewed.
+- Sending the same day twice changes nothing. A corrected report replaces
+  the note, and never takes away or overwrites a reading someone on the team
+  saved that day or later. A workspace with no temperature check gets
+  `matched_checks: 0` and a hint.
+- The temperature checks and Settings show "Kitchen Safety Bundle: let
+  CyberLogix fill this in automatically" until connected, then "Connected to
+  CyberLogix · last report <date>".
+- **docs/CYBERLOGIX-CONNECTION.md:** the contract the CyberLogix side builds
+  against: the key, the body with examples, responses and error codes,
+  idempotency, rate limits, and what ticks versus what adds a note.
+- Schema version 17 adds `connection_keys` and `connection_reports`. The
+  upgrade needs no step.
+- The Privacy page says what a connection sends: temperature summaries,
+  unit names and roles, no names.
+
 ## 1.1.3 (3 November 2026)
 
 A staging copy, and a setting that keeps it out of search results.

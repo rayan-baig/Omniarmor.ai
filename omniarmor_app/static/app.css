@@ -323,3 +323,25 @@ details.note .title{color:var(--ink);font-weight:600}
 .help-toc ol{margin:0;padding-left:1.4em;columns:2;column-gap:32px}
 .help-toc li{break-inside:avoid;margin-bottom:6px}
 @media (max-width:720px){.help-toc ol{columns:1}}
+
+/* Kitchen Safety Bundle: CyberLogix on the temperature checks and in Settings, Connections */
+.bundle{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--raise)}
+.bundle-status{margin:0;font-size:14.5px;color:var(--ink);overflow-wrap:anywhere}
+.bundle-line{margin:0;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.bundle-tag{display:inline-block;margin-right:6px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text)}
+.bundle-dot{display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:var(--field);vertical-align:1px}
+.bundle-dot.on{background:var(--accent)}
+.bundle-note{padding:8px 10px;border-left:3px solid var(--warn);border-radius:6px;background:var(--warn-tint)}
+.bundle-note-head{margin:0;color:var(--warn-text);font-size:12.5px}
+.bundle-note-text{margin:4px 0 0;font-size:14.5px;overflow-wrap:anywhere}
+.rule form.bundle-review{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.bundle-review a{font-size:14px}
+.bundle-card{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
+.bundle-card p{margin:0}
+.bundle-card form{margin:0}
+.bundle-card-title{font-weight:600}
+.row-plain{font-size:15px;color:var(--muted)}
+.key-once{padding:12px 14px;border:1px solid var(--accent);border-radius:10px;background:var(--bg)}
+.key-once-title{font-weight:600}
+.key-once .key{margin:8px 0;padding:10px 12px;border-radius:8px;background:var(--raise);overflow-wrap:anywhere;user-select:all}
+.nowrap{white-space:nowrap}

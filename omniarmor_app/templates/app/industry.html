@@ -48,6 +48,7 @@
       {% if s.due_date %}
         <p class="due mono">{{ s.due_text }} · {{ s.due_label }}</p>
       {% endif %}
+      {% if bundle and r.key in bundle.page_keys %}{% include "app/_bundle_check.html" %}{% endif %}
       <details>
         <summary>Why it matters</summary>
         <div class="why">

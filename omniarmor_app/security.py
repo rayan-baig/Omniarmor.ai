@@ -61,7 +61,10 @@ def csrf_token():
     return session["_csrf"]
 
 
-CSRF_EXEMPT = {"plan.stripe_webhook"}  # signed by Stripe instead
+# Signed by Stripe instead; and CyberLogix's daily report, which carries the
+# workspace's connection key in its Authorization header and never reads the
+# session cookie, so a form posted from another site has nothing to borrow.
+CSRF_EXEMPT = {"plan.stripe_webhook", "connect.cyberlogix_daily"}
 
 
 def check_csrf():
