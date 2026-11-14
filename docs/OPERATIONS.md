@@ -8,15 +8,15 @@ touching it. This guide covers the few things a person has to do once.
 
 **The address.** OmniArmor is a product of MTRX Horizyn, and MTRX Horizyn owns
 the one domain: its own site is on the domain itself (and `www`), and each
-product gets a subdomain. OmniArmor lives at `omniarmor.<your domain>`, beside
-`cyberlogix.<your domain>` and `rankup.<your domain>`. Below, `example.com`
-stands for that domain. There is no domain to buy for OmniArmor.
+product gets a subdomain. The domain is `mtrxhorizyn.com`, and OmniArmor lives
+at `omniarmor.mtrxhorizyn.com`, beside `cyberlogix.mtrxhorizyn.com` and
+`rankup.mtrxhorizyn.com`. There is no domain to buy for OmniArmor.
 
-A subdomain, not a folder (`example.com/omniarmor`), on purpose: each
+A subdomain, not a folder (`mtrxhorizyn.com/omniarmor`), on purpose: each
 subdomain is its own origin, so OmniArmor's sign-in cookie, the browser's
 storage for it and anything it installs stay with OmniArmor and never reach
 the other apps. The app keeps it that way: its cookie has no `Domain`, so it
-goes back only to `omniarmor.example.com`, and it sends no CORS headers, so no
+goes back only to `omniarmor.mtrxhorizyn.com`, and it sends no CORS headers, so no
 other site (a sibling app included) can read its pages from a browser.
 
 1. **DNS:** where the domain's DNS is managed, add one record for the
@@ -24,16 +24,16 @@ other site (a sibling app included) can read its pages from a browser.
    `onrender.com` address; on your own server, an `A` record named
    `omniarmor` pointing at its IP address.
 2. **The host:** Render: the service, then Settings > Custom Domains, add
-   `omniarmor.example.com` and wait for it to verify. Your own server: set
-   `DOMAIN=omniarmor.example.com` in `.env` for Caddy.
+   `omniarmor.mtrxhorizyn.com` and wait for it to verify. Your own server: set
+   `DOMAIN=omniarmor.mtrxhorizyn.com` in `.env` for Caddy.
 3. **HTTPS:** Render and Caddy both get the certificate themselves once DNS
-   answers. Check `https://omniarmor.example.com` opens before going on: the
+   answers. Check `https://omniarmor.mtrxhorizyn.com` opens before going on: the
    sign-in cookie is marked secure in production and needs it.
-4. **The app:** set `BASE_URL=https://omniarmor.example.com` (no slash at the
+4. **The app:** set `BASE_URL=https://omniarmor.mtrxhorizyn.com` (no slash at the
    end). Every link in an email is built from it.
 5. **MTRX Horizyn:** in MTRX Horizyn's settings, OmniArmor's address is
-   `https://omniarmor.example.com` and its stats address is
-   `https://omniarmor.example.com/api/stats` (see `STATS_KEY`). It answers
+   `https://omniarmor.mtrxhorizyn.com` and its stats address is
+   `https://omniarmor.mtrxhorizyn.com/api/stats` (see `STATS_KEY`). It answers
    only a request carrying that key (`Authorization: Bearer <STATS_KEY>`),
    and doesn't exist without it: the number of accounts, how many were used
    in the last 30 days, and the daily usage counts (section 5).
@@ -53,7 +53,7 @@ custom domain and set `BASE_URL` as above.
 docker build -t omniarmor .
 docker run -d --name omniarmor -p 8000:8000 -v omniarmor-data:/data \
   -e SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
-  -e BASE_URL=https://omniarmor.example.com \
+  -e BASE_URL=https://omniarmor.mtrxhorizyn.com \
   --restart unless-stopped omniarmor
 ```
 
@@ -74,15 +74,16 @@ mail out of spam are set up once, on that domain, by whoever runs it: **SPF**
 (which servers may send for it), **DKIM** (a signature on each message) and
 **DMARC** (what to do with mail that fails those two). The email provider
 gives the exact values. OmniArmor then sends from an address of its own, such
-as `MAIL_FROM=OmniArmor <no-reply@omniarmor.example.com>`, so people can tell
-the apps apart. A sending subdomain like `omniarmor.example.com` must be
+as `MAIL_FROM=OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, so people can tell
+the apps apart. A sending subdomain like `omniarmor.mtrxhorizyn.com` must be
 verified with the provider too (it adds a DKIM record for it); the parent
 domain's DMARC covers it. Check the records with any free DMARC checker before
 real customers depend on reminders. Every email ends with "OmniArmor is a
 product of MTRX Horizyn."
 
 The public Help page (`/help`) answers common questions. Set `SUPPORT_EMAIL`
-to an address people can write to, and its last answer names it; without it,
+to an address people can write to (live: `help@omniarmor.mtrxhorizyn.com`),
+and its last answer names it; without it,
 the page points only to the help inside the app.
 
 ## 3. What runs by itself every day
@@ -307,7 +308,7 @@ check that the account it prints is yours.
 **Upgrading to 1.2.0:** nothing to do. Schema version 17 adds the tables for
 the Kitchen Safety Bundle; CyberLogix reports start once a workspace owner
 creates a connection key in Settings, Connections. CyberLogix calls
-`https://omniarmor.<your domain>/api/connect/cyberlogix/daily`
+`https://omniarmor.mtrxhorizyn.com/api/connect/cyberlogix/daily`
 ([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md)); if a firewall or proxy
 sits in front of the app, let POSTs to that address through.
 
@@ -363,7 +364,7 @@ or `none` (the old `academy-plan <id> active` now means Plus).
   `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE` and
   `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` (section 7, "Upgrading to 1.3.0"), and
   in Stripe add the webhook
-  `https://omniarmor.<your domain>/billing/stripe/webhook` with the events
+  `https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,
   `customer.subscription.updated`, `customer.subscription.deleted` and
   `invoice.payment_failed`. The prices people see are in

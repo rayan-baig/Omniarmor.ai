@@ -3,7 +3,7 @@
 **Catch the fine before it catches you.**
 
 OmniArmor is a product of MTRX Horizyn. In production it runs on its own
-subdomain of MTRX Horizyn's domain, `omniarmor.<your domain>`
+subdomain of MTRX Horizyn's domain, `omniarmor.mtrxhorizyn.com`
 ([docs/OPERATIONS.md](docs/OPERATIONS.md), section 1).
 
 A self-running compliance service for 50 regulated industries. Each industry

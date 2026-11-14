@@ -14,7 +14,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: BASE_URL
-        sync: false   # the subdomain on MTRX Horizyn's domain, e.g. https://omniarmor.example.com
+        sync: false   # live: https://omniarmor.mtrxhorizyn.com (a staging copy sets its own)
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -24,7 +24,7 @@ services:
       - key: SMTP_PASSWORD
         sync: false
       - key: MAIL_FROM
-        sync: false   # e.g. OmniArmor <no-reply@omniarmor.example.com>
+        sync: false   # live: OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>
       - key: DAILY_JOB_HOUR_UTC
         value: "11"
       # Where Autopilot emails problems it cannot fix itself. Unset, they
@@ -37,6 +37,7 @@ services:
       - key: ERRORS_EMAIL
         sync: false
       # An address people can write to for help, named on the Help page (/help).
+      # Live: help@omniarmor.mtrxhorizyn.com.
       - key: SUPPORT_EMAIL
         sync: false
       # The same value as MTRX Horizyn's MTRX_STATS_KEY, to show user counts
@@ -48,7 +49,7 @@ services:
       # on a plan by hand with `flask --app wsgi plan <workspace id> pro|plus`).
       # The prices themselves live in the code (omniarmor_app/plans.py); each
       # setting is the matching per-location monthly price id from Stripe.
-      # Webhook: https://<your domain>/billing/stripe/webhook
+      # Webhook: https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET

@@ -323,12 +323,12 @@ COMING DUE
 ...
 
 Right now: 3 blocked, 5 warnings, 9 cleared, 3 without a reading.
-Open your checks: https://your-domain/app
+Open your checks: https://omniarmor.mtrxhorizyn.com/app
 
 You get this email because the daily digest is on in your OmniArmor settings.
 
 --
-Choose which reminder emails you get: https://your-domain/app/settings#reminders
+Choose which reminder emails you get: https://omniarmor.mtrxhorizyn.com/app/settings#reminders
 OmniArmor is a product of MTRX Horizyn.
 ```
 
@@ -348,12 +348,12 @@ Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.
 
 - HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). Report the fatality to OSHA now by phone or in person, and preserve the scene.
 
-Open it: https://your-domain/app/industry/30#rule-fatality_report_8h
+Open it: https://omniarmor.mtrxhorizyn.com/app/industry/30#rule-fatality_report_8h
 
 You get this email because time-limit alerts are on in your OmniArmor settings.
 
 --
-Choose which reminder emails you get: https://your-domain/app/settings#reminders
+Choose which reminder emails you get: https://omniarmor.mtrxhorizyn.com/app/settings#reminders
 OmniArmor is a product of MTRX Horizyn.
 ```
 
@@ -1016,7 +1016,7 @@ Command-line tools:
 
 ### 9.2 Hosting options
 
-OmniArmor is a product of MTRX Horizyn and has no domain of its own. MTRX Horizyn owns the one domain (its own site on the domain itself and `www`), and OmniArmor runs on the subdomain `omniarmor.<your domain>`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to OmniArmor's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://omniarmor.<your domain>`. docs/OPERATIONS.md section 1 has the steps.
+OmniArmor is a product of MTRX Horizyn and has no domain of its own. MTRX Horizyn owns the one domain (its own site on the domain itself and `www`), and OmniArmor runs on the subdomain `omniarmor.mtrxhorizyn.com`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to OmniArmor's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://omniarmor.mtrxhorizyn.com`. docs/OPERATIONS.md section 1 has the steps.
 
 - **Render (easiest):** push the repository to GitHub, then choose New > Blueprint in Render. `render.yaml` creates the web service with a 1 GB persistent disk, a health check and a random `SECRET_KEY`. Set `BASE_URL`. It needs a paid plan because the app needs a persistent disk.
 - **One small server (cheapest):**
@@ -1038,7 +1038,7 @@ The Docker image:
 
 ### 9.3 Email
 
-Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.<your domain>>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
+Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
 
 ### 9.4 Backups and restore
 
@@ -6111,21 +6111,21 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 |---|---|---|
 | `SECRET_KEY` | random in development; required in production | Signs sessions. Generate with `python3 -c "import secrets; print(secrets.token_hex(32))"`. |
 | `OMNIARMOR_ENV` | development | Set to `production` to require a secret key, mark cookies Secure and trust one proxy hop. |
-| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://omniarmor.<your domain>`, the subdomain on MTRX Horizyn's domain. |
+| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://omniarmor.mtrxhorizyn.com`, the subdomain on MTRX Horizyn's domain. |
 | `DOMAIN` | (none) | For docker-compose only: the domain Caddy gets an HTTPS certificate for. |
 | `DATABASE_PATH` | instance/omniarmor.db | Where the SQLite database lives. Use a persistent disk. |
 | `BACKUP_DIR` | a `backups` folder next to the database | Where daily backups go. |
 | `BACKUP_KEEP` | 14 | How many backups to keep. |
 | `SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD` | empty, 587 | Email provider. Without SMTP_HOST, emails are saved in Radar instead of sent. |
 | `SMTP_STARTTLS` | 1 | Use STARTTLS with the email provider. |
-| `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. |
+| `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. Live: `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`. |
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
 | `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. It runs in the server only (gunicorn or `flask run`), never in a one-off `flask` command. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. The account with this address that `make-operator` was run for also sees the usage counts in Settings (section 6.8). |
 | `ERRORS_EMAIL` | (none) | One inbox for a short report of each server error, with no personal data: one per distinct error an hour, at most 20 a day (section 6.6). Without it, none are written or sent. |
-| `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer. Without it, the page points to the help inside the app. |
-| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts and daily usage counts, nothing about anyone) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.<your domain>/api/stats`. |
+| `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer (live: `help@omniarmor.mtrxhorizyn.com`). Without it, the page points to the help inside the app. |
+| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts and daily usage counts, nothing about anyone) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.mtrxhorizyn.com/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |

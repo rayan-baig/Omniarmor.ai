@@ -1,8 +1,8 @@
 # A staging copy
 
 A second, separate copy of OmniArmor on Render, at
-`staging.omniarmor.example.com` (where `example.com` stands for MTRX
-Horizyn's domain, as in [OPERATIONS.md](OPERATIONS.md)). You try a change
+`staging.omniarmor.mtrxhorizyn.com` (MTRX Horizyn's domain is `mtrxhorizyn.com`,
+as in [OPERATIONS.md](OPERATIONS.md)). You try a change
 there first, with made-up data and test credentials, and only then put it on
 the live copy.
 
@@ -56,7 +56,7 @@ Academy progress.
    `staging.omniarmor` pointing at the staging service's `onrender.com`
    address.
 2. Render: the staging service → Settings → Custom Domains → add
-   `staging.omniarmor.example.com`, and wait for the certificate.
+   `staging.omniarmor.mtrxhorizyn.com`, and wait for the certificate.
 
 It is a host of its own, so the sign-in cookie (host-only, no `Domain`) never
 travels between staging and live.
@@ -69,7 +69,7 @@ paste in the live ones.
 | Setting | Staging value | Why |
 |---|---|---|
 | `SECRET_KEY` | a new one: `python3 -c "import secrets; print(secrets.token_hex(32))"` | Live's would let a staging cookie sign in to live |
-| `BASE_URL` | `https://staging.omniarmor.example.com` | Every link in an email, reset and invite comes back here, not to live |
+| `BASE_URL` | `https://staging.omniarmor.mtrxhorizyn.com` | Every link in an email, reset and invite comes back here, not to live |
 | `NOINDEX` | `1` | Every address says noindex, robots.txt closes the site, the sitemap is empty (section 5) |
 | `STATS_KEY` | empty | MTRX Horizyn's console must not count staging's test accounts. To test the console against staging, a new key that only a staging console has |
 | `OPERATOR_EMAIL` | empty, or your own | Autopilot's problem emails (section 4 says where they go) |
@@ -97,7 +97,7 @@ To see mail as it would arrive, use a test inbox service that accepts SMTP
 and delivers nothing, and put its settings in `SMTP_HOST`, `SMTP_PORT`,
 `SMTP_USER` and `SMTP_PASSWORD`. Never the live mail account. Set
 `MAIL_FROM` to a staging address, such as
-`OmniArmor staging <no-reply@staging.omniarmor.example.com>`.
+`OmniArmor staging <no-reply@staging.omniarmor.mtrxhorizyn.com>`.
 
 ### Payments: Stripe in test mode
 
@@ -113,7 +113,7 @@ there:
 2. Developers → API keys: the test secret key (it starts `sk_test_`) goes in
    `STRIPE_SECRET_KEY`.
 3. Developers → Webhooks → add endpoint
-   `https://staging.omniarmor.example.com/billing/stripe/webhook`, with the
+   `https://staging.omniarmor.mtrxhorizyn.com/billing/stripe/webhook`, with the
    same events as live (OPERATIONS.md, section 8). Its signing secret (the
    test one) goes in `STRIPE_WEBHOOK_SECRET`.
 
@@ -134,8 +134,8 @@ that emails nobody.
 Check it after each deploy:
 
 ```sh
-curl -sI https://staging.omniarmor.example.com/ | grep -i x-robots-tag
-curl -s https://staging.omniarmor.example.com/robots.txt
+curl -sI https://staging.omniarmor.mtrxhorizyn.com/ | grep -i x-robots-tag
+curl -s https://staging.omniarmor.mtrxhorizyn.com/robots.txt
 ```
 
 Leave `NOINDEX` unset on live.
@@ -173,7 +173,7 @@ and run `flask --app wsgi make-operator <that address>` in the Shell.
 ## 7. From staging to live, a checklist
 
 - [ ] Push the change to the `staging` branch. Staging deploys it.
-- [ ] `curl -s https://staging.omniarmor.example.com/healthz` answers
+- [ ] `curl -s https://staging.omniarmor.mtrxhorizyn.com/healthz` answers
       `"status": "ok"` with the new version from
       `omniarmor_app/version.py`.
 - [ ] `python -m pytest -q` passes, and GitHub Actions is green for that
@@ -193,8 +193,8 @@ and run `flask --app wsgi make-operator <that address>` in the Shell.
       the commit that was tested is the commit that ships.
 - [ ] Live deploys on the push (if auto-deploy is off: the service → Manual
       Deploy → Deploy latest commit). Check
-      `https://omniarmor.example.com/healthz` shows the same version, and
-      that `curl -sI https://omniarmor.example.com/` has **no**
+      `https://omniarmor.mtrxhorizyn.com/healthz` shows the same version, and
+      that `curl -sI https://omniarmor.mtrxhorizyn.com/` has **no**
       `X-Robots-Tag`.
 - [ ] If the CHANGELOG says there is a step after upgrading, do it on live.
 

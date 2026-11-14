@@ -16,7 +16,7 @@ pricing page before you pick one.
 | Daily reminders and backups | Included | Built into the app. No cron or queue service. |
 | HTTPS certificate | Free | Caddy gets and renews Let's Encrypt certificates automatically |
 | Email | Optional | A free sending tier (Brevo, Mailjet, SMTP2GO, Resend and others have one), or Amazon SES's low per-email price. Without email, reminders show in the app. |
-| Domain name | No | OmniArmor runs on a subdomain of MTRX Horizyn's domain (`omniarmor.<your domain>`), so there is nothing to buy for it |
+| Domain name | No | OmniArmor runs on a subdomain of MTRX Horizyn's domain (`omniarmor.mtrxhorizyn.com`), so there is nothing to buy for it |
 | Off-server backup copies | Recommended | A free object-storage tier (Cloudflare R2 and Backblaze B2 have one) |
 | Taking payments | When you charge | Stripe charges a fee per payment, with no monthly fee. Pro and Plus use Stripe Checkout, so you never store or secure card numbers yourself. |
 

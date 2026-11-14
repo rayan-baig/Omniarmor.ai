@@ -3,6 +3,17 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.3.1 (14 November 2026)
+
+- **The real address, omniarmor.mtrxhorizyn.com.** The README, the operations,
+  staging, costs and CyberLogix connection guides, the handbook's sample emails,
+  `.env.example` (`BASE_URL`, `DOMAIN`, `MAIL_FROM`) and the comments in
+  `render.yaml` name it instead of a placeholder, with
+  `help@omniarmor.mtrxhorizyn.com` suggested for `SUPPORT_EMAIL` and
+  `no-reply@omniarmor.mtrxhorizyn.com` for sending. The app still reads every
+  address from its settings; `BASE_URL` and `MAIL_FROM` stay dashboard settings
+  in `render.yaml`, so a staging copy never inherits live's address.
+
 ## 1.3.0 (14 November 2026)
 
 Paid plans: a free trial, then Pro or Plus per location, with the Kitchen

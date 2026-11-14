@@ -6,8 +6,9 @@ fill in its temperature-log checks. This page is the contract the CyberLogix
 side builds against. The OmniArmor side is `omniarmor_app/connections.py`,
 tested by `tests/test_cyberlogix.py`, and the two must change together.
 
-Examples use `omniarmor.example.com`. In production OmniArmor runs on its own
-subdomain of MTRX Horizyn's domain (docs/OPERATIONS.md, section 1).
+OmniArmor runs at `omniarmor.mtrxhorizyn.com` and CyberLogix at
+`cyberlogix.mtrxhorizyn.com`, subdomains of MTRX Horizyn's domain
+(docs/OPERATIONS.md, section 1).
 
 ## 1. In one paragraph
 
@@ -45,7 +46,7 @@ bundle includes it. An unsigned report does everything else the same.
 
 ```
 POST /api/connect/cyberlogix/daily
-Host: omniarmor.example.com
+Host: omniarmor.mtrxhorizyn.com
 Authorization: Bearer clx_...the key...
 Content-Type: application/json
 X-CyberLogix-Signature: t=1763110800,v1=5f8a...64 hex characters...
@@ -127,7 +128,7 @@ names out: a report carries temperatures, unit names and roles only.
   "breaches": [],
   "warmest_reading": 38.5,
   "unit_of_measure": "°F",
-  "log_url": "https://cyberlogix.example.com/logs/2026-11-12"
+  "log_url": "https://cyberlogix.mtrxhorizyn.com/logs/2026-11-12"
 }
 ```
 
@@ -153,7 +154,7 @@ names out: a report carries temperatures, unit names and roles only.
   ],
   "warmest_reading": 38.5,
   "unit_of_measure": "°F",
-  "log_url": "https://cyberlogix.example.com/logs/2026-11-12"
+  "log_url": "https://cyberlogix.mtrxhorizyn.com/logs/2026-11-12"
 }
 ```
 
