@@ -155,7 +155,7 @@ def seed(cfg, password=None, rng=None):
         raise ValueError(problem)
     conn = connect(cfg["DATABASE"])
     try:
-        migrate(conn)
+        migrate(conn, cfg.get("ACADEMY_TRIAL_DAYS", 14))
         conn.isolation_level = None
         conn.execute("BEGIN IMMEDIATE")
         try:
@@ -253,8 +253,8 @@ def _fill(conn, password, rng):
         [(org_id, who, people[who], at, action, ind, key, before, after, summary)
          for at, who, action, summary, ind, key, before, after in sorted(audit, key=lambda a: a[0])])
 
-    # The Academy, on the Academy plan.
-    conn.execute("UPDATE orgs SET academy_status = 'active', academy_renews_at = ? WHERE id = ?",
+    # The Academy, on Plus (the tracker and the whole Academy).
+    conn.execute("UPDATE orgs SET academy_status = 'active', plan = 'plus', academy_renews_at = ? WHERE id = ?",
                  (iso(now + timedelta(days=23)), org_id))
     kids = []
     for spec in LEARNERS:

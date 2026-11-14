@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
-"""The Academy's own subscription, separate from the compliance service.
+"""The workspace's subscription through Stripe: Pro, Plus, Plus for a Kitchen
+Safety Bundle workspace, and the old Academy plan it grew from (the module
+keeps its first name). What each plan gives, and the prices, are in plans.py.
 
-Every workspace gets a free trial of the whole Academy when it adds its first
-learner. After the trial, the first three worlds of the Launchpad track stay
-free; everything else needs the Academy plan. Payments go through Stripe
-Checkout, and Stripe tells the app about changes through a signed webhook. With
-no Stripe keys set, the plan can still be turned on by hand:
-    flask --app wsgi academy-plan <workspace id> active
+Payments go through Stripe Checkout, with the workspace's location count as
+the quantity, and Stripe tells the app about changes through a signed
+webhook: which plan (from the subscription's price), its status, renewal and
+end. Changing plan or the card happens in Stripe's customer portal. With no
+Stripe keys set, a plan can still be turned on by hand:
+    flask --app wsgi plan <workspace id> plus
+After the trial, the first three worlds of the Launchpad track stay free for
+everyone; the rest of the Academy needs Plus.
 """
 
 import hashlib
@@ -33,19 +37,21 @@ class StripeError(Exception):
 
 
 def plan_status(org, now=None):
-    """What the workspace can use right now: 'paid', 'trial' or 'free', with details."""
-    now = now or utcnow()
-    state = org["academy_status"] or "none"
-    if state in PAID_STATES:
+    """What the Academy pages say about the workspace's Academy: 'paid' (a
+    plan that includes the whole Academy: Plus, or the old Academy plan),
+    'trial' or 'free' (its free worlds only), with details."""
+    from . import plans
+    info = plans.access(org, now)
+    state = info["state"]
+    if info["paid"] and plans.KINDS.get(info["kind"], (None, False, False))[2]:
         # A plan cancelled in Stripe's portal stays on until the paid period ends.
-        ends_at = org["academy_ends_at"]
-        return {"access": "paid", "state": state, "renews_at": None if ends_at else org["academy_renews_at"],
-                "ends_at": ends_at, "trial_days": 0}
-    ends = org["academy_trial_ends"]
-    if ends and ends > iso(now):
-        days = max(1, -(-(_parse(ends) - now).total_seconds() // 86400))
-        return {"access": "trial", "state": "trial", "renews_at": None, "ends_at": None, "trial_days": int(days)}
-    return {"access": "free", "state": state, "renews_at": None, "ends_at": None, "trial_days": 0}
+        return {"access": "paid", "state": state, "renews_at": info["renews_at"], "ends_at": info["ends_at"],
+                "trial_days": 0, "plan_name": info["plan_name"]}
+    if info["trial"]:
+        return {"access": "trial", "state": "trial", "renews_at": None, "ends_at": None,
+                "trial_days": info["trial_days"], "plan_name": None}
+    return {"access": "free", "state": state, "renews_at": None, "ends_at": None, "trial_days": 0,
+            "plan_name": None}
 
 
 def charges_again(org):
@@ -55,12 +61,9 @@ def charges_again(org):
                 and not org["academy_ends_at"])
 
 
-def _parse(text):
-    return datetime.fromisoformat(text)
-
-
 def full_access(org):
-    return plan_status(org)["access"] in ("paid", "trial")
+    from . import plans
+    return plans.access(org)["academy"]
 
 
 def allows(org, track, world):
@@ -68,21 +71,54 @@ def allows(org, track, world):
     return full_access(org) or (track.key == FREE_TRACK and world.number in FREE_WORLDS)
 
 
-def start_trial(conn, org_id, days):
-    """Starts the free trial the first time a workspace uses the Academy."""
-    conn.execute("UPDATE orgs SET academy_trial_ends = ? WHERE id = ? AND academy_trial_ends IS NULL"
-                 " AND academy_status = 'none'", (iso(utcnow() + timedelta(days=days)), org_id))
+def trial_end_for_new_workspace(days):
+    """The free trial's end for a workspace signing up now."""
+    return iso(utcnow() + timedelta(days=days))
 
 
-def set_status(conn, org_id, state, renews_at=None):
-    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = NULL WHERE id = ?",
-                 (state, renews_at, org_id))
+def set_status(conn, org_id, state, renews_at=None, kind=None):
+    """Sets the plan by hand (the `plan` command): its status and, with kind, which plan."""
+    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = NULL,"
+                 " plan = COALESCE(?, plan) WHERE id = ?", (state, renews_at, kind, org_id))
+
+
+def subscribed(org):
+    """Whether the workspace has a subscription that counts (paid, or past
+    due while Stripe retries): checkout never starts a second one."""
+    return (org["academy_status"] or "none") in PAID_STATES
 
 
 # --- Stripe ---------------------------------------------------------------------
 
-def stripe_ready(cfg):
-    return bool(cfg.get("STRIPE_SECRET_KEY") and cfg.get("ACADEMY_STRIPE_PRICE"))
+# The settings holding each plan's Stripe price id, and the plan (orgs.plan) it is.
+PRICE_SETTINGS = {"PRO_STRIPE_PRICE": "pro", "PLUS_STRIPE_PRICE": "plus",
+                  "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": "plus_bundle"}
+KINDS = ("pro", "plus", "plus_bundle", "academy")
+
+
+def stripe_ready(cfg, price=None):
+    """Whether Stripe can take a payment: the secret key, and the price (or
+    any plan's price, when none is named)."""
+    if not cfg.get("STRIPE_SECRET_KEY"):
+        return False
+    return bool(price) if price is not None else any(cfg.get(name) for name in PRICE_SETTINGS)
+
+
+def kind_for(cfg, obj):
+    """The plan a Stripe subscription or checkout session is for: from its
+    price when that is one of ours, else from the plan the checkout wrote in
+    its metadata. None when it says neither (an old Academy plan's renewal,
+    say): the workspace's plan then stays as it is."""
+    prices = {cfg.get(name): kind for name, kind in PRICE_SETTINGS.items() if cfg and cfg.get(name)}
+    for item in ((obj.get("items") or {}).get("data") or []):
+        if not isinstance(item, dict):
+            continue
+        price = item.get("price")
+        price = price.get("id") if isinstance(price, dict) else price
+        if price in prices:
+            return prices[price]
+    meta = (obj.get("metadata") or {}).get("plan")
+    return meta if meta in KINDS else None
 
 
 def _stripe(cfg, path, fields, method="POST"):
@@ -104,16 +140,21 @@ def _stripe(cfg, path, fields, method="POST"):
         raise StripeError(str(exc)) from exc
 
 
-def checkout_url(cfg, org, email, success_url, cancel_url):
+def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity):
+    """A Stripe Checkout page for one plan: its price, `quantity` locations
+    (plans.location_count), and the plan written in the metadata of the
+    session and of the subscription it makes."""
     fields = {
         "mode": "subscription",
-        "line_items[0][price]": cfg["ACADEMY_STRIPE_PRICE"],
-        "line_items[0][quantity]": "1",
+        "line_items[0][price]": price,
+        "line_items[0][quantity]": str(int(quantity)),
         "success_url": success_url,
         "cancel_url": cancel_url,
         "client_reference_id": str(org["id"]),
         "metadata[org_id]": str(org["id"]),
+        "metadata[plan]": kind,
         "subscription_data[metadata][org_id]": str(org["id"]),
+        "subscription_data[metadata][plan]": kind,
         "allow_promotion_codes": "true",
     }
     if org["stripe_customer_id"]:
@@ -147,7 +188,7 @@ def confirm_checkout(conn, cfg, org, session_id):
     if owner is None or owner["id"] != org["id"]:
         return False
     created = obj.get("created") if isinstance(obj.get("created"), int) else None
-    return _apply_checkout(conn, owner, obj, None, started=created) is not None
+    return _apply_checkout(conn, owner, obj, None, started=created, kind=kind_for(cfg, obj)) is not None
 
 
 def portal_url(cfg, org, return_url):
@@ -244,14 +285,17 @@ def _mark_applied(conn, org_id, created):
                      (created, org_id))
 
 
-def apply_event(conn, event):
-    """Updates a workspace's Academy plan from a Stripe event. Returns a short
+def apply_event(conn, event, cfg=None):
+    """Updates a workspace's plan from a Stripe event. Returns a short
     description of what changed, or None if the event wasn't relevant.
 
     Stripe may deliver events more than once and in any order, so repeats are
     ignored, a subscription event older than the last one applied is ignored,
     and while a workspace is paid, events about some other subscription (a
-    duplicate checkout, say) don't change its plan."""
+    duplicate checkout, say) don't change its plan. Which plan it is comes
+    from the subscription's price (cfg names each plan's price) or the plan
+    the checkout wrote in its metadata; a plan switched in Stripe's portal
+    arrives this way."""
     kind = event.get("type", "")
     obj = (event.get("data") or {}).get("object") or {}
     org = _org_for(conn, obj, kind)
@@ -262,8 +306,9 @@ def apply_event(conn, event):
     created = event.get("created") if isinstance(event.get("created"), int) else None
     paid = (org["academy_status"] or "none") in PAID_STATES
     current_sub = org["stripe_subscription_id"]
+    plan_kind = kind_for(cfg or {}, obj)
     if kind == "checkout.session.completed":
-        return _apply_checkout(conn, org, obj, created)
+        return _apply_checkout(conn, org, obj, created, kind=plan_kind)
     if kind in SUBSCRIPTION_EVENTS:
         if paid and current_sub and obj.get("id") != current_sub:
             return None
@@ -283,8 +328,9 @@ def apply_event(conn, event):
             period_end if obj.get("cancel_at_period_end") else None)
         ends_at = iso(_from_timestamp(cancel_at)) if cancel_at and state in PAID_STATES else None
         conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
-                     " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?) WHERE id = ?",
-                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), org["id"]))
+                     " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?),"
+                     " plan = COALESCE(?, plan) WHERE id = ?",
+                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), plan_kind, org["id"]))
         _mark_applied(conn, org["id"], created)
         return state
     if kind == "invoice.payment_failed":
@@ -302,7 +348,7 @@ def apply_event(conn, event):
 LATER_STATES = {"past_due", "unpaid", "canceled", "incomplete_expired"}
 
 
-def _apply_checkout(conn, org, obj, created, started=None):
+def _apply_checkout(conn, org, obj, created, started=None, kind=None):
     """A completed checkout turns the plan on, unless the workspace is already
     paid through another subscription (a duplicate checkout).
 
@@ -325,8 +371,9 @@ def _apply_checkout(conn, org, obj, created, started=None):
                      (obj.get("customer"), org["id"]))
         return None
     conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active',"
-                 " academy_ends_at = CASE WHEN stripe_subscription_id IS ? THEN academy_ends_at END WHERE id = ?",
-                 (obj.get("customer"), subscription, subscription, org["id"]))
+                 " academy_ends_at = CASE WHEN stripe_subscription_id IS ? THEN academy_ends_at END,"
+                 " plan = COALESCE(?, plan) WHERE id = ?",
+                 (obj.get("customer"), subscription, subscription, kind, org["id"]))
     _mark_applied(conn, org["id"], created)
     return "active"
 

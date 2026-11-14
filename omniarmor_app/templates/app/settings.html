@@ -70,10 +70,13 @@
 
 {% include "app/_connections.html" %}
 
-<h2>Academy plan</h2>
-<p class="row"><span>{% if plan.state == 'past_due' %}Your last Academy payment didn't go through. {{ 'Update your card' if g.role == 'owner' else 'The workspace owner can update the card' }} to keep access.{% elif plan.ends_at %}The Academy plan is cancelled and ends {{ plan.ends_at|local_date }}.{% elif plan.access == 'paid' %}The Academy plan is on{% if plan.renews_at %} and renews {{ plan.renews_at|local_date }}{% endif %}.{% elif plan.access == 'trial' %}Free Academy trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} left.{% else %}You're on the free Academy.{% endif %}</span>
-  <a href="{{ url_for('academy.plan_page') }}">{{ 'Manage or cancel' if plan.access == 'paid' and g.role == 'owner' else 'See the Academy plan' }}</a></p>
-<p class="muted" data-plan-note>The compliance tracker is free. The Academy plan is a separate subscription{% if g.role != 'owner' %}, and only the workspace owner can change it{% endif %}.</p>
+{% from "app/_plan_status.html" import status_line %}
+{% set pf = plan_facts() %}
+<h2 id="plan">Plan</h2>
+{% if access.bundle.state == 'covered' %}<p class="row" data-bundle-line><span><strong>{{ pf.bundle.includes.name }} included with your {{ pf.bundle.name }}</strong></span></p>{% endif %}
+<p class="row"><span data-plan-line>{{ status_line(access, pf) }}</span>
+  <a href="{{ url_for('plan.plan_page') }}">{{ 'Manage billing' if access.paid and g.role == 'owner' else 'See the plans' }}</a></p>
+<p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}: everything in {{ pf.pro.name }} and the whole Future Owner Academy. The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>
 
 {% if g.role == 'owner' %}
   <h2>Delete workspace</h2>

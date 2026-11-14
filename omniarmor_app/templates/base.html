@@ -80,6 +80,22 @@
 </header>
 <main id="main" tabindex="-1">
   <div class="wrap">
+    {% if g.user and plan_access %}
+      {% set pa = plan_access %}
+      {% if pa.read_only %}
+        <div class="plan-banner readonly no-print" data-readonly-banner>
+          <p><strong>Read-only.</strong>
+          {% if pa.reason == 'bundle_ended' %}CyberLogix stopped sending signed reports, so the Pro your Kitchen Safety Bundle included has ended.{% elif pa.reason == 'plan_ended' %}Your plan has ended.{% else %}Your free trial has ended.{% endif %}
+          Your records are safe: see, print and download them any time, and nothing is deleted. New checks can't be saved and reminders are paused until you
+          <a href="{{ url_for('plan.plan_page') }}">choose Pro or Plus</a>.</p>
+        </div>
+      {% elif pa.source == 'bundle_grace' %}
+        <div class="plan-banner no-print" data-grace-banner>
+          <p><strong>Kitchen Safety Bundle.</strong> CyberLogix hasn't sent a signed report since {{ pa.bundle.last|local_date }}. Pro stays included until {{ pa.bundle.grace_ends|local_date }}; after that the compliance tracker becomes read-only, unless reports start again or you choose a plan.
+          <a href="{{ url_for('app.settings', _anchor='connections') }}">Check the connection</a> · <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
+        </div>
+      {% endif %}
+    {% endif %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flashes" role="status">

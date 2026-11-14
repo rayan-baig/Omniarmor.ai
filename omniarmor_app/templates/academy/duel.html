@@ -30,12 +30,12 @@
   {% if locked %}
     <section class="ac-result" aria-live="polite">
       {{ armo(96, 'think', buddy.accessory) }}
-      <h1 class="ac-title">This world is part of the Academy plan</h1>
-      <p class="ac-lead">{{ view.other.nickname }} picked {{ view.world.title }}, which your Academy plan doesn't include yet.
-        {% if g.kid %}Ask a grown-up to unlock it, then come back to play!{% else %}Start the plan to unlock it, then come back to play!{% endif %}</p>
+      <h1 class="ac-title">This world is part of Plus</h1>
+      <p class="ac-lead">{{ view.other.nickname }} picked {{ view.world.title }}, which your plan doesn't include yet.
+        {% if g.kid %}Ask a grown-up to unlock it, then come back to play!{% else %}Choose Plus to unlock it, then come back to play!{% endif %}</p>
       <div class="ac-actions">
         <a class="btn ac-btn" href="{{ url_for('academy.friends', learner_id=learner.id) }}">Back to friends</a>
-        {% if not g.kid %}<a class="btn" href="{{ url_for('academy.plan_page') }}">See the Academy plan</a>{% endif %}
+        {% if not g.kid %}<a class="btn" href="{{ url_for('plan.plan_page') }}">See the plans</a>{% endif %}
       </div>
     </section>
   {% elif view.me is none %}

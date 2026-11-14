@@ -17,12 +17,18 @@ people who get the alerts).
 
 Each person chooses in Settings which of the two they get: the digest goes to
 those with email_reminders on, the alerts to those with email_alerts on.
+
+Both pause for a workspace without a plan (plans.py: the trial over, nothing
+paid, no Kitchen Safety Bundle), and every page says so in a banner. Nothing
+is marked reminded while paused, so choosing a plan picks up where it left
+off, the way a missed day is caught up.
 """
 
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from . import plans
 from .db import iso, now_iso, utcnow
 from .notify import notify, send_email
 from .tracking import org_today, states_for_org, tally
@@ -278,6 +284,12 @@ def _alert_org(conn, cfg, org, now):
     return alerts, emails
 
 
+def paused(org, cfg, now=None):
+    """Whether the workspace's reminders and alerts are paused: it has no
+    plan, so the tracker is read-only (plans.access)."""
+    return not plans.access(org, now, cfg.get("ACADEMY_TRIAL_DAYS"))["tracker"]
+
+
 def run_clock_alerts(conn, cfg, now=None):
     """Sends the time-limit alerts due now (an aware datetime; the current
     moment by default). Only companies with an hour or minute clock running are
@@ -287,7 +299,11 @@ def run_clock_alerts(conn, cfg, now=None):
     # Only the hour and minute clocks store a time ("...T14:30:00+00:00").
     orgs = conn.execute("SELECT * FROM orgs WHERE id IN (SELECT org_id FROM items WHERE value_date LIKE '%T%')"
                         " ORDER BY id").fetchall()
+    summary["paused"] = 0
     for org in orgs:
+        if paused(org, cfg, now):
+            summary["paused"] += 1
+            continue
         summary["orgs"] += 1
         try:
             alerts, emails = _alert_org(conn, cfg, org, now)
@@ -303,8 +319,11 @@ def run_clock_alerts(conn, cfg, now=None):
 def run_reminders(conn, cfg, today_for=None):
     """Sends today's digests. today_for(org) can override the date (for tests).
     One company's failure is logged and never stops the others."""
-    summary = {"orgs": 0, "digests": 0, "reminders": 0, "errors": 0}
+    summary = {"orgs": 0, "digests": 0, "reminders": 0, "errors": 0, "paused": 0}
     for org in conn.execute("SELECT * FROM orgs ORDER BY id").fetchall():
+        if paused(org, cfg):
+            summary["paused"] += 1
+            continue
         summary["orgs"] += 1
         try:
             today = today_for(org) if today_for else org_today(org)

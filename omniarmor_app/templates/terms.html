@@ -49,10 +49,14 @@
 <p>If you break these rules, we may remove your access.</p>
 
 <h2 id="paying">Paying</h2>
+{% set pf = plan_facts() %}
 <ul>
-  <li>The compliance tracker costs nothing right now.</li>
-  <li>The Academy: a workspace gets a free {{ facts.trial_days }}-day trial of the whole Academy when it adds its first kid. After that, the first {{ facts.free_worlds }} worlds of the Launchpad track stay free. Everything else needs the Academy plan.</li>
-  <li>Stripe handles the Academy plan. It renews until you cancel. You can cancel or change your card any time on the <a href="{{ url_for('academy.plan_page') }}">Academy plan page</a> (Manage or cancel).</li>
+  <li>A new workspace gets a free {{ facts.trial_days }}-day trial of everything in {{ pf.plus.name }}, from the day it signs up. No card.</li>
+  <li>After that there are two plans, each a price a month for each {{ pf.location }} (one workspace is one {{ pf.location }}): <strong>{{ pf.pro.name }}</strong>, {{ pf.pro.price }}, for the compliance tracker; and <strong>{{ pf.plus.name }}</strong>, {{ pf.plus.price }}, for everything in {{ pf.pro.name }} and the whole Future Owner Academy. The first {{ facts.free_worlds }} worlds of the Launchpad track stay free for everyone.</li>
+  <li>Without a plan, the compliance tracker is read-only: you can still see, print and download everything you entered, and we don't delete it, but you can't save new checks and reminder emails stop until you choose a plan. You can always download your data and delete your workspace.</li>
+  <li>The {{ pf.bundle.name }} is sold by CyberLogix, not by us. While CyberLogix sends us its signed daily reports for your workspace, your workspace gets {{ pf.bundle.includes.name }} at no charge from us, and {{ pf.plus.name }} costs only the difference ({{ pf.bundle.upgrade_price }}). If those reports stop for more than {{ pf.bundle.fresh_days }} days, {{ pf.bundle.includes.name }} stays on for {{ pf.bundle.grace_days }} more days, and then the rules above apply.</li>
+  <li>A workspace that paid for the old Academy plan keeps it, at its old price, with the compliance tracker, until it changes plan or the plan ends.</li>
+  <li>Stripe handles payments. A plan renews each month until you cancel. You can change plan, update your card or cancel any time on the <a href="{{ url_for('plan.plan_page') }}">Plans page</a> (Manage billing). A cancelled plan stays on until the end of the time you paid for.</li>
 </ul>
 
 <h2 id="promise">What we promise and what we don't</h2>

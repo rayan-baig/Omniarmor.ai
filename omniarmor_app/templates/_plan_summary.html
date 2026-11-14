@@ -1,0 +1,20 @@
+{# The plans in short, for the landing page and the industry pages. Every price and number comes from plans.py through plan_facts(). #}
+{% set pf = plan_facts() %}
+<div class="plans" id="price" aria-label="Price" data-plan-summary>
+  <div>
+    <p class="eyebrow">Free trial</p>
+    <p><b>{{ pf.trial_days }}-day free trial</b> of everything in {{ pf.plus.name }}, for your whole team. No card needed.</p>
+  </div>
+  <div data-plan="pro">
+    <p class="eyebrow">{{ pf.pro.name }} · compliance tracker</p>
+    <p><b>{{ pf.pro.price }}</b>: every check in your industries, reminders, reports, bulk entry and your team.</p>
+  </div>
+  <div data-plan="plus">
+    <p class="eyebrow">{{ pf.plus.name }} · tracker and Academy</p>
+    <p><b>{{ pf.plus.price }}</b>: everything in {{ pf.pro.name }}, plus the whole Future Owner Academy for your kids at no extra cost. The first {{ pf.free_worlds|length }} {{ pf.free_track.name }} worlds are free for everyone.</p>
+  </div>
+  <div data-plan="bundle">
+    <p class="eyebrow">{{ pf.bundle.name }}</p>
+    <p>On CyberLogix's {{ pf.bundle.name }} ({{ pf.bundle.price }})? It includes <b>{{ pf.bundle.includes.name }}</b>, and {{ pf.plus.name }} costs only the difference, {{ pf.bundle.upgrade_price }}.</p>
+  </div>
+</div>

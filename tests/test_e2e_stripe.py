@@ -1,4 +1,4 @@
-"""The Academy plan's whole life against a fake Stripe, end to end.
+"""The plans' whole life against a fake Stripe, end to end.
 
 FakeStripe is a small web server on this machine that answers the three
 Stripe API calls the app makes (create a Checkout session, read one back,
@@ -9,10 +9,13 @@ webhook events Stripe would. The app talks to it over HTTP through its own
 Stripe client (academy_plan._stripe), so the request it builds, its key and
 its error handling are all exercised, and nothing is mocked inside the app.
 
-The family goes: free trial -> trial over -> paid -> a failed payment ->
-cancelled -> paid again, and the app's state is checked at every step: the
-workspace's plan in the database, what the owner reads on Settings and the
-plan page, and which worlds the learner can open.
+The workspace goes: free trial -> trial over (read-only) -> Plus -> a failed
+payment -> cancelled -> Plus again, and the app's state is checked at every
+step: the workspace's plan in the database, what the owner reads on Settings
+and the plan page, whether checks can be saved, and which worlds the learner
+can open. Pro is bought and switched to Plus in Stripe's portal; a Kitchen
+Safety Bundle workspace buys Plus at the difference. Every checkout bills
+the workspace's location count.
 """
 
 import hashlib
@@ -30,13 +33,16 @@ from urllib.parse import parse_qsl, urlsplit
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from e2e_helpers import flashes, post_forms  # noqa: E402
-from test_webapp import AppTestCase  # noqa: E402
+from test_webapp import AppTestCase, first_rule  # noqa: E402
 
-from omniarmor_app import academy, academy_plan  # noqa: E402
+from omniarmor_app import academy, academy_plan, connections, plans  # noqa: E402
 
 SECRET_KEY = "sk_test_fake_omniarmor"
 WEBHOOK_SECRET = "whsec_fake_omniarmor"
-PRICE = "price_test_academy"
+PRICE = "price_test_plus"
+PRO_PRICE = "price_test_pro"
+UPGRADE_PRICE = "price_test_plus_bundle"
+BUNDLE_SECRET = "kitchen-bundle-e2e"
 DAY = 24 * 3600
 
 
@@ -114,7 +120,7 @@ class FakeStripe:
 
     def create_session(self, fields):
         assert fields.get("mode") == "subscription", fields
-        assert fields.get("line_items[0][price]") == PRICE, fields
+        assert fields.get("line_items[0][price]") in (PRICE, PRO_PRICE, UPGRADE_PRICE), fields
         assert "{CHECKOUT_SESSION_ID}" in fields["success_url"], fields
         session_id = self.next_id("cs")
         session = {
@@ -123,11 +129,19 @@ class FakeStripe:
             "metadata": {"org_id": fields.get("metadata[org_id]")}, "customer": fields.get("customer"),
             "customer_email": fields.get("customer_email"), "subscription": None, "created": self.tick(),
             "success_url": fields["success_url"], "cancel_url": fields["cancel_url"],
-            "subscription_metadata": {"org_id": fields.get("subscription_data[metadata][org_id]")},
+            "subscription_metadata": {"org_id": fields.get("subscription_data[metadata][org_id]"),
+                                      "plan": fields.get("subscription_data[metadata][plan]")},
+            "metadata_plan": fields.get("metadata[plan]"),
+            "price": fields.get("line_items[0][price]"), "quantity": int(fields.get("line_items[0][quantity]")),
             "url": f"https://checkout.stripe.test/c/pay/{session_id}",
         }
+        session["metadata"]["plan"] = session.pop("metadata_plan")
         self.sessions[session_id] = session
-        return {k: v for k, v in session.items() if k != "subscription_metadata"}
+        return self.public(session)
+
+    @staticmethod
+    def public(session):
+        return {k: v for k, v in session.items() if k not in ("subscription_metadata", "price", "quantity")}
 
     # --- What happens on Stripe's own pages, and the webhooks it sends ------------
 
@@ -153,12 +167,12 @@ class FakeStripe:
         now = self.tick()
         subscription = {"id": self.next_id("sub"), "object": "subscription", "customer": customer,
                         "status": "active", "created": now, "current_period_end": now + 30 * DAY,
-                        "cancel_at_period_end": False, "metadata": session["subscription_metadata"]}
+                        "cancel_at_period_end": False, "metadata": session["subscription_metadata"],
+                        "items": {"data": [{"price": {"id": session["price"]}, "quantity": session["quantity"]}]}}
         self.subscriptions[subscription["id"]] = subscription
         session.update(status="complete", payment_status="paid", customer=customer,
                        subscription=subscription["id"])
-        self.webhooks_for_payment = [("checkout.session.completed", {k: v for k, v in session.items()
-                                                                     if k != "subscription_metadata"}),
+        self.webhooks_for_payment = [("checkout.session.completed", self.public(session)),
                                      ("customer.subscription.created", subscription),
                                      ("invoice.paid", self.invoice(subscription, "paid"))]
         return session["success_url"].replace("{CHECKOUT_SESSION_ID}", session_id)
@@ -177,6 +191,12 @@ class FakeStripe:
         return [self.send("invoice.payment_failed", self.invoice(subscription, "open")),
                 self.send("customer.subscription.updated", subscription)]
 
+    def switch(self, sub_id, price):
+        """The owner changes plan in the customer portal: the subscription's price changes."""
+        subscription = self.subscriptions[sub_id]
+        subscription["items"]["data"][0]["price"] = {"id": price}
+        return self.send("customer.subscription.updated", subscription)
+
     def end(self, sub_id):
         """Stripe gives up on the card (or the family cancels at once): the subscription ends."""
         subscription = self.subscriptions[sub_id]
@@ -184,11 +204,12 @@ class FakeStripe:
         return self.send("customer.subscription.deleted", subscription)
 
 
-class TestAcademyPlanAgainstFakeStripe(AppTestCase):
+class TestPlansAgainstFakeStripe(AppTestCase):
     def setUp(self):
         super().setUp()
         self.app.config.update(STRIPE_SECRET_KEY=SECRET_KEY, STRIPE_WEBHOOK_SECRET=WEBHOOK_SECRET,
-                               ACADEMY_STRIPE_PRICE=PRICE, ACADEMY_PRICE_LABEL="$9 a month")
+                               PLUS_STRIPE_PRICE=PRICE, PRO_STRIPE_PRICE=PRO_PRICE,
+                               PLUS_BUNDLE_UPGRADE_STRIPE_PRICE=UPGRADE_PRICE, KITCHEN_BUNDLE_SECRET=BUNDLE_SECRET)
         self.stripe = FakeStripe(self.webhook)
         self.addCleanup(self.stripe.stop)
         for patcher in (mock.patch.object(academy_plan, "STRIPE_API", self.stripe.url),
@@ -205,6 +226,7 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
         # Trailblazer's first world: open to play, and only free on the Launchpad track.
         self.paid_world = academy.TRACKS["trailblazer"].topics[0]
+        self.check = first_rule(18, kind="max").key
         self.assertNotEqual(academy_plan.FREE_TRACK, "trailblazer")
 
     def webhook(self, payload, signature):
@@ -217,16 +239,23 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
 
     def org(self):
         with self.db() as conn:
-            return dict(conn.execute("SELECT academy_status, academy_renews_at, academy_ends_at,"
+            return dict(conn.execute("SELECT academy_status, academy_renews_at, academy_ends_at, plan,"
                                      " stripe_customer_id, stripe_subscription_id FROM orgs").fetchone())
 
     def settings_line(self):
         page = self.client.get("/app/settings").get_data(as_text=True)
-        section = page[page.index("<h2>Academy plan</h2>") + len("<h2>Academy plan</h2>"):]
-        return " ".join(re.sub(r"<[^>]+>", " ", section[:section.index("</p>")]).split()).replace("&#39;", "'")
+        line = re.search(r"<span data-plan-line>(.*?)</span>", page, re.S).group(1)
+        return " ".join(re.sub(r"<[^>]+>", " ", line).split()).replace("&#39;", "'")
+
+    def can_save(self, value):
+        """Whether the owner can save a reading on a check (the tracker isn't read-only)."""
+        self.change(18, self.check, value=str(value))
+        with self.db() as conn:
+            row = conn.execute("SELECT value_num FROM items WHERE rule_key = ?", (self.check,)).fetchone()
+        return row is not None and row[0] == value
 
     def plan_page(self):
-        return self.client.get("/app/academy/plan").get_data(as_text=True)
+        return self.client.get("/app/plan").get_data(as_text=True)
 
     def paid_world_opens(self):
         """Whether the learner can open a world outside the free ones, or is
@@ -235,7 +264,7 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
         if response.status_code == 200:
             return True
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.headers["Location"].endswith("/app/academy/plan"), response.headers["Location"])
+        self.assertTrue(response.headers["Location"].endswith("/app/plan"), response.headers["Location"])
         return False
 
     def free_world_opens(self):
@@ -244,9 +273,10 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
         self.post(f"/app/academy/{self.lid}/track", {"track": "trailblazer"})
         return opens
 
-    def start_checkout(self):
-        """The owner presses "Start the Academy plan" on the plan page."""
-        [form] = [f for f in post_forms(self.plan_page()) if f.action == "/app/academy/plan/checkout"]
+    def start_checkout(self, plan="plus"):
+        """The owner presses "Choose Plus" (or Pro) on the plan page."""
+        [form] = [f for f in post_forms(self.plan_page())
+                  if f.action == "/app/plan/checkout" and f.field("plan")["value"] == plan]
         response = self.client.post(form.action, data=form.values())
         self.assertEqual(response.status_code, 303)
         found = re.fullmatch(r"https://checkout\.stripe\.test/c/pay/(cs_test_\d+)", response.headers["Location"])
@@ -264,72 +294,82 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
     # --- The whole life -------------------------------------------------------------
 
     def test_trial_paid_failed_payment_cancelled_and_back(self):
-        # 1. The free trial: everything opens, nothing has touched Stripe.
+        # 1. The free trial: everything opens and saves, nothing has touched Stripe.
         self.assertEqual(self.org()["academy_status"], "none")
-        self.assertRegex(self.settings_line(), r"^Free Academy trial: 14 days left\.")
+        self.assertRegex(self.settings_line(), r"^Free trial: 14 days left of everything in Plus\.")
         self.assertIn("Your free trial is on", self.plan_page())
         self.assertTrue(self.paid_world_opens())
+        self.assertTrue(self.can_save(5))
         self.assertEqual(self.stripe.requests, [])
 
-        # 2. The trial ends: only the free worlds open.
+        # 2. The trial ends: read-only, and only the free worlds open.
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_trial_ends = '2000-01-01T00:00:00+00:00'")
             conn.commit()
-        self.assertRegex(self.settings_line(), r"^You're on the free Academy\.")
-        self.assertIn("Unlock the whole Academy", self.plan_page())
+        self.assertRegex(self.settings_line(), r"^No plan: the compliance tracker is read-only")
+        self.assertIn("Choose a plan", self.plan_page())
         self.assertFalse(self.paid_world_opens())
         self.assertTrue(self.free_world_opens())
+        self.assertFalse(self.can_save(6))
+        self.assertEqual(self.client.get("/app/report.csv").status_code, 200)
 
-        # 3. Paid. The owner goes to Stripe Checkout and pays; Stripe sends them
-        # back before its webhooks arrive, and the plan is on at once.
-        first = self.start_checkout()
+        # 3. Plus. The owner goes to Stripe Checkout and pays for one location;
+        # Stripe sends them back before its webhooks arrive, and the plan is on at once.
+        first = self.start_checkout("plus")
         method, path, fields, key = self.stripe.requests[-1]
         self.assertEqual((method, path, key), ("POST", "/v1/checkout/sessions", f"Bearer {SECRET_KEY}"))
         self.assertEqual(fields["client_reference_id"], str(self.org_id))
         self.assertEqual(fields["customer_email"], "owner@example.com")
+        self.assertEqual((fields["line_items[0][price]"], fields["metadata[plan]"]), (PRICE, "plus"))
+        self.assertEqual(fields["line_items[0][quantity]"], "1")
         self.assertNotIn("customer", fields)
         self.assertEqual(self.org()["academy_status"], "none", "nothing changes until Stripe says it's paid")
         page = self.come_back(self.stripe.pay(first))
         self.assertEqual(self.stripe.requests[-1][:2], ("GET", f"/v1/checkout/sessions/{first}"))
-        self.assertIn("Thank you! The Academy plan is on for every learner.", flashes(page))
+        self.assertIn("Thank you! Plus is on for Acme Logistics.", flashes(page))
         org = self.org()
-        self.assertEqual((org["academy_status"], org["stripe_customer_id"], org["stripe_subscription_id"]),
-                         ("active", "cus_test_2", "sub_test_3"))
+        self.assertEqual((org["academy_status"], org["plan"], org["stripe_customer_id"], org["stripe_subscription_id"]),
+                         ("active", "plus", "cus_test_2", "sub_test_3"))
         self.stripe.send_payment_webhooks()
         org = self.org()
-        self.assertEqual((org["academy_status"], org["stripe_subscription_id"]), ("active", "sub_test_3"))
+        self.assertEqual((org["academy_status"], org["plan"], org["stripe_subscription_id"]), ("active", "plus", "sub_test_3"))
         self.assertIsNotNone(org["academy_renews_at"], "the subscription's period end")
         self.assertIsNone(org["academy_ends_at"])
-        self.assertRegex(self.settings_line(), r"^The Academy plan is on and renews ")
-        self.assertIn("You have the Academy plan", self.plan_page())
-        self.assertNotIn("Start the Academy plan", self.plan_page())
+        self.assertRegex(self.settings_line(), r"^You're on Plus, renews ")
+        self.assertIn("You're on Plus", self.plan_page())
+        self.assertNotIn("Choose Plus", self.plan_page())
         self.assertTrue(self.paid_world_opens())
+        self.assertTrue(self.can_save(7))
 
         # 4. A renewal fails: the plan is past due, the owner is told to update
-        # the card (Stripe's billing portal), and the kids keep everything.
+        # the card (Stripe's billing portal), and everything keeps working.
         self.stripe.fail_renewal("sub_test_3")
         self.assertEqual(self.org()["academy_status"], "past_due")
-        self.assertRegex(self.settings_line(), r"^Your last Academy payment didn't go through\. Update your card")
-        self.assertIn("Update your card to keep access", self.plan_page())
+        self.assertRegex(self.settings_line(), r"^Your last payment for Plus didn't go through\. Update your card")
+        self.assertIn("Update your card to keep it", self.plan_page().replace("&#39;", "'"))
         self.assertTrue(self.paid_world_opens())
-        [manage] = [f for f in post_forms(self.plan_page()) if f.action == "/app/academy/plan/manage"]
+        self.assertTrue(self.can_save(8))
+        [manage] = [f for f in post_forms(self.plan_page()) if f.action == "/app/plan/manage"]
         response = self.client.post(manage.action, data=manage.values())
         self.assertEqual(response.headers["Location"], "https://billing.stripe.test/p/cus_test_2")
         self.assertEqual(self.stripe.requests[-1][2]["customer"], "cus_test_2")
 
-        # 5. Stripe gives up and the subscription ends: back to the free worlds,
-        # with every learner and their progress kept.
+        # 5. Stripe gives up and the subscription ends: read-only and the free
+        # worlds, with every learner, their progress and every reading kept.
         self.post(f"/app/academy/{self.lid}/world/1/stage/1", {"attempt": "1", "check": "0", "choice": "0"})
         self.stripe.end("sub_test_3")
         org = self.org()
         self.assertEqual((org["academy_status"], org["academy_renews_at"]), ("canceled", None))
-        self.assertRegex(self.settings_line(), r"^You're on the free Academy\.")
-        self.assertIn("Unlock the whole Academy", self.plan_page())
+        self.assertRegex(self.settings_line(), r"^No plan: the compliance tracker is read-only")
+        self.assertIn("Choose a plan", self.plan_page())
         self.assertIn("Past invoices and billing", self.plan_page())
+        self.assertIn("Your plan has ended", self.client.get("/app").get_data(as_text=True))
         self.assertFalse(self.paid_world_opens())
         self.assertTrue(self.free_world_opens())
+        self.assertFalse(self.can_save(9))
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM learners").fetchone()[0], 1)
+            self.assertEqual(conn.execute("SELECT value_num FROM items WHERE rule_key = ?", (self.check,)).fetchone()[0], 8)
         # Stripe retries the first payment's events: an ended plan stays ended.
         for event in self.stripe.events[:2]:
             self.stripe.deliver(event)
@@ -337,7 +377,7 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
         self.assertFalse(self.paid_world_opens())
 
         # 6. Resubscribed: the same Stripe customer, a new subscription.
-        second = self.start_checkout()
+        second = self.start_checkout("plus")
         fields = self.stripe.requests[-1][2]
         self.assertEqual(fields["customer"], "cus_test_2")
         self.assertNotIn("customer_email", fields)
@@ -349,19 +389,88 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
         self.assertNotEqual(org["stripe_subscription_id"], "sub_test_3")
         self.assertIsNotNone(org["academy_renews_at"])
         page = self.come_back(self.stripe.sessions[second]["success_url"].replace("{CHECKOUT_SESSION_ID}", second))
-        self.assertIn("Thank you! The Academy plan is on for every learner.", flashes(page))
-        self.assertRegex(self.settings_line(), r"^The Academy plan is on and renews ")
+        self.assertIn("Thank you! Plus is on for Acme Logistics.", flashes(page))
+        self.assertRegex(self.settings_line(), r"^You're on Plus, renews ")
         self.assertTrue(self.paid_world_opens())
         # The old subscription's late "deleted" event doesn't end the new plan.
         self.stripe.deliver(next(e for e in self.stripe.events if e["type"] == "customer.subscription.deleted"))
         self.assertEqual(self.org()["academy_status"], "active")
+
+    def end_trial(self):
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_trial_ends = '2000-01-01T00:00:00+00:00'")
+            conn.commit()
+
+    def test_pro_then_plus_in_the_portal(self):
+        self.end_trial()
+        session = self.start_checkout("pro")
+        fields = self.stripe.requests[-1][2]
+        self.assertEqual((fields["line_items[0][price]"], fields["line_items[0][quantity]"], fields["metadata[plan]"]),
+                         (PRO_PRICE, str(plans.location_count(None)), "pro"))
+        self.stripe.pay(session)
+        self.stripe.send_payment_webhooks()
+        org = self.org()
+        self.assertEqual((org["academy_status"], org["plan"]), ("active", "pro"))
+        self.assertRegex(self.settings_line(), r"^You're on Pro, renews ")
+        self.assertTrue(self.can_save(3))
+        self.assertFalse(self.paid_world_opens(), "Pro doesn't include the whole Academy")
+        self.assertTrue(self.free_world_opens())
+        # Switched to Plus in Stripe's portal.
+        sub = org["stripe_subscription_id"]
+        self.stripe.switch(sub, PRICE)
+        self.assertEqual(self.org()["plan"], "plus")
+        self.assertTrue(self.paid_world_opens())
+        # Stripe sends the switch again, then a late copy of the Pro subscription's
+        # first event (an older event under a new id): neither moves it back.
+        self.stripe.deliver(self.stripe.events[-1])
+        created = next(e for e in self.stripe.events if e["type"] == "customer.subscription.created")
+        late = json.loads(json.dumps(created))
+        late["id"] = "evt_late_copy"
+        late["data"]["object"]["items"] = {"data": [{"price": {"id": PRO_PRICE}, "quantity": 1}]}
+        self.stripe.deliver(late)
+        self.assertEqual(self.org()["plan"], "plus")
+        self.assertTrue(self.paid_world_opens())
+
+    def test_a_kitchen_safety_bundle_workspace_pays_the_difference(self):
+        self.end_trial()
+        self.change(18, self.check, value="1")       # nothing saved: read-only
+        key = re.search(r'class="key mono">(clx_[A-Za-z0-9_-]+)<', self.post(
+            "/app/settings/connections/cyberlogix/create").get_data(as_text=True)).group(1)
+        body = json.dumps({"date": "2026-11-13", "site": None, "units_total": 2, "units_in_range_all_day": 2,
+                           "breaches": [], "warmest_reading": 38, "unit_of_measure": "°F", "log_url": None}).encode()
+        with mock.patch("omniarmor_app.connections.org_today",
+                        return_value=__import__("datetime").date(2026, 11, 14)):
+            answer = self.stripe_side.post("/api/connect/cyberlogix/daily", data=body,
+                                           headers={"Authorization": f"Bearer {key}",
+                                                    "Content-Type": "application/json",
+                                                    connections.SIGNATURE_HEADER:
+                                                        connections.sign(BUNDLE_SECRET, body, int(time.time()))}).get_json()
+        self.assertEqual((answer["signature"], answer["bundle_counted"]), ("valid", True))
+        settings = self.client.get("/app/settings").get_data(as_text=True)
+        self.assertIn("Pro included with your Kitchen Safety Bundle", settings)
+        self.assertTrue(self.can_save(4))
+        self.assertFalse(self.paid_world_opens())
+        page = self.plan_page()
+        self.assertNotIn('value="pro"', page, "Pro is already included")
+        session = self.start_checkout("plus")
+        fields = self.stripe.requests[-1][2]
+        self.assertEqual((fields["line_items[0][price]"], fields["line_items[0][quantity]"], fields["metadata[plan]"]),
+                         (UPGRADE_PRICE, "1", "plus_bundle"))
+        self.come_back(self.stripe.pay(session))
+        self.stripe.send_payment_webhooks()
+        org = self.org()
+        self.assertEqual((org["academy_status"], org["plan"]), ("active", "plus_bundle"))
+        self.assertTrue(self.paid_world_opens())
+        self.assertTrue(self.can_save(5))
+        self.assertRegex(self.settings_line(), r"^You're on Plus at the Kitchen Safety Bundle price")
 
     def test_when_stripe_is_down_nothing_changes(self):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_trial_ends = '2000-01-01T00:00:00+00:00'")
             conn.commit()
         self.stripe.down = True
-        [form] = [f for f in post_forms(self.plan_page()) if f.action == "/app/academy/plan/checkout"]
+        [form] = [f for f in post_forms(self.plan_page())
+                  if f.action == "/app/plan/checkout" and f.field("plan")["value"] == "plus"]
         with self.assertLogs("omniarmor_app", "WARNING"):
             response = self.client.post(form.action, data=form.values(), follow_redirects=True)
         self.assertIn("We couldn&#39;t open checkout just now. Please try again in a minute.",
@@ -376,7 +485,7 @@ class TestAcademyPlanAgainstFakeStripe(AppTestCase):
             conn.commit()
         self.app.config["STRIPE_SECRET_KEY"] = "sk_test_wrong"
         with self.assertLogs("omniarmor_app", "WARNING") as logged:
-            self.post("/app/academy/plan/checkout")
+            self.post("/app/plan/checkout", {"plan": "plus"})
         self.assertTrue(any("Invalid API Key provided" in line for line in logged.output))
         self.assertNotIn("sk_test_wrong", " ".join(logged.output))
         self.assertEqual(self.org()["academy_status"], "none")

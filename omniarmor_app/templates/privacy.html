@@ -17,13 +17,13 @@
   <li>We keep what you type in, so the app can do its job.</li>
   <li>We don't sell your data. We don't show ads. We don't use tracking or analytics tools.</li>
   <li>A few outside companies help run the site. They are all listed below.</li>
-  <li>A workspace owner can delete the whole workspace at any time. (Cancel a paid Academy plan first.)</li>
+  <li>A workspace owner can download everything and delete the whole workspace at any time, with or without a plan. (Cancel a paid plan first.)</li>
 </ul>
 
 <h2 id="collect">What we collect</h2>
 <p><strong>When you sign up:</strong> your name, email, password, company name, time zone and the industries you pick. We store your password scrambled (hashed), so nobody can read it, not even us.</p>
 <p><strong>When you use the tracker:</strong> the dates (and, for checks that count hours or minutes, the times), numbers and yes-or-no answers you enter, any limits you change, and who changed what and when. That last part is the audit trail.</p>
-<p><strong>When you connect CyberLogix</strong> (the Kitchen Safety Bundle): once a day it sends a temperature summary for your fridges and freezers: how many stayed in range, the warmest reading, and any breaches with their unit names, times, temperatures and the role (like "on-call staff") of who acknowledged them, never anyone's name. We keep the summaries and their notes in your workspace. We store only a scrambled copy (a hash) of the connection key, and note the IP address each report comes from to limit wrong guesses.</p>
+<p><strong>When you connect CyberLogix</strong> (the Kitchen Safety Bundle): once a day it sends a temperature summary for your fridges and freezers: how many stayed in range, the warmest reading, and any breaches with their unit names, times, temperatures and the role (like "on-call staff") of who acknowledged them, never anyone's name. We keep the summaries and their notes in your workspace. We store only a scrambled copy (a hash) of the connection key, and note the IP address each report comes from to limit wrong guesses. CyberLogix signs the reports of workspaces on the bundle; we keep the time of the last signed report, to know whether the bundle covers your plan, and each signature for {{ facts.signature_minutes }} minutes, so the same signed report can't count twice.</p>
 <p><strong>Emails we send:</strong> we keep a copy of each email (reminders, time-limit alerts and password reset emails), so you can see it in Radar. Reminders go out once a day, as one digest. Checks that count hours or minutes also send an alert when they get close to their limit and when they pass it; we look for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
 <p><strong>When a kid uses the Academy:</strong> a nickname, a picture, their Armo helper, their track, their levels and stars, the days they played, the questions they got wrong (for practice), their friends and their duels. We never ask a kid for a real name, email, birthday or password. Please pick a nickname, not a real name.</p>
 <p><strong>When you visit:</strong></p>
@@ -33,7 +33,7 @@
   <li>When someone types a wrong password, asks for a password reset, signs up, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes.</li>
 </ul>
 <p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened. They can also have a short report of each server error emailed to one inbox, at most {{ facts.error_emails_per_day }} a day: the time, the page address without anything after the "?", and where in our code it failed, with no form, cookie, email address or IP address in it.</p>
-<p><strong>When you pay for the Academy plan:</strong> we keep Stripe's customer and subscription numbers and your plan's status, renewal date and, if you cancel, the date it ends. We never see your card number.</p>
+<p><strong>When you pay for a plan (Pro or Plus):</strong> we keep Stripe's customer and subscription numbers, which plan it is, its status, renewal date and, if you cancel, the date it ends. We never see your card number.</p>
 
 <h2 id="cookies">Cookies</h2>
 <ul>
@@ -46,7 +46,7 @@
 <ul>
   <li>To run the tracker: count down deadlines, show what needs attention and send reminders.</li>
   <li>To keep accounts safe: sign-in, limits on wrong guesses, and error reports so we can fix bugs.</li>
-  <li>To run the Academy and its plan.</li>
+  <li>To run the Academy, and to know which plan your workspace is on.</li>
   <li>To count users. We count how many accounts there are and how many were used in the last 30 days. Only those two numbers go to our own admin dashboard. No names, no emails, no companies.</li>
   <li>To see which features get used, we keep one total a day for each of a few things (checks updated, bulk updates, lessons started and passed, certificates, Help page views and sign-ups), with no cookie and nothing that says who or which workspace, and only the people who run OmniArmor see them.</li>
 </ul>
@@ -65,13 +65,13 @@
   <li><strong>Our hosting company</strong> runs the server. It stores the database, the backups and the server logs.</li>
   <li><strong>Our email service</strong> delivers our emails, so it sees your email address and the message.</li>
   <li><strong>Google Fonts.</strong> Our pages load their fonts from Google. That means Google sees your IP address and browser each time you open a page.</li>
-  <li><strong>Stripe</strong> handles Academy payments. When you pay, Stripe gets your email, your card details and your workspace number.</li>
+  <li><strong>Stripe</strong> handles payments for Pro and Plus. When you pay, Stripe gets your email, your card details, your workspace number and which plan you chose.</li>
 </ul>
 <p>That's the full list. We don't sell your data or share it for ads.</p>
 
 <h2 id="keep">How long we keep it</h2>
 <ul>
-  <li><strong>Your account, workspace, readings, audit trail, email copies and kids' Academy profiles:</strong> until they are deleted (see below). Nothing here deletes itself.</li>
+  <li><strong>Your account, workspace, readings, audit trail, email copies and kids' Academy profiles:</strong> until they are deleted (see below). Nothing here deletes itself, not even when a trial or a plan ends.</li>
   <li><strong>Wrong password tries, reset requests, sign-ups, join code and friend code tries, and the addresses CyberLogix reports came from:</strong> deleted within 2 days.</li>
   <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days }} days.</li>
   <li><strong>Kid join codes</strong> work for {{ facts.join_code_days }} days and <strong>friend codes</strong> for {{ facts.friend_code_days }} days. Then they are deleted.</li>
@@ -89,7 +89,7 @@
 <h2 id="delete">How to delete it</h2>
 <ul>
   <li><strong>The whole workspace:</strong> the owner goes to Settings, then Delete workspace, and types the company name. This deletes the company, every reading, the audit trail, the reminder log, every kid's Academy profile and every team account that isn't in another workspace. Download your report and audit trail first if you need them.</li>
-  <li>If you pay for the Academy plan, cancel it first on the <a href="{{ url_for('academy.plan_page') }}">Academy plan page</a> (Manage or cancel). Deleting is blocked until you do, so you aren't charged for a workspace that's gone. Once it's cancelled you can delete right away, even before the paid time runs out.</li>
+  <li>If you pay for a plan, cancel it first on the <a href="{{ url_for('plan.plan_page') }}">Plans page</a> (Manage billing). Deleting is blocked until you do, so you aren't charged for a workspace that's gone. Once it's cancelled you can delete right away, even before the paid time runs out. Without a plan, deleting always works.</li>
   <li><strong>One team member:</strong> the owner removes them in Settings. Their account is deleted too, unless they belong to another workspace. There is no button to delete only your own account, so ask your workspace owner. Changes you made stay in that workspace's audit trail and report, with your name, because that record is what an inspector checks.</li>
   <li><strong>One kid:</strong> a grown-up opens the Academy, then Manage learners, then Remove. Their progress, friends and duels go too.</li>
   <li><strong>A kid's devices:</strong> a grown-up can sign a kid out on every device from the kid's map page.</li>

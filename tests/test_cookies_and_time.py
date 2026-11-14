@@ -166,7 +166,7 @@ class TestDatesAreTheWorkspaces(AppTestCase):
 
     def test_plan_and_join_code_dates(self):
         self.assertIn("renews 2026-11-02", self.client.get("/app/settings").get_data(as_text=True))
-        self.assertIn("renews 2026-11-02", self.client.get("/app/academy/plan").get_data(as_text=True))
+        self.assertIn("renews 2026-11-02", self.client.get("/app/plan").get_data(as_text=True))
         with self.db() as conn:
             conn.execute("UPDATE learners SET track = 'launchpad', track_chosen = 1")
             conn.commit()

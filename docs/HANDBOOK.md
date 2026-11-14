@@ -207,12 +207,12 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Armory (settings).**
 
-- **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the operator's account also chooses whether to get the weekly Autopilot report), their Armo personality, the Academy plan's status (and that the compliance tracker is free), and About: the version number, and where to get help (the Help page, and the `SUPPORT_EMAIL` address when it is set).
+- **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the operator's account also chooses whether to get the weekly Autopilot report), their Armo personality, the workspace's plan (section 2.12), with "Pro included with your Kitchen Safety Bundle" while the bundle covers it, and About: the version number, and where to get help (the Help page, and the `SUPPORT_EMAIL` address when it is set).
 - **Owners also:**
   - change the company name, timezone and industries;
   - invite people and remove members;
   - create, regenerate or revoke the CyberLogix connection key under **Connections** (section 2.11; everyone sees whether CyberLogix is connected);
-  - manage or cancel the Academy plan from its page;
+  - choose, change or cancel the plan from the plan page (section 2.12);
   - delete the whole workspace, by typing the company name to confirm.
 - **The operator** (the account with the `OPERATOR_EMAIL` address that was made the operator on the server, section 6.8) also sees the usage counts of the last 30 days (section 6.7). Signing up with that address is not enough.
 
@@ -220,9 +220,9 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 Visitors who aren't signed in see:
 
-- a landing page with the slogan, who it's for and, in the first screen, the price: the compliance tracker is free right now, and the Academy has a free trial (`ACADEMY_TRIAL_DAYS`) and then the Academy plan (`ACADEMY_PRICE_LABEL`, when set), with the first Launchpad worlds free. Every number on it is read from the code and settings;
+- a landing page with the slogan, who it's for and, in the first screen, the plans (section 2.12): the free trial (`ACADEMY_TRIAL_DAYS`), Pro and Plus with their prices per location, the free Academy worlds and the Kitchen Safety Bundle. Every number on it is read from the code and settings (`_plan_summary.html`, which the industry pages show too);
 - a list of all 50 industries;
-- one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up;
+- one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
 - a Help page (`/help`) with 15 questions and answers: the free trial, prices, a card at sign-up, what a check is, the three lights, Done today, updating several checks, when reminder emails go out and how to choose them, the Autopilot, the Academy, a kid's progress report, downloading and deleting data, and getting help. Every number on it is read from the code and settings, like the plan page's, and `SUPPORT_EMAIL`, when set, adds an address to write to. It is linked from every page's footer, the landing page and Settings;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
@@ -259,7 +259,30 @@ CyberLogix is MTRX Horizyn's fridge and freezer alarm app. Connected, it fills i
 
 The Privacy page says in one line what a connection sends: temperature summaries, unit names and roles, never names.
 
-The full contract the CyberLogix side builds against (the body, every field's limits, responses and error codes, idempotency and rate limits) is [docs/CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md).
+- **Signed reports and the bundle's Pro.** CyberLogix customers pay CyberLogix for the bundle, and it includes OmniArmor Pro for that location. CyberLogix signs the reports of bundle sites with the secret both apps share (`KITCHEN_BUNDLE_SECRET`), in the header `X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>`. OmniArmor checks it over the raw body bytes with a constant-time compare, refuses a `t` more than 300 seconds from now, and remembers each accepted signature for 10 minutes (`bundle_signatures`), so the same signed request sent again doesn't count (the per-date idempotency alone would stop a replay changing readings, but not renewing the bundle). A report that counts records when it arrived (`orgs.bundle_report_at`). A report with no signature, a wrong, stale or replayed one, or any report while the secret is unset, is processed exactly as before and just doesn't count; the answer says which (`signature`, `bundle_counted`). What the cover gives is in section 2.12.
+
+The full contract the CyberLogix side builds against (the body, every field's limits, the signature, responses and error codes, idempotency and rate limits) is [docs/CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md).
+
+### 2.12 Plans: the free trial, Pro and Plus
+
+The prices live in one place, `omniarmor_app/plans.py`, and every page that names a plan reads them from there through `plan_facts()` in `plan_views.py`: the plan page, Help, Settings, the landing page, the industry pages and the Terms. A test fails if any template has a price typed into it, and another changes the prices in code and checks every page follows.
+
+- **Free trial.** Every new workspace gets everything in Plus for `ACADEMY_TRIAL_DAYS` days (14 by default; the setting kept the name it had when only the Academy had a trial), from the day it signs up (`orgs.academy_trial_ends`). No card. A workspace made some other way, with no trial end saved, counts it from its creation.
+- **Pro, $50 a month per location:** the compliance tracker: checks, reminders and time-limit alerts, reports and exports, bulk entry, Radar, Intel, the team.
+- **Plus, $80 a month per location:** everything in Pro, plus the whole Future Owner Academy at no extra cost. The Academy's first worlds stay free for everyone, plan or not.
+- **A location is a workspace.** A workspace holds one site: one timezone, one reading per check, and CyberLogix sends one report per workspace a day. So a subscription's quantity is `location_count()`, which is 1, and a company with several sites makes a workspace (and a subscription) for each.
+- **Without a plan** (the trial over, nothing paid, no bundle), the compliance tracker is **read-only**:
+  - every record can still be seen, printed and downloaded (Intel, Vault and both CSV exports), and nothing is ever deleted;
+  - no check can be saved: single saves, Done today, Clear, limits and bulk updates are refused with a message saying why ("Your free trial has ended, so the compliance tracker is read-only. Nothing was saved..."), and the industry pages show the questions without Save buttons;
+  - reminder digests and time-limit alerts pause (`reminders.paused`). Nothing is marked reminded meanwhile, so choosing a plan picks up where they left off, as after a missed day;
+  - a banner on every page says so, why (trial ended, plan ended, or the bundle's Pro ended) and links to the plans;
+  - the Academy keeps its free worlds, and exporting and deleting the workspace always work. CyberLogix reports are still taken.
+- **The Kitchen Safety Bundle includes Pro.** A workspace that received a validly signed CyberLogix report (section 2.11) in the last 3 days (`BUNDLE_FRESH`) gets Pro at no charge; Settings says "Pro included with your Kitchen Safety Bundle". When the signed reports stop, Pro stays on for a 7-day grace period (`BUNDLE_GRACE`) with a banner ("CyberLogix hasn't sent a signed report since..."), and then the read-only rules above apply, unless the trial or a plan still covers it. A new signed report brings the cover back.
+- **Plus for a bundle workspace** costs only the difference, $30 a month per location: checkout uses `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` and stores the plan as `plus_bundle`, which gives the whole Academy while the bundle gives the tracker. If the bundle lapses past its grace period, the Academy stays and the tracker turns read-only, and the plan page says to switch to full Plus or Pro in Manage billing. Without that price set, a bundle workspace is offered Plus at its full price, with a note. Pro isn't sold to a covered workspace; one already paying for Pro is told the bundle includes it.
+- **The old Academy plan becomes Plus.** A workspace paying for the old standalone Academy plan keeps exactly what it had, the whole Academy and the then-free compliance tracker, at its old price, until it changes plan in the portal or the subscription ends; then the usual rules apply. Its plan is `academy` (schema version 18 marked every paying workspace so, and any paid subscription that never named a plan is read as it). Every other workspace that existed before 1.3.0 got the trial from the day of the upgrade.
+- **The plan page** (`/app/plan`; the old `/app/academy/plan` redirects there, so a Stripe checkout that began there still comes back) shows Pro, Plus, the free Academy and the bundle side by side, the workspace's status, and for the owner a **Choose Pro** / **Choose Plus** button (or **Add the Academy with Plus** at the bundle price) and **Manage billing**. Members see it but can't buy. Every number on it comes from `plan_facts()`.
+- **Stripe** (`academy_plan.py`, which kept its name): checkout sends the plan's price (`PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`) with the location count as quantity and writes the plan in the session's and the subscription's metadata. Coming back from checkout settles it at once; the signed webhook keeps it current, and reads the plan from the subscription's price, so switching between Pro and Plus in Stripe's customer portal arrives by itself. All of section 5.10's safety rules apply to every plan: repeats and older events are ignored, events about another subscription too, past due keeps access while Stripe retries, a cancelled plan runs to the end of its period, and checkout never starts a second subscription.
+- **By hand**, without Stripe: `flask --app wsgi plan <workspace id> pro|plus|none` (the old `academy-plan <id> active` now means Plus).
 
 ---
 
@@ -548,14 +571,14 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
 
 A grown-up can make a single-use **join code** for a learner, valid for 7 days. If two devices type the same code at once, only the one that uses it up gets in. On the kid's phone, tablet or computer, the kid opens the Kids page and types the code. That device gets an Academy-only session: no business pages, no email, no password, and only that one learner in that one family. "Sign out on every device" ends all of a learner's device sessions at once. A device can also leave on its own ("Leave the Academy on this device").
 
-### 5.10 The Academy plan
+### 5.10 The Academy and the plans
 
-The Academy has its own subscription, separate from the compliance service.
+Since 1.3.0 the whole Academy comes with **Plus** (section 2.12), and the old standalone Academy plan is kept only for the workspaces already paying for it.
 
-- **Free trial.** Every workspace gets a free trial of the whole Academy when it adds its first learner, 14 days by default (`ACADEMY_TRIAL_DAYS`). Workspaces that already had learners when the plan was introduced get the trial automatically.
-- **After the trial**, the first three Launchpad worlds stay free, and everything else needs the plan.
-- **The plan page** explains the compliance tracker, the free Academy and the Academy plan side by side in plain words. Every number and name on it comes from `plan_facts()` in `academy_views.py`, read from the settings and the code that enforces the plan, and a test checks that the template has no number typed into its words.
-- **Finding the plan.** The Academy home always links to the plan page: to start it, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in the Armory.
+- **Free trial.** The workspace's free trial (section 2.12) includes the whole Academy. It starts at sign-up, not with the first learner.
+- **After the trial**, the first three Launchpad worlds stay free for everyone, and everything else needs Plus (or the old Academy plan). Pro doesn't include them.
+- **The plan page** (section 2.12) explains Pro, Plus, the free Academy and the bundle side by side in plain words. Every number and name on it comes from `plan_facts()` in `plan_views.py`, and a test checks that the template has no number typed into its words.
+- **Finding the plan.** The Academy home always links to the plan page: to choose Plus, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in the Armory.
 - **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.
@@ -565,7 +588,7 @@ The Academy has its own subscription, separate from the compliance service.
   - Events are de-duplicated by event id, and events older than the last one applied are ignored.
   - Events about a different subscription than the active one are ignored, so a cancelled duplicate can't switch off a paid plan.
   - Checkout refuses to start a second subscription when the plan is already paid.
-- **Without Stripe**, the plan can be switched by hand: `flask --app wsgi academy-plan <workspace id> active`.
+- **Without Stripe**, a plan can be switched by hand: `flask --app wsgi plan <workspace id> plus`.
 
 ### 5.11 The look
 
@@ -787,6 +810,9 @@ Every point below is in the code today.
   - Repeats are ignored, and so are events older than the last one applied.
   - Events about a different subscription than the active one are ignored.
   - A checkout never turns a plan back on once it has ended, or hides a failed payment: not a checkout event Stripe retries days later, and not the "thank you" page opened again from browser history.
+  - Which plan a workspace is on comes from the subscription's price (one of the configured price ids) or the plan checkout wrote in its metadata; an unknown price leaves it as it is.
+- **The Kitchen Safety Bundle's Pro** counts only reports with a valid `X-CyberLogix-Signature`: HMAC-SHA256 over the raw body bytes with `KITCHEN_BUNDLE_SECRET`, compared in constant time, `t` within 300 seconds, and each signature accepted once (remembered for 10 minutes, across all workspaces). Nothing else about a report depends on it.
+- **No data held back.** A workspace without a plan can always see, download and delete its data.
 
 ### 7.6 Bugs fixed in a security review
 
@@ -828,9 +854,11 @@ omniarmor_app (Flask)
    ├── armo_views.py   the Armo page, status feed and personality picker
    ├── academy.py      the Academy engine: worlds, tracks, quizzes, ranks
    ├── academy_bank/   question banks for the 27 newer worlds
-   ├── academy_views.py the Academy pages, kids' devices, friends, duels, practice, plan
-   ├── academy_plan.py the Academy subscription and Stripe
-   ├── connections.py  the Kitchen Safety Bundle: CyberLogix's key and daily report
+   ├── academy_views.py the Academy pages, kids' devices, friends, duels, practice
+   ├── plans.py        the plans and their prices (the one place), the trial, read-only, the bundle's cover
+   ├── plan_views.py   the plan page, checkout, the portal and Stripe's webhook
+   ├── academy_plan.py the subscription through Stripe (any plan)
+   ├── connections.py  the Kitchen Safety Bundle: CyberLogix's key, daily report and signature
    ├── autopilot.py    the 10-minute health pass: fixes and operator emails
    ├── bugfinder.py    crash fingerprints, daily self-test, content and data checks
    └── db.py           SQLite connection, schema migrations, audit writes
@@ -851,7 +879,7 @@ SQLite database (one file on a persistent disk) + daily backups
 - `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
-- `tests/`: 673 tests in 39 files.
+- `tests/`: 723 tests in 40 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
   - `test_user_flows.py` (75, bugs a person using the app would hit), `test_webapp.py` (50) and `test_academy.py` (50).
@@ -865,6 +893,7 @@ SQLite database (one file on a persistent disk) + daily backups
   - Version 1.1.0: `test_seed_demo.py` (16: the demo workspace's mix of checks, audit trail, Academy and Autopilot, signing in to it, every way it refuses to mix into real data, and backups kept apart from the live ones), `test_error_reports.py` (13: what an error report says, that a request with an email address in its query, form and cookie leaks none of them, the hourly and daily limits across a restart, and delivery through the outbox when mail is down) and `test_usage_counts.py` (13: schema version 15, each count, operator only, `/api/stats`, the Privacy page, and Settings showing the plan, the version and where to get help).
   - Version 1.1.2: `test_operator.py` (10: a stranger who signs up with the operator's address sees no operator data and can't turn the weekly report off; `make-operator` grants, revokes and refuses an address that isn't `OPERATOR_EMAIL`; one operator at a time; a filled version 15 database upgraded with nobody made the operator; and Autopilot's bug emails scrubbed of email addresses, tokens and links).
   - Version 1.2.0: `test_cyberlogix.py` (36: the connection key made, shown once, hashed, regenerated and revoked, owner only; wrong, missing and revoked keys and a signed-in cookie get 401, and another workspace is never touched; a clean day ticks the cold holding check through `apply_change` with its audit line, a breach adds a note and ticks nothing; the same day twice, corrected reports that replace the note and never untick a person's reading; every bad field refused; the rate limits; a workspace with no temperature check; a filled version 16 database upgraded; and the contract doc's example accepted).
+  - Version 1.3.0: `test_plans.py` (the prices on every page come from `plans.py`, and no template types one; checkout for Pro and Plus bills the location count; the webhook moves the plan, a portal switch included, and ignores replayed and late events; after the trial the tracker is read-only (single, bulk and limit saves refused, no Save buttons, the banner) while the report, both CSV exports, the audit trail and deleting the workspace still work and reminders pause; Plus unlocks the whole Academy and Pro doesn't; the bundle's Pro only from a validly signed report, with a wrong signature, a malformed header, a stale `t` either way, a replay, a replay from another workspace, an unset secret and an unsigned report all processed but granting nothing; the cover running out into the grace period and then read-only; the bundle upgrade at the difference and the full-price fallback; the old Academy plan; and a filled version-17 database upgraded), and `test_e2e_stripe.py` gained Pro switched to Plus in the portal and a bundle workspace buying Plus at the difference, against the fake Stripe.
   - `test_parity.py` (1: dashboard against engine, run with Node).
   - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
@@ -896,10 +925,12 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 **Core:**
 
 - `users`: email, name, password hash, reminder choices (the daily digest, the time-limit alerts, and the weekly Autopilot report for the operator's account), whether it is the operator's account (set only by `make-operator`, section 6.8), Armo personality, the day last seen, and a session counter.
-- `orgs`: companies, with their name, timezone and Academy plan fields:
-  - status, trial end, renewal date, and the end date of a cancelled plan;
+- `orgs`: companies, with their name, timezone and plan fields (section 2.12):
+  - `plan`: what the subscription is for (`pro`, `plus`, `plus_bundle`, `academy` for the old Academy plan, or `none`);
+  - its status, renewal date and the end date of a cancelled plan (`academy_status`, `academy_renews_at`, `academy_ends_at`: the names are from when only the Academy was paid for), and the free trial's end (`academy_trial_ends`);
   - Stripe customer and subscription ids;
-  - the time of the last Stripe event applied.
+  - the time of the last Stripe event applied;
+  - `bundle_report_at`: when the last validly signed CyberLogix report arrived (the Kitchen Safety Bundle's cover).
 - `memberships`: who belongs to which company, as owner or member.
 - `org_industries`: which of the 50 industries each company tracks.
 - `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
@@ -930,6 +961,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 **Connections (section 2.11):**
 
 - `connection_keys`: each workspace's CyberLogix keys, as hashes with their last 4 characters, who made each and when, when it was revoked and last used, and the newest report date. At most one per workspace is active (a unique index on the keys not revoked).
+- `bundle_signatures`: each accepted `X-CyberLogix-Signature`, kept 10 minutes so the same signed request can't count twice.
 - `connection_reports`: one row per workspace, check and day: the report's fingerprint (so the same report again changes nothing), what it did (ticked, confirmed or a note), the reading, the note, the site, the log link and when the note was reviewed. No person's name.
 
 ### 8.5 World numbering in the Academy
@@ -975,7 +1007,7 @@ Command-line tools:
 - `flask --app wsgi init-db`: create or upgrade the database.
 - `flask --app wsgi run-daily [--force]`: send reminders, back up and clean up now.
 - `flask --app wsgi backup`: back up the database now.
-- `flask --app wsgi academy-plan <workspace id> active|none|canceled`: switch a workspace's Academy plan by hand.
+- `flask --app wsgi plan <workspace id> pro|plus|none`: put a workspace on a plan by hand, or take it away. The old `academy-plan <workspace id> active|none|canceled` still works; `active` means Plus.
 - `flask --app wsgi autopilot [--log]`: run Autopilot's checks now, or show its log.
 - `flask --app wsgi make-operator EMAIL [--revoke]`: make the account with the `OPERATOR_EMAIL` address the operator's, or take that away (section 6.8).
 - `flask --app wsgi seed-demo [--force NEW_FILE] [--password ...]`: make the demo workspace for screenshots and sales calls (section 9.8).
@@ -1140,6 +1172,7 @@ The project was built in steps, each one a commit on GitHub:
 17. **For selling and running it (1.1.0):** a demo workspace in one command, error reports to one inbox with no personal data, privacy-friendly daily usage counts for the operator, and Settings showing the plan, the version and where to get help to everyone on the team.
 18. **Operator status from the server (1.1.2):** the operator's account is made with `make-operator` on the server, not by signing up with the operator's address, and Autopilot's bug emails are scrubbed like the error reports.
 19. **The Kitchen Safety Bundle (1.2.0):** CyberLogix, MTRX Horizyn's fridge and freezer alarm app, ticks the cold holding check from its daily readings and leaves a note on a breach, through a connection key made in Settings, Connections, and the contract in `docs/CYBERLOGIX-CONNECTION.md`.
+20. **Paid plans (1.3.0):** a free trial, then Pro ($50) or Plus ($80, with the whole Academy) a month per location, read-only without a plan, and the Kitchen Safety Bundle's Pro from signed CyberLogix reports (section 2.12).
 
 Previews, the playable lesson pages and this handbook's companion brief were published as private pages in the original account.
 
@@ -1151,17 +1184,19 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 
 - **Repository:** `rayan-baig/omniarmor.ai` on GitHub.
 - **Branch:** `claude/wonderful-heisenberg-77tbq9`, the live default branch. Everything above is on it.
-- **Version** 1.2.0 (`omniarmor_app/version.py`, `CHANGELOG.md`).
-- **Tests:** 673 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
-- **Database schema** is at version 17.
+- **Version** 1.3.0 (`omniarmor_app/version.py`, `CHANGELOG.md`).
+- **Tests:** 723 tests pass, and pyflakes is clean. GitHub Actions runs both, an audit of the dependencies and a Docker build on every push.
+- **Database schema** is at version 18.
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
   - **Run `flask --app wsgi make-operator` once** with the `OPERATOR_EMAIL` address after the deploy (section 6.8): since 1.1.2 nobody is the operator until it is run, and check that the account it prints is yours.
+  - **Set up Stripe for Pro and Plus** (docs/OPERATIONS.md, section 7, "Upgrading to 1.3.0"): the three prices, the portal's plan switching, and `KITCHEN_BUNDLE_SECRET` on both OmniArmor and CyberLogix. Tell customers first: after the upgrade every workspace without a plan has the trial, then read-only.
   - **Back up** the database first, as always.
 
 ### 12.2 Known gaps and good next steps
 
-- **Billing for the compliance service** isn't built yet. The Academy plan already uses Stripe, and the same pattern (Checkout, portal, signed webhook) would work.
+- **Several sites in one workspace.** A workspace is one location, billed as one; a company with several sites makes a workspace for each. Grouping them under one account (and one bill with a higher quantity) is the natural next step, with `plans.location_count`.
+- **Changing plan inside the app.** Plan changes go through Stripe's customer portal; an in-app switch would need the subscription update API.
 - **Integrations.** Most readings are entered by hand. CyberLogix fills in the cold holding check (section 2.11); the same connection pattern could take hot holding and cooling logs from CyberLogix, hours from ELDs, or employee data from HR systems.
 - **One workspace per person.** Consultants and multi-location owners would want several.
 - **English only.**
@@ -6021,9 +6056,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/app/academy/<int:learner_id>/world/<int:world_number>` | A world's stages |
 | GET, POST | `/app/academy/<int:learner_id>/world/<int:world_number>/stage/<int:stage>` | Play a level (lesson and quiz) and grade it |
 | POST | `/app/academy/learners` | Add a learner |
-| GET | `/app/academy/plan` | The Academy plan |
-| POST | `/app/academy/plan/checkout` | Start Stripe Checkout |
-| POST | `/app/academy/plan/manage` | Open the Stripe customer portal |
+| GET | `/app/academy/plan` | The old plan page's address: redirects to `/app/plan` |
 | GET | `/app/armo` | Armo's page: everything he found |
 | POST | `/app/armo/personality` | Pick Armo's personality |
 | GET | `/app/armo/status` | Armo's live status feed (JSON) |
@@ -6034,6 +6067,9 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/industry/<int:industry_id>/bulk` | Update several checks at once: done today, Yes, No or one date |
 | POST | `/app/industry/<int:industry_id>/rule/<rule_key>` | Save, clear, Done today or change a limit on one check |
 | GET | `/app/notifications` | Radar, every reminder email |
+| GET | `/app/plan` | The plan page: Pro, Plus, the free Academy and the Kitchen Safety Bundle |
+| POST | `/app/plan/checkout` | Start Stripe Checkout for Pro or Plus (`plan`), billed per location |
+| POST | `/app/plan/manage` | Open the Stripe customer portal (change plan, card, cancel) |
 | GET | `/app/report` | Intel, the compliance report |
 | GET | `/app/report.csv` | The report as CSV |
 | GET | `/app/settings` | Armory, settings |
@@ -6093,11 +6129,13 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |
-| `ACADEMY_TRIAL_DAYS` | 14 | Length of the Academy's free trial. |
-| `ACADEMY_PRICE_LABEL` | (none) | The price shown on the Academy plan page, for example "$9 a month". |
-| `ACADEMY_STRIPE_PRICE` | (none) | The Stripe price id for the Academy plan. |
-| `STRIPE_SECRET_KEY` | (none) | Stripe secret key. Without it (and the price), the plan is switched by hand. |
+| `ACADEMY_TRIAL_DAYS` | 14 | Length of the free trial of everything in Plus, from sign-up (section 2.12). The name is from when only the Academy had a trial. |
+| `PRO_STRIPE_PRICE` | (none) | The Stripe price id for Pro: a per-location monthly price. The price people see is in `plans.py`. |
+| `PLUS_STRIPE_PRICE` | (none) | The Stripe price id for Plus, per location a month. |
+| `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` | (none) | The Stripe price id for Plus bought by a Kitchen Safety Bundle workspace: the difference between Plus and Pro. Without it, such a workspace is offered Plus at its full price, with a note. |
+| `STRIPE_SECRET_KEY` | (none) | Stripe secret key. Without it (and the prices), a plan is switched by hand with `flask --app wsgi plan`. |
 | `STRIPE_WEBHOOK_SECRET` | (none) | Stripe webhook signing secret, for `/billing/stripe/webhook`. |
+| `KITCHEN_BUNDLE_SECRET` | (none) | The secret CyberLogix signs its daily reports with, the same value on both apps. A validly signed report gives the workspace the Kitchen Safety Bundle's Pro (section 2.12). Without it, reports still fill in the checks but none counts. |
 
 ---
 

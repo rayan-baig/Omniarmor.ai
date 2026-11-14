@@ -311,6 +311,44 @@ creates a connection key in Settings, Connections. CyberLogix calls
 ([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md)); if a firewall or proxy
 sits in front of the app, let POSTs to that address through.
 
+**Upgrading to 1.3.0 (Pro and Plus):** schema version 18 runs by itself on
+start. What changes for workspaces already there:
+
+- A workspace paying for the old Academy plan keeps it, at its old price,
+  with the compliance tracker it had for free, until it changes plan or the
+  subscription ends.
+- Every other workspace gets the free trial (`ACADEMY_TRIAL_DAYS`, from the
+  moment of the upgrade; a later Academy trial end is kept). When it ends
+  without a plan, the tracker turns read-only and reminders pause. Tell your
+  customers before you deploy.
+
+Before deploying, in Stripe (test mode first, on staging):
+
+1. Make two products, **Pro** and **Plus**, each with a monthly price **per
+   unit** (the unit is a location) matching `omniarmor_app/plans.py`, and a
+   third price on Plus for **Kitchen Safety Bundle** workspaces: the
+   difference between Plus and Pro. Put their ids in `PRO_STRIPE_PRICE`,
+   `PLUS_STRIPE_PRICE` and `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`. Without the
+   last one, bundle workspaces are offered Plus at its full price, with a note.
+2. In the customer portal settings, allow switching between the Pro and Plus
+   prices (and cancelling at the end of the period). Changing plan happens
+   there; the webhook reads the new price and moves the workspace.
+3. Keep the webhook's events as they are (section 8).
+4. Remove `ACADEMY_PRICE_LABEL` and `ACADEMY_STRIPE_PRICE`: nothing reads
+   them now. The old Academy plan's subscriptions keep renewing as they are.
+
+For the Kitchen Safety Bundle, generate `KITCHEN_BUNDLE_SECRET`
+(`python3 -c "import secrets; print(secrets.token_hex(32))"`) and set the
+same value on CyberLogix. CyberLogix signs the reports of bundle sites with
+it ([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md), section 3.5); a
+workspace whose signed reports arrive gets Pro at no charge. Unset, reports
+still fill in the checks and nobody gets the bundle's Pro. To change the
+secret, set the new value on both apps at once: reports signed with the old
+one stop counting (the 7-day grace period covers a short gap).
+
+By hand, without Stripe: `flask --app wsgi plan <workspace id> pro`, `plus`
+or `none` (the old `academy-plan <id> active` now means Plus).
+
 ## 8. Things only you can do
 
 - Make your account the operator's, once, on the server: sign up with the
@@ -321,12 +359,16 @@ sits in front of the app, let POSTs to that address through.
   account.
 - Get a lawyer to write your Terms of Service and Privacy Policy, and to
   review the rule catalog before you sell to customers.
-- Payments: the Academy plan already takes cards through Stripe (set the
-  Stripe settings, and in Stripe add the webhook
+- Payments: Pro and Plus take cards through Stripe. Set `STRIPE_SECRET_KEY`,
+  `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE` and
+  `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` (section 7, "Upgrading to 1.3.0"), and
+  in Stripe add the webhook
   `https://omniarmor.<your domain>/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,
   `customer.subscription.updated`, `customer.subscription.deleted` and
-  `invoice.payment_failed`). Charging for the compliance service itself is
-  not built yet.
+  `invoice.payment_failed`. The prices people see are in
+  `omniarmor_app/plans.py`: change them there and in Stripe together.
+- The Kitchen Safety Bundle: set `KITCHEN_BUNDLE_SECRET` to the same value
+  as on CyberLogix.
 - Add the `omniarmor` subdomain on MTRX Horizyn's domain and point it at the
   app (section 1). OmniArmor has no domain of its own.

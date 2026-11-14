@@ -6,19 +6,10 @@
   <h1><span class="blend-text">Catch the fine</span> before it catches you.</h1>
   <p class="lead">For businesses in {{ facts.industries }} regulated industries, such as {{ facts.examples[:-1]|join(', ') }} and {{ facts.examples[-1] }}. OmniArmor tracks the {{ facts.per_industry }} compliance failures that cost your industry the most. Enter a date once and it counts the days, warns your team before anything is due, and keeps the record an inspector asks for.</p>
   <div class="cta">
-    <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
+    <a class="btn" href="{{ url_for('auth.signup') }}">Start your free trial</a>
     <a class="btn ghost" href="{{ url_for('public.industries') }}">Find your industry</a>
   </div>
-  <div class="plans" id="price" aria-label="Price">
-    <div>
-      <p class="eyebrow">Compliance tracker</p>
-      <p><b>Free</b> right now: every check in your industries, for your whole team. No card needed.</p>
-    </div>
-    <div>
-      <p class="eyebrow">Future Owner Academy, for your kids</p>
-      <p><b>{{ facts.trial_days }}-day free trial</b> of all {{ facts.tracks }} tracks, from when you add your first kid. Then {{ facts.price if facts.price else 'the Academy plan' }}, or keep the first {{ facts.free_worlds }} {{ facts.free_track }} worlds free.</p>
-    </div>
-  </div>
+  {% include "_plan_summary.html" %}
   <p class="hint">Questions about the trial, prices, reminders or your data? <a href="{{ url_for('public.help') }}">Read the help page</a>.</p>
 </section>
 

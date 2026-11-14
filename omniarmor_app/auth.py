@@ -9,6 +9,7 @@ from flask import Blueprint, current_app, flash, g, redirect, render_template, r
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import usage
+from .academy_plan import trial_end_for_new_workspace
 from .catalog import INDUSTRIES, TOP_COUNT
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
@@ -128,8 +129,10 @@ def signup():
                                    industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
                                    start_industry=_start_industry(form)), 400
         if invite is None:
-            org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at) VALUES (?, ?, ?)",
-                                  (org_name, tz, now)).lastrowid
+            # Every new workspace starts its free trial of everything in Plus (plans.py).
+            org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends) VALUES (?, ?, ?, ?)",
+                                  (org_name, tz, now, trial_end_for_new_workspace(
+                                      current_app.config["ACADEMY_TRIAL_DAYS"]))).lastrowid
             conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
                          (user_id, org_id, now))
             conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",

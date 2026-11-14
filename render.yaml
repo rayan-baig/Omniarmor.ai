@@ -44,14 +44,24 @@ services:
       # not exist.
       - key: STATS_KEY
         sync: false
-      # The Academy plan's card payments (optional: without them, switch a
-      # family's plan on by hand with `flask --app wsgi academy-plan`).
+      # Pro and Plus card payments (optional: without them, put a workspace
+      # on a plan by hand with `flask --app wsgi plan <workspace id> pro|plus`).
+      # The prices themselves live in the code (omniarmor_app/plans.py); each
+      # setting is the matching per-location monthly price id from Stripe.
       # Webhook: https://<your domain>/billing/stripe/webhook
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: ACADEMY_STRIPE_PRICE
+      - key: PRO_STRIPE_PRICE
         sync: false
-      - key: ACADEMY_PRICE_LABEL
+      - key: PLUS_STRIPE_PRICE
+        sync: false
+      # Plus for a Kitchen Safety Bundle workspace: the difference between Plus and Pro.
+      - key: PLUS_BUNDLE_UPGRADE_STRIPE_PRICE
+        sync: false
+      # The secret CyberLogix signs its daily reports with: the same value as
+      # CyberLogix's own KITCHEN_BUNDLE_SECRET. Signed reports give the
+      # workspace the Pro its Kitchen Safety Bundle includes.
+      - key: KITCHEN_BUNDLE_SECRET
         sync: false

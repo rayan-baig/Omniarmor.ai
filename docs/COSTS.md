@@ -18,7 +18,7 @@ pricing page before you pick one.
 | Email | Optional | A free sending tier (Brevo, Mailjet, SMTP2GO, Resend and others have one), or Amazon SES's low per-email price. Without email, reminders show in the app. |
 | Domain name | No | OmniArmor runs on a subdomain of MTRX Horizyn's domain (`omniarmor.<your domain>`), so there is nothing to buy for it |
 | Off-server backup copies | Recommended | A free object-storage tier (Cloudflare R2 and Backblaze B2 have one) |
-| Taking payments | When you charge | Stripe charges a fee per payment, with no monthly fee. The Academy plan uses Stripe Checkout, so you never store or secure card numbers yourself. |
+| Taking payments | When you charge | Stripe charges a fee per payment, with no monthly fee. Pro and Plus use Stripe Checkout, so you never store or secure card numbers yourself. |
 
 ## The near-zero setup (about 20 minutes)
 

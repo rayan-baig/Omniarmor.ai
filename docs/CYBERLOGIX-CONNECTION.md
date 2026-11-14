@@ -20,6 +20,11 @@ ticked, with "From CyberLogix: 7 of 7 units in range all day" in the audit
 trail. If anything went out of range, nothing is ticked: the check gets a
 note for a person to review. Sending the same day again changes nothing.
 
+For sites on the **Kitchen Safety Bundle**, CyberLogix also **signs** each
+report with a secret both apps share (section 3.5). While a workspace
+receives validly signed reports it gets OmniArmor **Pro at no charge**: the
+bundle includes it. An unsigned report does everything else the same.
+
 ## 2. The connection key
 
 - Made by the workspace **owner** only, in Settings, Connections: **Create
@@ -43,12 +48,17 @@ POST /api/connect/cyberlogix/daily
 Host: omniarmor.example.com
 Authorization: Bearer clx_...the key...
 Content-Type: application/json
+X-CyberLogix-Signature: t=1763110800,v1=5f8a...64 hex characters...
 ```
+
+The `X-CyberLogix-Signature` header is only for sites on the Kitchen Safety
+Bundle (section 3.5). Leave it out for every other site.
 
 - HTTPS only. JSON only (`Content-Type: application/json`, UTF-8).
 - The body is at most **32 KB**.
 - No cookie and no CSRF token: the key in the `Authorization` header is the
-  only authentication. This address is the only one in OmniArmor, beside
+  only authentication. (The signature of section 3.5 is not authentication:
+  it only decides whether the report counts toward the bundle.) This address is the only one in OmniArmor, beside
   Stripe's signed webhook, that takes a POST without a form token.
 - Send one report per day, after the site's local day has ended (a few
   minutes after midnight at the site is good). Resending is safe (section 6).
@@ -147,6 +157,79 @@ names out: a report carries temperatures, unit names and roles only.
 }
 ```
 
+### 3.5 The signature (Kitchen Safety Bundle)
+
+CyberLogix customers pay CyberLogix for the Kitchen Safety Bundle, and it
+includes OmniArmor Pro for that location. A signed report is CyberLogix's
+statement that the site is on the bundle. **Sign only the reports of sites
+on the bundle**, and stop signing the day a site leaves it.
+
+**The secret.** One value, `KITCHEN_BUNDLE_SECRET`, set on both apps (the
+same value; at least 32 random bytes, for example
+`python3 -c "import secrets; print(secrets.token_hex(32))"`). It is not the
+connection key: the key says which workspace, the secret proves the report
+came from CyberLogix's own servers. Keep it on the server side only.
+
+**The header**, exactly:
+
+```
+X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>
+```
+
+- `t` is the time of signing, in whole Unix seconds (UTC), in plain digits.
+- The signed message is the bytes of `t` as written in the header, a dot
+  (`.`), then **the raw request body, byte for byte as sent**: sign the exact
+  bytes you put on the wire, after serializing the JSON, never a re-encoded
+  copy. In Python:
+
+  ```python
+  body = json.dumps(report).encode("utf-8")
+  t = int(time.time())
+  v1 = hmac.new(secret.encode(), str(t).encode() + b"." + body, hashlib.sha256).hexdigest()
+  headers["X-CyberLogix-Signature"] = f"t={t},v1={v1}"
+  # then send `body` itself as the request body
+  ```
+
+- `v1` is the HMAC-SHA256 as 64 lowercase hex characters.
+- Sign each request when you send it, retries included: a retry gets a new
+  `t` and a new `v1`.
+
+**What OmniArmor checks** (`check_signature` in `omniarmor_app/connections.py`):
+
+1. `KITCHEN_BUNDLE_SECRET` is set. Unset, no report counts.
+2. The header is there, with one `t` and a `v1`.
+3. `t` is within **300 seconds** of OmniArmor's clock, either way. Keep the
+   server clock right (NTP).
+4. `v1` matches the HMAC of `t` and the raw body bytes it received, compared
+   in constant time.
+5. **Replays.** A signature accepted once is remembered for **10 minutes**
+   (longer than the 300-second window on both sides), across all workspaces;
+   the same signature again does not count. After that its `t` is stale. The
+   report's own per-date idempotency (section 6) would already make a
+   replayed report change no readings, but it would still renew the bundle,
+   so OmniArmor keeps the signatures too.
+
+Only a report that passes all five, and is accepted (`200`), counts. Counting
+records the time it arrived.
+
+**A report without a valid signature is still processed exactly as before**:
+no header, a wrong or malformed `v1`, a stale `t`, a replayed signature, or
+the secret unset on OmniArmor's side. Clean days still tick and breaches
+still leave notes. It just doesn't count toward the bundle. The signature
+never turns a request into an error: the answer says what OmniArmor made of
+it (section 5.1, `signature`).
+
+**The bundle's cover**, from the arrival time of the last report that counted:
+
+| Since the last signed report | The workspace gets |
+|---|---|
+| 3 days or less | Pro, at no charge ("Pro included with your Kitchen Safety Bundle" in Settings) |
+| 3 to 10 days | Pro still, for a 7-day grace period, with a banner on every page |
+| more than 10 days | the usual rules: its trial, its own plan, or read-only |
+
+A covered workspace can add the Academy with OmniArmor's Plus, paying only
+the difference between Plus and Pro.
+
 ## 4. What a report does
 
 OmniArmor looks for the workspace's **temperature-log checks**: the checks
@@ -215,9 +298,27 @@ Every answer is JSON, with `Cache-Control: no-store`.
   "checks": [
     {"industry": "RestoArmor", "check": "cold_holding",
      "title": "Cold holding at 41°F or below", "result": "ticked"}
-  ]
+  ],
+  "signature": "valid",
+  "bundle_counted": true
 }
 ```
+
+`signature` says what OmniArmor made of `X-CyberLogix-Signature`, and
+`bundle_counted` whether this report renewed the Kitchen Safety Bundle's
+cover (section 3.5):
+
+| `signature` | Meaning | `bundle_counted` |
+|---|---|---|
+| `valid` | Signed correctly, first time seen. | `true` |
+| `missing` | No header. Right for a site not on the bundle. | `false` |
+| `invalid` | Malformed, or `v1` doesn't match the body: check the secret, and that you sign the exact bytes you send. | `false` |
+| `stale` | `t` is more than 300 seconds from OmniArmor's clock. Check the clock, and sign at send time. | `false` |
+| `replayed` | This exact signature was already accepted. Sign each retry afresh. | `false` |
+| `not_configured` | OmniArmor has no `KITCHEN_BUNDLE_SECRET` yet. | `false` |
+
+Log anything but `valid` and `missing` for a bundle site and alert the
+CyberLogix team: the site's included Pro depends on it.
 
 `result` for each check is one of:
 
@@ -323,3 +424,7 @@ within 2 days.
    never send names.
 5. Test against a staging copy of OmniArmor (docs/STAGING.md) with a
    workspace that tracks RestoArmor.
+6. For sites on the Kitchen Safety Bundle: sign every report (section 3.5)
+   with `KITCHEN_BUNDLE_SECRET`, at send time, over the exact body bytes;
+   expect `"signature": "valid"` and `"bundle_counted": true`, and alert on
+   anything else. Stop signing when a site leaves the bundle.

@@ -5,11 +5,12 @@ import os
 import re
 import sys
 import tempfile
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_webapp import PASSWORD, AppTestCase  # noqa: E402
 
-from omniarmor_app import create_app  # noqa: E402
+from omniarmor_app import create_app, plans  # noqa: E402
 from omniarmor_app.academy import TRACK_LIST  # noqa: E402
 from omniarmor_app.academy_plan import FREE_WORLDS  # noqa: E402
 from omniarmor_app.catalog import (CATALOG, INDUSTRIES, TOP_COUNT, date_mode, rules_for, severity,  # noqa: E402
@@ -33,28 +34,34 @@ class TestLandingPage(AppTestCase):
         self.assertIn(f"For businesses in {len(INDUSTRIES)} regulated industries", top)
         for i in (2, 1, 29, 45, 5, 28):
             self.assertIn(INDUSTRIES[i]["sector"].lower(), top)
-        self.assertIn("Free right now", top)
-        self.assertIn(f"{self.app.config['ACADEMY_TRIAL_DAYS']}-day free trial of all {len(TRACK_LIST)} tracks", top)
-        self.assertIn(f"keep the first {len(FREE_WORLDS)} Launchpad worlds free", top)
-        # No price label set: no price is made up.
-        self.assertNotIn("$", top)
-        self.assertIn("Then the Academy plan", top)
+        self.assertIn(f"{self.app.config['ACADEMY_TRIAL_DAYS']}-day free trial of everything in {plans.PLUS.name}", top)
+        self.assertIn(f"The first {len(FREE_WORLDS)} Launchpad worlds are free for everyone", top)
+        # The prices are the code's, and only those.
+        self.assertIn(f"{plans.PRO.name} · compliance tracker {plans.PRO.price}", top)
+        self.assertIn(f"{plans.PLUS.name} · tracker and Academy {plans.PLUS.price}", top)
+        self.assertEqual(set(re.findall(r"\$\d+", top)),
+                         {f"${d}" for d in (plans.PRO.dollars, plans.PLUS.dollars, plans.BUNDLE_DOLLARS,
+                                            plans.bundle_upgrade_dollars())})
 
     def test_the_numbers_follow_the_settings(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         app = create_app(TESTING=True, DATABASE=os.path.join(tmp.name, "t.db"), SCHEDULER_ENABLED=False,
-                         ACADEMY_TRIAL_DAYS=30, ACADEMY_PRICE_LABEL="$9 a month")
-        top = hero(app.test_client().get("/"))
+                         ACADEMY_TRIAL_DAYS=30)
+        with mock.patch.object(plans, "PRO", plans.Plan("pro", "Pro", 45, "PRO_STRIPE_PRICE", True, False)):
+            top = hero(app.test_client().get("/"))
         self.assertIn("30-day free trial", top)
-        self.assertIn("Then $9 a month", top)
+        self.assertIn("$45 a month per location", top)
+        self.assertNotIn("$50", top)
 
     def test_the_landing_page_agrees_with_the_terms(self):
         terms = text(self.client.get("/terms"))
-        self.assertIn("The compliance tracker costs nothing right now.", terms)
-        self.assertIn(f"free {self.app.config['ACADEMY_TRIAL_DAYS']}-day trial of the whole Academy when it adds"
-                      " its first kid", terms)
-        self.assertIn(f"the first {len(FREE_WORLDS)} worlds of the Launchpad track stay free", terms)
+        self.assertIn(f"free {self.app.config['ACADEMY_TRIAL_DAYS']}-day trial of everything in {plans.PLUS.name},"
+                      " from the day it signs up", terms)
+        self.assertIn(f"{plans.PRO.name} , {plans.PRO.price}", terms)
+        self.assertIn(f"{plans.PLUS.name} , {plans.PLUS.price}", terms)
+        self.assertIn(f"The first {len(FREE_WORLDS)} worlds of the Launchpad track stay free for everyone", terms)
+        self.assertIn("Without a plan, the compliance tracker is read-only", terms)
 
     def test_academy_level_counts_come_from_the_tracks(self):
         page = text(self.client.get("/"))
@@ -269,10 +276,11 @@ class TestEmptyStates(AppTestCase):
         page = text(self.client.get("/app/notifications"))
         self.assertIn("No reminders yet. They start once checks counted from a date have their dates: try", page)
 
-    def test_academy_says_the_first_learner_starts_the_trial(self):
+    def test_the_trial_starts_with_the_workspace_not_the_first_learner(self):
         self.signup(industries=(2,))
         page = text(self.client.get("/app/academy"))
-        self.assertIn(f"The first one starts your free {self.app.config['ACADEMY_TRIAL_DAYS']}-day trial", page)
+        self.assertIn(f"Free trial: {self.app.config['ACADEMY_TRIAL_DAYS']} days of the full Academy left", page)
+        self.assertNotIn("The first one starts your free", page)
 
 
 class TestPlainQuestions(AppTestCase):

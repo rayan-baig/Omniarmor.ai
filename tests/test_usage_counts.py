@@ -183,13 +183,13 @@ class TestSettingsBasics(AppTestCase):
     def test_owner_and_member_see_the_plan_version_and_help(self):
         for client in (self.client, self.member):
             page = self.page(client)
-            self.assertIn("<h2>Academy plan</h2>", page)
-            self.assertIn("The compliance tracker is free.", page)
-            self.assertIn('href="/app/academy/plan"', page)
+            self.assertIn('<h2 id="plan">Plan</h2>', page)
+            self.assertIn("data-plan-line", page)
+            self.assertIn('href="/app/plan"', page)
             self.assertIn(f"data-version>{__version__}</span>", page)
             self.assertIn('Need help? The <a href="/help">Help page</a>', page)
-        self.assertIn("only the workspace owner can change it", self.page(self.member))
-        self.assertNotIn("only the workspace owner can change it", self.page(self.client))
+        self.assertIn("Only the workspace owner can change the plan", self.page(self.member))
+        self.assertNotIn("Only the workspace owner can change the plan", self.page(self.client))
 
     def test_support_email_only_when_set(self):
         self.assertNotIn("mailto:", self.page(self.client))

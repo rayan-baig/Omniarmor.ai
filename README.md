@@ -21,7 +21,34 @@ From then on OmniArmor:
 - **Backs itself up:** daily database backups, with old copies pruned.
 - **Fills in the fridge checks itself (Kitchen Safety Bundle):** connected to CyberLogix, MTRX Horizyn's fridge and freezer alarm app, a restaurant's cold holding check ticks itself from CyberLogix's daily readings, and a breach leaves a note for someone to review. The owner makes the connection key in Settings, Connections; the contract CyberLogix builds against is [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md). A connection sends temperature summaries and roles, never names.
 - **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
-- **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,350 levels), Trailblazer (2,700), Summit (5,400) and Titan Mastery (15,700). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. The Academy has its own subscription, separate from the compliance service.
+- **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,350 levels), Trailblazer (2,700), Summit (5,400) and Titan Mastery (15,700). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. Plus includes all of it; its first worlds are free for everyone.
+
+## Plans
+
+The prices live in one place, `omniarmor_app/plans.py`; every page reads them
+from there.
+
+- **Free trial:** everything in Plus for `ACADEMY_TRIAL_DAYS` days (14 by
+  default) from sign-up. No card.
+- **Pro, $50 a month per location:** the compliance tracker: checks,
+  reminders, reports, bulk entry, Radar, Intel and the team.
+- **Plus, $80 a month per location:** everything in Pro and the whole Future
+  Owner Academy at no extra cost. The Academy's first worlds stay free for
+  everyone.
+- **A location is a workspace:** a workspace holds one site, so each
+  subscription bills a quantity of 1; a company with several sites makes a
+  workspace for each.
+- **Without a plan** the tracker is read-only: every record can be seen and
+  downloaded and nothing is deleted, but no check can be saved and reminders
+  pause, with a banner. Export and delete always work.
+- **Kitchen Safety Bundle:** CyberLogix customers on the bundle get Pro
+  included while their workspace receives signed CyberLogix reports (one in
+  the last 3 days, then a 7-day grace period), and Plus for the difference.
+  The signature is in [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md), section 3.5.
+- Payments go through Stripe (`PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`,
+  `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`); set-up is in
+  [docs/OPERATIONS.md](docs/OPERATIONS.md), section 7. A workspace on the old
+  Academy plan keeps it as it was until it changes plan.
 
 Every check answers **Cleared**, **Warning** or **Blocked** and names the rule
 it applies. This is decision support, not legal advice: confirm each rule with
@@ -33,7 +60,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 673 tests
+python3 -m unittest discover -s tests     # 723 tests
 flask --app wsgi seed-demo --force demo.db   # a made-up demo workspace (docs/OPERATIONS.md, section 6)
 ```
 
@@ -56,7 +83,8 @@ on first: [docs/STAGING.md](docs/STAGING.md).
 | Path | What it is |
 |---|---|
 | `omniarmor_app/` | The web app: accounts, workspaces, tracking, reminders, reports, daily jobs |
-| `omniarmor_app/connections.py` | The Kitchen Safety Bundle: CyberLogix's connection key and daily report ([docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md)) |
+| `omniarmor_app/plans.py` | The plans and their prices, the free trial, read-only without a plan, and the Kitchen Safety Bundle's cover |
+| `omniarmor_app/connections.py` | The Kitchen Safety Bundle: CyberLogix's connection key, daily report and signature ([docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md)) |
 | `omniarmor_app/academy.py` | The Future Owner Academy: worlds, lessons and quiz generation (see `docs/academy-preview/`) |
 | `omni_armor_rules/` | The 500 rules (`group_1.py` … `group_10.py`) and the one `evaluate` every rule uses |
 | `omni_armor_platform.py` | The original engine: 25 detailed checks and the console demo |

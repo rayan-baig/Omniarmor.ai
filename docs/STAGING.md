@@ -76,7 +76,8 @@ paste in the live ones.
 | `ERRORS_EMAIL` | empty, or your own | Error reports |
 | `SUPPORT_EMAIL` | empty | Nobody should write to staging for help |
 | `SMTP_HOST` and the rest | empty, or a test inbox | Section 4 |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ACADEMY_STRIPE_PRICE` | empty, or test mode | Section 4 |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` | empty, or test mode | Section 4 |
+| `KITCHEN_BUNDLE_SECRET` | a new one, the same as staging CyberLogix's, never live's | A staging report must never count toward a live workspace's bundle |
 | `DAILY_JOB_HOUR_UTC` | as on live | So reminders, backups and Autopilot behave the same |
 
 Leave `DATABASE_PATH` and `BACKUP_DIR` to the image (both on staging's own
@@ -100,13 +101,15 @@ and delivers nothing, and put its settings in `SMTP_HOST`, `SMTP_PORT`,
 
 ### Payments: Stripe in test mode
 
-Without Stripe settings the Academy plan is switched on by hand
-(`flask --app wsgi academy-plan <workspace id> active`), which is enough for
+Without Stripe settings a plan is switched on by hand
+(`flask --app wsgi plan <workspace id> pro` or `plus`), which is enough for
 most tests. To test paying, switch the Stripe dashboard to **test mode** and,
 there:
 
-1. Make a test-mode price for the Academy plan; its id goes in
-   `ACADEMY_STRIPE_PRICE`.
+1. Make test-mode prices for Pro, Plus and Plus for bundle workspaces
+   (OPERATIONS.md, section 7, "Upgrading to 1.3.0"); their ids go in
+   `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE` and
+   `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`.
 2. Developers → API keys: the test secret key (it starts `sk_test_`) goes in
    `STRIPE_SECRET_KEY`.
 3. Developers → Webhooks → add endpoint

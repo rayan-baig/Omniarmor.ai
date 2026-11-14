@@ -508,7 +508,7 @@ class TestTheUpgrade(AppTestCase):
                 self.assertNotIn("connection_keys", tables)
 
     def test_upgrades_and_the_connection_works(self):
-        self.assertEqual(SCHEMA_VERSION, 17)
+        self.assertGreaterEqual(SCHEMA_VERSION, 17)
         self.app = create_app(TESTING=True, DATABASE=self.db_path, SCHEDULER_ENABLED=False,
                               BACKUP_DIR=os.path.join(self.tmp.name, "backups"), BASE_URL="https://omniarmor.test")
         with closing(self.db()) as conn:

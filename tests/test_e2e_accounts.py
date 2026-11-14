@@ -16,7 +16,7 @@ import os
 import re
 import sys
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -39,7 +39,7 @@ class StripeCase(AppTestCase):
         self.signup()
         self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
         self.app.config.update(STRIPE_WEBHOOK_SECRET="whsec_test", STRIPE_SECRET_KEY="sk_test",
-                               ACADEMY_STRIPE_PRICE="price_1")
+                               PLUS_STRIPE_PRICE="price_1")
         with self.db() as conn:
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
             self.lid = conn.execute("SELECT id FROM learners").fetchone()[0]
@@ -112,7 +112,7 @@ class TestStripeCannotDoubleActivate(StripeCase):
                 "id": "cs_test_1", "mode": "subscription", "status": "complete", "payment_status": "paid",
                 "client_reference_id": str(self.org_id), "metadata": {"org_id": str(self.org_id)},
                 "customer": "cus_1", "subscription": "sub_1", "created": now - 120}):
-            self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1")
+            self.client.get("/app/plan?welcome=1&session_id=cs_test_1")
         self.assertEqual(self.org()["academy_status"], "active")
         self.subscription_event("evt_deleted", "deleted", "canceled", created=now)
         self.assertEqual(self.org()["academy_status"], "canceled")
@@ -132,9 +132,9 @@ class TestStripeCannotDoubleActivate(StripeCase):
         self.subscription_event("evt_deleted", "deleted", "canceled", created=now - 60)
         self.assertEqual(self.org()["academy_status"], "canceled")
         with mock.patch.object(academy_plan, "_stripe", return_value=paid_session):
-            page = self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1", follow_redirects=True)
+            page = self.client.get("/app/plan?welcome=1&session_id=cs_test_1", follow_redirects=True)
         self.assertEqual(self.org()["academy_status"], "canceled")
-        self.assertNotIn("Thank you! The Academy plan is on", page.data.decode())
+        self.assertNotIn("is on for", page.data.decode())
 
     def test_an_old_session_from_an_earlier_plan_does_not_count_either(self):
         now = int(time.time())
@@ -146,7 +146,7 @@ class TestStripeCannotDoubleActivate(StripeCase):
                "client_reference_id": str(self.org_id), "metadata": {"org_id": str(self.org_id)},
                "customer": "cus_1", "subscription": "sub_1", "created": now - 9100}
         with mock.patch.object(academy_plan, "_stripe", return_value=old):
-            self.client.get("/app/academy/plan?welcome=1&session_id=cs_old")
+            self.client.get("/app/plan?welcome=1&session_id=cs_old")
         self.assertEqual(self.org()["academy_status"], "canceled")
 
     def test_a_new_checkout_after_cancelling_does_turn_it_on(self):
@@ -162,7 +162,7 @@ class TestStripeCannotDoubleActivate(StripeCase):
                  "client_reference_id": str(self.org_id), "metadata": {"org_id": str(self.org_id)},
                  "customer": "cus_1", "subscription": "sub_3", "created": now}
         with mock.patch.object(academy_plan, "_stripe", return_value=fresh):
-            self.client.get("/app/academy/plan?welcome=1&session_id=cs_new")
+            self.client.get("/app/plan?welcome=1&session_id=cs_new")
         self.assertEqual(self.org()["academy_status"], "active")
 
     def test_webhook_and_return_page_together_make_one_plan(self):
@@ -171,17 +171,17 @@ class TestStripeCannotDoubleActivate(StripeCase):
                    "client_reference_id": str(self.org_id), "metadata": {"org_id": str(self.org_id)},
                    "customer": "cus_1", "subscription": "sub_1", "created": now - 30}
         with mock.patch.object(academy_plan, "_stripe", return_value=session):
-            self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1")
+            self.client.get("/app/plan?welcome=1&session_id=cs_test_1")
         self.checkout_event(created=now - 5)
         self.subscription_event("evt_created", "created", "active", created=now - 4)
         org = self.org()
         self.assertEqual((org["academy_status"], org["stripe_subscription_id"], org["stripe_customer_id"]),
                          ("active", "sub_1", "cus_1"))
         # No second checkout is offered.
-        page = self.client.get("/app/academy/plan").data.decode()
-        self.assertNotIn("Start the Academy plan", page)
+        page = self.client.get("/app/plan").data.decode()
+        self.assertNotIn('action="/app/plan/checkout"', page)
         with mock.patch.object(academy_plan, "checkout_url", side_effect=AssertionError("no second checkout")):
-            self.post("/app/academy/plan/checkout")
+            self.post("/app/plan/checkout", {"plan": "plus"})
 
     def test_a_late_checkout_does_not_hide_a_failed_payment(self):
         now = int(time.time())
@@ -218,12 +218,12 @@ class TestFailedPayment(StripeCase):
         self.assertEqual(self.org()["academy_status"], "past_due")
         home = self.client.get("/app/academy").data.decode()
         self.assertIn("Update your card", home)
-        self.assertRegex(home, r'payment didn.t go through\. <a href="/app/academy/plan">Update your card</a>')
+        self.assertRegex(home, r'payment didn.t go through\. <a href="/app/plan">Update your card</a>')
         self.assertIn("Update your card", self.client.get("/app/settings").data.decode())
-        plan = self.client.get("/app/academy/plan").data.decode()
+        plan = self.client.get("/app/plan").data.decode()
         self.assertIn("Update your card", plan)
         # The owner can get to Stripe's billing page to change the card.
-        manage = [f for f in post_forms(plan) if f.action == "/app/academy/plan/manage"]
+        manage = [f for f in post_forms(plan) if f.action == "/app/plan/manage"]
         self.assertEqual(len(manage), 1)
         with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://billing.stripe.test/p"}):
             response = self.client.post(manage[0].action, data=manage[0].values())
@@ -471,7 +471,7 @@ class TestCsrfEverywhere(AppTestCase):
         pages = ["/app", "/app/industry/1", "/app/settings", "/app/armo", "/app/audit", "/app/report",
                  "/app/notifications", "/app/academy", f"/app/academy/{self.lid}", f"/app/academy/{self.lid}/track",
                  f"/app/academy/{self.lid}/world/1/stage/1", f"/app/academy/{self.lid}/friends",
-                 f"/app/academy/{self.lid}/practice", "/app/academy/plan"]
+                 f"/app/academy/{self.lid}/practice", "/app/plan"]
         found = 0
         for path in pages:
             response = self.client.get(path)
@@ -600,7 +600,7 @@ class TestResetLinks(AppTestCase):
         link = self.request_link()
         with self.db() as conn:
             row = conn.execute("SELECT created_at, expires_at FROM password_resets").fetchone()
-            span = academy_plan._parse(row["expires_at"]) - academy_plan._parse(row["created_at"])
+            span = datetime.fromisoformat(row["expires_at"]) - datetime.fromisoformat(row["created_at"])
             self.assertEqual(span, timedelta(hours=RESET_HOURS))
             conn.execute("UPDATE password_resets SET expires_at = ?", (iso(utcnow() - timedelta(seconds=1)),))
             conn.commit()

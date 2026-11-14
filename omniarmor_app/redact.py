@@ -9,7 +9,7 @@ access log, the error log, the Autopilot error table) passes it through
 redact() first.
 
 The same address also turns up percent-encoded inside another one: a signed
-out visitor sent from the plan page to /login?next=%2Fapp%2Facademy%2Fplan
+out visitor sent from the plan page to /login?next=%2Fapp%2Fplan
 %3Fwelcome%3D1%26session_id%3D... carries the id in the sign-in page's log
 line. The encoded spellings of "/", "?", "&" and "=" count as well.
 

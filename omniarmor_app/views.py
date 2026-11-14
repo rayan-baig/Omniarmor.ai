@@ -8,8 +8,8 @@ import io
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
 
-from . import connections, usage
-from .academy_plan import charges_again, plan_status
+from . import connections, plans, usage
+from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
@@ -33,7 +33,8 @@ def nav_context():
     if g.get("org") is None:
         return {}
     ids = org_industry_ids(get_db(), g.org["id"])
-    return {"nav_industries": [INDUSTRIES[i] for i in ids]}
+    # What the workspace's plan allows: base.html's read-only and grace banners, and the industry pages.
+    return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": plans.access(g.org)}
 
 
 @bp.route("")
@@ -153,12 +154,35 @@ def page_order(state):
     return (2, state.sort_key)
 
 
+def read_only_message(access):
+    """Why nothing can be saved, and what still works."""
+    why = {"bundle_ended": f"CyberLogix stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
+                           " has ended",
+           "plan_ended": "Your plan has ended"}.get(access["reason"], "Your free trial has ended")
+    return (f"{why}, so the compliance tracker is read-only. Nothing was saved. Your records are safe: you can"
+            " still see, print and download them. Choose Pro or Plus to save new checks.")
+
+
+def _refuse_if_read_only(industry_id, anchor=None):
+    """Without a plan the tracker is read-only (plans.py): a save is refused,
+    and nothing else is touched."""
+    access = plans.access(g.org)
+    if access["tracker"]:
+        return None
+    flash_error(read_only_message(access))
+    target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
+    return redirect(f"{target}#{anchor}" if anchor else target)
+
+
 @bp.route("/industry/<int:industry_id>/rule/<rule_key>", methods=["POST"])
 @login_required
 def change(industry_id, rule_key):
     _industry_or_404(industry_id)
     if find_rule(industry_id, rule_key) is None:
         abort(404)
+    refused = _refuse_if_read_only(industry_id, f"rule-{rule_key}")
+    if refused:
+        return refused
     action = request.form.get("action", "save")
     try:
         message = apply_change(get_db(), g.org, g.user["id"], industry_id, rule_key, action, request.form)
@@ -177,6 +201,9 @@ def bulk_change(industry_id):
     The same sign-in, workspace and CSRF checks as a single update, and every
     check gets its own audit row. All or nothing."""
     _industry_or_404(industry_id)
+    refused = _refuse_if_read_only(industry_id)
+    if refused:
+        return refused
     action = request.form.get("bulk_action", "")
     try:
         count = apply_bulk(get_db(), g.org, g.user["id"], industry_id, request.form.getlist("keys"), action,
@@ -318,7 +345,7 @@ def _settings_page(new_key=None):
     operator = is_operator(g.user, current_app.config)
     return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           plan=plan_status(g.org), operator=operator,
+                           access=plans.access(g.org), operator=operator,
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
                            support_email=current_app.config.get("SUPPORT_EMAIL", ""),
                            connection=connections.status(conn, g.org), new_key=new_key,
@@ -446,7 +473,8 @@ def delete_workspace():
     # Once it's cancelled (it runs to the end of the paid period), deleting is fine.
     plan = conn.execute("SELECT * FROM orgs WHERE id = ?", (org_id,)).fetchone()
     if plan and charges_again(plan):
-        flash_error("Cancel your Academy plan first (Academy plan page, Manage or cancel), then delete the workspace.")
+        flash_error("Cancel your plan first (Plan page, Manage billing), then delete the workspace. Once it's"
+                    " cancelled you can delete right away, even before the paid time runs out.")
         return redirect(url_for("app.settings"))
     member_ids = [r["user_id"] for r in conn.execute("SELECT user_id FROM memberships WHERE org_id = ?", (org_id,))]
     conn.execute("DELETE FROM orgs WHERE id = ?", (org_id,))

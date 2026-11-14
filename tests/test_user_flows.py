@@ -47,7 +47,7 @@ class TestBackFromCheckout(AppTestCase):
         super().setUp()
         self.signup()
         self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.app.config.update(STRIPE_SECRET_KEY="sk_test", ACADEMY_STRIPE_PRICE="price_1")
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test", PLUS_STRIPE_PRICE="price_1")
         with self.db() as conn:
             self.org_id = conn.execute("SELECT id FROM orgs").fetchone()[0]
             conn.execute("UPDATE orgs SET academy_trial_ends = '2000-01-01T00:00:00+00:00'")  # trial over
@@ -68,7 +68,7 @@ class TestBackFromCheckout(AppTestCase):
         from unittest import mock
         from omniarmor_app import academy_plan
         with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://checkout.stripe.test/x"}) as call:
-            response = self.post("/app/academy/plan/checkout")
+            response = self.post("/app/plan/checkout", {"plan": "plus"})
         self.assertEqual(response.headers["Location"], "https://checkout.stripe.test/x")
         fields = call.call_args[0][2]
         self.assertIn("session_id={CHECKOUT_SESSION_ID}", fields["success_url"])
@@ -77,38 +77,38 @@ class TestBackFromCheckout(AppTestCase):
         from unittest import mock
         from omniarmor_app import academy_plan
         with mock.patch.object(academy_plan, "_stripe", return_value=self.stripe_session()) as call:
-            response = self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1", follow_redirects=True)
+            response = self.client.get("/app/plan?welcome=1&session_id=cs_test_1", follow_redirects=True)
         self.assertEqual(call.call_args[0][1], "checkout/sessions/cs_test_1")
         org = self.org()
         self.assertEqual((org["academy_status"], org["stripe_customer_id"], org["stripe_subscription_id"]),
                          ("active", "cus_1", "sub_1"))
         page = response.data.decode()
-        self.assertIn("You have the Academy plan", page)
-        self.assertNotIn("Start the Academy plan", page)
+        self.assertIn("You're on ", page)
+        self.assertNotIn('action="/app/plan/checkout"', page)
 
     def test_while_payment_is_being_confirmed_there_is_no_second_checkout_button(self):
         from unittest import mock
         from omniarmor_app import academy_plan
         pending = self.stripe_session(payment_status="unpaid")
         with mock.patch.object(academy_plan, "_stripe", return_value=pending):
-            page = self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1",
+            page = self.client.get("/app/plan?welcome=1&session_id=cs_test_1",
                                    follow_redirects=True).data.decode()
         self.assertEqual(self.org()["academy_status"], "none")
         self.assertIn("confirming your payment", page)
-        self.assertNotIn("Start the Academy plan", page)
+        self.assertNotIn('action="/app/plan/checkout"', page)
 
     def test_another_workspaces_checkout_does_not_count(self):
         from unittest import mock
         from omniarmor_app import academy_plan
         with mock.patch.object(academy_plan, "_stripe", return_value=self.stripe_session(org_id=self.org_id + 1)):
-            self.client.get("/app/academy/plan?welcome=1&session_id=cs_test_1")
+            self.client.get("/app/plan?welcome=1&session_id=cs_test_1")
         self.assertEqual(self.org()["academy_status"], "none")
 
     def test_an_odd_session_id_is_never_sent_to_stripe(self):
         from unittest import mock
         from omniarmor_app import academy_plan
         with mock.patch.object(academy_plan, "_stripe", side_effect=AssertionError("no call")):
-            response = self.client.get("/app/academy/plan?welcome=1&session_id=../customers/cus_1",
+            response = self.client.get("/app/plan?welcome=1&session_id=../customers/cus_1",
                                        follow_redirects=True)
         self.assertEqual(response.status_code, 200)
 
@@ -128,18 +128,18 @@ class TestPaidFamiliesCanFindTheirPlan(AppTestCase):
 
     def test_academy_home_links_to_the_plan(self):
         page = self.client.get("/app/academy").data.decode()
-        self.assertIn('href="/app/academy/plan"', page)
+        self.assertIn('href="/app/plan"', page)
 
     def test_settings_links_to_the_plan(self):
         page = self.client.get("/app/settings").data.decode()
-        self.assertIn('href="/app/academy/plan"', page)
+        self.assertIn('href="/app/plan"', page)
 
     def test_a_failed_payment_is_flagged_on_academy_home(self):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_status = 'past_due'")
             conn.commit()
         page = self.client.get("/app/academy").data.decode()
-        self.assertIn("last Academy payment didn't go through", page)
+        self.assertIn("last payment didn't go through", page)
 
 
 class TestCancelledPlan(AppTestCase):
@@ -182,7 +182,7 @@ class TestCancelledPlan(AppTestCase):
 
     def test_a_cancelled_plan_says_when_it_ends_not_that_it_renews(self):
         self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
-        page = self.client.get("/app/academy/plan").data.decode()
+        page = self.client.get("/app/plan").data.decode()
         self.assertIn("ends 2029-12-31", page)
         self.assertNotIn("renews", page)
 
@@ -195,7 +195,7 @@ class TestCancelledPlan(AppTestCase):
     def test_resuming_the_plan_blocks_deleting_again(self):
         self.send("evt_cancel", self.subscription(cancel_at_period_end=True, cancel_at=self.period_end))
         self.send("evt_resume", self.subscription())
-        self.assertIn("renews 2029-12-31", self.client.get("/app/academy/plan").data.decode())
+        self.assertIn("renews 2029-12-31", self.client.get("/app/plan").data.decode())
         self.post("/app/settings/delete", {"confirm": "Acme Logistics"})
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM orgs").fetchone()[0], 1)
@@ -205,7 +205,7 @@ class TestCancelledPlan(AppTestCase):
         obj = self.subscription(items={"data": [{"current_period_end": self.period_end}]})
         del obj["current_period_end"]
         self.send("evt_new_api", obj)
-        self.assertIn("renews 2029-12-31", self.client.get("/app/academy/plan").data.decode())
+        self.assertIn("renews 2029-12-31", self.client.get("/app/plan").data.decode())
 
 
 class TestRecordKeepsWhoAfterRemoval(AppTestCase):
@@ -461,7 +461,7 @@ class TestBillingHistoryAfterThePlanEnds(AppTestCase):
         super().setUp()
         self.signup()
         self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
-        self.app.config.update(STRIPE_SECRET_KEY="sk_test", ACADEMY_STRIPE_PRICE="price_1")
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test", PLUS_STRIPE_PRICE="price_1")
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_status = 'canceled', stripe_customer_id = 'cus_1',"
                          " stripe_subscription_id = 'sub_1', academy_trial_ends = '2000-01-01T00:00:00+00:00'")
@@ -470,18 +470,18 @@ class TestBillingHistoryAfterThePlanEnds(AppTestCase):
     def test_the_owner_can_open_billing_history(self):
         from unittest import mock
         from omniarmor_app import academy_plan
-        page = self.client.get("/app/academy/plan").data.decode()
-        self.assertIn('action="/app/academy/plan/manage"', page)
-        self.assertIn('action="/app/academy/plan/checkout"', page)  # and can start again
+        page = self.client.get("/app/plan").data.decode()
+        self.assertIn('action="/app/plan/manage"', page)
+        self.assertIn('action="/app/plan/checkout"', page)  # and can start again
         with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://billing.stripe.test/p"}):
-            response = self.post("/app/academy/plan/manage")
+            response = self.post("/app/plan/manage")
         self.assertEqual(response.headers["Location"], "https://billing.stripe.test/p")
 
     def test_no_billing_button_without_a_stripe_customer(self):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET stripe_customer_id = NULL")
             conn.commit()
-        self.assertNotIn('action="/app/academy/plan/manage"', self.client.get("/app/academy/plan").data.decode())
+        self.assertNotIn('action="/app/plan/manage"', self.client.get("/app/plan").data.decode())
 
 
 class TestBusinessDayClocks(AppTestCase):
@@ -1084,7 +1084,8 @@ class TestTimeLimitAlerts(ClockTestCase):
     def test_no_one_with_reminders_on(self):
         self.post("/app/settings/reminders", {})
         self.start(30, "fatality_report_8h", "2026-11-04T14:00:00+00:00")
-        self.assertEqual(self.run_at("2026-11-04T15:00"), {"orgs": 1, "alerts": 1, "emails": 0, "errors": 0})
+        self.assertEqual(self.run_at("2026-11-04T15:00"), {"orgs": 1, "alerts": 1, "emails": 0, "errors": 0,
+                                                            "paused": 0})
         self.assertEqual(self.notes(), [])
         self.assertEqual(self.run_at("2026-11-04T15:01")["alerts"], 0)
 

@@ -3,6 +3,67 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.3.0 (14 November 2026)
+
+Paid plans: a free trial, then Pro or Plus per location, with the Kitchen
+Safety Bundle's Pro included for CyberLogix customers.
+
+- **The plans** (`omniarmor_app/plans.py`, the one place prices live):
+  a free trial of everything in Plus for `ACADEMY_TRIAL_DAYS` days (14 by
+  default) from sign-up, no card; **Pro, $50 a month per location**, the
+  compliance tracker; **Plus, $80 a month per location**, everything in Pro
+  and the whole Future Owner Academy. The Academy's first worlds stay free
+  for everyone. The plan page (now `/app/plan`; the old address redirects),
+  Help, Settings, the landing page, the industry pages and the Terms all
+  read them from `plan_facts()`, and a test fails if any template types a
+  price.
+- **A location is a workspace.** A workspace holds one site (one timezone,
+  one reading per check, one CyberLogix report a day), so each subscription
+  bills `location_count()`, 1, as its quantity. A company with several sites
+  makes a workspace for each.
+- **Stripe:** the Academy plan's checkout, webhook, portal, past-due handling
+  and replay guards now serve every plan. Checkout sends the plan's price
+  (`PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`) with the location count, and
+  writes the plan in the metadata. The webhook sets the workspace's plan from
+  the subscription's price, so a switch between Pro and Plus in Stripe's
+  portal arrives by itself; repeated and older events are still ignored.
+  `ACADEMY_PRICE_LABEL` and `ACADEMY_STRIPE_PRICE` are no longer read.
+- **Without a plan, read-only.** When the trial ends with no plan, every
+  record can still be seen, printed and downloaded and nothing is deleted,
+  but checks can't be saved (single, bulk, limits) and the industry pages
+  show no Save buttons. Reminder digests and time-limit alerts pause; nothing
+  is marked reminded, so they pick up when a plan starts. A banner on every
+  page says why and links to the plans. Exporting and deleting the workspace
+  always work. CyberLogix reports are still taken.
+- **The Kitchen Safety Bundle includes Pro.** A workspace that received a
+  validly signed CyberLogix report in the last 3 days gets Pro at no charge,
+  and Settings says "Pro included with your Kitchen Safety Bundle". When the
+  signed reports stop, a 7-day grace period follows with a banner, then the
+  trial-ended rules. A covered workspace can add Plus for the difference,
+  $30 a month per location (`PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`); without
+  that price set it is offered Plus at full price, with a note.
+- **The signature:** CyberLogix signs bundle reports with
+  `X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret,
+  "<t>." + raw body)>` and the shared `KITCHEN_BUNDLE_SECRET`. OmniArmor
+  checks it over the raw body bytes in constant time, refuses a `t` more than
+  300 seconds off, and remembers each accepted signature for 10 minutes so a
+  replay doesn't count. An unsigned, wrong, stale or replayed report, or any
+  report while the secret is unset, is processed exactly as before and just
+  doesn't count. The answer says which (`signature`, `bundle_counted`).
+  docs/CYBERLOGIX-CONNECTION.md, section 3.5, is the spec.
+- **The old Academy plan** is kept as it was: a workspace paying for it
+  keeps the whole Academy and the compliance tracker at its old price until
+  it changes plan or the subscription ends.
+- **Schema version 18:** `orgs.plan` and `orgs.bundle_report_at`, and the
+  `bundle_signatures` table. Workspaces paying for the Academy are marked as
+  on the old plan; every other workspace gets the trial from the day of the
+  upgrade (a later Academy trial end is kept). docs/OPERATIONS.md, section 7,
+  lists the Stripe set-up to do before deploying.
+- `flask --app wsgi plan <workspace id> pro|plus|none` sets a plan by hand;
+  `academy-plan <id> active` now means Plus.
+- The Privacy and Terms pages say how the plans, the read-only state and the
+  bundle work, in plain words.
+
 ## 1.2.0 (13 November 2026)
 
 The Kitchen Safety Bundle: CyberLogix, MTRX Horizyn's fridge and freezer

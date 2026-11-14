@@ -350,6 +350,35 @@ MIGRATIONS = [
         PRIMARY KEY (org_id, service, industry_id, rule_key, report_date)
     );
     """),
+    # Paid plans (plans.py). orgs.plan says what the workspace's subscription
+    # is for: 'pro', 'plus', 'plus_bundle' (Plus for a Kitchen Safety Bundle
+    # workspace, billed the difference), 'academy' (the old standalone
+    # Academy plan, kept as it was) or 'none'. academy_status, academy_renews_at
+    # and academy_ends_at keep their first names but now hold that
+    # subscription's status and dates, whichever plan it is, and
+    # academy_trial_ends is the one free trial of the whole app. A workspace
+    # paying for the Academy now is on the old plan. Every other workspace
+    # had the tracker free until today, so it gets the new trial from today
+    # (or keeps a later Academy trial end), as migration 7 did for the
+    # Academy. {TRIAL_DAYS} is the ACADEMY_TRIAL_DAYS setting.
+    # bundle_report_at is when the last validly signed CyberLogix report
+    # arrived (the Kitchen Safety Bundle's cover), and bundle_signatures
+    # remembers each accepted signature for 10 minutes, so the same signed
+    # request sent again doesn't count twice (connections.py).
+    (18, """
+    ALTER TABLE orgs ADD COLUMN plan TEXT NOT NULL DEFAULT 'none';
+    ALTER TABLE orgs ADD COLUMN bundle_report_at TEXT;
+    UPDATE orgs SET plan = 'academy' WHERE academy_status IN ('active', 'trialing', 'past_due');
+    UPDATE orgs SET academy_trial_ends = MAX(COALESCE(academy_trial_ends, ''),
+        strftime('%Y-%m-%dT%H:%M:%S+00:00', 'now', '+{TRIAL_DAYS} days')) WHERE plan = 'none';
+    CREATE TABLE bundle_signatures (
+        signature TEXT PRIMARY KEY,
+        stamp INTEGER NOT NULL,
+        org_id INTEGER REFERENCES orgs(id) ON DELETE CASCADE,
+        seen_at TEXT NOT NULL
+    );
+    CREATE INDEX bundle_signatures_seen ON bundle_signatures (seen_at);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
@@ -379,9 +408,11 @@ def connect(path):
     return conn
 
 
-def migrate(conn):
+def migrate(conn, trial_days=14):
     """Brings the schema up to date. Takes SQLite's write lock first, so when
-    several server processes start together only one of them applies changes."""
+    several server processes start together only one of them applies changes.
+    trial_days is the free trial's length (ACADEMY_TRIAL_DAYS), for the
+    migration that gives workspaces already there the new trial."""
     previous = conn.isolation_level
     conn.isolation_level = None
     try:
@@ -391,6 +422,7 @@ def migrate(conn):
             current = conn.execute("SELECT COALESCE(MAX(version), 0) FROM schema_version").fetchone()[0]
             for version, sql in MIGRATIONS:
                 if version > current:
+                    sql = sql.replace("{TRIAL_DAYS}", str(int(trial_days)))
                     for statement in sql.split(";"):
                         if statement.strip():
                             conn.execute(statement)

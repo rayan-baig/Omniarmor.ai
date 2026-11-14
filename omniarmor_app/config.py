@@ -51,12 +51,22 @@ def load_config(**overrides):
         # Where people can write for help, shown on the Help page. Unset, the
         # page names the help inside the app only.
         "SUPPORT_EMAIL": env.get("SUPPORT_EMAIL", "").strip(),
-        # The Academy's own subscription (separate from the compliance service).
+        # Plans (plans.py, where the prices live). The free trial's length, for
+        # the whole app (it began as the Academy's trial, hence the name).
         "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
-        "ACADEMY_PRICE_LABEL": env.get("ACADEMY_PRICE_LABEL", ""),
-        "ACADEMY_STRIPE_PRICE": env.get("ACADEMY_STRIPE_PRICE", ""),
+        # Stripe's price ids: Pro, Plus, and Plus for a Kitchen Safety Bundle
+        # workspace (the difference between them). Each is a per-location
+        # monthly price in Stripe; checkout sends the location count as quantity.
+        "PRO_STRIPE_PRICE": env.get("PRO_STRIPE_PRICE", "").strip(),
+        "PLUS_STRIPE_PRICE": env.get("PLUS_STRIPE_PRICE", "").strip(),
+        "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": env.get("PLUS_BUNDLE_UPGRADE_STRIPE_PRICE", "").strip(),
         "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
         "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
+        # The secret CyberLogix signs its daily reports with (the same value
+        # on both apps). A validly signed report counts toward the Kitchen
+        # Safety Bundle's included Pro; unset, reports are still taken but
+        # none counts (connections.py).
+        "KITCHEN_BUNDLE_SECRET": env.get("KITCHEN_BUNDLE_SECRET", "").strip(),
         # Number of reverse proxies in front of the app (Render, nginx, Caddy add one each).
         "TRUSTED_PROXIES": int(env.get("TRUSTED_PROXIES", "1" if production else "0")),
         "TESTING": False,

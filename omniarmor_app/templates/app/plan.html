@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "app/_plan_status.html" import status_line %}
+{% block title %}Plans{% endblock %}
+{% block content %}
+{% set a = access %}
+{% set b = facts.bundle %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · Plans</p>
+    <h1>{% if a.paid %}You're on {{ a.plan_name }}{% elif a.source == 'bundle' %}{{ b.includes.name }} included with your {{ b.name }}{% elif a.source == 'bundle_grace' %}Your {{ b.name }} needs a look{% elif a.trial %}Your free trial is on{% else %}Choose a plan{% endif %}</h1>
+    <p class="sub" data-plan-line>{{ status_line(a, facts) }}</p>
+  </div>
+</div>
+
+<p class="muted">Every new workspace gets a {{ facts.trial_days }}-day free trial of everything in {{ facts.plus.name }}, with no card. Prices are per {{ facts.location }}: a workspace is one {{ facts.location }}, so a company with several sites has a workspace for each. Without a plan your records stay: you can see, print and download them, and nothing is deleted, but new checks can't be saved and reminders pause.</p>
+
+{% if a.paid and a.kind == 'plus_bundle' and a.read_only %}
+  <p class="plan-banner readonly" data-bundle-ended>Your {{ facts.plus.name }} is billed at the {{ b.name }} price, which covers the Academy only, and the bundle that included {{ b.includes.name }} has ended. {% if g.role == 'owner' %}Use Manage billing to switch to {{ facts.plus.name }} or {{ facts.pro.name }} at the full price.{% else %}The workspace owner can switch plans.{% endif %}</p>
+{% elif a.paid and a.source == 'plan' and a.bundle.state == 'covered' and a.kind == 'pro' %}
+  <p class="plan-banner" data-bundle-overlap>Your {{ b.name }} already includes {{ b.includes.name }}, so you may not need to pay for it here too. {% if g.role == 'owner' %}Manage billing can cancel it.{% endif %}</p>
+{% endif %}
+
+<div class="plan-grid">
+  {% for p in facts.plans %}
+    {% set mine = a.paid and (a.kind == p.key or (p.key == 'plus' and a.kind == 'plus_bundle')) %}
+    {% set via_bundle = p.key == b.includes.key and a.source in ('bundle', 'bundle_grace') and not a.paid %}
+    <section class="plan-card{% if mine or via_bundle %} current{% endif %}" data-plan="{{ p.key }}">
+      {% if mine or via_bundle %}<span class="plan-here">Your plan</span>{% endif %}
+      <h2>{{ p.name }}</h2>
+      <p class="plan-price" data-price>{% if p.key == 'plus' and upgrade %}{{ b.upgrade_price }} with your {{ b.name }} ({{ p.price }} without){% else %}{{ p.price }}{% endif %}</p>
+      <ul>
+        {% if p.key == 'pro' %}
+          <li>All {{ facts.checks }} checks across {{ facts.industries }} industries: pick the ones your company works in</li>
+          <li>Reminder emails and time-limit alerts, Radar, Intel reports and exports, the audit trail</li>
+          <li>Update several checks at once, your own limits, the whole team</li>
+          <li>The Academy's free worlds</li>
+        {% else %}
+          <li>Everything in {{ facts.pro.name }}</li>
+          <li>The whole Future Owner Academy at no extra cost: {% for t in facts.tracks %}{{ t.name }} ({{ "{:,}".format(t.total) }} levels){{ ', ' if not loop.last }}{% endfor %}</li>
+          <li>All {{ facts.topic_worlds }} business worlds, the Owner's Challenge and its certificates, {{ facts.rule_quests }} industry Rule Quests, and duels in all {{ facts.duel_worlds }} duel worlds</li>
+          <li>Up to {{ facts.max_learners }} kids, each on their own device if you like</li>
+        {% endif %}
+      </ul>
+      {% if mine %}
+        <p class="plan-status">{{ status_line(a, facts) }}</p>
+      {% elif via_bundle %}
+        <p class="plan-status">Included with your {{ b.name }} while CyberLogix sends signed reports.</p>
+      {% endif %}
+      {% if g.role == 'owner' and not a.paid and not via_bundle %}
+        {% if confirming %}
+          <p class="hint">Thank you! We're confirming your payment with Stripe. It usually takes a few seconds: <a href="{{ url_for('plan.plan_page', welcome=1) }}">reload this page</a>. There's no need to pay again.</p>
+        {% elif ready[p.key] %}
+          <form method="post" action="{{ url_for('plan.checkout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan" value="{{ p.key }}">
+            <button class="btn{% if p.key != 'plus' %} quiet{% endif %}" type="submit">{% if p.key == 'plus' and upgrade %}Add the Academy with {{ p.name }}{% else %}Choose {{ p.name }}{% endif %}</button>
+          </form>
+          {% if p.key == 'plus' and a.bundle.state == 'covered' and not upgrade %}<p class="plan-note" data-bundle-full-price>{{ p.name }} at the {{ b.name }} price isn't set up yet, so it is billed at its full price. Your bundle's {{ b.includes.name }} stays included either way.</p>{% endif %}
+        {% else %}
+          <p class="hint">Online sign-up is coming soon. Contact us to start {{ p.name }}.</p>
+        {% endif %}
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <section class="plan-card" data-plan="free">
+    <h2>Academy, free</h2>
+    <p class="plan-price">Free for everyone</p>
+    <ul>
+      <li>{{ facts.free_track.name }} track: its first {{ facts.free_worlds|length }} worlds, {{ facts.free_worlds|map(attribute='title')|join(', ') }}, with all {{ "{:,}".format(facts.free_levels) }} of their levels</li>
+      <li>Up to {{ facts.max_learners }} learners, practice for missed questions, daily streaks and Armo</li>
+      <li>Up to {{ facts.max_friends }} friends each{% if facts.free_duel_worlds %}, and duels in {{ facts.free_duel_worlds|map(attribute='title')|join(', ') }}{% endif %}</li>
+      <li>Stays free after the trial, with or without a plan</li>
+    </ul>
+  </section>
+
+  <section class="plan-card{% if a.source in ('bundle', 'bundle_grace') %} current{% endif %}" data-plan="bundle">
+    <h2>{{ b.name }}</h2>
+    <p class="plan-price">{{ b.price }}, through CyberLogix</p>
+    <ul>
+      <li>CyberLogix, MTRX Horizyn's fridge and freezer alarm app, fills in your temperature checks</li>
+      <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while CyberLogix sends signed reports (one in the last {{ b.fresh_days }} days)</li>
+      <li>If they stop, {{ b.includes.name }} stays on for {{ b.grace_days }} more days with a warning, then the usual rules apply</li>
+      <li>Add the Academy with {{ facts.plus.name }} for {{ b.upgrade_price }}, the difference</li>
+    </ul>
+    {% if a.bundle.state == 'covered' %}<p class="plan-status">{{ b.includes.name }} included with your {{ b.name }}. Last signed report {{ a.bundle.last|local_date }}.</p>
+    {% elif a.bundle.state == 'grace' %}<p class="plan-status">No signed report since {{ a.bundle.last|local_date }}. Included until {{ a.bundle.grace_ends|local_date }}.</p>{% endif %}
+    <p><a href="{{ url_for('app.settings', _anchor='connections') }}">Connections</a></p>
+  </section>
+</div>
+
+{% if g.role == 'owner' %}
+  {% if a.paid and has_customer %}
+    <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn quiet" type="submit">Manage billing</button>
+      <span class="hint">Change plan, update your card or cancel, on Stripe's secure page. A cancelled plan stays on until the end of the time you paid for.</span>
+    </form>
+  {% elif has_customer and ready.pro or has_customer and ready.plus %}
+    <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="linkbtn" type="submit">Past invoices and billing</button>
+    </form>
+  {% endif %}
+  {% if not a.paid %}<p class="hint mt-s">Secure checkout by Stripe. We never see your card number. Billed monthly, per {{ facts.location }}; cancel anytime.</p>{% endif %}
+{% else %}
+  <p class="hint mt">Only the workspace owner can change the plan.</p>
+{% endif %}
+{% endblock %}

@@ -98,7 +98,7 @@ class TestThroughTheApp(AppTestCase):
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM orgs").fetchone()[0], 1)
         # The message names the page where the plan is really cancelled.
-        self.assertIn("Academy plan page, Manage or cancel", self.client.get("/app/settings").data.decode())
+        self.assertIn("Plan page, Manage billing", self.client.get("/app/settings").data.decode())
 
     def test_a_day_limit_past_a_hundred_years_is_refused(self):
         self.signup(industries=(7,))

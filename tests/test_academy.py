@@ -457,19 +457,19 @@ class TestAcademyPlan(AppTestCase):
     def test_after_trial_only_free_worlds(self):
         self.set_org(academy_trial_ends="2000-01-01T00:00:00+00:00")
         response = self.client.get(f"/app/academy/{self.lid}/world/1")
-        self.assertTrue(response.headers["Location"].endswith("/app/academy/plan"))
+        self.assertTrue(response.headers["Location"].endswith("/app/plan"))
         self.post(f"/app/academy/{self.lid}/track", {"track": "launchpad"})
         self.assertEqual(self.client.get(f"/app/academy/{self.lid}/world/1").status_code, 200)
-        self.assertIn(b"Academy plan", self.client.get(f"/app/academy/{self.lid}").data)
-        self.set_org(academy_status="active")
+        self.assertIn(b"Plus", self.client.get(f"/app/academy/{self.lid}").data)
+        self.set_org(academy_status="active", plan="plus")
         self.post(f"/app/academy/{self.lid}/track", {"track": "titan"})
         self.assertEqual(self.client.get(f"/app/academy/{self.lid}/world/1").status_code, 200)
 
     def test_plan_page_without_stripe(self):
-        page = self.client.get("/app/academy/plan").data.decode()
-        self.assertIn("Unlock the whole Academy", page.replace("Your free trial is on", "Unlock the whole Academy"))
-        self.assertIn("separate subscription", page)
-        response = self.post("/app/academy/plan/checkout")
+        page = self.client.get("/app/plan").data.decode()
+        self.assertIn("Your free trial is on", page)
+        self.assertIn("Online sign-up is coming soon. Contact us to start Plus.", page)
+        response = self.post("/app/plan/checkout", {"plan": "plus"})
         self.assertEqual(response.status_code, 302)
 
     def signed(self, event, secret="whsec_test", stamp=None):
@@ -517,11 +517,11 @@ class TestAcademyPlan(AppTestCase):
 
     def test_only_owner_buys(self):
         anon = self.app.test_client()
-        self.assertTrue(self.post("/app/academy/plan/checkout", client=anon).headers["Location"].startswith("/login"))
+        self.assertTrue(self.post("/app/plan/checkout", {"plan": "plus"}, client=anon).headers["Location"].startswith("/login"))
         with self.db() as conn:
             conn.execute("UPDATE memberships SET role = 'member'")
             conn.commit()
-        self.assertEqual(self.post("/app/academy/plan/checkout").status_code, 403)
+        self.assertEqual(self.post("/app/plan/checkout", {"plan": "plus"}).status_code, 403)
 
 
 class TestKidDevices(AppTestCase):

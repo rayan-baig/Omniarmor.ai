@@ -23,20 +23,37 @@ again changes nothing; a corrected one replaces the note, and never takes
 away or overwrites a reading someone on the team saved that day or later.
 A report carries temperatures, unit names and roles ("on-call staff"), never
 a person's name: the roles and actions are fixed lists.
+
+**Signed reports and the bundle's included Pro.** CyberLogix signs the
+reports of sites on the Kitchen Safety Bundle with the shared
+KITCHEN_BUNDLE_SECRET: the header X-CyberLogix-Signature is
+"t=<unix seconds>,v1=<hex HMAC-SHA256(secret, b"<t>." + raw body bytes)>".
+check_signature() verifies it over the raw bytes, in constant time, and
+refuses a t more than SIGNATURE_TOLERANCE seconds from now. A signature
+accepted once is remembered for SIGNATURE_MEMORY (bundle_signatures), so the
+same signed request sent again within its time window doesn't count twice;
+after that window its t is stale anyway. (The per-date idempotency below
+would make a replay change no readings, but it would still renew the bundle,
+hence the table.) A report that counts sets orgs.bundle_report_at, which
+plans.bundle_status() reads. A report with no signature, a wrong, stale or
+replayed one, or with the setting unset, is processed exactly as before; it
+just doesn't count toward the bundle.
 """
 
 import hashlib
+import hmac
 import json
 import math
 import re
 import secrets
+import time
 from datetime import date, datetime, timedelta
 from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, jsonify, request
 
 from .catalog import INDUSTRIES, find_rule
-from .db import get_db, now_iso, record_audit
+from .db import get_db, iso, now_iso, record_audit, utcnow
 from .security import client_ip, hash_token, rate_limited, record_event
 from .tracking import _get_row, apply_change, format_quantity, local_date, org_industry_ids, org_today
 
@@ -84,6 +101,13 @@ ACTIONS = {
 }
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+# --- The signature (the Kitchen Safety Bundle) -------------------------------------
+SIGNATURE_HEADER = "X-CyberLogix-Signature"
+SIGNATURE_TOLERANCE = 300                  # seconds either side of now
+SIGNATURE_MEMORY = timedelta(minutes=10)   # accepted signatures remembered, against replays
+MAX_SIGNATURE_HEADER = 300
+_HEX64 = re.compile(r"[0-9a-f]{64}")
 
 api = Blueprint("connect", __name__, url_prefix="/api/connect")
 
@@ -177,6 +201,57 @@ def mark_reviewed(conn, org_id, user_id, industry_id, rule_key, day):
                  industry_id, rule_key)
     conn.commit()
     return True
+
+
+# --- The signature ------------------------------------------------------------------
+
+def sign(secret, body, stamp):
+    """The header value CyberLogix sends: what check_signature verifies."""
+    digest = hmac.new(secret.encode(), str(int(stamp)).encode() + b"." + body, hashlib.sha256).hexdigest()
+    return f"t={int(stamp)},v1={digest}"
+
+
+def check_signature(raw, header, secret, now=None):
+    """Checks X-CyberLogix-Signature against the raw body. Returns (status,
+    signature): status is "valid", "missing" (no header), "not_configured"
+    (KITCHEN_BUNDLE_SECRET unset), "stale" (t over SIGNATURE_TOLERANCE from
+    now) or "invalid" (malformed, or no v1 matches); signature is the v1
+    that matched, for the replay check, when valid."""
+    if not secret:
+        return "not_configured", None
+    if not header:
+        return "missing", None
+    if len(header) > MAX_SIGNATURE_HEADER:
+        return "invalid", None
+    parts = {}
+    for item in header.split(","):
+        key, _, value = item.partition("=")
+        parts.setdefault(key.strip(), []).append(value.strip())
+    stamps = parts.get("t", [])
+    if len(stamps) != 1 or not stamps[0].isascii() or not stamps[0].isdigit() or len(stamps[0]) > 12:
+        return "invalid", None
+    stamp = int(stamps[0])
+    if abs((now if now is not None else time.time()) - stamp) > SIGNATURE_TOLERANCE:
+        return "stale", None
+    expected = hmac.new(secret.encode(), stamps[0].encode() + b"." + raw, hashlib.sha256).hexdigest()
+    for candidate in parts.get("v1", []):
+        candidate = candidate.lower()
+        if _HEX64.fullmatch(candidate) and hmac.compare_digest(expected, candidate):
+            return "valid", candidate
+    return "invalid", None
+
+
+def _count_signature(conn, org_id, signature):
+    """Records an accepted signature and renews the workspace's bundle cover.
+    False when the signature was already used (a replay): it doesn't count.
+    Runs inside receive()'s transaction."""
+    now = utcnow()
+    conn.execute("DELETE FROM bundle_signatures WHERE seen_at < ?", (iso(now - SIGNATURE_MEMORY),))
+    fresh = conn.execute("INSERT OR IGNORE INTO bundle_signatures (signature, stamp, org_id, seen_at)"
+                         " VALUES (?, ?, ?, ?)", (signature, int(now.timestamp()), org_id, iso(now))).rowcount == 1
+    if fresh:
+        conn.execute("UPDATE orgs SET bundle_report_at = ? WHERE id = ?", (iso(now), org_id))
+    return fresh
 
 
 # --- The report: checking what was sent -------------------------------------------
@@ -452,10 +527,13 @@ def _apply_to_check(conn, org, industry_id, rule, report, digest):
     return outcome
 
 
-def receive(conn, org, key_row, report):
+def receive(conn, org, key_row, report, signature=("missing", None)):
     """Applies a checked report to the workspace's temperature checks, all
-    in one transaction. Returns the JSON answer."""
+    in one transaction. `signature` is check_signature()'s answer: a valid
+    one not seen before also renews the Kitchen Safety Bundle's cover.
+    Returns the JSON answer."""
     digest = fingerprint(report)
+    status, signed = signature
     if conn.in_transaction:
         conn.commit()
     conn.execute("BEGIN IMMEDIATE")   # two copies of one report sent at once apply once
@@ -465,6 +543,11 @@ def receive(conn, org, key_row, report):
         conn.execute("UPDATE connection_keys SET last_used_at = ?,"
                      " last_report_date = MAX(COALESCE(last_report_date, ''), ?) WHERE id = ?",
                      (now_iso(), report["date"], key_row["id"]))
+        counted = False
+        if status == "valid":
+            counted = _count_signature(conn, org["id"], signed)
+            if not counted:
+                status = "replayed"
         conn.commit()
     except Exception:
         conn.rollback()
@@ -474,7 +557,8 @@ def receive(conn, org, key_row, report):
               "noted": sum(r == "note" for _, _, r in results),
               "unchanged": sum(r == "unchanged" for _, _, r in results),
               "checks": [{"industry": INDUSTRIES[i]["brand"], "check": rule.key, "title": rule.title, "result": r}
-                         for i, rule, r in results]}
+                         for i, rule, r in results],
+              "signature": status, "bundle_counted": counted}
     if not results:
         answer["hint"] = ("This workspace tracks no temperature-log check, so nothing was filled in. In OmniArmor,"
                           " the owner can add RestoArmor (Restaurants) in Settings, Company, to track cold holding.")
@@ -545,9 +629,14 @@ def cyberlogix_daily():
     except PayloadError as exc:
         return _error(422, "invalid_payload", "Some fields are missing or out of range; nothing was changed.",
                       errors=[{"field": f, "problem": p} for f, p in exc.problems])
-    answer = receive(conn, org, key_row, report)
-    current_app.logger.info("cyberlogix report for workspace %s, %s: %s matched, %s ticked, %s noted", org["id"],
-                            report["date"], answer["matched_checks"], answer["ticked"], answer["noted"])
+    # The signature is checked over the exact bytes received, before anything
+    # parsed them. Whatever it says, the report is processed the same way.
+    signature = check_signature(raw, request.headers.get(SIGNATURE_HEADER, ""),
+                                current_app.config.get("KITCHEN_BUNDLE_SECRET", ""))
+    answer = receive(conn, org, key_row, report, signature)
+    current_app.logger.info("cyberlogix report for workspace %s, %s: %s matched, %s ticked, %s noted, signature %s",
+                            org["id"], report["date"], answer["matched_checks"], answer["ticked"], answer["noted"],
+                            answer["signature"])
     return jsonify(answer)
 
 

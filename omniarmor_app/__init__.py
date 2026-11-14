@@ -16,7 +16,7 @@ from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, r
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, armo_views, autopilot, auth, connections, errormail, usage, views
+from . import academy_views, armo_views, autopilot, auth, connections, errormail, plan_views, usage, views
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -56,7 +56,6 @@ def _landing_facts():
         "per_industry": len(rules_for(next(iter(INDUSTRIES)))),
         "examples": [INDUSTRIES[i]["sector"].lower() for i in LANDING_EXAMPLES],
         "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
-        "price": cfg.get("ACADEMY_PRICE_LABEL", "").strip(),
         "free_worlds": len(FREE_WORLDS),
         "free_track": next(t.name for t in TRACK_LIST if t.key == FREE_TRACK),
         "tracks": len(TRACK_LIST),
@@ -82,7 +81,7 @@ def industry_page(slug):
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "13 November 2026"
+RULES_UPDATED = "14 November 2026"
 
 
 def _rules_facts():
@@ -95,6 +94,7 @@ def _rules_facts():
     from .errormail import MAX_PER_DAY
     from .jobs import ALERTS_EVERY_SECONDS
     from .auth import INVITE_DAYS, RESET_HOURS
+    from .connections import SIGNATURE_MEMORY
     cfg = current_app.config
     return {
         "updated": RULES_UPDATED,
@@ -111,6 +111,7 @@ def _rules_facts():
         "operator_emails_per_hour": MAX_EMAILS_PER_HOUR,
         "error_emails_per_day": MAX_PER_DAY,
         "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
+        "signature_minutes": int(SIGNATURE_MEMORY.total_seconds() // 60),
     }
 
 
@@ -127,8 +128,9 @@ def terms():
 def _help_facts():
     """The numbers and names the Help page quotes, read from the code and
     settings that decide them, like the plan page's."""
-    from .academy_views import JOIN_CODE_DAYS, plan_facts
+    from .academy_views import JOIN_CODE_DAYS
     from .auth import RESET_HOURS
+    from .plan_views import plan_facts
     from .autopilot import SLOT_MINUTES
     from .catalog import TOP_COUNT
     from .jobs import ALERTS_EVERY_SECONDS
@@ -329,7 +331,7 @@ def create_app(**overrides):
     _set_up_logging()
 
     conn = connect(app.config["DATABASE"])
-    migrate(conn)
+    migrate(conn, app.config["ACADEMY_TRIAL_DAYS"])
     conn.close()
 
     app.teardown_appcontext(close_db)
@@ -339,7 +341,8 @@ def create_app(**overrides):
     app.after_request(robots_header)
     app.after_request(connections.api_headers)
     app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__,
-                                public_page=public_page, canonical_url=canonical_url)
+                                public_page=public_page, canonical_url=canonical_url,
+                                plan_facts=lambda: plan_views.plan_facts(current_app.config))
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 
@@ -366,7 +369,7 @@ def create_app(**overrides):
     app.register_blueprint(views.bp)
     app.register_blueprint(academy_views.bp)
     app.register_blueprint(academy_views.kids)
-    app.register_blueprint(academy_views.plan)
+    app.register_blueprint(plan_views.plan)
     app.register_blueprint(armo_views.bp)
     app.register_blueprint(connections.api)
     register_cli(app)

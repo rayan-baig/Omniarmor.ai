@@ -33,18 +33,19 @@
 </nav>
 
 <h2 id="trial">Is there a free trial?</h2>
-<p>The compliance tracker doesn't need one: it is free right now. The Future Owner Academy has a {{ facts.trial_days }}-day free trial of everything in the Academy plan. It starts when you add your first learner, once per workspace. When it ends, the {{ facts.free_track.name }} track's first {{ facts.free_worlds|length }} worlds stay free.</p>
+<p>Yes. Every new workspace gets a {{ facts.trial_days }}-day free trial of everything in {{ facts.plus.name }}: the compliance tracker and the whole Future Owner Academy, for your whole team. It starts the day you sign up, once per workspace, with no card. When it ends without a plan, nothing is deleted: you can still see, print and download every record, but new checks can't be saved and reminders pause until you choose {{ facts.pro.name }} or {{ facts.plus.name }}, and the {{ facts.free_track.name }} track's first {{ facts.free_worlds|length }} worlds stay free either way.</p>
 
 <h2 id="prices">What does it cost?</h2>
 <ul>
-  <li><strong>Compliance tracker:</strong> free right now, for your whole team, with all {{ facts.checks }} checks across {{ facts.industries }} industries.</li>
-  <li><strong>Academy, free part:</strong> stays free after the trial: {{ facts.free_worlds|map(attribute='title')|join(', ') }} on {{ facts.free_track.name }}, practice, streaks and friends.</li>
-  <li><strong>Academy plan:</strong> {{ facts.price if facts.price else 'the price is shown at checkout, before you pay' }}. One plan covers every learner in the workspace, up to {{ facts.max_learners }}, on all {{ facts.tracks|length }} tracks. Cancel anytime: the plan stays on until the end of the time you paid for.</li>
+  <li><strong>{{ facts.pro.name }}: {{ facts.pro.price }}.</strong> The compliance tracker: all {{ facts.checks }} checks across {{ facts.industries }} industries, reminders, reports and exports, updating several checks at once, and your whole team.</li>
+  <li><strong>{{ facts.plus.name }}: {{ facts.plus.price }}.</strong> Everything in {{ facts.pro.name }}, plus the whole Future Owner Academy at no extra cost: every learner in the workspace, up to {{ facts.max_learners }}, on all {{ facts.tracks|length }} tracks.</li>
+  <li><strong>Academy, free part:</strong> free for everyone, with or without a plan: {{ facts.free_worlds|map(attribute='title')|join(', ') }} on {{ facts.free_track.name }}, practice, streaks and friends.</li>
+  <li><strong>{{ facts.bundle.name }}:</strong> if you pay CyberLogix for the bundle ({{ facts.bundle.price }}), it includes {{ facts.bundle.includes.name }} for that {{ facts.location }} while CyberLogix sends its signed daily reports, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}. If the reports stop for more than {{ facts.bundle.fresh_days }} days, {{ facts.bundle.includes.name }} stays on for {{ facts.bundle.grace_days }} more days with a warning.</li>
 </ul>
-<p>The Academy plan page inside the app lists what each plan includes.</p>
+<p>A {{ facts.location }} is one workspace: a company with several sites has a workspace for each. Plans are billed monthly through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for. The Plans page inside the app (Settings, Plan) shows yours.</p>
 
 <h2 id="card">Do I need a card to start?</h2>
-<p>No. Signing up asks for your name, email, a password, your company name, its time zone and its industries. The Academy trial needs no card either. A card is only asked for if you start the Academy plan, on Stripe's secure checkout page; OmniArmor never sees the card number.</p>
+<p>No. Signing up asks for your name, email, a password, your company name, its time zone and its industries. The free trial needs no card. A card is only asked for when you choose {{ facts.pro.name }} or {{ facts.plus.name }}, on Stripe's secure checkout page; OmniArmor never sees the card number.</p>
 
 <h2 id="check">What is a check?</h2>
 <p>A check is one compliance rule your business has to keep, such as an inspection that is due every year, a limit that must not be passed, or a yes-or-no control that must be in place. Each industry has {{ facts.per_industry }} checks, the failures that cost businesses in it the most, and each one names the rule it comes from. Start with the top {{ facts.top_count }} of each industry. You enter a date, a number or a yes-or-no answer once, and OmniArmor keeps count from there, every day, in your company's time zone.</p>
@@ -89,7 +90,7 @@
 
 <h2 id="delete">How do I delete my data?</h2>
 <ul>
-  <li><strong>Everything:</strong> the workspace owner goes to Settings, Delete workspace, and types the company name. If you pay for the Academy plan, cancel it first. Download your report and audit trail before, if you need them.</li>
+  <li><strong>Everything:</strong> the workspace owner goes to Settings, Delete workspace, and types the company name. If you pay for a plan, cancel it first in Manage billing; you can delete right away after that. Downloading and deleting always work, with or without a plan. Download your report and audit trail before, if you need them.</li>
   <li><strong>One team member:</strong> the owner removes them in Settings, under Team.</li>
   <li><strong>One kid:</strong> open the Academy, then Manage learners, then Remove.</li>
 </ul>

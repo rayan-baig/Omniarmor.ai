@@ -16,8 +16,9 @@
 </div>
 {% set total = 10 %}
 {% include "app/_totals.html" %}
+{% set read_only = plan_access and plan_access.read_only %}
 
-{% if states %}
+{% if states and not read_only %}
 <form class="bulk no-print" id="bulk" method="post" action="{{ url_for('app.bulk_change', industry_id=info.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
@@ -41,7 +42,7 @@
   <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}">
     <div class="rule-main">
       <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span>
-        <label class="pick no-print"><input type="checkbox" name="keys" value="{{ r.key }}" form="bulk"> Select</label></div>
+        {% if not read_only %}<label class="pick no-print"><input type="checkbox" name="keys" value="{{ r.key }}" form="bulk"> Select</label>{% endif %}</div>
       {% set rank = top_rank(info.id, r.key) %}
       {% if rank %}<p class="why-line"><span class="top-n">Top {{ top_count }} · #{{ rank }}</span>Why this matters: {{ why_line(r) }}</p>{% endif %}
       {% if s.level != 'CLEARED' %}<p class="msg {{ s.level }}">{{ s.message }}</p>{% else %}<p class="sr">{{ s.message }}</p>{% endif %}
@@ -57,7 +58,7 @@
           {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at|local_date }}{{ ' by ' ~ s.updated_by if s.updated_by }}</p>{% endif %}
         </div>
       </details>
-      {% if can_override(r) %}
+      {% if can_override(r) and not read_only %}
         <details>
           <summary>{{ 'Your limit' if s.overridden else 'Set your own limit' }}</summary>
           <form class="limit-form" method="post" action="{{ url_for('app.change', industry_id=info.id, rule_key=r.key) }}">
@@ -74,6 +75,12 @@
         </details>
       {% endif %}
     </div>
+    {% if read_only %}
+    <div>
+      <p class="q">{{ r.input }}</p>
+      <p class="read-only-note" data-read-only>Read-only: saved readings stay, and are in the report and its download. <a href="{{ url_for('plan.plan_page') }}">Choose Pro or Plus</a> to save a new one.</p>
+    </div>
+    {% else %}
     <form method="post" action="{{ url_for('app.change', industry_id=info.id, rule_key=r.key) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
@@ -110,6 +117,7 @@
         </div>
       {% endif %}
     </form>
+    {% endif %}
   </li>
 {% else %}
   {% if counts.NONE == total %}

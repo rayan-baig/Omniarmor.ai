@@ -69,7 +69,7 @@ def job_lock(cfg, name):
     holder = uuid.uuid4().hex
     conn = connect(cfg["DATABASE"])
     try:
-        migrate(conn)   # the lock's table, on a database no app has opened yet
+        migrate(conn, cfg.get("ACADEMY_TRIAL_DAYS", 14))   # the lock's table, on a database no app has opened yet
         if not _take_lock(conn, name, holder):
             yield False
             return
@@ -217,6 +217,8 @@ def cleanup(conn):
     conn.execute("DELETE FROM join_codes WHERE expires_at < ?", (iso(utcnow()),))
     # Answers kept from a quiz nobody finished (academy_views.QUIZ_CHECK_DAYS).
     conn.execute("DELETE FROM quiz_checks WHERE at < ?", (iso(utcnow() - timedelta(days=30)),))
+    # CyberLogix signatures past their replay window (connections.SIGNATURE_MEMORY).
+    conn.execute("DELETE FROM bundle_signatures WHERE seen_at < ?", (iso(utcnow() - timedelta(minutes=10)),))
     usage.trim(conn)
     conn.commit()
 
@@ -239,7 +241,7 @@ BUSY = "Another server process is running it right now; nothing was done. Try ag
 def _run_daily(cfg, run_date, force):
     conn = connect(cfg["DATABASE"])
     try:
-        migrate(conn)
+        migrate(conn, cfg.get("ACADEMY_TRIAL_DAYS", 14))
         claimed = claim_run(conn, "daily", run_date)
         if not claimed and not force:
             return None
@@ -285,7 +287,7 @@ def run_alerts(cfg, now=None):
     """Sends the time-limit alerts due now (reminders.run_clock_alerts)."""
     conn = connect(cfg["DATABASE"])
     try:
-        migrate(conn)
+        migrate(conn, cfg.get("ACADEMY_TRIAL_DAYS", 14))
         with job_lock(cfg, "alerts") as mine:
             if not mine:
                 return {"orgs": 0, "alerts": 0, "emails": 0, "errors": 0, "busy": True}
@@ -340,7 +342,7 @@ def register_cli(app):
     def init_db():
         """Create or upgrade the database."""
         conn = connect(app.config["DATABASE"])
-        click.echo(f"Database at schema version {migrate(conn)}: {app.config['DATABASE']}")
+        click.echo(f"Database at schema version {migrate(conn, app.config['ACADEMY_TRIAL_DAYS'])}: {app.config['DATABASE']}")
         conn.close()
 
     @app.cli.command("run-daily")
@@ -349,19 +351,33 @@ def register_cli(app):
         """Send reminders, back up the database and clean up."""
         click.echo(run_daily(dict(app.config), force=force) or "Not due yet, or already done today.")
 
+    def _set_plan(org_id, state, kind):
+        from .academy_plan import set_status
+        conn = connect(app.config["DATABASE"])
+        try:
+            if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
+                raise click.ClickException(f"No workspace with id {org_id}.")
+            set_status(conn, org_id, state, kind=kind)
+            conn.commit()
+        finally:
+            conn.close()
+
+    @app.cli.command("plan")
+    @click.argument("org_id", type=int)
+    @click.argument("plan", type=click.Choice(["pro", "plus", "none"]))
+    def plan_command(org_id, plan):
+        """Put a workspace on Pro or Plus by hand, or take its plan away (no Stripe needed)."""
+        _set_plan(org_id, "none" if plan == "none" else "active", None if plan == "none" else plan)
+        click.echo(f"Workspace {org_id}: " + ("no plan." if plan == "none" else f"{plan.title()} on."))
+
     @app.cli.command("academy-plan")
     @click.argument("org_id", type=int)
     @click.argument("status", type=click.Choice(["active", "none", "canceled"]))
     def academy_plan_command(org_id, status):
-        """Turn a workspace's Academy plan on or off by hand (no Stripe needed)."""
-        from .academy_plan import set_status
-        conn = connect(app.config["DATABASE"])
-        if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
-            raise click.ClickException(f"No workspace with id {org_id}.")
-        set_status(conn, org_id, status)
-        conn.commit()
-        conn.close()
-        click.echo(f"Workspace {org_id}: Academy plan {status}.")
+        """The old command, kept for scripts: "active" now puts the workspace on Plus (the plan the
+        Academy plan became). Prefer `plan`."""
+        _set_plan(org_id, status, "plus" if status == "active" else None)
+        click.echo(f"Workspace {org_id}: Academy plan {status}" + (" (Plus)." if status == "active" else "."))
 
     @app.cli.command("make-operator")
     @click.argument("email")
@@ -376,7 +392,7 @@ def register_cli(app):
         from .auth import OperatorRefused, set_operator
         conn = connect(app.config["DATABASE"])
         try:
-            migrate(conn)
+            migrate(conn, app.config["ACADEMY_TRIAL_DAYS"])
             user = set_operator(conn, app.config, email, on=not revoke)
             orgs = [r[0] for r in conn.execute("SELECT orgs.name FROM memberships JOIN orgs ON orgs.id ="
                                                " memberships.org_id WHERE memberships.user_id = ?", (user["id"],))]
@@ -401,7 +417,7 @@ def register_cli(app):
         cfg = dict(app.config)
         if show_log:
             conn = connect(cfg["DATABASE"])
-            migrate(conn)
+            migrate(conn, cfg.get('ACADEMY_TRIAL_DAYS', 14))
             rows = conn.execute("SELECT * FROM autopilot_events WHERE at >= ? ORDER BY id DESC LIMIT 100",
                                 (iso(utcnow() - timedelta(days=30)),)).fetchall()
             conn.close()

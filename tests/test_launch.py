@@ -294,7 +294,7 @@ class TestRobotsAndSitemap(AppTestCase):
                          " VALUES (?, 1, 1, ?, ?)", (invite_hash, now_iso(), later))
             conn.commit()
         return {
-            "signed in": ["/app", "/app/settings", "/app/academy", "/app/academy/plan", f"/app/academy/{lid}/track",
+            "signed in": ["/app", "/app/settings", "/app/academy", "/app/plan", f"/app/academy/{lid}/track",
                           f"/app/academy/{lid}/friends", "/app/industry/1", "/app/report", "/app/audit",
                           "/app/notifications", "/app/armo", "/app/report.csv", "/app/audit.csv"],
             "signed out": [f"/reset/{reset}", f"/signup?invite={invite}", "/kids", "/forgot"],

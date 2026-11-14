@@ -1,5 +1,6 @@
-"""The Academy plan page explains each plan from the code's real limits and
-prices: nothing on it is a number typed by hand."""
+"""The plan page explains each plan (Pro, Plus, the free Academy and the
+Kitchen Safety Bundle) from the code's real limits and prices: nothing on it
+is a number typed by hand."""
 
 import html
 import os
@@ -11,8 +12,8 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_webapp import AppTestCase  # noqa: E402
 
-from omniarmor_app import academy, academy_plan  # noqa: E402
-from omniarmor_app.academy_views import plan_facts  # noqa: E402
+from omniarmor_app import academy, academy_plan, plans  # noqa: E402
+from omniarmor_app.plan_views import plan_facts  # noqa: E402
 from omniarmor_app.catalog import INDUSTRIES, rules_for  # noqa: E402
 
 TEMPLATES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "omniarmor_app", "templates")
@@ -28,7 +29,7 @@ class TestPlanPage(AppTestCase):
         self.signup()
 
     def page(self):
-        response = self.client.get("/app/academy/plan")
+        response = self.client.get("/app/plan")
         self.assertEqual(response.status_code, 200)
         return words(response.data.decode())
 
@@ -37,9 +38,13 @@ class TestPlanPage(AppTestCase):
         free_track = academy.TRACKS[academy_plan.FREE_TRACK]
         free_worlds = [academy.world(n) for n in sorted(academy_plan.FREE_WORLDS)]
         expected = [
-            f"up to {academy.MAX_LEARNERS} kids",
+            f"Up to {academy.MAX_LEARNERS} kids",
             f"Up to {academy.MAX_LEARNERS} learners",
-            f"{self.app.config['ACADEMY_TRIAL_DAYS']}-day free trial",
+            f"{self.app.config['ACADEMY_TRIAL_DAYS']}-day free trial of everything in {plans.PLUS.name}",
+            plans.PRO.price, plans.PLUS.price, plans.price_label(plans.BUNDLE_DOLLARS),
+            f"Add the Academy with {plans.PLUS.name} for {plans.price_label(plans.bundle_upgrade_dollars())}",
+            f"one in the last {plans.BUNDLE_FRESH.days} days",
+            f"for {plans.BUNDLE_GRACE.days} more days",
             f"All {sum(len(rules_for(i)) for i in INDUSTRIES)} checks across {len(INDUSTRIES)} industries",
             f"{free_track.name} track: its first {len(free_worlds)} worlds, "
             + ", ".join(w.title for w in free_worlds)
@@ -47,20 +52,22 @@ class TestPlanPage(AppTestCase):
             f"Up to {academy.MAX_FRIENDS} friends each",
             f"All {len(academy.TOPIC_WORLDS)} business worlds",
             f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests",
-            f"Duels in all {len(academy.DUEL_WORLDS)} duel worlds",
-            "Price shown at checkout",
+            f"duels in all {len(academy.DUEL_WORLDS)} duel worlds",
         ]
-        expected += [f"{t.name} ({t.level}): {'{:,}'.format(t.total)} levels" for t in academy.TRACK_LIST]
+        expected += [f"{t.name} ({'{:,}'.format(t.total)} levels)" for t in academy.TRACK_LIST]
         for fact in expected:
             self.assertIn(fact, text)
 
     def test_a_changed_setting_changes_the_page(self):
-        self.app.config.update(ACADEMY_TRIAL_DAYS=30, ACADEMY_PRICE_LABEL="$7 a month")
-        with mock.patch.object(academy, "MAX_LEARNERS", 5), mock.patch.object(academy, "MAX_FRIENDS", 9):
+        self.app.config.update(ACADEMY_TRIAL_DAYS=30)
+        plus = plans.Plan("plus", "Plus", 70, "PLUS_STRIPE_PRICE", True, True)
+        with mock.patch.object(academy, "MAX_LEARNERS", 5), mock.patch.object(academy, "MAX_FRIENDS", 9), \
+                mock.patch.object(plans, "PLUS", plus):
             text = self.page()
-        for fact in ("30-day free trial", "$7 a month", "up to 5 kids", "Up to 5 learners", "Up to 9 friends each"):
+        for fact in ("30-day free trial", "$70 a month per location", "Up to 5 kids", "Up to 5 learners",
+                     "Up to 9 friends each", "$20 a month per location"):
             self.assertIn(fact, text)
-        self.assertNotIn("Price shown at checkout", text)
+        self.assertNotIn("$80", text)
         self.assertNotIn("14-day", text)
 
     def test_the_facts_match_what_the_plan_allows(self):
@@ -77,7 +84,7 @@ class TestPlanPage(AppTestCase):
         self.assertEqual(facts["free_levels"], sum(free_track.stages(w) for w in facts["free_worlds"]))
 
     def test_no_number_is_typed_into_the_page(self):
-        for name in ("academy/plan.html",):
+        for name in ("app/plan.html", "app/_plan_status.html", "_plan_summary.html"):
             with open(os.path.join(TEMPLATES, name)) as f:
                 source = f.read()
             text = re.sub(r"\{\{.*?\}\}|\{%.*?%\}|\{#.*?#\}", "", source, flags=re.S)

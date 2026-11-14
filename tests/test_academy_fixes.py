@@ -152,7 +152,7 @@ class TestDuelPlan(AppTestCase):
         duel_id = int(response.headers["Location"].rsplit("/", 1)[1])
         page = self.other.get(f"/app/academy/{self.riley}/duels/{duel_id}")
         self.assertEqual(page.status_code, 200)
-        self.assertIn(b"part of the Academy plan", page.data)
+        self.assertIn(b"part of Plus", page.data)
         self.assertNotIn(b'name="q0"', page.data)
         self.post(f"/app/academy/{self.riley}/duels/{duel_id}", {"q0": "0", "q1": "0"}, client=self.other)
         with self.db() as conn:
@@ -207,14 +207,14 @@ class TestStripeEvents(AppTestCase):
         self.assertEqual(self.org()["academy_status"], "canceled")
 
     def test_checkout_refused_when_already_paid(self):
-        self.app.config.update(STRIPE_SECRET_KEY="sk_test", ACADEMY_STRIPE_PRICE="price_1")
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test", PLUS_STRIPE_PRICE="price_1")
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_status = 'active'")
             conn.commit()
         with mock.patch.object(academy_plan, "checkout_url", side_effect=AssertionError("no checkout")):
-            response = self.post("/app/academy/plan/checkout")
-        self.assertTrue(response.headers["Location"].endswith("/app/academy/plan"))
-        self.assertIn(b"already on", self.client.get("/app/academy/plan").data)
+            response = self.post("/app/plan/checkout", {"plan": "plus"})
+        self.assertTrue(response.headers["Location"].endswith("/app/plan"))
+        self.assertIn(b"Use Manage billing to change it", self.client.get("/app/plan").data)
 
     def test_replayed_event_is_ignored(self):
         self.sub("evt_a", "updated", "sub_1", "active")
@@ -287,7 +287,10 @@ class TestPracticeAndIds(AppTestCase):
 
 
 class TestTrialForExistingWorkspaces(AppTestCase):
-    def test_trial_starts_lazily_on_academy_home(self):
+    """Since 1.3.0 the trial starts with the workspace (plans.py). One made
+    without a trial end (an old one) counts it from its creation."""
+
+    def test_a_workspace_without_a_trial_end_counts_from_its_creation(self):
         self.signup()
         self.post("/app/academy/learners", {"nickname": "Sam", "avatar": "rocket"})
         with self.db() as conn:
@@ -299,11 +302,12 @@ class TestTrialForExistingWorkspaces(AppTestCase):
             org = conn.execute("SELECT * FROM orgs").fetchone()
         self.assertEqual(academy_plan.plan_status(org)["access"], "trial")
 
-    def test_no_trial_without_learners(self):
+    def test_the_trial_starts_at_sign_up_without_learners(self):
         self.signup()
         self.client.get("/app/academy")
         with self.db() as conn:
-            self.assertIsNone(conn.execute("SELECT academy_trial_ends FROM orgs").fetchone()[0])
+            self.assertIsNotNone(conn.execute("SELECT academy_trial_ends FROM orgs").fetchone()[0])
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM learners").fetchone()[0], 0)
 
 
 class TestMigration7(unittest.TestCase):
@@ -321,7 +325,8 @@ class TestMigration7(unittest.TestCase):
                 conn.execute("INSERT INTO learners (org_id, nickname, avatar, created_at) VALUES (?, 'Kid', 'rocket', ?)",
                              (org_id, now))
             conn.commit()
-            migrate(conn)
+            with mock.patch.object(dbmod, "MIGRATIONS", [m for m in dbmod.MIGRATIONS if m[0] <= 7]):
+                migrate(conn)   # migration 7 alone: 18 gives every workspace the new trial (test_plans)
             trials = dict(conn.execute("SELECT id, academy_trial_ends FROM orgs").fetchall())
             epochs = [r[0] for r in conn.execute("SELECT device_epoch FROM learners")]
             conn.close()

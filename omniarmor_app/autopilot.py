@@ -409,7 +409,7 @@ def _run(cfg, force):
     slot = now.replace(minute=now.minute - now.minute % SLOT_MINUTES, second=0, microsecond=0)
     conn = connect(cfg["DATABASE"])
     try:
-        migrate(conn)
+        migrate(conn, cfg.get("ACADEMY_TRIAL_DAYS", 14))
         if not claim_run(conn, "autopilot", iso(slot)) and not force:
             return None
         fixed = []

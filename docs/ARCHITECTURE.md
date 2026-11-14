@@ -109,10 +109,15 @@ A grown-up can make a single-use join code (`join_codes`) for a kid's own
 device. The kid gets an Academy-only session (`g.kid`) limited to their own
 profile; bumping `learners.device_epoch` signs them out everywhere.
 
-The Academy plan (`academy_plan.py`) is separate from the compliance
-service: a free trial when the first learner is added, then the first three
-Launchpad worlds stay free. Stripe Checkout handles payment and a signed
-webhook (`/billing/stripe/webhook`) keeps `orgs.academy_status` current.
+Plans (`plans.py`, where the prices live): a free trial from sign-up, then
+Pro (the compliance tracker) or Plus (Pro and the whole Academy), per
+location a month; a location is a workspace. `plans.access()` says what a
+workspace can use: without a plan the tracker is read-only and reminders
+pause; a validly signed CyberLogix report in the last 3 days gives the
+Kitchen Safety Bundle's Pro, then a 7-day grace period. Stripe Checkout
+handles payment (`academy_plan.py`, `plan_views.py`) and a signed webhook
+(`/billing/stripe/webhook`) keeps `orgs.plan` and `orgs.academy_status`
+current.
 
 Friends come from different companies, so duels never use a company's name or
 rules. They draw only from the general business worlds, and both players get

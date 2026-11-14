@@ -7,11 +7,12 @@ import os
 import re
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_webapp import AppTestCase  # noqa: E402
 
-from omniarmor_app import PUBLIC_PAGES, academy, academy_plan  # noqa: E402
+from omniarmor_app import PUBLIC_PAGES, academy, academy_plan, plans  # noqa: E402
 from omniarmor_app.academy_views import JOIN_CODE_DAYS  # noqa: E402
 from omniarmor_app.auth import RESET_HOURS  # noqa: E402
 from omniarmor_app.autopilot import SLOT_MINUTES  # noqa: E402
@@ -64,7 +65,11 @@ class TestHelpPage(AppTestCase):
             f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests",
             "{:,} to {:,} levels".format(min(t.total for t in academy.TRACK_LIST),
                                          max(t.total for t in academy.TRACK_LIST)),
-            "the price is shown at checkout",
+            f"{plans.PRO.name}: {plans.PRO.price}.",
+            f"{plans.PLUS.name}: {plans.PLUS.price}.",
+            f"Plus costs only the difference, {plans.price_label(plans.bundle_upgrade_dollars())}",
+            f"more than {plans.BUNDLE_FRESH.days} days, {plans.PRO.name} stays on for {plans.BUNDLE_GRACE.days} more days",
+            "Downloading and deleting always work, with or without a plan",
         ]
         expected += [LEVEL_LABEL[level] for level in ("CLEARED", "WARNING", "BLOCKED", "NONE")]
         expected += list(BULK_ACTIONS.values())
@@ -80,10 +85,11 @@ class TestHelpPage(AppTestCase):
         self.assertNotEqual(reminder_window(-7), reminder_window(-8))   # weekly while overdue
 
     def test_changed_settings_change_the_answers(self):
-        self.app.config.update(ACADEMY_TRIAL_DAYS=21, ACADEMY_PRICE_LABEL="$6 a month", DAILY_JOB_HOUR_UTC=7,
-                               BACKUP_KEEP=30)
-        text = words(self.page())
-        for fact in ("21-day free trial", "Academy plan: $6 a month.", "after 07:00 UTC", "about 30 days"):
+        self.app.config.update(ACADEMY_TRIAL_DAYS=21, DAILY_JOB_HOUR_UTC=7, BACKUP_KEEP=30)
+        with mock.patch.object(plans, "PLUS", plans.Plan("plus", "Plus", 90, "PLUS_STRIPE_PRICE", True, True)):
+            text = words(self.page())
+        for fact in ("21-day free trial", "Plus: $90 a month per location.", "after 07:00 UTC", "about 30 days",
+                     f"only the difference, ${90 - plans.PRO.dollars} a month"):
             self.assertIn(fact, text)
         self.assertNotIn("Write to us", text)
         self.app.config["SUPPORT_EMAIL"] = "help@example.com"

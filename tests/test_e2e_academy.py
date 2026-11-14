@@ -19,7 +19,7 @@ import random
 import re
 import sys
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -463,12 +463,12 @@ class TestKidCannotReachTheGrownUps(KidCase):
         self.assertEqual(self.snapshot(), before)
 
     def test_billing_and_settings_pages_say_nothing_to_a_kid(self):
-        self.app.config.update(STRIPE_SECRET_KEY="sk_test", ACADEMY_STRIPE_PRICE="price_1")
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test", PLUS_STRIPE_PRICE="price_1")
         with self.db() as conn:
             conn.execute("UPDATE orgs SET stripe_customer_id = 'cus_1', academy_status = 'past_due'")
             conn.commit()
         self.join(self.join_code())
-        for path in ("/app/academy/plan", "/app/settings", "/app/report.csv", "/app/audit.csv", "/app/notifications"):
+        for path in ("/app/plan", "/app/settings", "/app/report.csv", "/app/audit.csv", "/app/notifications"):
             response = self.kid.get(path, follow_redirects=True)
             page = response.data.decode()
             self.assertNotIn("owner@example.com", page, path)
@@ -503,7 +503,7 @@ class TestJoinCodes(KidCase):
         with self.db() as conn:
             expires = conn.execute("SELECT expires_at FROM join_codes").fetchone()[0]
         made = utcnow()
-        self.assertAlmostEqual((academy_views.academy_plan._parse(expires) - made).total_seconds(),
+        self.assertAlmostEqual((datetime.fromisoformat(expires) - made).total_seconds(),
                                timedelta(days=JOIN_CODE_DAYS).total_seconds(), delta=120)
         with self.db() as conn:
             conn.execute("UPDATE join_codes SET expires_at = ?", (iso(utcnow() - timedelta(seconds=1)),))

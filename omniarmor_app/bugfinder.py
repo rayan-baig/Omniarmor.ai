@@ -146,7 +146,7 @@ def self_test():
         passed.append("Level saved with 3 stars")
         step("Practice", "GET", f"/app/academy/{lid}/practice")
         step("Friends", "GET", f"/app/academy/{lid}/friends")
-        step("Academy plan", "GET", "/app/academy/plan")
+        step("Plans", "GET", "/app/plan")
         step("Sign out", "POST", "/logout", (302,))
     return passed
 

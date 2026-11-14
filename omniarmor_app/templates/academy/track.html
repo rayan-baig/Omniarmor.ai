@@ -34,7 +34,7 @@
             <li>{{ t.min_questions }} to {{ t.max_questions }} questions, pass at {{ (t.pass_low * 100)|int }}% to {{ (t.pass_high * 100)|int }}%</li>
           </ul>
           {% if done[t.key] %}<span class="ac-track-done">{{ "{:,}".format(done[t.key]) }} done</span>{% endif %}
-          {% if plan.access == 'free' and t.key != 'launchpad' %}<span class="ac-track-lock">Academy plan</span>{% endif %}
+          {% if plan.access == 'free' and t.key != 'launchpad' %}<span class="ac-track-lock">Plus</span>{% endif %}
         </label>
       {% endfor %}
     </div>
