@@ -5,10 +5,11 @@ keeps its first name). What each plan gives, and the prices, are in plans.py.
 
 Payments go through Stripe Checkout, with the workspace's location count as
 the quantity, and Stripe tells the app about changes through a signed
-webhook: which plan (from the subscription's price), its status, renewal and
-end. Changing plan or the card happens in Stripe's customer portal. With no
-Stripe keys set, a plan can still be turned on by hand:
-    flask --app wsgi plan <workspace id> plus
+webhook: which plan and whether it is paid monthly or yearly (both from the
+subscription's price), its status, renewal and end. Changing plan, switching
+between monthly and yearly, the card and cancelling all happen in Stripe's
+customer portal. With no Stripe keys set, a plan can still be turned on by hand:
+    flask --app wsgi plan <workspace id> plus [--yearly]
 After the trial, the first three worlds of the Launchpad track stay free for
 everyone; the rest of the Academy needs Plus.
 """
@@ -76,10 +77,14 @@ def trial_end_for_new_workspace(days):
     return iso(utcnow() + timedelta(days=days))
 
 
-def set_status(conn, org_id, state, renews_at=None, kind=None):
-    """Sets the plan by hand (the `plan` command): its status and, with kind, which plan."""
+def set_status(conn, org_id, state, renews_at=None, kind=None, interval=None):
+    """Sets the plan by hand (the `plan` command): its status and, with kind,
+    which plan, paid monthly unless interval says yearly."""
+    if kind is not None and interval is None:
+        interval = "month"
     conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = NULL,"
-                 " plan = COALESCE(?, plan) WHERE id = ?", (state, renews_at, kind, org_id))
+                 " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
+                 (state, renews_at, kind, interval, org_id))
 
 
 def subscribed(org):
@@ -90,10 +95,18 @@ def subscribed(org):
 
 # --- Stripe ---------------------------------------------------------------------
 
-# The settings holding each plan's Stripe price id, and the plan (orgs.plan) it is.
-PRICE_SETTINGS = {"PRO_STRIPE_PRICE": "pro", "PLUS_STRIPE_PRICE": "plus",
-                  "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": "plus_bundle"}
+# The settings holding each plan's Stripe price id, and the plan (orgs.plan)
+# and billing interval (orgs.plan_interval) it is.
+PRICE_SETTINGS = {
+    "PRO_STRIPE_PRICE": ("pro", "month"),
+    "PRO_YEARLY_STRIPE_PRICE": ("pro", "year"),
+    "PLUS_STRIPE_PRICE": ("plus", "month"),
+    "PLUS_YEARLY_STRIPE_PRICE": ("plus", "year"),
+    "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": ("plus_bundle", "month"),
+    "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE": ("plus_bundle", "year"),
+}
 KINDS = ("pro", "plus", "plus_bundle", "academy")
+INTERVALS = ("month", "year")
 
 
 def stripe_ready(cfg, price=None):
@@ -104,21 +117,39 @@ def stripe_ready(cfg, price=None):
     return bool(price) if price is not None else any(cfg.get(name) for name in PRICE_SETTINGS)
 
 
-def kind_for(cfg, obj):
-    """The plan a Stripe subscription or checkout session is for: from its
-    price when that is one of ours, else from the plan the checkout wrote in
-    its metadata. None when it says neither (an old Academy plan's renewal,
-    say): the workspace's plan then stays as it is."""
-    prices = {cfg.get(name): kind for name, kind in PRICE_SETTINGS.items() if cfg and cfg.get(name)}
+def plan_for(cfg, obj):
+    """The plan a Stripe subscription or checkout session is for, and whether
+    it is paid monthly or yearly: (kind, interval).
+
+    Both come from its price when that is one of ours, so a switch in
+    Stripe's portal (Pro to Plus, monthly to yearly) arrives by itself.
+    Otherwise the interval comes from the price's own recurring interval,
+    and either from what the checkout wrote in its metadata. Each is None
+    when nothing says (an old Academy plan's renewal, say): the workspace's
+    plan or interval then stays as it is."""
+    prices = {cfg.get(name): found for name, found in PRICE_SETTINGS.items() if cfg and cfg.get(name)}
+    interval = None
     for item in ((obj.get("items") or {}).get("data") or []):
         if not isinstance(item, dict):
             continue
         price = item.get("price")
-        price = price.get("id") if isinstance(price, dict) else price
-        if price in prices:
-            return prices[price]
-    meta = (obj.get("metadata") or {}).get("plan")
-    return meta if meta in KINDS else None
+        price_id = price.get("id") if isinstance(price, dict) else price
+        if price_id in prices:
+            return prices[price_id]
+        if interval is None and isinstance(price, dict):
+            recurring = price.get("recurring")
+            every = recurring.get("interval") if isinstance(recurring, dict) else None
+            interval = every if every in INTERVALS else None
+    meta = obj.get("metadata") or {}
+    kind = meta.get("plan") if meta.get("plan") in KINDS else None
+    if interval is None and meta.get("interval") in INTERVALS:
+        interval = meta["interval"]
+    return kind, interval
+
+
+def kind_for(cfg, obj):
+    """The plan alone (plan_for)."""
+    return plan_for(cfg, obj)[0]
 
 
 def _stripe(cfg, path, fields, method="POST"):
@@ -140,10 +171,10 @@ def _stripe(cfg, path, fields, method="POST"):
         raise StripeError(str(exc)) from exc
 
 
-def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity):
-    """A Stripe Checkout page for one plan: its price, `quantity` locations
-    (plans.location_count), and the plan written in the metadata of the
-    session and of the subscription it makes."""
+def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity, interval="month"):
+    """A Stripe Checkout page for one plan: its monthly or yearly price,
+    `quantity` locations (plans.location_count), and the plan and interval
+    written in the metadata of the session and of the subscription it makes."""
     fields = {
         "mode": "subscription",
         "line_items[0][price]": price,
@@ -153,8 +184,10 @@ def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity
         "client_reference_id": str(org["id"]),
         "metadata[org_id]": str(org["id"]),
         "metadata[plan]": kind,
+        "metadata[interval]": interval,
         "subscription_data[metadata][org_id]": str(org["id"]),
         "subscription_data[metadata][plan]": kind,
+        "subscription_data[metadata][interval]": interval,
         "allow_promotion_codes": "true",
     }
     if org["stripe_customer_id"]:
@@ -188,7 +221,8 @@ def confirm_checkout(conn, cfg, org, session_id):
     if owner is None or owner["id"] != org["id"]:
         return False
     created = obj.get("created") if isinstance(obj.get("created"), int) else None
-    return _apply_checkout(conn, owner, obj, None, started=created, kind=kind_for(cfg, obj)) is not None
+    kind, interval = plan_for(cfg, obj)
+    return _apply_checkout(conn, owner, obj, None, started=created, kind=kind, interval=interval) is not None
 
 
 def portal_url(cfg, org, return_url):
@@ -292,10 +326,10 @@ def apply_event(conn, event, cfg=None):
     Stripe may deliver events more than once and in any order, so repeats are
     ignored, a subscription event older than the last one applied is ignored,
     and while a workspace is paid, events about some other subscription (a
-    duplicate checkout, say) don't change its plan. Which plan it is comes
-    from the subscription's price (cfg names each plan's price) or the plan
-    the checkout wrote in its metadata; a plan switched in Stripe's portal
-    arrives this way."""
+    duplicate checkout, say) don't change its plan. Which plan it is, and
+    whether monthly or yearly, comes from the subscription's price (cfg names
+    each plan's prices) or what the checkout wrote in its metadata; a plan or
+    interval switched in Stripe's portal arrives this way."""
     kind = event.get("type", "")
     obj = (event.get("data") or {}).get("object") or {}
     org = _org_for(conn, obj, kind)
@@ -306,9 +340,9 @@ def apply_event(conn, event, cfg=None):
     created = event.get("created") if isinstance(event.get("created"), int) else None
     paid = (org["academy_status"] or "none") in PAID_STATES
     current_sub = org["stripe_subscription_id"]
-    plan_kind = kind_for(cfg or {}, obj)
+    plan_kind, interval = plan_for(cfg or {}, obj)
     if kind == "checkout.session.completed":
-        return _apply_checkout(conn, org, obj, created, kind=plan_kind)
+        return _apply_checkout(conn, org, obj, created, kind=plan_kind, interval=interval)
     if kind in SUBSCRIPTION_EVENTS:
         if paid and current_sub and obj.get("id") != current_sub:
             return None
@@ -329,8 +363,8 @@ def apply_event(conn, event, cfg=None):
         ends_at = iso(_from_timestamp(cancel_at)) if cancel_at and state in PAID_STATES else None
         conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
                      " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?),"
-                     " plan = COALESCE(?, plan) WHERE id = ?",
-                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), plan_kind, org["id"]))
+                     " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
+                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), plan_kind, interval, org["id"]))
         _mark_applied(conn, org["id"], created)
         return state
     if kind == "invoice.payment_failed":
@@ -348,7 +382,7 @@ def apply_event(conn, event, cfg=None):
 LATER_STATES = {"past_due", "unpaid", "canceled", "incomplete_expired"}
 
 
-def _apply_checkout(conn, org, obj, created, started=None, kind=None):
+def _apply_checkout(conn, org, obj, created, started=None, kind=None, interval=None):
     """A completed checkout turns the plan on, unless the workspace is already
     paid through another subscription (a duplicate checkout).
 
@@ -372,8 +406,8 @@ def _apply_checkout(conn, org, obj, created, started=None, kind=None):
         return None
     conn.execute("UPDATE orgs SET stripe_customer_id = ?, stripe_subscription_id = ?, academy_status = 'active',"
                  " academy_ends_at = CASE WHEN stripe_subscription_id IS ? THEN academy_ends_at END,"
-                 " plan = COALESCE(?, plan) WHERE id = ?",
-                 (obj.get("customer"), subscription, subscription, kind, org["id"]))
+                 " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
+                 (obj.get("customer"), subscription, subscription, kind, interval, org["id"]))
     _mark_applied(conn, org["id"], created)
     return "active"
 

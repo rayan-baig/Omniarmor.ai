@@ -3,6 +3,48 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.4.0 (14 November 2026)
+
+Yearly plans: pay for 10 months, get 12.
+
+- **The yearly prices** are worked out in `omniarmor_app/plans.py` from the
+  monthly ones, `MONTHS_PAID_YEARLY` (10) months for a year: **Pro, $500 a
+  year per location**; **Plus, $800 a year per location**; and Plus for a
+  Kitchen Safety Bundle workspace, **$300 a year**, ten months of the
+  difference. The pages call it "2 months free" (`free_label()`). Nothing
+  types a yearly price: the plan page, Settings, Help, the Terms, the
+  landing page and the industry pages read them from `plan_facts()`, and the
+  test that bans typed prices still passes.
+- **A Monthly / Yearly switch** on the plan page and on the landing and
+  industry pages' plan summary: two radio buttons and CSS, no script, so the
+  strict CSP is unchanged. `/app/plan?billing=yearly` opens it on Yearly, and
+  so does the plan page of a workspace already paying yearly. Each card's
+  button ("Choose Plus yearly") sends the interval to checkout.
+- **Stripe:** three new settings, `PRO_YEARLY_STRIPE_PRICE`,
+  `PLUS_YEARLY_STRIPE_PRICE` and `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`.
+  Checkout sends the yearly price with the location count and writes the
+  interval in the metadata beside the plan. The webhook works out the plan
+  *and* the interval from the subscription's price (`academy_plan.plan_for`),
+  else from the price's recurring interval or the metadata, so switching
+  between monthly and yearly (or Pro and Plus) in Stripe's portal arrives by
+  itself. A yearly setting left empty hides the yearly option for that plan;
+  with none set, no page mentions yearly. A bundle workspace whose yearly
+  upgrade price isn't set is offered Plus at the full yearly price, with a
+  note.
+- **Cancelling:** Stripe's portal handles it, as before. Help (under "What
+  does it cost?") and the Terms say it plainly: a yearly plan stays on to
+  the end of the year paid for, with no partial refund. Settings and the
+  plan page say "billed yearly", and a cancelled yearly plan says when its
+  year ends. When the plan ends, the compliance tracker is read-only as
+  before.
+- **Schema version 19** adds `orgs.plan_interval` (`month` or `year`); every
+  subscription already there is monthly. `flask --app wsgi plan <id> plus
+  --yearly` sets a yearly plan by hand.
+- **Set-up:** `.env.example`, `render.yaml` (`sync: false`), the README,
+  the handbook, the staging guide and OPERATIONS.md, section 7, "Upgrading to
+  1.4.0": create 3 yearly prices in Stripe, put their ids in the settings,
+  and let the customer portal switch between the monthly and yearly prices.
+
 ## 1.3.1 (14 November 2026)
 
 - **The real address, omniarmor.mtrxhorizyn.com.** The README, the operations,

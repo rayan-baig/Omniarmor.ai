@@ -32,11 +32,20 @@ def plan_facts(cfg):
         "plus": plans.PLUS,
         "location": plans.LOCATION,
         "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
+        # Monthly or yearly: which plans can be paid yearly (their yearly
+        # Stripe price is set), and what a year gives free.
+        "yearly": plans.yearly_offered(cfg),
+        "free_months": plans.free_months(),
+        "free_label": plans.free_label(),
+        "months_paid": plans.MONTHS_PAID_YEARLY,
+        "months_in_year": plans.MONTHS_IN_YEAR,
         "bundle": {
             "name": plans.BUNDLE_NAME,
             "price": plans.price_label(plans.BUNDLE_DOLLARS),
             "includes": plans.BUNDLE_INCLUDES,
             "upgrade_price": plans.price_label(plans.bundle_upgrade_dollars()),
+            "upgrade_yearly_price": plans.price_label(plans.bundle_upgrade_dollars(plans.YEAR), plans.YEAR),
+            "upgrade_yearly_short": plans.price_label(plans.bundle_upgrade_dollars(plans.YEAR), plans.YEAR, per=False),
             "upgrade_ready": bool(cfg.get(plans.BUNDLE_UPGRADE_SETTING)),
             "fresh_days": plans.BUNDLE_FRESH.days,
             "grace_days": plans.BUNDLE_GRACE.days,
@@ -77,11 +86,31 @@ def plan_page():
         flash(f"Thank you! {access['plan_name']} is on for {g.org['name']}.", "ok")
         return redirect(url_for("plan.plan_page"))
     facts = plan_facts(cfg)
-    choices = {key: plans.checkout_choice(cfg, g.org, key) for key in plans.PLANS}
-    return render_template("app/plan.html", access=access, confirming=welcome, facts=facts,
-                           ready={key: academy_plan.stripe_ready(cfg, price) for key, (_, price, _) in choices.items()},
-                           upgrade=choices["plus"][0] == "plus_bundle",
+    offers = _offers(cfg, g.org)
+    # The yearly toggle shows when any plan this workspace can buy is offered
+    # yearly; ?billing=yearly opens the page with it on.
+    yearly_toggle = any(o[plans.YEAR]["offered"] for o in offers.values())
+    return render_template("app/plan.html", access=access, confirming=welcome, facts=facts, offers=offers,
+                           ready={key: o[plans.MONTH]["ready"] for key, o in offers.items()},
+                           yearly_toggle=yearly_toggle,
+                           start_yearly=yearly_toggle and (request.args.get("billing") == "yearly"
+                                                           or (access["paid"] and access["yearly"])),
                            has_customer=bool(g.org["stripe_customer_id"]))
+
+
+def _offers(cfg, org):
+    """For each plan and interval, what the plan page offers this workspace:
+    whether that price is set up at all (offered), whether checkout can take
+    it now (ready), and whether it is Plus at the Kitchen Safety Bundle price
+    (upgrade)."""
+    out = {}
+    for key in plans.PLANS:
+        out[key] = {}
+        for interval in plans.INTERVALS:
+            kind, price, _ = plans.checkout_choice(cfg, org, key, interval)
+            out[key][interval] = {"offered": bool(price), "ready": academy_plan.stripe_ready(cfg, price),
+                                  "upgrade": kind == "plus_bundle"}
+    return out
 
 
 @plan.route("/app/plan/checkout", methods=["POST"])
@@ -89,7 +118,8 @@ def plan_page():
 def checkout():
     cfg = current_app.config
     key = request.form.get("plan", "")
-    if key not in plans.PLANS:
+    interval = request.form.get("interval") or plans.MONTH
+    if key not in plans.PLANS or interval not in plans.INTERVALS:
         flash_error("Pick Pro or Plus.")
         return redirect(url_for("plan.plan_page"))
     access = plans.access(g.org)
@@ -99,7 +129,10 @@ def checkout():
     if key == plans.BUNDLE_INCLUDES.key and access["bundle"]["state"] == "covered":
         flash_error(f"{plans.BUNDLE_INCLUDES.name} is already included with your {plans.BUNDLE_NAME}.")
         return redirect(url_for("plan.plan_page"))
-    kind, price, _ = plans.checkout_choice(cfg, g.org, key)
+    kind, price, _ = plans.checkout_choice(cfg, g.org, key, interval)
+    if not price and interval == plans.YEAR:
+        flash_error(f"{plans.PLANS[key].name} can't be paid yearly yet. Choose monthly instead.")
+        return redirect(url_for("plan.plan_page"))
     if not academy_plan.stripe_ready(cfg, price):
         flash_error(f"Online payment isn't set up yet. Please contact us to start {plans.PLANS[key].name}.")
         return redirect(url_for("plan.plan_page"))
@@ -109,7 +142,8 @@ def checkout():
                                         url_for("plan.plan_page", welcome=1, _external=True)
                                         + "&session_id={CHECKOUT_SESSION_ID}",
                                         url_for("plan.plan_page", _external=True),
-                                        price=price, kind=kind, quantity=plans.location_count(g.org))
+                                        price=price, kind=kind, quantity=plans.location_count(g.org),
+                                        interval=interval)
     except academy_plan.StripeError as exc:
         current_app.logger.warning("Stripe checkout failed: %s", exc)
         flash_error("We couldn't open checkout just now. Please try again in a minute.")

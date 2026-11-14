@@ -263,7 +263,7 @@ class TestTokensStayOutOfLogs(unittest.TestCase):
         to SECRET_PARAMS (or here, when the value is harmless)."""
         import re
         from omniarmor_app.redact import SECRET_PARAMS
-        harmless = {"chapter", "welcome", "industry", "next", "only", "page"}
+        harmless = {"chapter", "welcome", "industry", "next", "only", "page", "billing"}
         app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "omniarmor_app")
         names = set()
         for name in os.listdir(app_dir):

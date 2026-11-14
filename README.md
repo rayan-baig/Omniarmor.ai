@@ -45,8 +45,14 @@ from there.
   included while their workspace receives signed CyberLogix reports (one in
   the last 3 days, then a 7-day grace period), and Plus for the difference.
   The signature is in [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md), section 3.5.
+- **Monthly or yearly:** every plan can be paid yearly for ten months' price,
+  "2 months free": Pro $500, Plus $800 and the bundle's Plus $300 a year per
+  location, worked out in `plans.py` from the monthly prices. A cancelled
+  yearly plan stays on to the end of the year paid for, with no partial refund.
 - Payments go through Stripe (`PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`,
-  `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`); set-up is in
+  `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`, and yearly `PRO_YEARLY_STRIPE_PRICE`,
+  `PLUS_YEARLY_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`; a
+  yearly one left empty means that plan is monthly only); set-up is in
   [docs/OPERATIONS.md](docs/OPERATIONS.md), section 7. A workspace on the old
   Academy plan keeps it as it was until it changes plan.
 

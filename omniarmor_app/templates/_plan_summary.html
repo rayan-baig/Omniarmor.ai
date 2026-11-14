@@ -1,5 +1,15 @@
-{# The plans in short, for the landing page and the industry pages. Every price and number comes from plans.py through plan_facts(). #}
+{# The plans in short, for the landing page and the industry pages. Every price and number comes from plans.py through plan_facts(). The monthly/yearly toggle is two radio buttons and CSS (app.css), no script; it shows only when a plan can be paid yearly. #}
 {% set pf = plan_facts() %}
+{% set yr = pf.yearly %}
+<div class="billing" data-billing>
+{% if yr.any %}
+  <input class="billing-pick pick-month" type="radio" name="price-billing" id="price-billing-month" value="monthly" checked>
+  <input class="billing-pick pick-year" type="radio" name="price-billing" id="price-billing-year" value="yearly">
+  <div class="billing-toggle" data-billing-toggle>
+    <label class="opt-month" for="price-billing-month">Monthly</label>
+    <label class="opt-year" for="price-billing-year">Yearly <span class="plan-save">{{ pf.free_label }}</span></label>
+  </div>
+{% endif %}
 <div class="plans" id="price" aria-label="Price" data-plan-summary>
   <div>
     <p class="eyebrow">Free trial</p>
@@ -7,14 +17,15 @@
   </div>
   <div data-plan="pro">
     <p class="eyebrow">{{ pf.pro.name }} · compliance tracker</p>
-    <p><b>{{ pf.pro.price }}</b>: every check in your industries, reminders, reports, bulk entry and your team.</p>
+    <p><b{% if yr.pro %} class="when-month"{% endif %}>{{ pf.pro.price }}</b>{% if yr.pro %}<b class="when-year">{{ pf.pro.yearly_price }}, {{ pf.free_label }}</b>{% endif %}: every check in your industries, reminders, reports, bulk entry and your team.</p>
   </div>
   <div data-plan="plus">
     <p class="eyebrow">{{ pf.plus.name }} · tracker and Academy</p>
-    <p><b>{{ pf.plus.price }}</b>: everything in {{ pf.pro.name }}, plus the whole Future Owner Academy for your kids at no extra cost. The first {{ pf.free_worlds|length }} {{ pf.free_track.name }} worlds are free for everyone.</p>
+    <p><b{% if yr.plus %} class="when-month"{% endif %}>{{ pf.plus.price }}</b>{% if yr.plus %}<b class="when-year">{{ pf.plus.yearly_price }}, {{ pf.free_label }}</b>{% endif %}: everything in {{ pf.pro.name }}, plus the whole Future Owner Academy for your kids at no extra cost. The first {{ pf.free_worlds|length }} {{ pf.free_track.name }} worlds are free for everyone.</p>
   </div>
   <div data-plan="bundle">
     <p class="eyebrow">{{ pf.bundle.name }}</p>
-    <p>On CyberLogix's {{ pf.bundle.name }} ({{ pf.bundle.price }})? It includes <b>{{ pf.bundle.includes.name }}</b>, and {{ pf.plus.name }} costs only the difference, {{ pf.bundle.upgrade_price }}.</p>
+    <p>On CyberLogix's {{ pf.bundle.name }} ({{ pf.bundle.price }})? It includes <b>{{ pf.bundle.includes.name }}</b>, and {{ pf.plus.name }} costs only the difference, <span{% if yr.bundle_upgrade %} class="when-month"{% endif %}>{{ pf.bundle.upgrade_price }}</span>{% if yr.bundle_upgrade %}<span class="when-year">{{ pf.bundle.upgrade_yearly_price }}</span>{% endif %}.</p>
   </div>
+</div>
 </div>

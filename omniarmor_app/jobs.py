@@ -351,13 +351,13 @@ def register_cli(app):
         """Send reminders, back up the database and clean up."""
         click.echo(run_daily(dict(app.config), force=force) or "Not due yet, or already done today.")
 
-    def _set_plan(org_id, state, kind):
+    def _set_plan(org_id, state, kind, interval=None):
         from .academy_plan import set_status
         conn = connect(app.config["DATABASE"])
         try:
             if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
                 raise click.ClickException(f"No workspace with id {org_id}.")
-            set_status(conn, org_id, state, kind=kind)
+            set_status(conn, org_id, state, kind=kind, interval=interval)
             conn.commit()
         finally:
             conn.close()
@@ -365,10 +365,13 @@ def register_cli(app):
     @app.cli.command("plan")
     @click.argument("org_id", type=int)
     @click.argument("plan", type=click.Choice(["pro", "plus", "none"]))
-    def plan_command(org_id, plan):
+    @click.option("--yearly", is_flag=True, help="Paid yearly rather than monthly.")
+    def plan_command(org_id, plan, yearly):
         """Put a workspace on Pro or Plus by hand, or take its plan away (no Stripe needed)."""
-        _set_plan(org_id, "none" if plan == "none" else "active", None if plan == "none" else plan)
-        click.echo(f"Workspace {org_id}: " + ("no plan." if plan == "none" else f"{plan.title()} on."))
+        _set_plan(org_id, "none" if plan == "none" else "active", None if plan == "none" else plan,
+                  None if plan == "none" else ("year" if yearly else "month"))
+        click.echo(f"Workspace {org_id}: " + ("no plan." if plan == "none"
+                                              else f"{plan.title()} on" + (", yearly." if yearly else ".")))
 
     @app.cli.command("academy-plan")
     @click.argument("org_id", type=int)

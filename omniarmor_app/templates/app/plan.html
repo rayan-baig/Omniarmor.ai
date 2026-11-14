@@ -20,14 +20,56 @@
   <p class="plan-banner" data-bundle-overlap>Your {{ b.name }} already includes {{ b.includes.name }}, so you may not need to pay for it here too. {% if g.role == 'owner' %}Manage billing can cancel it.{% endif %}</p>
 {% endif %}
 
+{# A plan's price paid monthly or yearly (i is 'month' or 'year'). #}
+{% macro price_for(p, i) -%}
+{%- set full = p.yearly_price if i == 'year' else p.price -%}
+{%- if p.key == 'plus' and offers.plus[i].upgrade -%}
+{{ facts.bundle.upgrade_yearly_price if i == 'year' else facts.bundle.upgrade_price }} with your {{ facts.bundle.name }} ({{ full }} without)
+{%- else -%}
+{{ full }}
+{%- endif -%}
+{%- endmacro %}
+{# The owner's button for a plan, paid monthly or yearly. #}
+{% macro buy(p, i) -%}
+{%- set upgrade = p.key == 'plus' and offers.plus[i].upgrade -%}
+{% if offers[p.key][i].ready %}
+  <form method="post" action="{{ url_for('plan.checkout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="plan" value="{{ p.key }}">
+    <input type="hidden" name="interval" value="{{ i }}">
+    <button class="btn{% if p.key != 'plus' %} quiet{% endif %}" type="submit">{% if upgrade %}Add the Academy with {{ p.name }}{% else %}Choose {{ p.name }}{% endif %}{% if i == 'year' %} yearly{% endif %}</button>
+  </form>
+  {% if p.key == 'plus' and access.bundle.state == 'covered' and not upgrade %}<p class="plan-note" data-bundle-full-price>{{ p.name }} at the {{ facts.bundle.name }} price isn't set up {{ 'for yearly billing' if i == 'year' else 'yet' }}, so it is billed at its full price. Your bundle's {{ facts.bundle.includes.name }} stays included either way.</p>{% endif %}
+{% else %}
+  <p class="hint">Online sign-up is coming soon. Contact us to start {{ p.name }}.</p>
+{% endif %}
+{%- endmacro %}
+
+<div class="billing" data-billing>
+{% if yearly_toggle %}
+  <input class="billing-pick pick-month" type="radio" name="billing" id="billing-month" value="monthly"{% if not start_yearly %} checked{% endif %}>
+  <input class="billing-pick pick-year" type="radio" name="billing" id="billing-year" value="yearly"{% if start_yearly %} checked{% endif %}>
+  <div class="billing-toggle" data-billing-toggle>
+    <label class="opt-month" for="billing-month">Monthly</label>
+    <label class="opt-year" for="billing-year">Yearly <span class="plan-save">{{ facts.free_label }}</span></label>
+  </div>
+  <p class="plan-note when-year" data-yearly-rule>Yearly: pay for {{ facts.months_paid }} months and get {{ facts.months_in_year }}, per {{ facts.location }}. A yearly plan you cancel stays on to the end of the year you paid for, with no refund for the part of the year left.</p>
+{% endif %}
 <div class="plan-grid">
   {% for p in facts.plans %}
     {% set mine = a.paid and (a.kind == p.key or (p.key == 'plus' and a.kind == 'plus_bundle')) %}
     {% set via_bundle = p.key == b.includes.key and a.source in ('bundle', 'bundle_grace') and not a.paid %}
+    {% set yearly_here = offers[p.key].year.offered %}
     <section class="plan-card{% if mine or via_bundle %} current{% endif %}" data-plan="{{ p.key }}">
       {% if mine or via_bundle %}<span class="plan-here">Your plan</span>{% endif %}
       <h2>{{ p.name }}</h2>
-      <p class="plan-price" data-price>{% if p.key == 'plus' and upgrade %}{{ b.upgrade_price }} with your {{ b.name }} ({{ p.price }} without){% else %}{{ p.price }}{% endif %}</p>
+      {% if yearly_here %}
+        <p class="plan-price when-month" data-price>{{ price_for(p, 'month') }}</p>
+        <p class="plan-price when-year" data-price-yearly>{{ price_for(p, 'year') }} <span class="plan-save">{{ facts.free_label }}</span></p>
+      {% else %}
+        <p class="plan-price" data-price>{{ price_for(p, 'month') }}</p>
+        {% if yearly_toggle %}<p class="plan-note when-year" data-monthly-only>Billed monthly only for now.</p>{% endif %}
+      {% endif %}
       <ul>
         {% if p.key == 'pro' %}
           <li>All {{ facts.checks }} checks across {{ facts.industries }} industries: pick the ones your company works in</li>
@@ -49,15 +91,11 @@
       {% if g.role == 'owner' and not a.paid and not via_bundle %}
         {% if confirming %}
           <p class="hint">Thank you! We're confirming your payment with Stripe. It usually takes a few seconds: <a href="{{ url_for('plan.plan_page', welcome=1) }}">reload this page</a>. There's no need to pay again.</p>
-        {% elif ready[p.key] %}
-          <form method="post" action="{{ url_for('plan.checkout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="plan" value="{{ p.key }}">
-            <button class="btn{% if p.key != 'plus' %} quiet{% endif %}" type="submit">{% if p.key == 'plus' and upgrade %}Add the Academy with {{ p.name }}{% else %}Choose {{ p.name }}{% endif %}</button>
-          </form>
-          {% if p.key == 'plus' and a.bundle.state == 'covered' and not upgrade %}<p class="plan-note" data-bundle-full-price>{{ p.name }} at the {{ b.name }} price isn't set up yet, so it is billed at its full price. Your bundle's {{ b.includes.name }} stays included either way.</p>{% endif %}
+        {% elif yearly_here %}
+          <div class="plan-buy when-month">{{ buy(p, 'month') }}</div>
+          <div class="plan-buy when-year">{{ buy(p, 'year') }}</div>
         {% else %}
-          <p class="hint">Online sign-up is coming soon. Contact us to start {{ p.name }}.</p>
+          {{ buy(p, 'month') }}
         {% endif %}
       {% endif %}
     </section>
@@ -81,12 +119,13 @@
       <li>CyberLogix, MTRX Horizyn's fridge and freezer alarm app, fills in your temperature checks</li>
       <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while CyberLogix sends signed reports (one in the last {{ b.fresh_days }} days)</li>
       <li>If they stop, {{ b.includes.name }} stays on for {{ b.grace_days }} more days with a warning, then the usual rules apply</li>
-      <li>Add the Academy with {{ facts.plus.name }} for {{ b.upgrade_price }}, the difference</li>
+      <li>Add the Academy with {{ facts.plus.name }} for {{ b.upgrade_price }}, the difference{% if facts.yearly.bundle_upgrade %}, or {{ b.upgrade_yearly_short }} paid yearly{% endif %}</li>
     </ul>
     {% if a.bundle.state == 'covered' %}<p class="plan-status">{{ b.includes.name }} included with your {{ b.name }}. Last signed report {{ a.bundle.last|local_date }}.</p>
     {% elif a.bundle.state == 'grace' %}<p class="plan-status">No signed report since {{ a.bundle.last|local_date }}. Included until {{ a.bundle.grace_ends|local_date }}.</p>{% endif %}
     <p><a href="{{ url_for('app.settings', _anchor='connections') }}">Connections</a></p>
   </section>
+</div>
 </div>
 
 {% if g.role == 'owner' %}
@@ -94,7 +133,7 @@
     <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn quiet" type="submit">Manage billing</button>
-      <span class="hint">Change plan, update your card or cancel, on Stripe's secure page. A cancelled plan stays on until the end of the time you paid for.</span>
+      <span class="hint">Change plan{% if facts.yearly.any %}, switch between monthly and yearly{% endif %}, update your card or cancel, on Stripe's secure page. A cancelled plan stays on until the end of the time you paid for{% if a.yearly %}: for a yearly plan, the end of the year, with no partial refund{% endif %}.</span>
     </form>
   {% elif has_customer and ready.pro or has_customer and ready.plus %}
     <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
@@ -102,7 +141,7 @@
       <button class="linkbtn" type="submit">Past invoices and billing</button>
     </form>
   {% endif %}
-  {% if not a.paid %}<p class="hint mt-s">Secure checkout by Stripe. We never see your card number. Billed monthly, per {{ facts.location }}; cancel anytime.</p>{% endif %}
+  {% if not a.paid %}<p class="hint mt-s">Secure checkout by Stripe. We never see your card number. Billed {{ 'monthly or yearly' if yearly_toggle else 'monthly' }}, per {{ facts.location }}; cancel anytime.</p>{% endif %}
 {% else %}
   <p class="hint mt">Only the workspace owner can change the plan.</p>
 {% endif %}

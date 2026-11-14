@@ -48,7 +48,8 @@ services:
       # Pro and Plus card payments (optional: without them, put a workspace
       # on a plan by hand with `flask --app wsgi plan <workspace id> pro|plus`).
       # The prices themselves live in the code (omniarmor_app/plans.py); each
-      # setting is the matching per-location monthly price id from Stripe.
+      # setting is the matching per-location monthly or yearly price id from
+      # Stripe. A yearly one left empty: that plan is offered monthly only.
       # Webhook: https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook
       - key: STRIPE_SECRET_KEY
         sync: false
@@ -60,6 +61,13 @@ services:
         sync: false
       # Plus for a Kitchen Safety Bundle workspace: the difference between Plus and Pro.
       - key: PLUS_BUNDLE_UPGRADE_STRIPE_PRICE
+        sync: false
+      # Yearly prices: ten months' price for a year ("2 months free").
+      - key: PRO_YEARLY_STRIPE_PRICE
+        sync: false
+      - key: PLUS_YEARLY_STRIPE_PRICE
+        sync: false
+      - key: PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE
         sync: false
       # The secret CyberLogix signs its daily reports with: the same value as
       # CyberLogix's own KITCHEN_BUNDLE_SECRET. Signed reports give the

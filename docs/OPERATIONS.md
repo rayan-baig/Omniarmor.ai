@@ -348,7 +348,43 @@ secret, set the new value on both apps at once: reports signed with the old
 one stop counting (the 7-day grace period covers a short gap).
 
 By hand, without Stripe: `flask --app wsgi plan <workspace id> pro`, `plus`
-or `none` (the old `academy-plan <id> active` now means Plus).
+or `none` (the old `academy-plan <id> active` now means Plus); add
+`--yearly` for a plan paid yearly.
+
+**Upgrading to 1.4.0 (yearly plans):** schema version 19 runs by itself on
+start and marks every subscription already there as monthly. Nothing changes
+for anyone until you set the yearly prices; each one left empty keeps that
+plan monthly only, and the plan page shows no yearly option for it.
+
+Yearly plans are "pay for 10 months, get 12": the prices are worked out in
+`omniarmor_app/plans.py` (10 × the monthly price), so the pages always agree
+with the code. In Stripe (test mode first, on staging):
+
+1. **Create 3 yearly prices**, each **per unit** (the unit is a location),
+   billed **every year**, in USD:
+   - on the **Pro** product: **$500 a year** → its id goes in
+     `PRO_YEARLY_STRIPE_PRICE`;
+   - on the **Plus** product: **$800 a year** → `PLUS_YEARLY_STRIPE_PRICE`;
+   - on the **Plus** product, beside the monthly bundle price: **$300 a
+     year**, for Kitchen Safety Bundle workspaces →
+     `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`.
+   Check each amount against `plans.py` before saving: Stripe charges what
+   the price says, whatever the page shows.
+2. Put the three ids in the dashboard settings (`render.yaml` lists them with
+   `sync: false`) and redeploy. The plan page, Settings, Help, the landing
+   and industry pages then show a Monthly / Yearly switch and the yearly
+   prices with "2 months free".
+3. In the customer portal settings (Settings → Billing → Customer portal →
+   Subscriptions), add the yearly prices next to the monthly ones in the
+   products customers may switch between, so an owner can move between
+   monthly and yearly there. The webhook reads the new price and sets both
+   the plan and the interval.
+4. Keep cancellations **at the end of the billing period**, with **no
+   proration on cancel**: a yearly plan stays on to the end of the year paid
+   for, with no partial refund, which is what the Help page and Terms say.
+   For switches, Stripe's default proration (credit for the unused part of
+   the old price on the next invoice) is fine.
+5. Keep the webhook's events as they are (section 8).
 
 ## 8. Things only you can do
 
@@ -363,6 +399,8 @@ or `none` (the old `academy-plan <id> active` now means Plus).
 - Payments: Pro and Plus take cards through Stripe. Set `STRIPE_SECRET_KEY`,
   `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE` and
   `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` (section 7, "Upgrading to 1.3.0"), and
+  for yearly billing `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE` and
+  `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE` ("Upgrading to 1.4.0"), and
   in Stripe add the webhook
   `https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,

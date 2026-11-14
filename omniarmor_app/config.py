@@ -55,11 +55,15 @@ def load_config(**overrides):
         # the whole app (it began as the Academy's trial, hence the name).
         "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
         # Stripe's price ids: Pro, Plus, and Plus for a Kitchen Safety Bundle
-        # workspace (the difference between them). Each is a per-location
-        # monthly price in Stripe; checkout sends the location count as quantity.
+        # workspace (the difference between them), each monthly and yearly.
+        # Each is a per-location price in Stripe; checkout sends the location
+        # count as quantity. A yearly one left empty: that plan is monthly only.
         "PRO_STRIPE_PRICE": env.get("PRO_STRIPE_PRICE", "").strip(),
         "PLUS_STRIPE_PRICE": env.get("PLUS_STRIPE_PRICE", "").strip(),
         "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": env.get("PLUS_BUNDLE_UPGRADE_STRIPE_PRICE", "").strip(),
+        "PRO_YEARLY_STRIPE_PRICE": env.get("PRO_YEARLY_STRIPE_PRICE", "").strip(),
+        "PLUS_YEARLY_STRIPE_PRICE": env.get("PLUS_YEARLY_STRIPE_PRICE", "").strip(),
+        "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE": env.get("PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE", "").strip(),
         "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
         "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
         # The secret CyberLogix signs its daily reports with (the same value

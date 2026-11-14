@@ -194,6 +194,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .plain ul{padding-left:1.2em;margin:0 0 12px}
 .plain li{margin-bottom:6px}
 .plain p{margin:0 0 12px}
+.plain h3{font-size:17px;margin:20px 0 8px}
 footer.site nav{display:flex;gap:16px}
 footer.site nav a{color:var(--faint)}
 footer.site nav a:hover{color:var(--ink)}
@@ -362,4 +363,22 @@ details.note .title{color:var(--ink);font-weight:600}
 .plan-status{font-size:15px}
 .plan-here{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text)}
 .plan-note{color:var(--muted);font-size:14.5px}
+/* Monthly or yearly: two radio buttons (visually hidden) and their labels as
+   a switch. The yearly prices and buttons (.when-year) show while Yearly is
+   picked, the monthly ones (.when-month) otherwise. No script. */
+.billing-pick{position:absolute;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
+.billing-toggle{display:inline-flex;flex-wrap:wrap;gap:4px;margin:18px 0 0;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--raise)}
+.billing-toggle label{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 16px;border-radius:999px;color:var(--muted);font-size:15px;font-weight:500;cursor:pointer}
+.billing-toggle label:hover{color:var(--ink)}
+.pick-month:checked~.billing-toggle .opt-month,.pick-year:checked~.billing-toggle .opt-year{background:var(--blend);color:var(--on-accent)}
+.pick-year:checked~.billing-toggle .opt-year .plan-save{color:var(--on-accent)}
+.plan-save{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);white-space:nowrap}
+.billing>.plan-note{margin:10px 0 0}
+.billing-toggle~.plans{margin-top:18px}
+.hero .billing-toggle{margin-top:0;align-self:flex-start}
+.when-year{display:none}
+.pick-year:checked~.when-year,.pick-year:checked~* .when-year{display:revert}
+.pick-year:checked~.when-month,.pick-year:checked~* .when-month{display:none}
+.plan-buy{display:flex;flex-direction:column;gap:10px}
+.pick-year:checked~* .plan-buy.when-year{display:flex}
 .read-only-note{margin:8px 0 0;color:var(--muted);font-size:14.5px}

@@ -379,6 +379,13 @@ MIGRATIONS = [
     );
     CREATE INDEX bundle_signatures_seen ON bundle_signatures (seen_at);
     """),
+    # Monthly or yearly (plans.py): whether the workspace's subscription is
+    # paid each month or each year, 'month' or 'year', read from the
+    # subscription's price by Stripe's webhook. Every subscription before
+    # this one was monthly.
+    (19, """
+    ALTER TABLE orgs ADD COLUMN plan_interval TEXT NOT NULL DEFAULT 'month';
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

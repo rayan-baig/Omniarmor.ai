@@ -14,8 +14,9 @@ payment -> cancelled -> Plus again, and the app's state is checked at every
 step: the workspace's plan in the database, what the owner reads on Settings
 and the plan page, whether checks can be saved, and which worlds the learner
 can open. Pro is bought and switched to Plus in Stripe's portal; a Kitchen
-Safety Bundle workspace buys Plus at the difference. Every checkout bills
-the workspace's location count.
+Safety Bundle workspace buys Plus at the difference. Plus is bought yearly,
+switched to monthly and to Pro yearly in the portal, and cancelled to run to
+the end of the paid year. Every checkout bills the workspace's location count.
 """
 
 import hashlib
@@ -42,6 +43,10 @@ WEBHOOK_SECRET = "whsec_fake_omniarmor"
 PRICE = "price_test_plus"
 PRO_PRICE = "price_test_pro"
 UPGRADE_PRICE = "price_test_plus_bundle"
+PRO_YEARLY = "price_test_pro_year"
+PLUS_YEARLY = "price_test_plus_year"
+UPGRADE_YEARLY = "price_test_plus_bundle_year"
+YEARLY = {PRO_YEARLY, PLUS_YEARLY, UPGRADE_YEARLY}
 BUNDLE_SECRET = "kitchen-bundle-e2e"
 DAY = 24 * 3600
 
@@ -120,7 +125,7 @@ class FakeStripe:
 
     def create_session(self, fields):
         assert fields.get("mode") == "subscription", fields
-        assert fields.get("line_items[0][price]") in (PRICE, PRO_PRICE, UPGRADE_PRICE), fields
+        assert fields.get("line_items[0][price]") in (PRICE, PRO_PRICE, UPGRADE_PRICE, *YEARLY), fields
         assert "{CHECKOUT_SESSION_ID}" in fields["success_url"], fields
         session_id = self.next_id("cs")
         session = {
@@ -130,14 +135,23 @@ class FakeStripe:
             "customer_email": fields.get("customer_email"), "subscription": None, "created": self.tick(),
             "success_url": fields["success_url"], "cancel_url": fields["cancel_url"],
             "subscription_metadata": {"org_id": fields.get("subscription_data[metadata][org_id]"),
-                                      "plan": fields.get("subscription_data[metadata][plan]")},
+                                      "plan": fields.get("subscription_data[metadata][plan]"),
+                                      "interval": fields.get("subscription_data[metadata][interval]")},
             "metadata_plan": fields.get("metadata[plan]"),
+            "metadata_interval": fields.get("metadata[interval]"),
             "price": fields.get("line_items[0][price]"), "quantity": int(fields.get("line_items[0][quantity]")),
             "url": f"https://checkout.stripe.test/c/pay/{session_id}",
         }
         session["metadata"]["plan"] = session.pop("metadata_plan")
+        session["metadata"]["interval"] = session.pop("metadata_interval")
         self.sessions[session_id] = session
         return self.public(session)
+
+    @staticmethod
+    def price(price_id):
+        """A price as Stripe shows it on a subscription item: yearly or monthly."""
+        return {"id": price_id, "object": "price",
+                "recurring": {"interval": "year" if price_id in YEARLY else "month", "interval_count": 1}}
 
     @staticmethod
     def public(session):
@@ -146,8 +160,9 @@ class FakeStripe:
     # --- What happens on Stripe's own pages, and the webhooks it sends ------------
 
     def send(self, kind, obj):
+        # A copy of the object as it is now, as Stripe's event holds it.
         event = {"id": self.next_id("evt"), "object": "event", "type": kind, "created": self.tick(),
-                 "data": {"object": dict(obj)}, "livemode": False}
+                 "data": {"object": json.loads(json.dumps(obj))}, "livemode": False}
         self.events.append(event)
         return self.deliver(event)
 
@@ -165,10 +180,11 @@ class FakeStripe:
             customer = self.next_id("cus")
             self.customers[customer] = {"id": customer, "email": session["customer_email"]}
         now = self.tick()
+        period = 365 * DAY if session["price"] in YEARLY else 30 * DAY
         subscription = {"id": self.next_id("sub"), "object": "subscription", "customer": customer,
-                        "status": "active", "created": now, "current_period_end": now + 30 * DAY,
+                        "status": "active", "created": now, "current_period_end": now + period,
                         "cancel_at_period_end": False, "metadata": session["subscription_metadata"],
-                        "items": {"data": [{"price": {"id": session["price"]}, "quantity": session["quantity"]}]}}
+                        "items": {"data": [{"price": self.price(session["price"]), "quantity": session["quantity"]}]}}
         self.subscriptions[subscription["id"]] = subscription
         session.update(status="complete", payment_status="paid", customer=customer,
                        subscription=subscription["id"])
@@ -192,9 +208,21 @@ class FakeStripe:
                 self.send("customer.subscription.updated", subscription)]
 
     def switch(self, sub_id, price):
-        """The owner changes plan in the customer portal: the subscription's price changes."""
+        """The owner changes plan in the customer portal: the subscription's
+        price changes (Pro to Plus, monthly to yearly), and a switch of
+        interval starts a new period."""
         subscription = self.subscriptions[sub_id]
-        subscription["items"]["data"][0]["price"] = {"id": price}
+        item = subscription["items"]["data"][0]
+        before = item["price"]["recurring"]["interval"]
+        item["price"] = self.price(price)
+        if item["price"]["recurring"]["interval"] != before:
+            subscription["current_period_end"] = self.tick() + (365 * DAY if price in YEARLY else 30 * DAY)
+        return self.send("customer.subscription.updated", subscription)
+
+    def cancel_at_period_end(self, sub_id):
+        """The owner cancels in the customer portal: it stays on to the end of the paid period."""
+        subscription = self.subscriptions[sub_id]
+        subscription.update(cancel_at_period_end=True, cancel_at=subscription["current_period_end"])
         return self.send("customer.subscription.updated", subscription)
 
     def end(self, sub_id):
@@ -209,7 +237,9 @@ class TestPlansAgainstFakeStripe(AppTestCase):
         super().setUp()
         self.app.config.update(STRIPE_SECRET_KEY=SECRET_KEY, STRIPE_WEBHOOK_SECRET=WEBHOOK_SECRET,
                                PLUS_STRIPE_PRICE=PRICE, PRO_STRIPE_PRICE=PRO_PRICE,
-                               PLUS_BUNDLE_UPGRADE_STRIPE_PRICE=UPGRADE_PRICE, KITCHEN_BUNDLE_SECRET=BUNDLE_SECRET)
+                               PLUS_BUNDLE_UPGRADE_STRIPE_PRICE=UPGRADE_PRICE, KITCHEN_BUNDLE_SECRET=BUNDLE_SECRET,
+                               PRO_YEARLY_STRIPE_PRICE=PRO_YEARLY, PLUS_YEARLY_STRIPE_PRICE=PLUS_YEARLY,
+                               PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE=UPGRADE_YEARLY)
         self.stripe = FakeStripe(self.webhook)
         self.addCleanup(self.stripe.stop)
         for patcher in (mock.patch.object(academy_plan, "STRIPE_API", self.stripe.url),
@@ -239,7 +269,7 @@ class TestPlansAgainstFakeStripe(AppTestCase):
 
     def org(self):
         with self.db() as conn:
-            return dict(conn.execute("SELECT academy_status, academy_renews_at, academy_ends_at, plan,"
+            return dict(conn.execute("SELECT academy_status, academy_renews_at, academy_ends_at, plan, plan_interval,"
                                      " stripe_customer_id, stripe_subscription_id FROM orgs").fetchone())
 
     def settings_line(self):
@@ -273,10 +303,16 @@ class TestPlansAgainstFakeStripe(AppTestCase):
         self.post(f"/app/academy/{self.lid}/track", {"track": "trailblazer"})
         return opens
 
-    def start_checkout(self, plan="plus"):
-        """The owner presses "Choose Plus" (or Pro) on the plan page."""
+    def checkout_form(self, plan, interval="month"):
+        """The plan page's form for a plan, paid monthly or yearly."""
         [form] = [f for f in post_forms(self.plan_page())
-                  if f.action == "/app/plan/checkout" and f.field("plan")["value"] == plan]
+                  if f.action == "/app/plan/checkout" and f.field("plan")["value"] == plan
+                  and f.field("interval")["value"] == interval]
+        return form
+
+    def start_checkout(self, plan="plus", interval="month"):
+        """The owner presses "Choose Plus" (or Pro, or "Choose Plus yearly") on the plan page."""
+        form = self.checkout_form(plan, interval)
         response = self.client.post(form.action, data=form.values())
         self.assertEqual(response.status_code, 303)
         found = re.fullmatch(r"https://checkout\.stripe\.test/c/pay/(cs_test_\d+)", response.headers["Location"])
@@ -426,7 +462,7 @@ class TestPlansAgainstFakeStripe(AppTestCase):
         created = next(e for e in self.stripe.events if e["type"] == "customer.subscription.created")
         late = json.loads(json.dumps(created))
         late["id"] = "evt_late_copy"
-        late["data"]["object"]["items"] = {"data": [{"price": {"id": PRO_PRICE}, "quantity": 1}]}
+        late["data"]["object"]["items"] = {"data": [{"price": FakeStripe.price(PRO_PRICE), "quantity": 1}]}
         self.stripe.deliver(late)
         self.assertEqual(self.org()["plan"], "plus")
         self.assertTrue(self.paid_world_opens())
@@ -464,13 +500,99 @@ class TestPlansAgainstFakeStripe(AppTestCase):
         self.assertTrue(self.can_save(5))
         self.assertRegex(self.settings_line(), r"^You're on Plus at the Kitchen Safety Bundle price")
 
+    def test_yearly_plus_switched_in_the_portal_and_cancelled_to_the_end_of_the_year(self):
+        self.end_trial()
+        # The plan page offers both: the yearly switch, the yearly price and "2 months free".
+        page = self.plan_page()
+        self.assertIn("data-billing-toggle", page)
+        self.assertIn(plans.PLUS.yearly_price, page)
+        self.assertIn(plans.free_label(), page)
+        # Plus, yearly: the yearly price, one location, and the interval in the metadata.
+        session = self.start_checkout("plus", "year")
+        fields = self.stripe.requests[-1][2]
+        self.assertEqual((fields["line_items[0][price]"], fields["line_items[0][quantity]"], fields["metadata[plan]"],
+                          fields["metadata[interval]"], fields["subscription_data[metadata][interval]"]),
+                         (PLUS_YEARLY, str(plans.location_count(None)), "plus", "year", "year"))
+        page = self.come_back(self.stripe.pay(session))
+        self.assertIn("Thank you! Plus is on for Acme Logistics.", flashes(page))
+        org = self.org()
+        self.assertEqual((org["academy_status"], org["plan"], org["plan_interval"]), ("active", "plus", "year"))
+        self.stripe.send_payment_webhooks()
+        org = self.org()
+        self.assertEqual((org["plan"], org["plan_interval"]), ("plus", "year"))
+        sub = org["stripe_subscription_id"]
+        renews = __import__("datetime").datetime.fromisoformat(org["academy_renews_at"]).timestamp()
+        self.assertEqual(renews, self.stripe.subscriptions[sub]["current_period_end"])
+        self.assertGreater(renews - time.time(), 360 * DAY, "a year away")
+        self.assertRegex(self.settings_line(), r"^You're on Plus, billed yearly, renews ")
+        self.assertRegex(self.plan_page(), r'id="billing-year" value="yearly" checked>')
+        self.assertTrue(self.paid_world_opens())
+        self.assertTrue(self.can_save(3))
+        # In the portal: yearly to monthly, then to Pro yearly. The webhook reads both from the price.
+        [manage] = [f for f in post_forms(self.plan_page()) if f.action == "/app/plan/manage"]
+        self.assertEqual(self.client.post(manage.action, data=manage.values()).headers["Location"],
+                         f"https://billing.stripe.test/p/{org['stripe_customer_id']}")
+        self.stripe.switch(sub, PRICE)
+        org = self.org()
+        self.assertEqual((org["plan"], org["plan_interval"]), ("plus", "month"))
+        self.assertRegex(self.settings_line(), r"^You're on Plus, renews ")
+        self.stripe.switch(sub, PRO_YEARLY)
+        org = self.org()
+        self.assertEqual((org["plan"], org["plan_interval"]), ("pro", "year"))
+        self.assertRegex(self.settings_line(), r"^You're on Pro, billed yearly, renews ")
+        self.assertFalse(self.paid_world_opens(), "Pro doesn't include the whole Academy")
+        self.stripe.switch(sub, PLUS_YEARLY)
+        self.assertEqual((self.org()["plan"], self.org()["plan_interval"]), ("plus", "year"))
+        # A late copy of the monthly switch doesn't move it back.
+        self.stripe.deliver(next(e for e in self.stripe.events
+                                 if e["type"] == "customer.subscription.updated"
+                                 and e["data"]["object"]["items"]["data"][0]["price"]["id"] == PRICE))
+        self.assertEqual(self.org()["plan_interval"], "year")
+        # Cancelled in the portal: on until the end of the paid year, then read-only.
+        self.stripe.cancel_at_period_end(sub)
+        org = self.org()
+        self.assertEqual(org["academy_status"], "active")
+        ends = __import__("datetime").datetime.fromisoformat(org["academy_ends_at"]).timestamp()
+        self.assertEqual(ends, self.stripe.subscriptions[sub]["current_period_end"])
+        self.assertRegex(self.settings_line(), r"^Plus, paid yearly, is cancelled and ends .*the end of the year you "
+                                               r"paid for\. A yearly plan isn't refunded")
+        self.assertTrue(self.paid_world_opens())
+        self.assertTrue(self.can_save(4))
+        self.stripe.end(sub)
+        self.assertEqual(self.org()["academy_status"], "canceled")
+        self.assertRegex(self.settings_line(), r"^No plan: the compliance tracker is read-only")
+        self.assertFalse(self.can_save(5))
+        self.assertFalse(self.paid_world_opens())
+
+    def test_a_bundle_workspace_pays_the_difference_yearly(self):
+        self.end_trial()
+        key = re.search(r'class="key mono">(clx_[A-Za-z0-9_-]+)<', self.post(
+            "/app/settings/connections/cyberlogix/create").get_data(as_text=True)).group(1)
+        body = json.dumps({"date": "2026-11-13", "site": None, "units_total": 2, "units_in_range_all_day": 2,
+                           "breaches": [], "warmest_reading": 38, "unit_of_measure": "°F", "log_url": None}).encode()
+        with mock.patch("omniarmor_app.connections.org_today",
+                        return_value=__import__("datetime").date(2026, 11, 14)):
+            self.stripe_side.post("/api/connect/cyberlogix/daily", data=body,
+                                  headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                                           connections.SIGNATURE_HEADER:
+                                               connections.sign(BUNDLE_SECRET, body, int(time.time()))})
+        session = self.start_checkout("plus", "year")
+        fields = self.stripe.requests[-1][2]
+        self.assertEqual((fields["line_items[0][price]"], fields["metadata[plan]"], fields["metadata[interval]"]),
+                         (UPGRADE_YEARLY, "plus_bundle", "year"))
+        self.come_back(self.stripe.pay(session))
+        self.stripe.send_payment_webhooks()
+        org = self.org()
+        self.assertEqual((org["plan"], org["plan_interval"]), ("plus_bundle", "year"))
+        self.assertRegex(self.settings_line(), r"^You're on Plus at the Kitchen Safety Bundle price, billed yearly")
+        self.assertTrue(self.paid_world_opens())
+
     def test_when_stripe_is_down_nothing_changes(self):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET academy_trial_ends = '2000-01-01T00:00:00+00:00'")
             conn.commit()
         self.stripe.down = True
-        [form] = [f for f in post_forms(self.plan_page())
-                  if f.action == "/app/plan/checkout" and f.field("plan")["value"] == "plus"]
+        form = self.checkout_form("plus")
         with self.assertLogs("omniarmor_app", "WARNING"):
             response = self.client.post(form.action, data=form.values(), follow_redirects=True)
         self.assertIn("We couldn&#39;t open checkout just now. Please try again in a minute.",

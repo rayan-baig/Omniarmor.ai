@@ -16,6 +16,14 @@ The plans:
 - **Plus**: everything in Pro and the whole Future Owner Academy.
 - The Academy's first worlds (academy_plan.FREE_WORLDS) stay free for everyone.
 
+**Monthly or yearly.** Pro, Plus and the bundle's Plus can each be paid
+monthly or yearly. A year costs MONTHS_PAID_YEARLY months' price for
+MONTHS_IN_YEAR months ("2 months free"): the yearly prices are worked out
+here from the monthly ones, never typed. Each has its own Stripe price
+setting; a yearly setting left empty means that plan is offered monthly
+only. A yearly plan cancelled in Stripe's portal stays on to the end of the
+year paid for, with no partial refund; then the rules below apply.
+
 A **location** is a workspace. One workspace holds one site: it has one
 timezone, one reading per check, and CyberLogix sends one report per
 workspace a day; a company with several sites makes a workspace for each.
@@ -44,23 +52,70 @@ from datetime import datetime, timedelta, timezone
 DEFAULT_TRIAL_DAYS = 14   # the ACADEMY_TRIAL_DAYS default in config.py
 LOCATION = "location"
 
+# Billing intervals, as Stripe names them (a price's recurring.interval), and
+# what orgs.plan_interval holds.
+MONTH = "month"
+YEAR = "year"
+INTERVALS = (MONTH, YEAR)
+MONTHS_IN_YEAR = 12
+MONTHS_PAID_YEARLY = 10     # a yearly plan costs ten months: two months free
+
+
+def yearly_dollars(monthly):
+    """A year's price from a month's: MONTHS_PAID_YEARLY months."""
+    return monthly * MONTHS_PAID_YEARLY
+
+
+def free_months():
+    """How many months a yearly plan gives free."""
+    return MONTHS_IN_YEAR - MONTHS_PAID_YEARLY
+
+
+def free_label():
+    """What the pages call it: "2 months free"."""
+    months = free_months()
+    return f"{months} month{'s' if months != 1 else ''} free"
+
 
 @dataclass(frozen=True)
 class Plan:
     key: str
     name: str
     dollars: int            # a month, per location
-    price_setting: str      # the setting that holds its Stripe price id
+    price_setting: str      # the setting that holds its monthly Stripe price id
     tracker: bool           # the compliance tracker can be saved to and reminds
     academy: bool           # the whole Future Owner Academy
+    yearly_price_setting: str = ""   # the setting that holds its yearly Stripe price id
 
     @property
     def price(self):
         return price_label(self.dollars)
 
+    @property
+    def yearly_dollars(self):
+        return yearly_dollars(self.dollars)
 
-PRO = Plan("pro", "Pro", 50, "PRO_STRIPE_PRICE", tracker=True, academy=False)
-PLUS = Plan("plus", "Plus", 80, "PLUS_STRIPE_PRICE", tracker=True, academy=True)
+    @property
+    def yearly_price(self):
+        return price_label(self.yearly_dollars, YEAR)
+
+    @property
+    def yearly_short(self):
+        """The yearly price without "per location", for "or $500 a year"."""
+        return price_label(self.yearly_dollars, YEAR, per=False)
+
+    def dollars_for(self, interval):
+        return self.yearly_dollars if interval == YEAR else self.dollars
+
+    def setting(self, interval):
+        """The setting holding this plan's Stripe price id for an interval."""
+        return self.yearly_price_setting if interval == YEAR else self.price_setting
+
+
+PRO = Plan("pro", "Pro", 50, "PRO_STRIPE_PRICE", tracker=True, academy=False,
+           yearly_price_setting="PRO_YEARLY_STRIPE_PRICE")
+PLUS = Plan("plus", "Plus", 80, "PLUS_STRIPE_PRICE", tracker=True, academy=True,
+            yearly_price_setting="PLUS_YEARLY_STRIPE_PRICE")
 PLANS = {p.key: p for p in (PRO, PLUS)}
 
 # What the workspace's subscription is for (orgs.plan), and what it gives
@@ -81,17 +136,38 @@ BUNDLE_NAME = "Kitchen Safety Bundle"
 BUNDLE_DOLLARS = 29                     # what CyberLogix charges a month per location
 BUNDLE_INCLUDES = PRO                   # what the bundle includes in OmniArmor
 BUNDLE_UPGRADE_SETTING = "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE"
+BUNDLE_UPGRADE_YEARLY_SETTING = "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE"
 BUNDLE_FRESH = timedelta(days=3)        # a signed report this recent: covered
 BUNDLE_GRACE = timedelta(days=7)        # then this long more, with a banner
 
 
-def price_label(dollars):
-    return f"${dollars:,} a month per {LOCATION}"
+def price_label(dollars, interval=MONTH, per=True):
+    return f"${dollars:,} a {interval}" + (f" per {LOCATION}" if per else "")
 
 
-def bundle_upgrade_dollars():
-    """What a bundle workspace pays for Plus: only the difference."""
-    return PLUS.dollars - BUNDLE_INCLUDES.dollars
+def bundle_upgrade_dollars(interval=MONTH):
+    """What a bundle workspace pays for Plus: only the difference (a year
+    of it costs MONTHS_PAID_YEARLY months, like every yearly price)."""
+    monthly = PLUS.dollars - BUNDLE_INCLUDES.dollars
+    return yearly_dollars(monthly) if interval == YEAR else monthly
+
+
+def bundle_upgrade_setting(interval=MONTH):
+    return BUNDLE_UPGRADE_YEARLY_SETTING if interval == YEAR else BUNDLE_UPGRADE_SETTING
+
+
+def current_plans():
+    """The plans by key, as they are now (PLANS is fixed at import)."""
+    return {p.key: p for p in (PRO, PLUS)}
+
+
+def yearly_offered(cfg):
+    """Which plans can be paid yearly: those whose yearly Stripe price is set."""
+    offered = {p.key: bool(p.yearly_price_setting and cfg.get(p.yearly_price_setting))
+               for p in (PRO, PLUS)}
+    offered["bundle_upgrade"] = bool(cfg.get(BUNDLE_UPGRADE_YEARLY_SETTING))
+    offered["any"] = any(offered.values())
+    return offered
 
 
 def location_count(org):
@@ -174,6 +250,7 @@ def access(org, now=None, trial_days=None):
     bundle = bundle_status(org, now)
     ends = trial_ends(org, trial_days)
     in_trial = ends is not None and ends > now
+    interval = _get(org, "plan_interval")
     trial_days_left = max(1, -(-int((ends - now).total_seconds()) // 86400)) if in_trial else 0
     if sub_tracker:
         source = "plan"
@@ -196,6 +273,8 @@ def access(org, now=None, trial_days=None):
         "reason": reason,              # why it is read-only
         "source": source,              # where the tracker comes from
         "kind": kind, "plan_name": name, "state": state, "paid": paid,
+        "interval": interval if interval in INTERVALS else MONTH,
+        "yearly": paid and interval == YEAR,
         "subscribed": paid,            # a subscription that counts: checkout won't start a second
         "trial": in_trial, "trial_days": trial_days_left, "trial_ends": ends,
         "bundle": bundle,
@@ -205,12 +284,14 @@ def access(org, now=None, trial_days=None):
     }
 
 
-def checkout_choice(cfg, org, plan_key, now=None):
-    """What checking out for a plan buys this workspace: (kind, Stripe price
-    id, dollars). Plus for a workspace the Kitchen Safety Bundle covers is
-    billed only the difference, when that price is set up; otherwise at its
-    full price (the plan page says so)."""
-    plan = PLANS[plan_key]
-    if plan is PLUS and bundle_status(org, now)["state"] == "covered" and cfg.get(BUNDLE_UPGRADE_SETTING):
-        return "plus_bundle", cfg[BUNDLE_UPGRADE_SETTING], bundle_upgrade_dollars()
-    return plan.key, cfg.get(plan.price_setting) or "", plan.dollars
+def checkout_choice(cfg, org, plan_key, interval=MONTH, now=None):
+    """What checking out for a plan, paid monthly or yearly, buys this
+    workspace: (kind, Stripe price id, dollars). Plus for a workspace the
+    Kitchen Safety Bundle covers is billed only the difference, when that
+    interval's price is set up; otherwise at its full price (the plan page
+    says so). An empty price id means that plan isn't offered that way."""
+    plan = current_plans()[plan_key]
+    upgrade = bundle_upgrade_setting(interval)
+    if plan is PLUS and bundle_status(org, now)["state"] == "covered" and cfg.get(upgrade):
+        return "plus_bundle", cfg[upgrade], bundle_upgrade_dollars(interval)
+    return plan.key, cfg.get(plan.setting(interval)) or "", plan.dollars_for(interval)

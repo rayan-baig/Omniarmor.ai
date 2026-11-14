@@ -76,7 +76,7 @@
 {% if access.bundle.state == 'covered' %}<p class="row" data-bundle-line><span><strong>{{ pf.bundle.includes.name }} included with your {{ pf.bundle.name }}</strong></span></p>{% endif %}
 <p class="row"><span data-plan-line>{{ status_line(access, pf) }}</span>
   <a href="{{ url_for('plan.plan_page') }}">{{ 'Manage billing' if access.paid and g.role == 'owner' else 'See the plans' }}</a></p>
-<p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}: everything in {{ pf.pro.name }} and the whole Future Owner Academy. The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>
+<p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}{% if pf.yearly.pro %} or {{ pf.pro.yearly_short }}{% endif %}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}{% if pf.yearly.plus %} or {{ pf.plus.yearly_short }}{% endif %}: everything in {{ pf.pro.name }} and the whole Future Owner Academy.{% if pf.yearly.any %} Paying yearly gives {{ pf.free_label }} (<a href="{{ url_for('plan.plan_page', billing='yearly') }}" data-yearly-link>see yearly prices</a>).{% endif %} The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>
 
 {% if g.role == 'owner' %}
   <h2>Delete workspace</h2>
