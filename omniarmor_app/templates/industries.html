@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Industries{% endblock %}
+{% block title %}Industries and trades{% endblock %}
+{% block description %}Compliance checklists and reminders for 50 regulated industries, and for trades like salons, tattoo studios, gyms and shops. {{ SLOGAN }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -8,6 +9,17 @@
     <p class="sub">Each one comes with the ten compliance failures that cost businesses like yours the most.</p>
   </div>
 </div>
+<h2 id="trades">By trade</h2>
+<p class="muted">Small businesses with checklists of their own. Each page says which of OmniArmor's checklists fit.</p>
+<div class="grid-ind" data-trades>
+  {% for t in trades %}
+    <a class="row" href="{{ url_for('public.trade_page', slug=t.slug) }}"><span><span class="title">{{ t.name }}</span></span></a>
+  {% endfor %}
+  {% for name, ind in existing %}
+    <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}"><span><span class="title">{{ name }}</span><br><span class="meta">{{ ind.brand }}</span></span></a>
+  {% endfor %}
+</div>
+<h2>All industries</h2>
 <div class="grid-ind">
   {% for ind in industries.values() %}
     <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">

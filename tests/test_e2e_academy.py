@@ -408,7 +408,7 @@ class TestKidCannotReachTheGrownUps(KidCase):
     def url_for_rule(self, rule):
         values = {"learner_id": self.lid, "industry_id": 1, "rule_key": "annual_mvr_review", "user_id": 1,
                   "world_number": 1, "stage": 1, "duel_id": 1, "friend_id": self.lid, "slug": "fleetarmor",
-                  "token": "x", "filename": "app.css"}
+                  "token": "x", "filename": "app.css", "org_id": 1, "kind": "academy"}
         url = rule.rule
         for arg in rule.arguments:
             url = re.sub(rf"<(?:\w+:)?{arg}>", str(values[arg]), url)

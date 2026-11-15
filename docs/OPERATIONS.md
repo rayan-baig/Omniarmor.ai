@@ -386,6 +386,36 @@ with the code. In Stripe (test mode first, on staging):
    the old price on the next invoice) is fine.
 5. Keep the webhook's events as they are (section 8).
 
+**Upgrading to 1.5.0 (pause, the save offer, upgrade offers, locations,
+trade pages):** schema version 20 runs by itself on start: it adds the pause
+and save-offer dates to each workspace and the table that remembers which
+offers each person was shown. Nothing changes for anyone's plan.
+
+1. **Pausing needs nothing new.** The cancel screen (Plans page, "Cancel or
+   pause your plan") pauses a monthly plan through Stripe's
+   `pause_collection` (invoices in the pause are voided; Stripe starts
+   charging again by itself on the date chosen). The webhook you already
+   have (`customer.subscription.updated`) keeps the app in step. Leave
+   pausing **off** in Stripe's customer portal: the app does it, and a pause
+   with no end date from the portal isn't understood by the app.
+2. **The save offer:** in Stripe, create a coupon, **25% off**, duration
+   **repeating**, **2 months** (Products → Coupons), and put its id in
+   `SAVE_OFFER_STRIPE_COUPON`. `SAVE_OFFER_PERCENT` (25) and
+   `SAVE_OFFER_MONTHS` (2) are what the screen promises: if you make a
+   different coupon, set them to match it. Without a coupon id, the screen
+   offers no discount. Each workspace can take it once, ever.
+3. **Switching to yearly or to Plus** from the app uses the yearly and Plus
+   prices you already set ("Upgrading to 1.4.0"): Stripe charges the
+   difference at once, taking off the unused part of the current period
+   (`proration_behavior=always_invoice`), and a declined card changes
+   nothing (`payment_behavior=error_if_incomplete`).
+4. **Cancelling** from the app cancels at the end of the period paid for,
+   like the portal; the portal's own cancel button keeps working.
+5. The daily job emails each owner 3 days before a pause ends (kind `plan`
+   in Radar) and tidies ended pauses. The operator's Settings shows the new
+   usage counts: plans paused, save offers taken, plans cancelled, upgrade
+   offers shown, plan switches and locations added.
+
 ## 8. Things only you can do
 
 - Make your account the operator's, once, on the server: sign up with the
@@ -400,7 +430,9 @@ with the code. In Stripe (test mode first, on staging):
   `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE` and
   `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE` (section 7, "Upgrading to 1.3.0"), and
   for yearly billing `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE` and
-  `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE` ("Upgrading to 1.4.0"), and
+  `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE` ("Upgrading to 1.4.0"), for the
+  cancel screen's one-time discount create the coupon and set
+  `SAVE_OFFER_STRIPE_COUPON` ("Upgrading to 1.5.0"), and
   in Stripe add the webhook
   `https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,

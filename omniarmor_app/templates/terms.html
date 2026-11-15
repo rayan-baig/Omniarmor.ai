@@ -57,6 +57,7 @@
   <li>The {{ pf.bundle.name }} is sold by CyberLogix, not by us. While CyberLogix sends us its signed daily reports for your workspace, your workspace gets {{ pf.bundle.includes.name }} at no charge from us, and {{ pf.plus.name }} costs only the difference ({{ pf.bundle.upgrade_price }}). If those reports stop for more than {{ pf.bundle.fresh_days }} days, {{ pf.bundle.includes.name }} stays on for {{ pf.bundle.grace_days }} more days, and then the rules above apply.</li>
   <li>A workspace that paid for the old Academy plan keeps it, at its old price, with the compliance tracker, until it changes plan or the plan ends.</li>
   <li>Stripe handles payments. A plan renews each month, or each year for a yearly plan, until you cancel. You can change plan, switch between monthly and yearly, update your card or cancel any time on the <a href="{{ url_for('plan.plan_page') }}">Plans page</a> (Manage billing). A cancelled plan stays on until the end of the time you paid for: a yearly plan to the end of the year paid for, with no partial refund.</li>
+  <li>A monthly plan can be paused for up to {{ facts.pause_most }} months instead: you aren't charged, the tracker is read-only and reminders stop, and it starts again by itself on the date you picked.</li>
 </ul>
 
 <h2 id="promise">What we promise and what we don't</h2>

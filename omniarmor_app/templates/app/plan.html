@@ -7,7 +7,7 @@
 <div class="page-head">
   <div>
     <p class="eyebrow">{{ g.org.name }} · Plans</p>
-    <h1>{% if a.paid %}You're on {{ a.plan_name }}{% elif a.source == 'bundle' %}{{ b.includes.name }} included with your {{ b.name }}{% elif a.source == 'bundle_grace' %}Your {{ b.name }} needs a look{% elif a.trial %}Your free trial is on{% else %}Choose a plan{% endif %}</h1>
+    <h1>{% if a.paused %}Your plan is paused{% elif a.paid %}You're on {{ a.plan_name }}{% elif a.source == 'bundle' %}{{ b.includes.name }} included with your {{ b.name }}{% elif a.source == 'bundle_grace' %}Your {{ b.name }} needs a look{% elif a.trial %}Your free trial is on{% else %}Choose a plan{% endif %}</h1>
     <p class="sub" data-plan-line>{{ status_line(a, facts) }}</p>
   </div>
 </div>
@@ -128,7 +128,48 @@
 </div>
 </div>
 
+{% if g.role == 'owner' and a.paused %}
+  <section class="offer-card mt" data-paused-plan>
+    <h2>Paused until {{ a.resumes_at|local_date }}</h2>
+    <p>No charges, and no reminders, until then. Your records are all kept and the workspace is read-only. It starts again by itself on {{ a.resumes_at|local_date }}, and we email you a few days before.</p>
+    <div class="offer-actions">
+      <form method="post" action="{{ url_for('plan.resume') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Start again now</button>
+      </form>
+      <a href="{{ url_for('plan.cancel_page') }}">Cancel instead</a>
+    </div>
+  </section>
+{% endif %}
+{% if g.role == 'owner' and switch_yearly %}
+  <section class="offer-card mt" id="switch-yearly" data-yearly-offer>
+    <p class="plan-here">Switch to yearly · {{ switch_yearly.free_label }}</p>
+    <h2>{{ switch_yearly.name }} for {{ switch_yearly.price }}</h2>
+    <p>Paying monthly costs {{ switch_yearly.twelve_months }}. Paying yearly costs {{ switch_yearly.price }}: you save {{ switch_yearly.saving }}. Stripe charges {{ switch_yearly.price }} today and takes off the unused part of this month.</p>
+    <form method="post" action="{{ url_for('plan.switch') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="to" value="yearly">
+      <button class="btn" type="submit">Switch to yearly, {{ switch_yearly.free_label }}</button>
+    </form>
+    <p class="hint">A yearly plan you cancel stays on to the end of the year you paid for, with no refund for the part left.</p>
+  </section>
+{% endif %}
+{% if g.role == 'owner' and switch_plus %}
+  <section class="offer-card mt" data-plus-offer>
+    <h2>{{ facts.plus.name }} includes the Academy</h2>
+    <p>Everything in {{ facts.pro.name }}, plus the whole Future Owner Academy for your kids, for {{ switch_plus.price }}. Stripe charges the difference for the rest of this billing period today.</p>
+    <form method="post" action="{{ url_for('plan.switch') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="to" value="plus">
+      <button class="btn quiet" type="submit">Switch to {{ facts.plus.name }}</button>
+    </form>
+  </section>
+{% endif %}
+
 {% if g.role == 'owner' %}
+  {% if a.paid %}
+    <p class="mt" data-cancel-link><a href="{{ url_for('plan.cancel_page') }}">{{ 'Cancel or pause your plan' if not a.ends_at else 'Your cancellation' }}</a></p>
+  {% endif %}
   {% if a.paid and has_customer %}
     <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

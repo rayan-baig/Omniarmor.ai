@@ -64,6 +64,15 @@ def load_config(**overrides):
         "PRO_YEARLY_STRIPE_PRICE": env.get("PRO_YEARLY_STRIPE_PRICE", "").strip(),
         "PLUS_YEARLY_STRIPE_PRICE": env.get("PLUS_YEARLY_STRIPE_PRICE", "").strip(),
         "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE": env.get("PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE", "").strip(),
+        # The save offer on the cancel screen (plans.py): a Stripe coupon id,
+        # and the amount the screen promises, which must match that coupon
+        # (by default 25% off the next 2 months, a coupon with percent_off 25,
+        # duration "repeating", duration_in_months 2). Each workspace can take
+        # it once, ever. No coupon set: no save offer (pausing and cancelling
+        # still work).
+        "SAVE_OFFER_STRIPE_COUPON": env.get("SAVE_OFFER_STRIPE_COUPON", "").strip(),
+        "SAVE_OFFER_PERCENT": int(env.get("SAVE_OFFER_PERCENT", "25")),
+        "SAVE_OFFER_MONTHS": int(env.get("SAVE_OFFER_MONTHS", "2")),
         "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
         "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
         # The secret CyberLogix signs its daily reports with (the same value
@@ -95,4 +104,6 @@ def load_config(**overrides):
         cfg["SECRET_KEY"] = secrets.token_hex(32)  # development only: sessions reset on restart
     if not 0 <= cfg["DAILY_JOB_HOUR_UTC"] <= 23:
         raise RuntimeError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
+    if not 1 <= cfg["SAVE_OFFER_PERCENT"] <= 100 or not 1 <= cfg["SAVE_OFFER_MONTHS"] <= 12:
+        raise RuntimeError("SAVE_OFFER_PERCENT must be 1 to 100 and SAVE_OFFER_MONTHS 1 to 12")
     return cfg

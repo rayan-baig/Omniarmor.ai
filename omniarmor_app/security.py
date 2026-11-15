@@ -110,11 +110,20 @@ def load_user():
             or not hmac.compare_digest(str(session.get("ukey", "")), _user_key(user))):
         session.clear()
         return
-    membership = conn.execute(
-        "SELECT orgs.*, memberships.role FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
-        " WHERE memberships.user_id = ? ORDER BY memberships.created_at LIMIT 1",
-        (user_id,),
-    ).fetchone()
+    # The workspace (location) this person is working in: the one they last
+    # switched to (session "org_id"), if they still belong to it, else their first.
+    chosen = session.get("org_id")
+    membership = None
+    if isinstance(chosen, int) and 0 < chosen < 2 ** 63:
+        membership = conn.execute(
+            "SELECT orgs.*, memberships.role FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
+            " WHERE memberships.user_id = ? AND memberships.org_id = ?", (user_id, chosen)).fetchone()
+    if membership is None:
+        membership = conn.execute(
+            "SELECT orgs.*, memberships.role FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
+            " WHERE memberships.user_id = ? ORDER BY memberships.created_at, orgs.id LIMIT 1",
+            (user_id,),
+        ).fetchone()
     if membership is None:
         session.clear()
         return

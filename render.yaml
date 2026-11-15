@@ -69,6 +69,14 @@ services:
         sync: false
       - key: PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE
         sync: false
+      # The cancel screen's one-time save offer: a Stripe coupon id, and the
+      # amount the screen promises (it must match the coupon). No coupon: no offer.
+      - key: SAVE_OFFER_STRIPE_COUPON
+        sync: false
+      - key: SAVE_OFFER_PERCENT
+        value: "25"
+      - key: SAVE_OFFER_MONTHS
+        value: "2"
       # The secret CyberLogix signs its daily reports with: the same value as
       # CyberLogix's own KITCHEN_BUNDLE_SECRET. Signed reports give the
       # workspace the Pro its Kitchen Safety Bundle includes.

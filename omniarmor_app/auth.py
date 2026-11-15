@@ -155,10 +155,11 @@ def signup():
         flash(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
               " or answer once and OmniArmor keeps count from there.", "ok")
         return redirect(url_for("app.industry", industry_id=start))
-    preselect = request.args.get("industry", type=int)
-    preselect = preselect if preselect in INDUSTRIES else None
+    # ?industry=2 from an industry page; a trade page (trades.py) names several.
+    preselected = [i for i in request.args.getlist("industry", type=int) if i in INDUSTRIES][:10]
+    preselect = preselected[0] if preselected else None
     return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
-                           timezones=COMMON_TIMEZONES, form=form, picked={preselect} if preselect else set(),
+                           timezones=COMMON_TIMEZONES, form=form, picked=set(preselected),
                            start_industry=preselect)
 
 

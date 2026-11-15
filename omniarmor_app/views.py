@@ -8,18 +8,19 @@ import io
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
 
-from . import connections, plans, usage
-from .academy_plan import charges_again
+from . import connections, nudges, plans, usage
+from .academy_plan import charges_again, trial_end_for_new_workspace
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, login_required, owner_required
-from .tracking import (BULK_ACTIONS, LEVEL_LABEL, ValidationError, apply_bulk, apply_change, org_industry_ids,
-                       org_now, org_today, states_for_org, tally)
+from .tracking import (BULK_ACTIONS, LEVEL_LABEL, ValidationError, apply_bulk, apply_change, local_date,
+                       org_industry_ids, org_now, org_today, states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
 AUDIT_PAGE = 100
+MAX_LOCATIONS = 25      # workspaces one person can own (each is a location, billed on its own)
 
 
 def _industry_or_404(industry_id):
@@ -58,7 +59,18 @@ def overview():
                            missing=len(missing), by_industry=by_industry, today=today, total=len(states),
                            checklist=first_day_checklist(states, ids), next_up=next_reading(states, ids),
                            next_dated=next_reading(states, ids, dated=True), later=later[0] if later else None,
-                           top_count=TOP_COUNT)
+                           top_count=TOP_COUNT, location_nudge=_location_nudge(conn))
+
+
+def _location_nudge(conn):
+    """The yearly saving, once, for an owner who just added a second
+    location (nudges.py: at most one offer a week, never after a dismiss)."""
+    if g.role != "owner" or not nudges.allowed(conn, g.user, "second_location"):
+        return None
+    offer = nudges.location_offer(conn, current_app.config, g.user)
+    if offer is not None:
+        nudges.mark_shown(conn, g.user["id"], "second_location")
+    return offer
 
 
 def _in_page_order(states, ids):
@@ -156,6 +168,10 @@ def page_order(state):
 
 def read_only_message(access):
     """Why nothing can be saved, and what still works."""
+    if access["reason"] == "paused":
+        return (f"Your plan is paused until {local_date(access['resumes_at'], g.org)}, so the compliance tracker is"
+                " read-only. Nothing was saved. Your records are safe, and saving comes back when the plan starts"
+                " again (or start it again now on the Plans page).")
     why = {"bundle_ended": f"CyberLogix stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
                            " has ended",
            "plan_ended": "Your plan has ended"}.get(access["reason"], "Your free trial has ended")
@@ -343,9 +359,16 @@ def _settings_page(new_key=None):
     # Only the account make-operator flagged (auth.is_operator), never just
     # anyone who signed up with the OPERATOR_EMAIL address.
     operator = is_operator(g.user, current_app.config)
-    return render_template("app/settings.html", members=members, picked=set(org_industry_ids(conn, g.org["id"])),
+    locations = conn.execute(
+        "SELECT orgs.id, orgs.name, memberships.role FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
+        " WHERE memberships.user_id = ? ORDER BY memberships.created_at, orgs.id", (g.user["id"],)).fetchall()
+    from .plan_views import switch_offer
+    access = plans.access(g.org)
+    return render_template("app/settings.html", members=members, locations=locations,
+                           switch_yearly=switch_offer(current_app.config, g.org, access, plans.YEAR),
+                           can_add_location=sum(1 for l in locations if l["role"] == "owner") < MAX_LOCATIONS, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           access=plans.access(g.org), operator=operator,
+                           access=access, operator=operator,
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
                            support_email=current_app.config.get("SUPPORT_EMAIL", ""),
                            connection=connections.status(conn, g.org), new_key=new_key,
@@ -427,6 +450,55 @@ def settings_company():
         conn.commit()
         flash("Company settings saved. Readings for removed industries are kept in case you add them back.", "ok")
     return redirect(url_for("app.settings"))
+
+
+@bp.route("/settings/locations/add", methods=["POST"])
+@owner_required
+def add_location():
+    """Another location for the same business: a new workspace the owner
+    owns, with this one's timezone and industries (both can be changed in
+    its Settings). Each location is billed on its own (plans.location_count),
+    and starts with the free trial, like a new sign-up."""
+    conn = get_db()
+    name = clean_text(request.form.get("name"), 120)
+    owned = conn.execute("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND role = 'owner'",
+                         (g.user["id"],)).fetchone()[0]
+    if not name:
+        flash_error("Enter the new location's name, without line breaks.")
+        return redirect(url_for("app.settings", _anchor="locations"))
+    if owned >= MAX_LOCATIONS:
+        flash_error(f"One account can own up to {MAX_LOCATIONS} locations. Please contact us for more.")
+        return redirect(url_for("app.settings", _anchor="locations"))
+    now = now_iso()
+    industries = org_industry_ids(conn, g.org["id"])
+    org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends) VALUES (?, ?, ?, ?)",
+                          (name, g.org["timezone"], now,
+                           trial_end_for_new_workspace(current_app.config["ACADEMY_TRIAL_DAYS"]))).lastrowid
+    conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
+                 (g.user["id"], org_id, now))
+    conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)", [(org_id, i) for i in industries])
+    record_audit(conn, org_id, g.user["id"], "workspace",
+                 f"Location created from {g.org['name']} with {len(industries)} industries")
+    conn.commit()
+    usage.count(conn, "locations_added")
+    session["org_id"] = org_id
+    flash(f"{name} is ready, with the same industries as {g.org['name']}. You're working in it now; switch"
+          " locations in Settings.", "ok")
+    return redirect(url_for("app.overview"))
+
+
+@bp.route("/settings/locations/<int:org_id>/switch", methods=["POST"])
+@login_required
+def switch_location(org_id):
+    if not 0 < org_id < 2 ** 63:
+        abort(404)
+    row = get_db().execute("SELECT orgs.name FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
+                           " WHERE memberships.user_id = ? AND memberships.org_id = ?", (g.user["id"], org_id)).fetchone()
+    if row is None:
+        abort(404)
+    session["org_id"] = org_id
+    flash(f"You're working in {row['name']} now.", "ok")
+    return redirect(url_for("app.overview"))
 
 
 @bp.route("/settings/invite", methods=["POST"])

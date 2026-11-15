@@ -3,6 +3,55 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.5.0 (15 November 2026)
+
+Pause instead of cancel, upgrade offers, locations and trade pages.
+
+- **Pause instead of cancel.** The plan page's "Cancel or pause your plan"
+  opens a cancel screen for the owner. A plan paid monthly can be paused for
+  1, 2 or 3 months, for a slow season or a renovation: Stripe stops charging
+  (`pause_collection`, invoices voided until the chosen day), reminders and
+  alerts stop, and the workspace is read-only like the no-plan mode, with
+  everything kept. Every page, Settings (beside the reminder choices) and the
+  plan page say so, with the date. It starts again by itself on that day;
+  the daily job emails each owner 3 days before, and "Start again now" ends
+  it early. Stripe's webhook keeps the pause in step both ways.
+- **A one-time save offer** on the same screen: 25% off the next 2 months by
+  default, at most once per workspace, ever. The coupon is a setting,
+  `SAVE_OFFER_STRIPE_COUPON`, and the amount the screen promises is
+  `SAVE_OFFER_PERCENT` and `SAVE_OFFER_MONTHS`; no coupon, no offer.
+- **Cancel stays one click** ("Cancel my plan", in the same row as the
+  offers): it cancels at the end of the time paid for, and "Keep my plan"
+  takes it back before then. Stripe's portal still cancels too.
+- **Switch to yearly, 2 months free:** monthly payers see the offer on the
+  plan page (and a link in Settings) with what they save. A paid Pro can
+  switch to Plus there too. Both use the existing Stripe prices; Stripe
+  charges the difference at once and a declined card changes nothing.
+- **Upgrade offers** (`nudges.py`), for owners only, at most one a week per
+  person, and "No thanks" is for good: a workspace on Pro opening the
+  Academy sees a peek at a lesson and "Plus includes the Academy", and
+  tapping a locked world shows that world's first lesson; an owner who adds a
+  second location sees what paying yearly saves for all their locations.
+- **Locations:** an owner adds a location in Settings (a new workspace with
+  the same industries and timezone, its own team, plan and trial) and
+  switches between locations there.
+- **Trade pages** at `/for/<trade>`: salons and barbershops, tattoo and
+  piercing studios, gyms and fitness studios, and shops. Each names the
+  OmniArmor checklists that fit, which checks have reminder emails, what
+  OmniArmor doesn't cover for that trade, and the price, with a title and
+  meta description, in the sitemap and on the industries page. Sign-up from a
+  trade page picks its checklists.
+- **Usage counts** for the operator: plans paused, save offers taken, plans
+  cancelled, upgrade offers shown, plan switches and locations added.
+- **Terms:** one sentence, a monthly plan can be paused for up to 3 months
+  (last changed 15 November 2026). Privacy and Help say what pausing and the
+  offers keep and do.
+- **Schema version 20** adds `orgs.paused_until`, `paused_at`,
+  `pause_reminded_at` and `save_offer_used_at`, and the `nudges` table.
+- **Set-up:** `.env.example`, `render.yaml`, the README, the handbook, the
+  staging guide and OPERATIONS.md, section 7, "Upgrading to 1.5.0": create
+  the coupon in Stripe and set `SAVE_OFFER_STRIPE_COUPON`.
+
 ## 1.4.0 (14 November 2026)
 
 Yearly plans: pay for 10 months, get 12.

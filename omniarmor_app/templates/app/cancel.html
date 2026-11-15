@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "app/_plan_status.html" import status_line %}
+{% block title %}Cancel or pause{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · Plans</p>
+    <h1>{% if a.ends_at %}Your plan is cancelled{% elif a.paused %}Your plan is paused{% else %}Cancel or take a break{% endif %}</h1>
+    <p class="sub" data-plan-line>{{ status_line(a, facts) }}</p>
+  </div>
+</div>
+
+{% if a.ends_at %}
+  <section class="offer-card" data-keep>
+    <h2>Changed your mind?</h2>
+    <p>{{ a.plan_name }} stays on until {{ a.ends_at|local_date }}. Keep it, and it renews as before.</p>
+    {% if o.can_keep %}
+      <form method="post" action="{{ url_for('plan.keep') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Keep my plan</button>
+      </form>
+    {% else %}
+      <p class="hint">To keep it, choose a plan on the <a href="{{ url_for('plan.plan_page') }}">Plans page</a> when this one ends.</p>
+    {% endif %}
+  </section>
+{% else %}
+  <p class="muted">Cancelling is one click, in the <a href="#cancel">last box below</a>. If you only need a break, for a slow season or a renovation, pausing keeps everything ready for when you're back.</p>
+  <div class="offer-grid">
+    {% if a.paused %}
+      <section class="offer-card" data-resume>
+        <h2>Paused until {{ a.resumes_at|local_date }}</h2>
+        <p>No charges and no reminders until then. It starts again by itself that day.</p>
+        {% if o.can_resume %}
+          <form method="post" action="{{ url_for('plan.resume') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn" type="submit">Start again now</button>
+          </form>
+        {% endif %}
+      </section>
+    {% elif o.can_pause %}
+      <section class="offer-card" data-pause>
+        <h2>Pause instead</h2>
+        <p>Take {% for m in o.pause_months %}{{ m }}{{ ', ' if loop.revindex > 2 else (' or ' if not loop.last else '') }}{% endfor %} months off. While it's paused:</p>
+        <ul>
+          <li>You aren't charged.</li>
+          <li>Reminder emails and alerts stop.</li>
+          <li>Your records are kept. You can see, print and download them, but new checks can't be saved.</li>
+          <li>It starts again by itself on the date below. We email you {{ notice_days }} days before.</li>
+        </ul>
+        <div class="offer-actions">
+          {% for m in o.pause_months %}
+            <form method="post" action="{{ url_for('plan.pause') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="months" value="{{ m }}">
+              <button class="btn{% if not loop.first %} quiet{% endif %}" type="submit">Pause {{ m }} month{{ 's' if m != 1 }} · until {{ resume_dates[m].isoformat()|local_date }}</button>
+            </form>
+          {% endfor %}
+        </div>
+      </section>
+    {% elif a.yearly %}
+      <section class="offer-card" data-no-pause>
+        <h2>Paid for the year</h2>
+        <p>A yearly plan is already paid to {{ a.renews_at|local_date }}, so there's nothing to pause. If you cancel, it stays on until then.</p>
+      </section>
+    {% endif %}
+
+    {% if o.can_save %}
+      <section class="offer-card" data-save-offer>
+        <p class="plan-here">One-time offer</p>
+        <h2>{{ o.save_percent }}% off your next {{ o.save_months }} months</h2>
+        <p>Stay on {{ a.plan_name }} for {{ o.price_saved }} instead of {{ o.price_now }} for the next {{ o.save_months }} months, then the usual price. Each workspace can take this once.</p>
+        <form method="post" action="{{ url_for('plan.save_offer') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn quiet" type="submit">Take {{ o.save_percent }}% off and stay</button>
+        </form>
+      </section>
+    {% endif %}
+
+    <section class="offer-card cancel-card" id="cancel" data-cancel>
+      <h2>Cancel {{ a.plan_name }}</h2>
+      <p>{% if a.renews_at %}It stays on until {{ a.renews_at|local_date }}, the end of the time you paid for{% if a.yearly %}, with no refund for the part of the year left{% endif %}, and you won't be charged again.{% else %}You won't be charged again.{% endif %} Your records are kept either way: you can still see, print and download them.</p>
+      {% if o.can_cancel %}
+        <form method="post" action="{{ url_for('plan.cancel') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn danger" type="submit">Cancel my plan</button>
+        </form>
+      {% else %}
+        <p class="hint">Online billing isn't set up here, so please contact us to cancel.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+<p class="mt"><a href="{{ url_for('plan.plan_page') }}">Back to Plans</a></p>
+{% endblock %}

@@ -76,7 +76,7 @@ paste in the live ones.
 | `ERRORS_EMAIL` | empty, or your own | Error reports |
 | `SUPPORT_EMAIL` | empty | Nobody should write to staging for help |
 | `SMTP_HOST` and the rest | empty, or a test inbox | Section 4 |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`, `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE` | empty, or test mode | Section 4 |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`, `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`, `SAVE_OFFER_STRIPE_COUPON` | empty, or test mode | Section 4 |
 | `KITCHEN_BUNDLE_SECRET` | a new one, the same as staging CyberLogix's, never live's | A staging report must never count toward a live workspace's bundle |
 | `DAILY_JOB_HOUR_UTC` | as on live | So reminders, backups and Autopilot behave the same |
 
@@ -112,7 +112,9 @@ there:
    `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`. For yearly billing, make their yearly
    prices too ("Upgrading to 1.4.0") and put the ids in
    `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE` and
-   `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`.
+   `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`. For the cancel screen's
+   one-time discount, make a test-mode coupon ("Upgrading to 1.5.0") and put
+   its id in `SAVE_OFFER_STRIPE_COUPON`.
 2. Developers → API keys: the test secret key (it starts `sk_test_`) goes in
    `STRIPE_SECRET_KEY`.
 3. Developers → Webhooks → add endpoint

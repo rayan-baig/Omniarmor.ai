@@ -9,10 +9,11 @@ import json
 
 from flask import Blueprint, abort, current_app, flash, g, jsonify, redirect, render_template, request, url_for
 
-from . import academy, academy_plan, plans
+from . import academy, academy_plan, plans, usage
 from .academy_views import grown_ups_only
-from .db import get_db
+from .db import get_db, iso, record_audit, utcnow
 from .security import flash_error, owner_required
+from .tracking import local_date
 
 plan = Blueprint("plan", __name__)
 
@@ -95,7 +96,39 @@ def plan_page():
                            yearly_toggle=yearly_toggle,
                            start_yearly=yearly_toggle and (request.args.get("billing") == "yearly"
                                                            or (access["paid"] and access["yearly"])),
-                           has_customer=bool(g.org["stripe_customer_id"]))
+                           has_customer=bool(g.org["stripe_customer_id"]),
+                           switch_yearly=switch_offer(cfg, g.org, access, plans.YEAR),
+                           switch_plus=switch_offer(cfg, g.org, access, plans.MONTH, to_plus=True))
+
+
+def switch_offer(cfg, org, access, interval, to_plus=False):
+    """What switching a paid subscription offers: to yearly (a monthly Pro,
+    Plus or bundle Plus whose yearly price is set up: "2 months free"), or to
+    Plus (a paid Pro, on the interval it pays now). None when it doesn't apply.
+    The switch itself happens in Stripe (academy_plan.change_price)."""
+    if not (access["paid"] and org["stripe_subscription_id"] and cfg.get("STRIPE_SECRET_KEY")):
+        return None
+    if access["state"] == "past_due" or access["paused"] or access["ends_at"]:
+        return None
+    if to_plus:
+        if access["kind"] != plans.PRO.key:
+            return None
+        interval = access["interval"]
+        target = plans.PLUS.key
+    else:
+        if access["interval"] != plans.MONTH or access["kind"] not in ("pro", "plus", "plus_bundle"):
+            return None
+        target = plans.PLUS.key if access["kind"] == "plus_bundle" else access["kind"]
+    kind, price, dollars = plans.checkout_choice(cfg, org, target, interval)
+    if not price or (not to_plus and kind != access["kind"]):
+        return None
+    monthly = plans.monthly_dollars(access["kind"]) or 0
+    return {"plan": target, "interval": interval, "kind": kind, "name": plans.KINDS[kind][0],
+            "price": plans.price_label(dollars, interval, per=False),
+            # What twelve months cost paid monthly, and what yearly saves on that.
+            "twelve_months": plans.price_label(monthly * plans.MONTHS_IN_YEAR, plans.YEAR, per=False),
+            "saving": plans.price_label(plans.yearly_saving(monthly), plans.YEAR, per=False),
+            "free_label": plans.free_label()}
 
 
 def _offers(cfg, org):
@@ -165,6 +198,240 @@ def manage():
         flash_error("We couldn't open the billing page just now. Please try again in a minute.")
         return redirect(url_for("plan.plan_page"))
     return redirect(url, code=303)
+
+
+def upgrade_action(cfg, org, access):
+    """How an upgrade offer's button moves this workspace to Plus: 'switch'
+    (a paid Pro subscription, switched in Stripe at once), 'checkout' (Pro
+    from the Kitchen Safety Bundle buys Plus at the difference through
+    Stripe Checkout) or 'page' (the plan page, when neither is set up)."""
+    if switch_offer(cfg, org, access, plans.MONTH, to_plus=True):
+        return "switch"
+    if not access["paid"]:
+        _, price, _ = plans.checkout_choice(cfg, org, plans.PLUS.key, plans.MONTH)
+        if academy_plan.stripe_ready(cfg, price):
+            return "checkout"
+    return "page"
+
+
+# --- Cancel, pause, the save offer, and switching -------------------------------------
+
+def _back_to_cancel():
+    return redirect(url_for("plan.cancel_page"))
+
+
+def _stripe_failed(exc, what):
+    current_app.logger.warning("Stripe %s failed: %s", what, exc)
+    flash_error(f"We couldn't {what} just now, so nothing changed. Please try again in a minute.")
+
+
+@plan.route("/app/plan/cancel")
+@owner_required
+def cancel_page():
+    """Cancelling, with two offers beside it: pause for 1, 2 or 3 months, and
+    (once per workspace) a discount. Cancelling stays one click."""
+    cfg = current_app.config
+    options = plans.cancel_options(cfg, g.org)
+    if not options["access"]["paid"]:
+        flash_error("There's no plan to cancel.")
+        return redirect(url_for("plan.plan_page"))
+    now = utcnow()
+    resume_dates = {m: plans.add_months(now, m) for m in plans.PAUSE_MONTHS}
+    return render_template("app/cancel.html", o=options, a=options["access"], facts=plan_facts(cfg),
+                           resume_dates=resume_dates, notice_days=plans.RESUME_NOTICE.days)
+
+
+@plan.route("/app/plan/pause", methods=["POST"])
+@owner_required
+def pause():
+    cfg = current_app.config
+    months = request.form.get("months", type=int)
+    options = plans.cancel_options(cfg, g.org)
+    if months not in plans.PAUSE_MONTHS or not options["can_pause"]:
+        flash_error("This plan can't be paused right now.")
+        return _back_to_cancel()
+    now = utcnow()
+    until = plans.add_months(now, months)
+    conn = get_db()
+    try:
+        if options["online"]:
+            academy_plan.pause_subscription(conn, cfg, g.org, until)
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        _stripe_failed(exc, "pause your plan")
+        return _back_to_cancel()
+    conn.execute("UPDATE orgs SET paused_until = ?, paused_at = ?, pause_reminded_at = NULL WHERE id = ?",
+                 (iso(until), iso(now), g.org["id"]))
+    record_audit(conn, g.org["id"], g.user["id"], "workspace",
+                 f"Plan paused for {months} month{'s' if months != 1 else ''}, until {until.date().isoformat()}")
+    conn.commit()
+    usage.count(conn, "plan_pauses")
+    flash(f"Your plan is paused until {local_date(iso(until), g.org)}. You won't be charged, reminders are off and"
+          " the workspace is read-only until then. Everything is kept, and it starts again by itself.", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/plan/resume", methods=["POST"])
+@owner_required
+def resume():
+    cfg = current_app.config
+    options = plans.cancel_options(cfg, g.org)
+    if not options["can_resume"]:
+        flash_error("This plan isn't paused.")
+        return redirect(url_for("plan.plan_page"))
+    conn = get_db()
+    try:
+        if options["online"]:
+            academy_plan.resume_subscription(conn, cfg, g.org)
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        _stripe_failed(exc, "start your plan again")
+        return redirect(url_for("plan.plan_page"))
+    conn.execute("UPDATE orgs SET paused_until = NULL, paused_at = NULL, pause_reminded_at = NULL WHERE id = ?",
+                 (g.org["id"],))
+    record_audit(conn, g.org["id"], g.user["id"], "workspace", "Plan started again before the end of its pause")
+    conn.commit()
+    flash("Welcome back! Your plan is on again: checks can be saved and reminders are back on.", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/plan/save-offer", methods=["POST"])
+@owner_required
+def save_offer():
+    cfg = current_app.config
+    options = plans.cancel_options(cfg, g.org)
+    if not options["can_save"]:
+        flash_error("That offer isn't available for this workspace." if options["save_used"]
+                    else "That offer isn't available right now.")
+        return _back_to_cancel()
+    conn = get_db()
+    # Claimed first, so two clicks (or two tabs) can't take it twice.
+    claimed = conn.execute("UPDATE orgs SET save_offer_used_at = ? WHERE id = ? AND save_offer_used_at IS NULL",
+                           (iso(utcnow()), g.org["id"])).rowcount
+    if claimed != 1:
+        conn.rollback()
+        flash_error("That offer isn't available for this workspace.")
+        return _back_to_cancel()
+    try:
+        academy_plan.apply_coupon(conn, cfg, g.org, cfg["SAVE_OFFER_STRIPE_COUPON"])
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        _stripe_failed(exc, "add the discount")
+        return _back_to_cancel()
+    percent, months = options["save_percent"], options["save_months"]
+    record_audit(conn, g.org["id"], g.user["id"], "workspace",
+                 f"Save offer taken: {percent}% off the next {months} month{'s' if months != 1 else ''}")
+    conn.commit()
+    usage.count(conn, "save_offers")
+    flash(f"Done: {percent}% off your next {months} month{'s' if months != 1 else ''}. Your plan stays on as it is."
+          " Thank you for staying!", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/plan/cancel", methods=["POST"])
+@owner_required
+def cancel():
+    """One click: the plan is cancelled and stays on until the end of the
+    time paid for. A plan set by hand (no Stripe subscription) ends at its
+    renewal date if it has one, otherwise now."""
+    cfg = current_app.config
+    options = plans.cancel_options(cfg, g.org)
+    if not options["can_cancel"]:
+        flash_error("There's no plan to cancel." if not options["access"]["paid"] else
+                    "This plan is already cancelled." if options["access"]["ends_at"] else
+                    "Online billing isn't set up, so the plan can't be cancelled here. Please contact us.")
+        return redirect(url_for("plan.plan_page"))
+    conn = get_db()
+    try:
+        if options["online"]:
+            academy_plan.cancel_at_period_end(conn, cfg, g.org)
+        elif g.org["academy_renews_at"]:
+            conn.execute("UPDATE orgs SET academy_ends_at = academy_renews_at WHERE id = ?", (g.org["id"],))
+        else:
+            conn.execute("UPDATE orgs SET academy_status = 'canceled', paused_until = NULL WHERE id = ?",
+                         (g.org["id"],))
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        _stripe_failed(exc, "cancel your plan")
+        return _back_to_cancel()
+    record_audit(conn, g.org["id"], g.user["id"], "workspace", "Plan cancelled")
+    conn.commit()
+    usage.count(conn, "plan_cancels")
+    org = conn.execute("SELECT * FROM orgs WHERE id = ?", (g.org["id"],)).fetchone()
+    after = plans.access(org)
+    if after["paid"] and after["ends_at"]:
+        flash(f"Your plan is cancelled. It stays on until {local_date(after['ends_at'], org)}, and you won't be"
+              " charged again. Your records are kept either way.", "ok")
+    else:
+        flash("Your plan is cancelled. Your records are kept: you can still see, print and download them.", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/plan/keep", methods=["POST"])
+@owner_required
+def keep():
+    """Takes a cancellation back before the plan ends."""
+    cfg = current_app.config
+    options = plans.cancel_options(cfg, g.org)
+    if not options["can_keep"]:
+        flash_error("There's no cancellation to take back.")
+        return redirect(url_for("plan.plan_page"))
+    conn = get_db()
+    try:
+        academy_plan.cancel_at_period_end(conn, cfg, g.org, cancel=False)
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        _stripe_failed(exc, "keep your plan")
+        return redirect(url_for("plan.plan_page"))
+    record_audit(conn, g.org["id"], g.user["id"], "workspace", "Cancellation taken back: the plan renews as before")
+    conn.commit()
+    flash("Your plan is no longer cancelled. It renews as before.", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/plan/switch", methods=["POST"])
+@owner_required
+def switch():
+    """A paid subscription moves to Plus or to yearly, at our Stripe prices.
+    Stripe charges the difference now, taking off the unused part of the
+    current period; if the card is declined, nothing changes."""
+    cfg = current_app.config
+    access = plans.access(g.org)
+    to = request.form.get("to", "")
+    offer = (switch_offer(cfg, g.org, access, plans.YEAR) if to == "yearly"
+             else switch_offer(cfg, g.org, access, plans.MONTH, to_plus=True) if to == "plus" else None)
+    if offer is None:
+        flash_error("That switch isn't available for this plan. Manage billing has every option.")
+        return redirect(url_for("plan.plan_page"))
+    kind, price, _ = plans.checkout_choice(cfg, g.org, offer["plan"], offer["interval"])
+    conn = get_db()
+    try:
+        academy_plan.change_price(conn, cfg, g.org, price, kind, offer["interval"])
+    except academy_plan.StripeError as exc:
+        conn.rollback()
+        current_app.logger.warning("Stripe plan switch failed: %s", exc)
+        flash_error("Stripe couldn't make that switch, so nothing changed. If your card was declined, update it in"
+                    " Manage billing and try again.")
+        return redirect(url_for("plan.plan_page"))
+    record_audit(conn, g.org["id"], g.user["id"], "workspace",
+                 f"Plan switched to {offer['name']}, paid {'yearly' if offer['interval'] == plans.YEAR else 'monthly'}")
+    conn.commit()
+    usage.count(conn, "plan_switches")
+    flash(f"Done: you're on {offer['name']}, {offer['price']}. Stripe sends the receipt.", "ok")
+    return redirect(url_for("plan.plan_page"))
+
+
+@plan.route("/app/nudges/<kind>/dismiss", methods=["POST"])
+def dismiss_nudge(kind):
+    """Hides an upgrade offer for good, for the person who dismissed it."""
+    from . import nudges
+    from .security import safe_next
+    if g.get("user") is None:
+        abort(403)
+    if not nudges.dismiss(get_db(), g.user["id"], kind):
+        abort(404)
+    flash("Got it. We won't show that offer again.", "ok")
+    return redirect(safe_next(request.form.get("next")))
 
 
 @plan.route("/billing/stripe/webhook", methods=["POST"])

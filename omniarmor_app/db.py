@@ -386,6 +386,28 @@ MIGRATIONS = [
     (19, """
     ALTER TABLE orgs ADD COLUMN plan_interval TEXT NOT NULL DEFAULT 'month';
     """),
+    # Pause instead of cancel, the one-time save offer and upgrade offers
+    # (plans.py, nudges.py). paused_until is when a paused plan starts again
+    # by itself (billing, reminders and saving checks come back then);
+    # paused_at when the pause began; pause_reminded_at when the "starts again
+    # in 3 days" email went out. save_offer_used_at is when the workspace took
+    # the save offer, which it can do once, ever. nudges remembers, per person
+    # and kind of offer, when it was last shown and whether they dismissed
+    # it, so no one sees more than one offer a week, or one they said no to.
+    (20, """
+    ALTER TABLE orgs ADD COLUMN paused_until TEXT;
+    ALTER TABLE orgs ADD COLUMN paused_at TEXT;
+    ALTER TABLE orgs ADD COLUMN pause_reminded_at TEXT;
+    ALTER TABLE orgs ADD COLUMN save_offer_used_at TEXT;
+    CREATE TABLE nudges (
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL,
+        shown_at TEXT,
+        dismissed_at TEXT,
+        PRIMARY KEY (user_id, kind)
+    );
+    CREATE INDEX nudges_shown ON nudges (user_id, shown_at);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

@@ -23,9 +23,11 @@ from datetime import timedelta
 
 import click
 
-from . import usage
+from . import plans, usage
 from .db import connect, iso, migrate, now_iso, utcnow
+from .notify import notify
 from .reminders import run_clock_alerts, run_reminders
+from .tracking import local_date
 
 log = logging.getLogger("omniarmor.jobs")
 CHECK_EVERY_SECONDS = 600   # the daily job's check and Autopilot
@@ -223,6 +225,45 @@ def cleanup(conn):
     conn.commit()
 
 
+def run_pause_sweep(conn, cfg, now=None):
+    """Paused plans (plans.py): emails each owner RESUME_NOTICE before a
+    pause ends ("your plan starts again on ..."), once per pause, and tidies
+    pauses that have ended. Ending needs nothing from here: plans.access
+    reads paused_until, so a plan is on again the moment its pause ends, and
+    Stripe starts charging by itself at resumes_at."""
+    now = now or utcnow()
+    summary = {"notices": 0, "ended": 0}
+    soon = iso(now + plans.RESUME_NOTICE)
+    rows = conn.execute("SELECT * FROM orgs WHERE paused_until IS NOT NULL AND pause_reminded_at IS NULL"
+                        " AND paused_until > ? AND paused_until <= ?", (iso(now), soon)).fetchall()
+    base = cfg.get("BASE_URL", "").rstrip("/")
+    for org in rows:
+        if not plans.access(org, now)["paused"]:
+            continue
+        day = local_date(org["paused_until"], org)
+        owners = conn.execute("SELECT users.* FROM users JOIN memberships ON memberships.user_id = users.id"
+                              " WHERE memberships.org_id = ? AND memberships.role = 'owner' ORDER BY users.id",
+                              (org["id"],)).fetchall()
+        for user in owners:
+            body = (f"Hi {user['name']},\n\n"
+                    f"The plan for {org['name']} is paused, and it starts again by itself on {day}.\n\n"
+                    "From then on:\n"
+                    "- Billing starts again, as before.\n"
+                    "- Checks can be saved again, and reminder emails come back on.\n\n"
+                    "Nothing to do if that suits you. To pause longer or cancel instead:\n\n"
+                    f"Open your plan: {base}/app/plan/cancel")
+            notify(conn, cfg, "plan", user["email"], f"Your OmniArmor plan starts again on {day}", body,
+                   org_id=org["id"], user_id=user["id"])
+        conn.execute("UPDATE orgs SET pause_reminded_at = ? WHERE id = ?", (iso(now), org["id"]))
+        conn.commit()
+        summary["notices"] += 1
+    ended = conn.execute("UPDATE orgs SET paused_until = NULL, paused_at = NULL, pause_reminded_at = NULL"
+                         " WHERE paused_until IS NOT NULL AND paused_until <= ?", (iso(now),)).rowcount
+    conn.commit()
+    summary["ended"] = ended
+    return summary
+
+
 def run_daily(cfg, force=False):
     """Runs the daily job if it is due and no other process has claimed today."""
     now = utcnow()
@@ -252,6 +293,11 @@ def _run_daily(cfg, run_date, force):
         except Exception:
             failures.append("reminders")
             log.exception("daily reminders failed")
+        try:
+            run_pause_sweep(conn, cfg)
+        except Exception:
+            failures.append("pauses")
+            log.exception("daily pause sweep failed")
         try:
             cleanup(conn)
         except Exception:

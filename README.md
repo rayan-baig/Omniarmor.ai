@@ -55,6 +55,21 @@ from there.
   yearly one left empty means that plan is monthly only); set-up is in
   [docs/OPERATIONS.md](docs/OPERATIONS.md), section 7. A workspace on the old
   Academy plan keeps it as it was until it changes plan.
+- **Pause instead of cancel:** the owner's cancel screen offers a pause of 1,
+  2 or 3 months for a monthly plan (Stripe stops charging, reminders stop,
+  the workspace is read-only, and it starts again by itself, with an email 3
+  days before), a one-time discount (`SAVE_OFFER_STRIPE_COUPON`,
+  `SAVE_OFFER_PERCENT`, `SAVE_OFFER_MONTHS`: 25% off the next 2 months by
+  default) and cancelling, one click. Monthly payers are offered "Switch to
+  yearly, 2 months free" on the plan page.
+- **Upgrade offers:** an owner on Pro sees a peek at an Academy lesson and
+  "Plus includes the Academy" when opening the Academy, and an owner who adds
+  a second location sees the yearly saving; at most one offer a week per
+  person, and "No thanks" is for good. Owners add and switch locations in
+  Settings.
+- **Trade pages** at `/for/<trade>` (salons and barbershops, tattoo and
+  piercing studios, gyms and fitness studios, shops) name the OmniArmor
+  checklists that fit each trade, and what they don't cover.
 
 Every check answers **Cleared**, **Warning** or **Blocked** and names the rule
 it applies. This is decision support, not legal advice: confirm each rule with
@@ -66,7 +81,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 723 tests
+python3 -m unittest discover -s tests     # 777 tests
 flask --app wsgi seed-demo --force demo.db   # a made-up demo workspace (docs/OPERATIONS.md, section 6)
 ```
 

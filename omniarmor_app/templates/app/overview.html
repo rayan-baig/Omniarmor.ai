@@ -7,6 +7,26 @@
     <h1>Overview</h1>
   </div>
 </div>
+{% if location_nudge %}
+<section class="offer-card mb" data-location-offer>
+  <p class="plan-here">{{ location_nudge.locations }} locations · yearly saves more</p>
+  <h2>Paying yearly gives {{ location_nudge.free_label }} at every location</h2>
+  <ul>
+    {% for r in location_nudge.rows %}
+      <li>{{ r.plan.name }}, {{ r.yearly }}: saves {{ r.each }} per location, {{ r.all }} for your {{ location_nudge.locations }} locations.</li>
+    {% endfor %}
+  </ul>
+  <p class="hint">Each location has its own plan. Choose yearly on the Plans page of each one{% if g.role == 'owner' %}, or switch a monthly plan to yearly there{% endif %}.</p>
+  <div class="offer-actions">
+    <a class="btn" href="{{ url_for('plan.plan_page', billing='yearly') }}">See yearly prices</a>
+    <form method="post" action="{{ url_for('plan.dismiss_nudge', kind='second_location') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ url_for('app.overview') }}">
+      <button class="linkbtn" type="submit">No thanks, don't show this again</button>
+    </form>
+  </div>
+</section>
+{% endif %}
 {% set total = total %}
 {% include "app/_totals.html" %}
 

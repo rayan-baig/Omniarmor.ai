@@ -28,6 +28,15 @@ EVENTS = (
     ("certificates", "Certificates earned"),
     ("help_views", "Help page views"),
     ("signups", "Sign-ups"),
+    # Keeping customers (plan_views.py, nudges.py): plans paused instead of
+    # cancelled, save offers taken, plans cancelled from the app, upgrade
+    # offers shown, and plan switches started from the app (to Plus or to yearly).
+    ("plan_pauses", "Plans paused"),
+    ("save_offers", "Save offers taken"),
+    ("plan_cancels", "Plans cancelled"),
+    ("nudges_shown", "Upgrade offers shown"),
+    ("plan_switches", "Plan switches (to Plus or yearly)"),
+    ("locations_added", "Locations added"),
 )
 EVENT_NAMES = dict(EVENTS)
 SHOW_DAYS = 30

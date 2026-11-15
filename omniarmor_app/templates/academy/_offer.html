@@ -1,0 +1,38 @@
+{# The Academy upgrade offer (nudges.py): a peek at a lesson and one line, Plus includes the Academy. Shown at most once a week, to the workspace owner, and never again after "No thanks". #}
+{% macro academy_offer(offer, back) -%}
+{% set pf = plan_facts() %}
+<section class="ac-card ac-offer" data-academy-offer>
+  <p class="ac-kicker">Lesson preview · {{ offer.world.title }}</p>
+  <div class="ac-offer-cards">
+    {% for title, text in offer.cards %}
+      <div class="ac-offer-lesson"><strong>{{ title }}</strong><p>{{ text }}</p></div>
+    {% endfor %}
+  </div>
+  <h2 class="ac-h3">{{ pf.plus.name }} includes the Academy</h2>
+  <p>Every track and every world, the Owner's Challenge and its certificates, for up to {{ pf.max_learners }} kids. {{ pf.plus.name }} is {{ offer.price }}{% if offer.bundle %} with your {{ pf.bundle.name }}{% endif %}{% if offer.yearly_price %}, or {{ offer.yearly_price }}{% endif %}{% if offer.action == 'switch' %}, and everything in your {{ pf.pro.name }} stays as it is{% endif %}.</p>
+  <div class="offer-actions">
+    {% if offer.action == 'switch' %}
+      <form method="post" action="{{ url_for('plan.switch') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="to" value="plus">
+        <button class="btn" type="submit">Switch to {{ pf.plus.name }}</button>
+      </form>
+    {% elif offer.action == 'checkout' %}
+      <form method="post" action="{{ url_for('plan.checkout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="plus">
+        <input type="hidden" name="interval" value="month">
+        <button class="btn" type="submit">Add the Academy with {{ pf.plus.name }}</button>
+      </form>
+    {% else %}
+      <a class="btn" href="{{ url_for('plan.plan_page') }}">See {{ pf.plus.name }}</a>
+    {% endif %}
+    <form method="post" action="{{ url_for('plan.dismiss_nudge', kind='academy') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ back }}">
+      <button class="linkbtn" type="submit">No thanks, don't show this again</button>
+    </form>
+  </div>
+  {% if offer.action == 'switch' %}<p class="hint">Stripe charges the difference for the rest of this billing period today.</p>{% endif %}
+</section>
+{%- endmacro %}

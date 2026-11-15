@@ -10,6 +10,7 @@
 
 <h2 id="reminders">Your reminder emails</h2>
 <p class="muted">Sent to {{ g.user.email }}. Everyone on the team chooses their own. Radar keeps a copy of each.</p>
+{% if access.paused %}<p class="plan-banner paused" data-reminders-paused><strong>Off while your plan is paused.</strong> No reminder emails or alerts go out until {{ access.resumes_at|local_date }}, whatever you pick here. They start again by themselves that day.</p>{% endif %}
 <form method="post" action="{{ url_for('app.settings_reminders') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Daily digest: checks coming due in 30, 7 and 1 days, due today, and each week they stay overdue</label>
@@ -68,6 +69,32 @@
   </form>
 {% endif %}
 
+<h2 id="locations">Locations</h2>
+<p class="muted">Each location is its own workspace, with its own checks, team and plan. {% if locations|length > 1 %}You're working in <strong>{{ g.org.name }}</strong>.{% endif %}</p>
+{% if locations|length > 1 %}
+  <ul class="list" data-locations>
+    {% for l in locations %}
+      <li class="row">
+        <span><span class="title">{{ l.name }}</span><span class="meta"> · {{ l.role }}</span></span>
+        {% if l.id == g.org.id %}<span class="faint">Current</span>{% else %}
+          <form method="post" action="{{ url_for('app.switch_location', org_id=l.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="linkbtn" type="submit">Switch to {{ l.name }}</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% if g.role == 'owner' and can_add_location %}
+  <form method="post" action="{{ url_for('app.add_location') }}" class="narrow mt-s" data-add-location>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="field"><span>Add a location</span><input type="text" name="name" maxlength="120" required placeholder="For example: {{ g.org.name }} Downtown"></label>
+    <p class="hint">It starts with this location's industries and timezone, and its own free trial. You own it; invite its team from its Settings.</p>
+    <button class="btn quiet" type="submit">Add location</button>
+  </form>
+{% endif %}
+
 {% include "app/_connections.html" %}
 
 {% from "app/_plan_status.html" import status_line %}
@@ -76,6 +103,7 @@
 {% if access.bundle.state == 'covered' %}<p class="row" data-bundle-line><span><strong>{{ pf.bundle.includes.name }} included with your {{ pf.bundle.name }}</strong></span></p>{% endif %}
 <p class="row"><span data-plan-line>{{ status_line(access, pf) }}</span>
   <a href="{{ url_for('plan.plan_page') }}">{{ 'Manage billing' if access.paid and g.role == 'owner' else 'See the plans' }}</a></p>
+{% if g.role == 'owner' and switch_yearly %}<p class="row" data-yearly-switch-link><span>Paying monthly? Switch to yearly, {{ pf.free_label }}.</span> <a href="{{ url_for('plan.plan_page') }}#switch-yearly">Switch to yearly</a></p>{% endif %}
 <p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}{% if pf.yearly.pro %} or {{ pf.pro.yearly_short }}{% endif %}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}{% if pf.yearly.plus %} or {{ pf.plus.yearly_short }}{% endif %}: everything in {{ pf.pro.name }} and the whole Future Owner Academy.{% if pf.yearly.any %} Paying yearly gives {{ pf.free_label }} (<a href="{{ url_for('plan.plan_page', billing='yearly') }}" data-yearly-link>see yearly prices</a>).{% endif %} The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>
 
 {% if g.role == 'owner' %}

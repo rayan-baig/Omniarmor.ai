@@ -18,7 +18,7 @@ from functools import wraps
 from flask import (Blueprint, abort, flash, g, jsonify, redirect, render_template, request,
                    url_for)
 
-from . import academy, academy_plan, armo, usage
+from . import academy, academy_plan, armo, nudges, plans, usage
 from .catalog import INDUSTRIES
 from .db import get_db, iso, now_iso, utcnow
 from .security import (clean_text, client_ip, flash_error, new_device_epoch, rate_limited,
@@ -255,9 +255,49 @@ def academy_context():
 def home():
     conn = get_db()
     learners = conn.execute("SELECT * FROM learners WHERE org_id = ? ORDER BY created_at, id", (g.org["id"],)).fetchall()
+    offer = _academy_offer() if _offer_allowed() else None
+    if offer is not None:
+        nudges.mark_shown(conn, g.user["id"], "academy")
     return render_template("academy/home.html", summaries=[_summary(l) for l in learners], avatars=academy.AVATARS,
                            max_learners=academy.MAX_LEARNERS, tracks=academy.TRACK_LIST,
-                           world_count=len(academy.TOPIC_WORLDS), plan=academy_plan.plan_status(g.org))
+                           world_count=len(academy.TOPIC_WORLDS), plan=academy_plan.plan_status(g.org),
+                           offer=offer)
+
+
+# --- The upgrade offer (nudges.py) -----------------------------------------------
+
+def _offer_allowed():
+    """Whether the Academy offer may show now: the owner of a workspace on
+    Pro, at most once a week, never after they dismissed it."""
+    return (g.get("kid") is None and g.get("user") is not None and g.role == "owner"
+            and nudges.on_pro(plans.access(g.org)) and nudges.allowed(get_db(), g.user, "academy"))
+
+
+def _academy_offer(world=None, t=None):
+    from flask import current_app
+    from .plan_views import upgrade_action
+    cfg = current_app.config
+    access = plans.access(g.org)
+    offer = nudges.academy_offer(cfg, g.org, access, org_industry_ids(get_db(), g.org["id"]), world, t)
+    offer["action"] = upgrade_action(cfg, g.org, access)
+    return offer
+
+
+@bp.route("/<int:learner_id>/world/<int:world_number>/preview")
+@grown_ups_only
+def preview(learner_id, world_number):
+    """A peek at a world outside the free ones: its first lesson's opening
+    cards, and Plus, which includes the whole Academy."""
+    learner = _learner_or_404(learner_id)
+    t = _track(learner)
+    w = _world_or_404(world_number, t)
+    if academy_plan.allows(g.org, t, w):
+        return redirect(url_for("academy.world_page", learner_id=learner_id, world_number=world_number))
+    if g.role != "owner":
+        return redirect(url_for("plan.plan_page"))
+    offer = _academy_offer(w, t)
+    nudges.mark_shown(get_db(), g.user["id"], "academy")
+    return render_template("academy/preview.html", learner=learner, offer=offer, avatars=academy.AVATARS)
 
 
 @bp.route("/learners", methods=["POST"])
@@ -382,6 +422,8 @@ def level_map(learner_id):
 def _plan_blocks(t, w, learner_id):
     if academy_plan.allows(g.org, t, w):
         return None
+    if request.method == "GET" and _offer_allowed():
+        return redirect(url_for("academy.preview", learner_id=learner_id, world_number=w.number))
     flash_error("This world is part of Plus. "
                 + ("Ask a grown-up to unlock it!" if g.get("kid") is not None else "Choose Plus to unlock it."))
     if g.get("kid") is not None:

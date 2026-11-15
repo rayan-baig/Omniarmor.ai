@@ -66,7 +66,9 @@ def _landing_facts():
 
 @public.route("/industries")
 def industries():
-    return render_template("industries.html", industries=INDUSTRIES)
+    from .trades import EXISTING, TRADES
+    return render_template("industries.html", industries=INDUSTRIES, trades=TRADES,
+                           existing=[(name, INDUSTRIES[i]) for name, i in EXISTING])
 
 
 @public.route("/industries/<slug>")
@@ -80,8 +82,21 @@ def industry_page(slug):
     return render_template("industry_public.html", info=match, top=top, rest=rest, why_line=why_line)
 
 
+@public.route("/for/<slug>")
+def trade_page(slug):
+    """A page per trade without an industry of its own (trades.py): the
+    checklists that fit it, honestly, and the price."""
+    from . import trades
+    trade = trades.BY_SLUG.get(slug.lower())
+    if trade is None:
+        abort(404)
+    if slug != trade.slug:
+        return redirect(url_for("public.trade_page", slug=trade.slug), code=301)
+    return render_template("trade.html", trade=trade, groups=trades.groups(trade), facts=trades.facts(trade))
+
+
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "14 November 2026"
+RULES_UPDATED = "15 November 2026"
 
 
 def _rules_facts():
@@ -95,6 +110,7 @@ def _rules_facts():
     from .jobs import ALERTS_EVERY_SECONDS
     from .auth import INVITE_DAYS, RESET_HOURS
     from .connections import SIGNATURE_MEMORY
+    from .plans import PAUSE_MONTHS
     cfg = current_app.config
     return {
         "updated": RULES_UPDATED,
@@ -112,6 +128,7 @@ def _rules_facts():
         "error_emails_per_day": MAX_PER_DAY,
         "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
         "signature_minutes": int(SIGNATURE_MEMORY.total_seconds() // 60),
+        "pause_most": max(PAUSE_MONTHS),
     }
 
 
@@ -134,6 +151,7 @@ def _help_facts():
     from .autopilot import SLOT_MINUTES
     from .catalog import TOP_COUNT
     from .jobs import ALERTS_EVERY_SECONDS
+    from .plans import PAUSE_MONTHS, RESUME_NOTICE
     from .reminders import REMINDER_DAYS
     cfg = current_app.config
     facts = plan_facts(cfg)
@@ -148,6 +166,8 @@ def _help_facts():
         "reset_hours": RESET_HOURS,
         "join_code_days": JOIN_CODE_DAYS,
         "support_email": cfg.get("SUPPORT_EMAIL", ""),
+        "pause_months": PAUSE_MONTHS,
+        "resume_notice_days": RESUME_NOTICE.days,
     })
     return facts
 
@@ -162,8 +182,8 @@ def help_page():
 # them, and they carry share previews (og: and twitter: tags) and a canonical
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
-PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.terms", "public.privacy",
-                "public.help", "auth.signup", "auth.login"}
+PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page", "public.terms",
+                "public.privacy", "public.help", "auth.signup", "auth.login"}
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
@@ -215,6 +235,8 @@ def sitemap():
     base = current_app.config["BASE_URL"]
     paths = [url_for("public.home"), url_for("public.industries")]
     paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
+    from .trades import TRADES
+    paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
     paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
               url_for("public.privacy")]
     if current_app.config.get("NOINDEX"):

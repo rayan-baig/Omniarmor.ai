@@ -44,6 +44,17 @@ add the Academy (Plus) for the difference between Plus and Pro.
 **The old Academy plan** (before 1.3.0) is kept as it was: a workspace that
 paid for it keeps the whole Academy, and the compliance tracker it had for
 free, at its old price, until it changes plan or the subscription ends.
+
+**Pausing.** A plan paid monthly can be paused for PAUSE_MONTHS (1, 2 or 3
+months) instead of cancelled: Stripe stops charging (pause_collection), the
+workspace is read-only exactly as without a plan (reminders stop, nothing is
+deleted), and it starts again by itself on the date chosen (orgs.paused_until).
+A yearly plan is already paid for the year, so it isn't paused.
+
+**The save offer.** Once per workspace, ever, a monthly payer about to cancel
+can take SAVE_OFFER_PERCENT off the next SAVE_OFFER_MONTHS months, through the
+Stripe coupon named in SAVE_OFFER_STRIPE_COUPON (the settings decide the
+amount; the coupon must match them). No coupon set: no offer.
 """
 
 from dataclasses import dataclass
@@ -142,7 +153,45 @@ BUNDLE_GRACE = timedelta(days=7)        # then this long more, with a banner
 
 
 def price_label(dollars, interval=MONTH, per=True):
-    return f"${dollars:,} a {interval}" + (f" per {LOCATION}" if per else "")
+    whole = float(dollars).is_integer()
+    amount = f"${int(dollars):,}" if whole else f"${dollars:,.2f}"
+    return f"{amount} a {interval}" + (f" per {LOCATION}" if per else "")
+
+
+def yearly_saving(monthly):
+    """What paying yearly saves in a year, per location: twelve months'
+    price less the yearly price ($100 for Pro)."""
+    return monthly * MONTHS_IN_YEAR - yearly_dollars(monthly)
+
+
+# --- Pausing and the save offer ----------------------------------------------------
+
+PAUSE_MONTHS = (1, 2, 3)
+RESUME_NOTICE = timedelta(days=3)      # the "starts again soon" email, this long before
+PAUSABLE_KINDS = ("pro", "plus", "academy")
+
+
+def add_months(moment, months):
+    """The same day and time `months` calendar months later (the last day of
+    a shorter month: 31 January plus one month is 28 or 29 February)."""
+    import calendar
+    month = moment.month - 1 + months
+    year, month = moment.year + month // 12, month % 12 + 1
+    day = min(moment.day, calendar.monthrange(year, month)[1])
+    return moment.replace(year=year, month=month, day=day)
+
+
+def save_offer_terms(cfg):
+    """The save offer's amount from the settings: (percent, months), or None
+    when there is no coupon set (no offer at all)."""
+    if not cfg.get("SAVE_OFFER_STRIPE_COUPON"):
+        return None
+    return int(cfg.get("SAVE_OFFER_PERCENT") or 0), int(cfg.get("SAVE_OFFER_MONTHS") or 0)
+
+
+def discounted(dollars, percent):
+    """A monthly price with percent off, to the cent."""
+    return round(dollars * (100 - percent) / 100, 2)
 
 
 def bundle_upgrade_dollars(interval=MONTH):
@@ -240,16 +289,19 @@ def access(org, now=None, trial_days=None):
     state = _get(org, "academy_status") or "none"
     kind = _get(org, "plan") or "none"
     paid = state in PAID_STATES
+    resumes = _parse(_get(org, "paused_until"))
+    paused = paid and resumes is not None and resumes > now
     if paid and kind not in KINDS:
         # A paid subscription that never said which plan it is began before
         # Pro and Plus (every checkout since names its plan): the old Academy plan.
         kind = "academy"
     name, sub_tracker, sub_academy = KINDS.get(kind, (None, False, False))
-    if not paid:
+    if not paid or paused:
+        # A paused plan gives nothing until it starts again, like no plan.
         sub_tracker = sub_academy = False
     bundle = bundle_status(org, now)
     ends = trial_ends(org, trial_days)
-    in_trial = ends is not None and ends > now
+    in_trial = ends is not None and ends > now and not paused
     interval = _get(org, "plan_interval")
     trial_days_left = max(1, -(-int((ends - now).total_seconds()) // 86400)) if in_trial else 0
     if sub_tracker:
@@ -262,7 +314,9 @@ def access(org, now=None, trial_days=None):
         source = "trial"
     else:
         source = None
-    if source is None:
+    if source is None and paused:
+        reason = "paused"
+    elif source is None:
         reason = "bundle_ended" if bundle["state"] == "lapsed" else "plan_ended" if kind != "none" else "trial_ended"
     else:
         reason = None
@@ -281,6 +335,9 @@ def access(org, now=None, trial_days=None):
         "renews_at": None if _get(org, "academy_ends_at") else _get(org, "academy_renews_at"),
         "ends_at": _get(org, "academy_ends_at") if paid else None,
         "legacy": paid and kind == "academy",
+        "paused": paused,              # paused: no charge, read-only, until resumes_at
+        "resumes_at": resumes if paused else None,
+        "paused_at": _get(org, "paused_at") if paused else None,
     }
 
 
@@ -295,3 +352,44 @@ def checkout_choice(cfg, org, plan_key, interval=MONTH, now=None):
     if plan is PLUS and bundle_status(org, now)["state"] == "covered" and cfg.get(upgrade):
         return "plus_bundle", cfg[upgrade], bundle_upgrade_dollars(interval)
     return plan.key, cfg.get(plan.setting(interval)) or "", plan.dollars_for(interval)
+
+
+def monthly_dollars(kind):
+    """What a plan kind costs a month, or None for the old Academy plan
+    (its old price lives only in Stripe)."""
+    if kind in PLANS:
+        return current_plans()[kind].dollars
+    if kind == "plus_bundle":
+        return bundle_upgrade_dollars()
+    return None
+
+
+def cancel_options(cfg, org, now=None):
+    """What the cancel screen offers this workspace: pausing (a monthly plan,
+    not past due, not already cancelled or paused), the one-time save offer
+    (the same, with a Stripe subscription, a coupon set and the offer never
+    taken), and cancelling (any paid plan not already cancelled)."""
+    a = access(org, now)
+    online = bool(_get(org, "stripe_subscription_id"))
+    stripe_ok = not online or bool(cfg.get("STRIPE_SECRET_KEY"))
+    going = a["paid"] and a["state"] != "past_due" and not a["ends_at"]
+    monthly = a["interval"] == MONTH
+    terms = save_offer_terms(cfg)
+    dollars = monthly_dollars(a["kind"])
+    can_save = bool(going and monthly and not a["paused"] and online and stripe_ok and terms
+                    and terms[0] > 0 and terms[1] > 0 and not _get(org, "save_offer_used_at"))
+    return {
+        "access": a,
+        "can_pause": bool(going and monthly and not a["paused"] and a["kind"] in PAUSABLE_KINDS and stripe_ok),
+        "pause_months": PAUSE_MONTHS,
+        "can_resume": a["paused"] and stripe_ok,
+        "can_save": can_save,
+        "save_used": bool(_get(org, "save_offer_used_at")),
+        "save_percent": terms[0] if terms else None,
+        "save_months": terms[1] if terms else None,
+        "price_now": price_label(dollars, per=False) if dollars else None,
+        "price_saved": price_label(discounted(dollars, terms[0]), per=False) if dollars and terms else None,
+        "can_cancel": a["paid"] and not a["ends_at"] and stripe_ok,
+        "can_keep": a["paid"] and bool(a["ends_at"]) and online and stripe_ok,
+        "online": online,
+    }

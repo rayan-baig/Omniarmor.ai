@@ -525,3 +525,11 @@
   .ac-report .ac-wide-only{display:none}
   .ac-report th,.ac-report td{padding-inline:6px}
 }
+
+/* The Academy upgrade offer (nudges.py): a peek at a lesson, then Plus */
+.ac-offer{display:flex;flex-direction:column;gap:12px;margin-top:18px;border-color:var(--accent)}
+.ac-offer p{margin:0}
+.ac-offer-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.ac-offer-lesson{padding:12px 14px;border:1px dashed var(--line);border-radius:14px}
+.ac-offer-lesson strong{display:block;font-family:var(--kid);font-size:18px}
+.ac-offer-lesson p{color:var(--muted);font-size:15px}

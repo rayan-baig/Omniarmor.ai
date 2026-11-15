@@ -294,7 +294,11 @@ class TestPlansAgainstFakeStripe(AppTestCase):
         if response.status_code == 200:
             return True
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.headers["Location"].endswith("/app/plan"), response.headers["Location"])
+        # The plan page, or once a week for a workspace on Pro, a peek at the
+        # world's first lesson with the offer to switch to Plus (nudges.py).
+        location = response.headers["Location"]
+        self.assertTrue(location.endswith("/app/plan")
+                        or location.endswith(f"/app/academy/{self.lid}/world/{self.paid_world}/preview"), location)
         return False
 
     def free_world_opens(self):

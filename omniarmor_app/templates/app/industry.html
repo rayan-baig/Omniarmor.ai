@@ -78,7 +78,7 @@
     {% if read_only %}
     <div>
       <p class="q">{{ r.input }}</p>
-      <p class="read-only-note" data-read-only>Read-only: saved readings stay, and are in the report and its download. <a href="{{ url_for('plan.plan_page') }}">Choose Pro or Plus</a> to save a new one.</p>
+      <p class="read-only-note" data-read-only>Read-only: saved readings stay, and are in the report and its download. {% if plan_access.paused %}Your plan is paused until {{ plan_access.resumes_at|local_date }}; saving comes back then.{% else %}<a href="{{ url_for('plan.plan_page') }}">Choose Pro or Plus</a> to save a new one.{% endif %}</p>
     </div>
     {% else %}
     <form method="post" action="{{ url_for('app.change', industry_id=info.id, rule_key=r.key) }}">

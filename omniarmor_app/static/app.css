@@ -382,3 +382,29 @@ details.note .title{color:var(--ink);font-weight:600}
 .plan-buy{display:flex;flex-direction:column;gap:10px}
 .pick-year:checked~* .plan-buy.when-year{display:flex}
 .read-only-note{margin:8px 0 0;color:var(--muted);font-size:14.5px}
+
+/* Keeping customers (plan_views.py, nudges.py): the cancel screen's boxes, the
+   switch-to-yearly offer, the upgrade offers and the paused banner */
+.plan-banner.paused{border-left-color:var(--accent);background:rgba(247,116,58,.06)}
+.offer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px}
+.offer-card{display:flex;flex-direction:column;gap:10px;padding:18px 20px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;background:var(--raise)}
+.offer-card h2{margin:0;font-size:21px}
+.offer-card p{margin:0}
+.offer-card ul{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--muted);font-size:15px}
+.offer-card form{margin:0}
+.offer-card.cancel-card{border-left-color:var(--block)}
+.offer-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.offer-actions .btn{white-space:normal;text-align:center}
+.mb{margin-bottom:20px}
+
+/* Trade pages (trades.py) */
+.trade-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.trade-list li{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--raise)}
+.trade-list strong{display:block}
+.trade-list span{color:var(--muted);font-size:15px}
+.trade-when{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.trade-group{margin-top:28px}
+.trade-group h3{margin:0 0 8px;font-size:18px}
+.trade-note{margin-top:28px;padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--field);border-radius:10px;color:var(--muted);font-size:15px}
+.trade-note p{margin:0 0 8px}
+.trade-note p:last-child{margin:0}

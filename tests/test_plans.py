@@ -1000,7 +1000,7 @@ class TestMigration19(unittest.TestCase):
                          " (1, 'Paid', '2026-01-01T00:00:00+00:00', 'active', 'plus'),"
                          " (2, 'Trial', '2026-01-01T00:00:00+00:00', 'none', 'none')")
             conn.commit()
-            self.assertEqual(migrate(conn), 19)
+            self.assertEqual(migrate(conn), dbmod.SCHEMA_VERSION)
             rows = [tuple(r) for r in conn.execute("SELECT plan, plan_interval FROM orgs ORDER BY id")]
             conn.close()
         self.assertEqual(rows, [("plus", "month"), ("none", "month")])

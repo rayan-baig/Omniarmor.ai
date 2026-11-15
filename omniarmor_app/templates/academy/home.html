@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "academy/_art.html" import armo, avatar, emblem, stars %}
+{% from "academy/_offer.html" import academy_offer %}
 {% block title %}Future Owner Academy{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -25,6 +26,8 @@
   {% else %}
     <p class="ac-banner">You have {{ plan.plan_name }}{% if plan.ends_at %} until {{ plan.ends_at|local_date }}{% endif %}: every track and every world. <a href="{{ url_for('plan.plan_page') }}">{{ 'Manage billing' if g.role == 'owner' else 'See the plans' }}</a></p>
   {% endif %}
+
+  {% if offer %}{{ academy_offer(offer, url_for('academy.home')) }}{% endif %}
 
   <ul class="ac-tracks-mini" aria-label="Tracks">
     {% for t in tracks %}

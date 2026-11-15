@@ -349,22 +349,10 @@ def apply_event(conn, event, cfg=None):
         last = org["stripe_event_at"]
         if created is not None and last is not None and created < last:
             return None
-        state = "canceled" if kind.endswith("deleted") else obj.get("status", "none")
-        if state not in PAID_STATES | {"canceled", "unpaid", "incomplete", "incomplete_expired"}:
-            state = "none"
-        if state == "incomplete" and paid:
-            # A subscription never goes back to incomplete once paid; this is a late copy of its first event.
+        state = _apply_subscription(conn, org, obj, plan_kind, interval, deleted=kind.endswith("deleted"),
+                                    paid=paid)
+        if state is None:
             return None
-        period_end = _period_end(obj)
-        renews = iso(_from_timestamp(period_end)) if period_end and state in PAID_STATES else None
-        # Cancelled in the portal: still paid for until the period ends, then Stripe deletes it.
-        cancel_at = obj.get("cancel_at") if isinstance(obj.get("cancel_at"), int) else (
-            period_end if obj.get("cancel_at_period_end") else None)
-        ends_at = iso(_from_timestamp(cancel_at)) if cancel_at and state in PAID_STATES else None
-        conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
-                     " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?),"
-                     " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
-                     (state, renews, ends_at, obj.get("id"), obj.get("customer"), plan_kind, interval, org["id"]))
         _mark_applied(conn, org["id"], created)
         return state
     if kind == "invoice.payment_failed":
@@ -375,6 +363,109 @@ def apply_event(conn, event, cfg=None):
                      (org["id"],))
         return "past_due"
     return None
+
+
+def _apply_subscription(conn, org, obj, plan_kind, interval, deleted=False, paid=None):
+    """Writes a Stripe subscription onto its workspace: its status, renewal
+    and end, its plan and interval, and its pause (pause_collection: Stripe
+    has stopped charging until resumes_at; cleared when the pause is gone).
+    Returns the status written, or None when it changes nothing (a late
+    copy of the subscription's first event)."""
+    if paid is None:
+        paid = (org["academy_status"] or "none") in PAID_STATES
+    state = "canceled" if deleted else obj.get("status", "none")
+    if state not in PAID_STATES | {"canceled", "unpaid", "incomplete", "incomplete_expired"}:
+        state = "none"
+    if state == "incomplete" and paid:
+        # A subscription never goes back to incomplete once paid; this is a late copy of its first event.
+        return None
+    period_end = _period_end(obj)
+    renews = iso(_from_timestamp(period_end)) if period_end and state in PAID_STATES else None
+    # Cancelled in the portal: still paid for until the period ends, then Stripe deletes it.
+    cancel_at = obj.get("cancel_at") if isinstance(obj.get("cancel_at"), int) else (
+        period_end if obj.get("cancel_at_period_end") else None)
+    ends_at = iso(_from_timestamp(cancel_at)) if cancel_at and state in PAID_STATES else None
+    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
+                 " stripe_subscription_id = ?, stripe_customer_id = COALESCE(stripe_customer_id, ?),"
+                 " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
+                 (state, renews, ends_at, obj.get("id"), obj.get("customer"), plan_kind, interval, org["id"]))
+    if "pause_collection" in obj:
+        _apply_pause(conn, org, obj.get("pause_collection"), state)
+    return state
+
+
+def _apply_pause(conn, org, pause, state):
+    """Mirrors Stripe's pause_collection: a pause with a resume date pauses
+    the plan until then; none (or a subscription no longer paid) ends it."""
+    resumes = pause.get("resumes_at") if isinstance(pause, dict) else None
+    if isinstance(resumes, int) and state in PAID_STATES:
+        until = iso(_from_timestamp(resumes))
+        conn.execute("UPDATE orgs SET paused_until = ?, paused_at = COALESCE(paused_at, ?),"
+                     " pause_reminded_at = CASE WHEN paused_until IS ? THEN pause_reminded_at END WHERE id = ?",
+                     (until, iso(utcnow()), until, org["id"]))
+    else:
+        conn.execute("UPDATE orgs SET paused_until = NULL, paused_at = NULL, pause_reminded_at = NULL WHERE id = ?",
+                     (org["id"],))
+
+
+# --- Changing the subscription from the app ----------------------------------------
+# The cancel screen (pause, the save offer, cancel, keep), switching to yearly
+# and upgrading to Plus. Each asks Stripe to change the subscription and
+# writes Stripe's answer on the workspace at once; the webhook that follows
+# says the same thing again.
+
+def _subscription_path(org):
+    sub = org["stripe_subscription_id"] or ""
+    if not re.fullmatch(r"sub_[A-Za-z0-9_]{1,250}", sub):
+        raise StripeError("This workspace has no Stripe subscription.")
+    return f"subscriptions/{sub}"
+
+
+def update_subscription(conn, cfg, org, fields):
+    """Changes the workspace's Stripe subscription and writes the answer."""
+    obj = _stripe(cfg, _subscription_path(org), fields)
+    kind, interval = plan_for(cfg, obj)
+    _apply_subscription(conn, org, obj, kind, interval)
+    return obj
+
+
+def pause_subscription(conn, cfg, org, resumes_at):
+    """Stops Stripe charging until resumes_at (an aware datetime): invoices
+    in between are voided, and Stripe starts charging again by itself then."""
+    return update_subscription(conn, cfg, org, {"pause_collection[behavior]": "void",
+                                                "pause_collection[resumes_at]": str(int(resumes_at.timestamp()))})
+
+
+def resume_subscription(conn, cfg, org):
+    """Ends a pause now (an empty pause_collection clears it)."""
+    return update_subscription(conn, cfg, org, {"pause_collection": ""})
+
+
+def apply_coupon(conn, cfg, org, coupon):
+    """Puts a coupon on the subscription (the save offer)."""
+    return update_subscription(conn, cfg, org, {"discounts[0][coupon]": coupon})
+
+
+def cancel_at_period_end(conn, cfg, org, cancel=True):
+    """Cancels at the end of the time paid for (or, with cancel=False, takes
+    a cancellation back before then)."""
+    return update_subscription(conn, cfg, org, {"cancel_at_period_end": "true" if cancel else "false"})
+
+
+def change_price(conn, cfg, org, price, kind, interval):
+    """Moves the subscription to another of our prices (Pro to Plus, monthly
+    to yearly). Stripe charges the difference now, taking off the unused part
+    of the current period; if the card fails, nothing changes."""
+    current = _stripe(cfg, _subscription_path(org), {}, method="GET")
+    items = [i for i in ((current.get("items") or {}).get("data") or []) if isinstance(i, dict) and i.get("id")]
+    if not items:
+        raise StripeError("The subscription has no item to change.")
+    return update_subscription(conn, cfg, org, {
+        "items[0][id]": items[0]["id"], "items[0][price]": price,
+        "items[0][quantity]": str(int(items[0].get("quantity") or 1)),
+        "proration_behavior": "always_invoice", "payment_behavior": "error_if_incomplete",
+        "metadata[plan]": kind, "metadata[interval]": interval,
+    })
 
 
 # Where a subscription can end up after its first payment. A checkout is

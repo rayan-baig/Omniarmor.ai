@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "academy/_offer.html" import academy_offer %}
+{% from "academy/_art.html" import armo %}
+{% block title %}{{ offer.world.title }} preview{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <section class="ac-hero">
+    {{ armo(96, 'cheer') }}
+    <div>
+      <p class="ac-kicker">{{ offer.track.name }} · {{ learner.nickname }}</p>
+      <h1 class="ac-title">{{ offer.world.title }}</h1>
+      <p class="ac-lead">{{ offer.world.tagline }}. Here's how its first lesson starts.</p>
+    </div>
+  </section>
+  {{ academy_offer(offer, url_for('academy.level_map', learner_id=learner.id)) }}
+  <p class="mt"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">Back to {{ learner.nickname }}'s map</a></p>
+</div>
+{% endblock %}
