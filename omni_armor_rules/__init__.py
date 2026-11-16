@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-OmniArmor rule catalog: ten costly compliance risks for each of the 50
-industries, 500 rules in all. CATALOG maps industry id -> list of Rule.
+OmniArmor rule catalog: ten costly compliance risks for each of the 51
+industries, 510 rules in all. CATALOG maps industry id -> list of Rule.
 """
 
 from omni_armor_rules.rule import (  # noqa: F401
@@ -10,13 +10,14 @@ from omni_armor_rules.rule import (  # noqa: F401
 from omni_armor_rules import (
     group_1, group_2, group_3, group_4, group_5,
     group_6, group_7, group_8, group_9, group_10,
+    group_11,
 )
 
-INDUSTRY_COUNT = 50
+INDUSTRY_COUNT = 51
 
 CATALOG = {}
 for _group in (group_1, group_2, group_3, group_4, group_5,
-               group_6, group_7, group_8, group_9, group_10):
+               group_6, group_7, group_8, group_9, group_10, group_11):
     overlap = CATALOG.keys() & _group.RULES.keys()
     if overlap:
         raise ValueError(f"{_group.__name__} redefines industries {sorted(overlap)}")

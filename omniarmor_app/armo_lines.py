@@ -440,7 +440,7 @@ PERSONALITY_LIST = [
         idle=[
             "BEEP BOOP. ALL SYSTEMS NOMINAL.",
             "Scanning deadlines... Scan complete. You are 100% awesome.",
-            "Fun fact: I check 500 rules faster than you can blink. Beep.",
+            "Fun fact: I check 510 rules faster than you can blink. Beep.",
             "Running happiness.exe... Success.",
             "Error 404: Problems not found.",
             "My antenna detects excellent paperwork nearby.",

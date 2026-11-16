@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Pilot report' if r.pilot.state != 'none' else 'Class report' }} · {{ r.class.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac ac-pilot-report" data-pilot-report>
+  <p class="ac-crumb no-print"><a href="{{ url_for('classes.class_page', class_id=r.class.id) }}">← {{ r.class.name }}</a> · Use your browser's Print to print it on one page.</p>
+  <p class="ac-kicker">Future Owner Academy · {{ g.org.name }}</p>
+  <h1 class="ac-title">{{ 'Pilot report' if r.pilot.state != 'none' else 'Class report' }}</h1>
+  <p class="ac-report-for"><strong>{{ r.class.name }}</strong>{% if r.since %} · {{ r.since.isoformat()|local_date }} to {{ r.pilot.ends.isoformat()|local_date }}{% endif %}{% if r.pilot.state == 'active' %} · <span data-so-far>so far, the pilot runs until {{ r.pilot.ends.isoformat()|local_date }}</span>{% endif %}</p>
+
+  <ul class="ac-stats ac-stats-4" aria-label="Totals">
+    <li><span class="ac-stat-num" data-report="students">{{ r.students }}</span><span class="ac-stat-label">student{{ 's' if r.students != 1 }} in the class</span></li>
+    <li><span class="ac-stat-num" data-report="playing">{{ r.playing }}</span><span class="ac-stat-label">finished at least one lesson</span></li>
+    <li><span class="ac-stat-num" data-report="lessons">{{ "{:,}".format(r.lessons) }}</span><span class="ac-stat-label">lesson{{ 's' if r.lessons != 1 }} finished</span></li>
+    <li><span class="ac-stat-num" data-report="certificates">{{ r.certificates }}</span><span class="ac-stat-label">certificate{{ 's' if r.certificates != 1 }} earned</span></li>
+  </ul>
+
+  <h2 class="ac-h2">Topics covered</h2>
+  {% if r.topics %}
+    <div class="table-wrap">
+    <table class="ac-report" data-report-topics>
+      <thead><tr><th>Topic</th><th class="ac-wide-only">Unit</th><th>Lessons finished</th></tr></thead>
+      <tbody>
+        {% for t in r.topics %}
+          <tr><td>{{ t.world.title }}</td><td class="ac-wide-only">{{ t.unit }}</td><td>{{ t.lessons }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="ac-empty">No lessons finished yet.</p>
+  {% endif %}
+
+  <p class="hint mt">Totals only: this report names no student. A lesson is one level of the Academy passed with at least one star. The Future Owner Academy teaches how a business runs: money, customers, teamwork, leading, rules and safety, in short game levels. Made with OmniArmor.ai.</p>
+  <p class="hint">Printed {{ today.isoformat() }}.</p>
+</div>
+{% endblock %}

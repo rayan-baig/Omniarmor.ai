@@ -3,6 +3,61 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.6.0 (16 November 2026)
+
+OmniArmor for schools: a school safety checklist, and the Academy for classrooms.
+
+- **SchoolSafetyArmor**, industry 51: ten checks for a K-12 school's routines,
+  each a reminder to do something and write it down: fire and lockdown drills
+  (every 30 days), AED and first-aid kits (30), playground and gym equipment
+  (30), the nurse's medication log and fridge (7), the cafeteria's
+  food-safety check (7), bus and van pre-trip sheets (7), concussion forms and
+  heat checks (yes or no, each season), the visitor sign-in log (7), science
+  lab chemical storage (90) and staff background-check renewals (days until
+  due, warning from 45). Every limit is a policy a school can set to its
+  state's. It sits beside SchoolArmor (industry 8), a school's legal duties.
+  51 industries and 510 checks now; the Academy gains a Rule Quest for it
+  (Launchpad 1,360 levels, Trailblazer 2,710, Summit 5,420, Titan 15,750).
+- **The Schools page** at `/for/schools`: both school checklists and the HR
+  basics, which come with reminders, what OmniArmor doesn't cover, that
+  CyberLogix AI can watch the nurse's office and cafeteria fridges 24/7, and
+  the Academy for classrooms. It helps a school stay on top of its
+  checklists; it doesn't promise compliance. In the sitemap and the "By
+  trade" list.
+- **The Academy for classrooms.** A teacher adds a class and its students by
+  first name or nickname only: no email, birthdate or photo, and a name that
+  looks like an email is refused. The class view shows each student's
+  lessons done and the class total; one button makes join codes for the
+  whole class to print. Students in a class have no friends or duels; they
+  see their own class's leaderboard, which the teacher can switch off, and
+  never another class.
+- **Certificates of completion** with the student's first name or nickname,
+  the class and the school, one or the whole class at once, each on its own
+  landscape page.
+- **A free 30-day classroom pilot**, once per workspace, no card
+  (`CLASSROOM_PILOT_DAYS`), and a one-page **pilot report** for the school
+  office: students, lessons finished and topics covered, totals only.
+- **Classroom plans**, yearly: **Classroom, $299 a year** (one class of up to
+  35 students, the whole Academy) and **Whole school, $1,490 a year** (every
+  class, and the compliance tracker for the school). Classroom is the
+  Academy's share of Plus for a year ($300), a dollar under, with no
+  tracker; Whole school costs more than a year of Plus and less than five
+  Classrooms. By card (`CLASSROOM_YEARLY_STRIPE_PRICE`,
+  `SCHOOL_YEARLY_STRIPE_PRICE`) or by invoice (`SCHOOL_INVOICE_EMAIL`): the
+  `plan` command takes `classroom` and `school`, and `--until` for the last
+  day of a school year. A plan set by hand with an end date now stops on it.
+- **The Academy for schools and teachers** at `/classrooms`, linked from the
+  home page and the Schools page. Help has a short answer on classes.
+- **Privacy:** two plain sentences on what a class keeps and who sees the
+  class leaderboard (last changed 16 November 2026). Terms say 51 industries.
+- **Usage counts** for the operator: classroom pilots started, students added
+  to classes and pilot reports opened.
+- **Schema version 21** adds the `classes` table, `learners.class_id`, and
+  `orgs.pilot_started_at` and `pilot_ends_at`.
+- **Set-up:** `.env.example`, `render.yaml`, the README, the handbook and
+  OPERATIONS.md, section 7, "Upgrading to 1.6.0": create the two yearly
+  prices in Stripe, or sell by invoice.
+
 ## 1.5.0 (15 November 2026)
 
 Pause instead of cancel, upgrade offers, locations and trade pages.

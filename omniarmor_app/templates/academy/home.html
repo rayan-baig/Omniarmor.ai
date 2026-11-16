@@ -18,7 +18,7 @@
   </section>
 
   {% if plan.access == 'trial' %}
-    <p class="ac-banner">Free trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} of the full Academy left. <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
+    <p class="ac-banner">{{ 'Classroom pilot' if plan.pilot else 'Free trial' }}: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} of the full Academy left. <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
   {% elif plan.access == 'free' %}
     <p class="ac-banner">You're on the free Academy: the first {{ free_world_count }} worlds of {{ free_track_name }}. <a href="{{ url_for('plan.plan_page') }}">Unlock every track</a></p>
   {% elif plan.state == 'past_due' %}
@@ -28,6 +28,8 @@
   {% endif %}
 
   {% if offer %}{{ academy_offer(offer, url_for('academy.home')) }}{% endif %}
+
+  <p class="ac-callout" data-classes-link>{% if class_count %}Teaching a class? <a href="{{ url_for('classes.index') }}">Your class{{ 'es' if class_count != 1 }} ({{ class_count }})</a>: progress, join codes, certificates and the pilot report.{% else %}Teaching a class or a club? <a href="{{ url_for('classes.index') }}">Run the Academy for your class</a>, with students added by first name or nickname only.{% endif %}</p>
 
   <ul class="ac-tracks-mini" aria-label="Tracks">
     {% for t in tracks %}

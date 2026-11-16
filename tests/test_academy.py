@@ -21,8 +21,8 @@ BASIC = academy.TRACKS["launchpad"]
 class TestCourseContent(unittest.TestCase):
     def test_track_sizes(self):
         self.assertEqual({t.key: t.total for t in academy.TRACK_LIST},
-                         {"launchpad": 1350, "trailblazer": 2700, "summit": 5400, "titan": 15700})
-        self.assertEqual(academy.TOTAL_LEVELS, 1350)
+                         {"launchpad": 1360, "trailblazer": 2710, "summit": 5420, "titan": 15750})
+        self.assertEqual(academy.TOTAL_LEVELS, 1360)
         self.assertEqual(len(academy.TOPIC_WORLDS), 43)
         for t in academy.TRACK_LIST:
             ids = {academy.level_id(t, w.number, s) for w in t.worlds for s in range(1, t.stages(w) + 1)}
@@ -131,8 +131,8 @@ class TestCourseContent(unittest.TestCase):
         self.assertIsNone(academy.certificate_for(1349, False))
         self.assertEqual(academy.certificate_for(1, True), "Future Owner")
         self.assertEqual(academy.certificate_for(120, True), "Silver Future Owner")
-        self.assertEqual(academy.certificate_for(1350, True), "Platinum Business Legend")
-        self.assertEqual(academy.certificate_for(15700, True, titan), "Titan Mastery Platinum Business Legend")
+        self.assertEqual(academy.certificate_for(1360, True), "Platinum Business Legend")
+        self.assertEqual(academy.certificate_for(15750, True, titan), "Titan Mastery Platinum Business Legend")
 
     def test_money_math_is_exact(self):
         for seed in range(300):
@@ -230,7 +230,7 @@ class TestAcademyPages(AppTestCase):
     def test_home_and_add_learner(self):
         page = self.client.get("/app/academy")
         self.assertEqual(page.status_code, 200)
-        self.assertIn(b"15,700", page.data)
+        self.assertIn(b"15,750", page.data)
         for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery"):
             self.assertIn(f'name="track" value="{name.split()[0].lower()}"', page.data.decode())
         response = self.add(track=None)
@@ -239,7 +239,7 @@ class TestAcademyPages(AppTestCase):
         self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{lid}/world/1/stage/1"))
         self.assertEqual(self.client.get(f"/app/academy/{lid}").status_code, 200)
         picker = self.client.get(f"/app/academy/{lid}/track").data.decode()
-        for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery", "1,350", "2,700", "5,400", "15,700"):
+        for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery", "1,360", "2,710", "5,420", "15,750"):
             self.assertIn(name, picker)
         self.post(f"/app/academy/{lid}/track", {"track": "summit"})
         page = self.client.get(f"/app/academy/{lid}").data.decode()

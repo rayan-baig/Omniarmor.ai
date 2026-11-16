@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Pages for trades that don't have an industry of their own in the catalog
-(/for/<slug>): salons and barbershops, tattoo and piercing studios, gyms and
-fitness studios, and shops.
+"""Pages for trades (/for/<slug>): salons and barbershops, tattoo and piercing
+studios, gyms and fitness studios, and shops, which don't have an industry of
+their own in the catalog, and schools, which have two (SchoolSafetyArmor for
+a school's safety routines and SchoolArmor for its legal duties): the page
+brings them together, with the Academy for classrooms beside it.
 
 Each page is honest about what OmniArmor does for that trade today: which of
 its industries' checklists fit, and which checks in them (named by their
@@ -32,7 +34,13 @@ class Trade:
     intro: str
     groups: tuple             # ((industry id, (rule keys...), note or ""), ...)
     outside: str              # what OmniArmor doesn't cover for this trade
+    own: tuple = ()           # the industries made for this trade, when there are some
+    sister: str = ""          # what CyberLogix, the sister app, can do for this trade
+    academy: bool = False     # links to the Academy for schools and teachers
 
+
+CYBERLOGIX_URL = "https://cyberlogix.mtrxhorizyn.com"
+SCHOOL_INDUSTRY = 51
 
 TRADES = (
     Trade(
@@ -121,6 +129,38 @@ TRADES = (
                  " tobacco, food) are set where you are. OmniArmor has separate checklists for bars and liquor"
                  " and for firearms dealers; it doesn't cover the others yet."),
     ),
+    Trade(
+        slug="schools",
+        name="Schools",
+        one="a school",
+        title="School safety checklists and reminders",
+        description=("Checklists and reminders for K-12 schools: drills, AED and first-aid kits, playground checks,"
+                     " the school nurse, the cafeteria, buses, athletics, visitors, the science lab and staff"
+                     " background checks."),
+        intro=("A school runs on routines: drills, kit checks, the nurse's log, the cafeteria, the buses. Each one"
+               " is easy to miss in a busy week and hard to prove later. OmniArmor keeps them in one checklist,"
+               " reminds the right person before each one is due, and keeps the record when someone asks."),
+        groups=(
+            (SCHOOL_INDUSTRY, ("drills_logged", "aed_first_aid_check", "play_equipment_check",
+                               "nurse_log_and_fridge", "cafeteria_food_safety", "bus_pretrip_review",
+                               "athletics_safety", "visitor_log_review", "lab_chemical_storage",
+                               "background_check_renewals"),
+             "Every limit here is a starting point. Rules differ from state to state, so set each one to match"
+             " your own state, district or insurer."),
+            (8, ("staff_background_check", "ferpa_disclosure", "edtech_student_data", "ahera_reinspection",
+                 "food_safety_inspections"),
+             "From SchoolArmor, a school's legal duties. Some, like FERPA and the school meal inspections, come"
+             " with federal funding and may not apply to every private school: leave those blank if they don't."),
+            (30, ("i9_section_2", "hours_records"),
+             "For staff pay and new-hire forms. Leave blank the checks for bigger employers that don't apply to you."),
+        ),
+        outside=("Student records, special education paperwork, state testing and accreditation have rules of"
+                 " their own. OmniArmor doesn't have a checklist for those, so keep them on your own list."),
+        own=(SCHOOL_INDUSTRY, 8),
+        sister=("The nurse's office and cafeteria fridges can be watched 24/7 by CyberLogix AI, OmniArmor's"
+                " sister app. It sends an alert the moment a fridge gets too warm."),
+        academy=True,
+    ),
 )
 BY_SLUG = {t.slug: t for t in TRADES}
 
@@ -157,4 +197,5 @@ def facts(trade):
     dated = sum(1 for industry_id, keys, _ in trade.groups for key in keys
                 if date_mode(find_rule(industry_id, key)) is not None)
     return {"reminder_days": REMINDER_DAYS, "dated": dated,
-            "industry_ids": [i for i, _, _ in trade.groups]}
+            "industry_ids": [i for i, _, _ in trade.groups],
+            "own": [INDUSTRIES[i] for i in trade.own]}

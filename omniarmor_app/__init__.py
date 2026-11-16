@@ -16,7 +16,8 @@ from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, r
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import academy_views, armo_views, autopilot, auth, connections, errormail, plan_views, usage, views
+from . import (academy_views, armo_views, autopilot, auth, classroom_views, connections, errormail, plan_views, usage,
+               views)
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -92,11 +93,20 @@ def trade_page(slug):
         abort(404)
     if slug != trade.slug:
         return redirect(url_for("public.trade_page", slug=trade.slug), code=301)
-    return render_template("trade.html", trade=trade, groups=trades.groups(trade), facts=trades.facts(trade))
+    return render_template("trade.html", trade=trade, groups=trades.groups(trade), facts=trades.facts(trade),
+                           sister_url=trades.CYBERLOGIX_URL)
+
+
+@public.route("/classrooms")
+def academy_schools():
+    """The Future Owner Academy for schools and teachers: classes, the class
+    progress view, certificates, the free pilot and the classroom prices."""
+    from . import classrooms
+    return render_template("academy_schools.html", facts=classrooms.public_facts(current_app.config))
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "15 November 2026"
+RULES_UPDATED = "16 November 2026"
 
 
 def _rules_facts():
@@ -182,8 +192,8 @@ def help_page():
 # them, and they carry share previews (og: and twitter: tags) and a canonical
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
-PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page", "public.terms",
-                "public.privacy", "public.help", "auth.signup", "auth.login"}
+PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page",
+                "public.academy_schools", "public.terms", "public.privacy", "public.help", "auth.signup", "auth.login"}
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
@@ -237,6 +247,7 @@ def sitemap():
     paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
     from .trades import TRADES
     paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
+    paths.append(url_for("public.academy_schools"))
     paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
               url_for("public.privacy")]
     if current_app.config.get("NOINDEX"):
@@ -391,6 +402,7 @@ def create_app(**overrides):
     app.register_blueprint(views.bp)
     app.register_blueprint(academy_views.bp)
     app.register_blueprint(academy_views.kids)
+    app.register_blueprint(classroom_views.bp)
     app.register_blueprint(plan_views.plan)
     app.register_blueprint(armo_views.bp)
     app.register_blueprint(connections.api)

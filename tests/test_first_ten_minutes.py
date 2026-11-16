@@ -307,9 +307,9 @@ class TestPlainQuestions(AppTestCase):
         from collections import Counter
         from omniarmor_app.catalog import counts_first_day, date_unit
         counted = Counter((date_unit(r), date_mode(r)) for rules in CATALOG.values() for r in rules)
-        self.assertEqual(counted, Counter({(None, None): 315, ("days", "since"): 115, ("hours", "since"): 22,
+        self.assertEqual(counted, Counter({(None, None): 316, ("days", "since"): 123, ("hours", "since"): 22,
                                            ("business days", "since"): 16, ("months", "since"): 15,
-                                           ("days", "until"): 11, ("calendar months", "since"): 3,
+                                           ("days", "until"): 12, ("calendar months", "since"): 3,
                                            ("minutes", "since"): 2, ("years", "since"): 1}))
         self.assertEqual(sum(counts_first_day(r) for rules in CATALOG.values() for r in rules), 1)
 

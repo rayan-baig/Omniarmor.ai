@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Compliance checks for 50 industries{% endblock %}
+{% block title %}Compliance checks for {{ facts.industries }} industries{% endblock %}
 {% block content %}
 <section class="hero">
   <p class="eyebrow">{{ facts.industries }} industries · {{ facts.checks }} checks · daily reminders</p>
@@ -28,7 +28,7 @@
   </div>
   <div>
     <h3>Future Owner Academy</h3>
-    <p>A fun course of {{ facts.tracks }} tracks, from {{ '{:,}'.format(facts.fewest_levels) }} to {{ '{:,}'.format(facts.most_levels) }} levels, that teaches the kids who may one day run your company how it works, business words, speaking like a pro, hiring, leadership, winning customers and never giving up.</p>
+    <p>A fun course of {{ facts.tracks }} tracks, from {{ '{:,}'.format(facts.fewest_levels) }} to {{ '{:,}'.format(facts.most_levels) }} levels, that teaches the kids who may one day run your company how it works, business words, speaking like a pro, hiring, leadership, winning customers and never giving up. Teachers can run it for a whole class: <a href="{{ url_for('public.academy_schools') }}">the Academy for schools and teachers</a>.</p>
   </div>
   <div>
     <h3>A record for inspectors</h3>

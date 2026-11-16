@@ -63,6 +63,10 @@ def plan_facts(cfg):
         "rule_quests": len(academy.INDUSTRY_WORLDS),
         "industries": len(INDUSTRIES),
         "checks": sum(len(rules_for(i)) for i in INDUSTRIES),
+        # Classroom plans and the free pilot (plans.py, classrooms.py).
+        "classroom_plans": list(plans.CLASSROOM_PLANS.values()),
+        "class_size": plans.CLASS_SIZE,
+        "pilot_days": cfg["CLASSROOM_PILOT_DAYS"],
     }
 
 

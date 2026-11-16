@@ -311,7 +311,7 @@ class TestRobotsAndSitemap(AppTestCase):
         self.assertEqual(self.listed.count("https://omniarmor.test/"), 1)
         for path in PUBLIC:
             self.assertIn("https://omniarmor.test" + path, self.listed)
-        self.assertEqual(len([u for u in self.listed if "/industries/" in u]), 50)
+        self.assertEqual(len([u for u in self.listed if "/industries/" in u]), 51)
         self.assertEqual(len(self.listed), len(set(self.listed)))
         for url in self.listed:
             path = urlsplit(url).path

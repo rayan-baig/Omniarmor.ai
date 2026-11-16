@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import avatar %}
+{% block title %}{{ cls.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb no-print"><a href="{{ url_for('classes.index') }}">← All classes</a></p>
+  <p class="ac-kicker">Class progress · for teachers</p>
+  <h1 class="ac-title">{{ cls.name }}</h1>
+  <p class="muted">Only the grown-ups in {{ g.org.name }} can see this page. Students see their own lessons{% if cls.leaderboard %} and the class leaderboard{% endif %}.</p>
+
+  <ul class="ac-stats ac-stats-4" aria-label="Class totals" data-class-totals>
+    <li><span class="ac-stat-num" data-total="students">{{ view.count }}</span><span class="ac-stat-label">student{{ 's' if view.count != 1 }}</span></li>
+    <li><span class="ac-stat-num" data-total="lessons">{{ "{:,}".format(view.lessons) }}</span><span class="ac-stat-label">lesson{{ 's' if view.lessons != 1 }} done, class total</span></li>
+    <li><span class="ac-stat-num">{{ view.average }}</span><span class="ac-stat-label">lessons per student</span></li>
+    <li><span class="ac-stat-num">{{ view.certificates }}</span><span class="ac-stat-label">certificate{{ 's' if view.certificates != 1 }}</span></li>
+  </ul>
+
+  <p class="ac-callout ac-quick no-print">
+    <a class="btn quiet" href="{{ url_for('classes.report', class_id=cls.id) }}">{{ 'Pilot report' if limits.pilot.state != 'none' else 'Class report' }}</a>
+    <a class="btn quiet" href="{{ url_for('classes.certificates', class_id=cls.id) }}">Certificates</a>
+    <a class="btn quiet" href="{{ url_for('classes.join_codes', class_id=cls.id) }}">Join codes</a>
+  </p>
+
+  <h2 class="ac-h2">Students</h2>
+  {% if view.students %}
+    <div class="table-wrap">
+    <table class="ac-report" data-class-progress>
+      <thead><tr><th>Student</th><th>Lessons done</th><th class="ac-wide-only">Stars</th><th class="ac-wide-only">Last played</th><th>Certificate</th></tr></thead>
+      <tbody>
+        {% for s in view.students %}
+          <tr data-student="{{ s.learner.nickname }}">
+            <td><span class="ac-report-track">{{ avatar(s.learner.avatar, avatars, 28) }} <a href="{{ url_for('academy.progress_report', learner_id=s.learner.id) }}">{{ s.learner.nickname }}</a></span></td>
+            <td data-lessons>{{ s.lessons }}</td>
+            <td class="ac-wide-only">{{ s.stars }}</td>
+            <td class="ac-wide-only ac-nowrap">{{ s.last_day or 'Not yet' }}</td>
+            <td>{% if s.certificate %}<a href="{{ url_for('academy.certificate', learner_id=s.learner.id) }}">Print</a>{% else %}<span class="muted">Not yet</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><th scope="row">Class total</th><td data-class-total>{{ view.lessons }}</td><td class="ac-wide-only">{{ view.students|sum(attribute='stars') }}</td><td class="ac-wide-only"></td><td>{{ view.certificates }}</td></tr></tfoot>
+    </table>
+    </div>
+    <p class="hint">A lesson is one level passed with at least one star. A certificate comes with passing stage 1 of the Owner's Challenge, after the first lesson of every world.</p>
+  {% else %}
+    <p class="ac-empty">No students yet. Add them below.</p>
+  {% endif %}
+
+  {% if room %}
+  <form class="ac-card ac-add mt no-print" method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 class="ac-h3">Add students</h2>
+    <label class="field"><span>First names or nicknames, one on each line</span>
+      <textarea name="names" rows="6" required autocomplete="off" placeholder="Sam&#10;Priya&#10;Jo B"></textarea></label>
+    <p class="hint">First name or nickname only, up to {{ max_name }} characters. No email, last name, birthdate or photo: OmniArmor doesn't ask for them, and each student gets a drawn picture. Room for {{ room }} more.</p>
+    <button class="btn ac-btn" type="submit">Add students</button>
+  </form>
+  {% elif limits.active %}
+    <p class="hint mt">This class is full ({{ limits.class_size }} students).</p>
+  {% else %}
+    <p class="hint mt"><a href="{{ url_for('classes.index') }}#plans">Choose a classroom plan</a> to add students. Everything here is kept.</p>
+  {% endif %}
+
+  <section class="ac-card mt no-print" id="leaderboard">
+    <h2 class="ac-h3">Class leaderboard</h2>
+    <p>When it's on, students see their classmates' first names or nicknames and lessons done, for this class only. Nothing else.</p>
+    <form method="post" action="{{ url_for('classes.leaderboard_setting', class_id=cls.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="leaderboard" value="{{ 'off' if cls.leaderboard else 'on' }}">
+      <button class="btn quiet" type="submit" data-leaderboard="{{ 'on' if cls.leaderboard else 'off' }}">{{ 'Turn the leaderboard off' if cls.leaderboard else 'Turn the leaderboard on' }}</button>
+    </form>
+  </section>
+
+  {% if view.students %}
+  <details class="ac-manage no-print">
+    <summary>Manage the class</summary>
+    <form class="mt" method="post" action="{{ url_for('classes.rename_class', class_id=cls.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>Rename the class</span><input type="text" name="name" maxlength="40" required value="{{ cls.name }}"></label>
+      <button class="btn quiet" type="submit">Rename</button>
+    </form>
+    <ul class="list">
+      {% for s in view.students %}
+        <li class="row">
+          <span>{{ s.learner.nickname }}</span>
+          <form method="post" action="{{ url_for('classes.remove_student', class_id=cls.id, learner_id=s.learner.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="linkbtn" type="submit">Remove {{ s.learner.nickname }} and their progress</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+    <form class="mt" method="post" action="{{ url_for('classes.delete_class', class_id=cls.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>To delete the class, its students and their progress, type its name</span><input type="text" name="confirm" autocomplete="off"></label>
+      <button class="btn quiet" type="submit">Delete the class</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

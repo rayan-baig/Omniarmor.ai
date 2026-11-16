@@ -21,11 +21,11 @@ def make(kind, **kw):
 
 
 class TestCatalogShape(unittest.TestCase):
-    def test_ten_rules_for_each_of_50_industries(self):
-        self.assertEqual(sorted(CATALOG), list(range(1, 51)))
+    def test_ten_rules_for_each_of_51_industries(self):
+        self.assertEqual(sorted(CATALOG), list(range(1, 52)))
         for module_id, rules in CATALOG.items():
             self.assertEqual(len(rules), 10, module_id)
-        validate_rules(CATALOG, range(1, 51))
+        validate_rules(CATALOG, range(1, 52))
 
     def test_every_industry_has_theme_entry(self):
         self.assertEqual(sorted(OmniArmorPortal(verbose=False).theme.INDUSTRIES), sorted(CATALOG))
@@ -145,8 +145,8 @@ class TestPortalCatalog(unittest.TestCase):
 
     def test_full_catalog(self):
         results = self.p.run_full_catalog()
-        self.assertEqual(sum(len(v) for v in results.values()), 500)
-        self.assertEqual(self.p.tracker.total_api_calls, 500)
+        self.assertEqual(sum(len(v) for v in results.values()), 510)
+        self.assertEqual(self.p.tracker.total_api_calls, 510)
 
 
 class TestDashboard(unittest.TestCase):
@@ -159,7 +159,7 @@ class TestDashboard(unittest.TestCase):
         html = build_dashboard.render()
         match = re.search(r"const INDUSTRIES = (\[.*?\]);\n", html, re.S)
         data = json.loads(match.group(1).replace("<\\/", "</"))
-        self.assertEqual(len(data), 50)
+        self.assertEqual(len(data), 51)
         self.assertTrue(all(len(i["rules"]) == 10 for i in data))
         self.assertNotIn("</script", match.group(1).lower())
 

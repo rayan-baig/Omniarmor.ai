@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The 50 industries and 500 rules, as the web app uses them."""
+"""The 51 industries and 510 rules, as the web app uses them."""
 
 import re
 from dataclasses import replace

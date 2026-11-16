@@ -3,11 +3,11 @@
 the family company.
 
 Four tracks, each with its own progress:
-    Launchpad (Basic)          1,350 levels: 16 core worlds x 50 stages, the
-                               Owner's Challenge (50) and 50 industry Rule Quests x 10.
-    Trailblazer (Intermediate) 2,700 levels: all 43 worlds x 50, plus the same.
-    Summit (Advanced)          5,400 levels: 43 x 100, Challenge 100, Rule Quests x 20.
-    Titan Mastery              15,700 levels: 43 x 300, Challenge 300, Rule Quests x 50.
+    Launchpad (Basic)          1,360 levels: 16 core worlds x 50 stages, the
+                               Owner's Challenge (50) and 51 industry Rule Quests x 10.
+    Trailblazer (Intermediate) 2,710 levels: all 43 worlds x 50, plus the same.
+    Summit (Advanced)          5,420 levels: 43 x 100, Challenge 100, Rule Quests x 20.
+    Titan Mastery              15,750 levels: 43 x 300, Challenge 300, Rule Quests x 50.
 
 Stage 1 of a world teaches the lesson; later stages add questions, harder
 questions, a higher pass mark and review from other worlds, and every tenth
@@ -18,7 +18,9 @@ Quizzes are generated from a seed, so the same attempt always shows the same
 questions and can be checked on the server without storing the answers.
 
 Children don't get accounts: a family member adds a learner profile with only
-a nickname and a picture, so no child's personal information is collected.
+a nickname and a picture, so no child's personal information is collected. A
+teacher adds a class the same way, by first name or nickname only
+(classrooms.py).
 """
 
 import difflib
@@ -763,7 +765,11 @@ TEAM_FACTS = [
 
 def _company_questions(rng, company, industry_ids, stage=1):
     sectors = _sectors(industry_ids)
-    others = [INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in industry_ids]
+    mine = set(industry_ids)
+    for group in KINDRED:
+        if mine & group:
+            mine |= group
+    others = [INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in mine]
     if len(others) < 2:
         others = ["Space travel", "Ice cream trucks", "Toy making"]
     decoy_names = ["Sunny Side Snacks", "Rocket Repair Co.", "Blue Lake Toys", "Maple Street Bakery"]
@@ -1116,11 +1122,22 @@ def _same_requirement(a, b):
             or (_citation_core(a) is not None and _citation_core(a) == _citation_core(b)))
 
 
+# Industries that are the same kind of business, so neither is ever a wrong
+# answer for the other: a school follows SchoolArmor's legal duties (8) and
+# SchoolSafetyArmor's safety routines (51) alike.
+KINDRED = (frozenset({8, 51}),)
+
+
 @functools.lru_cache(maxsize=None)
 def _sharing(industry_id, index):
-    """The industries that have this rule, under its own title or another."""
+    """The industries that have this rule, under its own title or another,
+    and those of the same kind of business (KINDRED)."""
     rule = CATALOG[industry_id][index - 1]
-    return frozenset(i for i, rules in CATALOG.items() if any(_same_requirement(r, rule) for r in rules))
+    found = {i for i, rules in CATALOG.items() if any(_same_requirement(r, rule) for r in rules)}
+    for group in KINDRED:
+        if industry_id in group:
+            found |= group
+    return frozenset(found)
 
 
 def _alike(a, b):

@@ -397,27 +397,42 @@ def register_cli(app):
         """Send reminders, back up the database and clean up."""
         click.echo(run_daily(dict(app.config), force=force) or "Not due yet, or already done today.")
 
-    def _set_plan(org_id, state, kind, interval=None):
+    def _set_plan(org_id, state, kind, interval=None, ends_at=None):
         from .academy_plan import set_status
         conn = connect(app.config["DATABASE"])
         try:
             if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
                 raise click.ClickException(f"No workspace with id {org_id}.")
-            set_status(conn, org_id, state, kind=kind, interval=interval)
+            set_status(conn, org_id, state, kind=kind, interval=interval, ends_at=ends_at)
             conn.commit()
         finally:
             conn.close()
 
     @app.cli.command("plan")
     @click.argument("org_id", type=int)
-    @click.argument("plan", type=click.Choice(["pro", "plus", "none"]))
-    @click.option("--yearly", is_flag=True, help="Paid yearly rather than monthly.")
-    def plan_command(org_id, plan, yearly):
-        """Put a workspace on Pro or Plus by hand, or take its plan away (no Stripe needed)."""
+    @click.argument("plan", type=click.Choice(["pro", "plus", "classroom", "school", "none"]))
+    @click.option("--yearly", is_flag=True, help="Paid yearly rather than monthly (classroom plans always are).")
+    @click.option("--until", "until", metavar="YYYY-MM-DD",
+                  help="The last day of the plan, such as the end of a school year paid by invoice.")
+    def plan_command(org_id, plan, yearly, until):
+        """Put a workspace on Pro, Plus, Classroom or Whole school by hand, or take its plan away
+        (no Stripe needed: a school that pays by invoice, say)."""
+        from datetime import date, datetime as _dt, time as _time, timezone as _tz
+        from .plans import CLASSROOM_PLANS
+        ends_at = None
+        if until:
+            try:
+                last = date.fromisoformat(until)
+            except ValueError:
+                raise click.ClickException("--until takes a date: YYYY-MM-DD.")
+            ends_at = iso(_dt.combine(last, _time(23, 59, 59), tzinfo=_tz.utc))
+        yearly = yearly or plan in CLASSROOM_PLANS
         _set_plan(org_id, "none" if plan == "none" else "active", None if plan == "none" else plan,
-                  None if plan == "none" else ("year" if yearly else "month"))
+                  None if plan == "none" else ("year" if yearly else "month"), ends_at=ends_at)
+        name = CLASSROOM_PLANS[plan].name if plan in CLASSROOM_PLANS else plan.title()
         click.echo(f"Workspace {org_id}: " + ("no plan." if plan == "none"
-                                              else f"{plan.title()} on" + (", yearly." if yearly else ".")))
+                                              else f"{name} on" + (", yearly" if yearly else "")
+                                              + (f", until {until}." if until else ".")))
 
     @app.cli.command("academy-plan")
     @click.argument("org_id", type=int)

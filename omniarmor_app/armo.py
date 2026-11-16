@@ -139,7 +139,9 @@ def tips(conn, org, user, state, mail_ready):
                       "url": url_for("app.notifications")})
     learners = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (org["id"],)).fetchone()[0]
     if not learners:
-        found.append({"text": "Got future owners at home? The Academy teaches kids the business in 1,350 game levels.",
+        from .academy import TOTAL_LEVELS
+        found.append({"text": "Got future owners at home? The Academy teaches kids the business in "
+                              f"{TOTAL_LEVELS:,} game levels.",
                       "url": url_for("academy.home")})
     found.append({"text": "Need proof for an inspector? Intel prints a full compliance report.",
                   "url": url_for("app.report")})

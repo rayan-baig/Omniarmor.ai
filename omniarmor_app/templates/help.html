@@ -91,6 +91,13 @@
 <h2 id="progress">How can I see how my kid is doing?</h2>
 <p>Open the Academy and choose Progress reports, or the progress report button on your kid's map. It shows the lessons they played, their best quiz scores and tries, their stars and the certificates they earned on every track. Only the grown-ups in your workspace can open it; a kid's own device can't. Certificates print on one landscape page.</p>
 
+<h3 id="classes">Can a teacher run the Academy for a class?</h3>
+<p>Yes. Open the Academy, then Classes. Start the free {{ facts.pilot_days }}-day pilot (no card), add your class and type your students' first names or nicknames, one on each line: no email, birthdate or photo. The class page shows each student's lessons done and the class total, and makes join codes to print, certificates to print and a one-page pilot report with totals only for the school office. Students see their own lessons and, if you leave it on, their own class's leaderboard. After the pilot, a school can pay by card or ask for an invoice:</p>
+<ul>
+  {% for p in facts.classroom_plans %}<li><b>{{ p.name }}</b>, {{ p.yearly_price }}: {{ p.summary }}</li>{% endfor %}
+</ul>
+<p>More on the <a href="{{ url_for('public.academy_schools') }}">Academy for schools</a> page.</p>
+
 <h2 id="download">How do I download my data?</h2>
 <ul>
   <li><strong>The report</strong> (Intel): every check's status, print it or press Export CSV for a spreadsheet.</li>

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo %}
+{% block title %}Classes{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+{% set pilot = limits.pilot %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Future Owner Academy</a></p>
+  <section class="ac-hero">
+    {{ armo(110, 'cheer') }}
+    <div>
+      <p class="ac-kicker">For teachers and schools</p>
+      <h1 class="ac-title">The Academy for your class</h1>
+      <p class="ac-lead">Run the Future Owner Academy for a whole class or an entrepreneurship club. Add students by first name or nickname only: no email, no birthdate, no photo. You see each student's lessons and the class total.</p>
+    </div>
+  </section>
+
+  {% if limits.source == 'pilot' %}
+    <p class="ac-banner" data-pilot="active">Free classroom pilot: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}. {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students, the whole Academy, no card.</p>
+  {% elif limits.source %}
+    <p class="ac-banner" data-plan="{{ limits.source }}">You have {{ limits.name }}{% if access.ends_at %} until {{ access.ends_at|local_date }}{% endif %}: {% if limits.max_classes %}{{ limits.max_classes }} class{{ 'es' if limits.max_classes != 1 }}{% else %}as many classes as you like{% endif %}, up to {{ facts.class_size }} students each.</p>
+  {% elif pilot.state == 'ended' %}
+    <p class="ac-banner" data-pilot="ended">Your free pilot ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the pilot report are kept. Choose a classroom plan below to add students and open every world again.</p>
+  {% endif %}
+
+  <h2 class="ac-h2">Your classes</h2>
+  {% if classes %}
+    <ul class="list ac-class-list" data-classes>
+      {% for c in classes %}
+        <li class="row">
+          <a href="{{ url_for('classes.class_page', class_id=c.id) }}"><strong>{{ c.name }}</strong></a>
+          <span class="muted">{{ c.students }} student{{ 's' if c.students != 1 }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="ac-empty">No classes yet.{% if not limits.active %} Start the free pilot to add your first one.{% endif %}</p>
+  {% endif %}
+
+  {% if can_add %}
+    <form class="ac-card ac-add mt" method="post" action="{{ url_for('classes.add_class') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2 class="ac-h3">Add a class</h2>
+      <label class="field"><span>Class name</span>
+        <input type="text" name="name" maxlength="40" required autocomplete="off" placeholder="For example: Room 12 or Entrepreneurship Club"></label>
+      <button class="btn ac-btn" type="submit">Add the class</button>
+    </form>
+  {% elif limits.active and why %}
+    <p class="hint mt">{{ why }}</p>
+  {% endif %}
+
+  {% if pilot.state == 'none' and not limits.active %}
+    <section class="ac-card mt" data-pilot-offer>
+      <h2 class="ac-h3">Try it free for {{ facts.pilot_days }} days</h2>
+      <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page pilot report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
+      {% if g.role == 'owner' %}
+        <form method="post" action="{{ url_for('classes.start_pilot') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn ac-btn" type="submit">Start the free pilot</button>
+        </form>
+      {% else %}
+        <p class="hint">Ask the workspace owner to start the pilot.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <h2 class="ac-h2" id="plans">Classroom plans</h2>
+  <div class="plans ac-class-plans" data-classroom-plans>
+    {% for p in facts.plans %}
+      <div data-plan="{{ p.key }}">
+        <p class="eyebrow">{{ p.name }}</p>
+        <p><b>{{ p.yearly_price }}</b>. {{ p.summary }}</p>
+        {% if g.role == 'owner' and not access.subscribed %}
+          {% if facts.online[p.key] %}
+            <form method="post" action="{{ url_for('classes.checkout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="plan" value="{{ p.key }}">
+              <button class="btn quiet" type="submit">Pay for {{ p.name }} by card</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="hint" data-invoice>Does your school want an invoice? Write to <a href="mailto:{{ facts.invoice_email }}">{{ facts.invoice_email }}</a> with the school's name, the plan and this workspace's name, {{ g.org.name }}. We send the invoice and turn the plan on for the school year.</p>
+</div>
+{% endblock %}

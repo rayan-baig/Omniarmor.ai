@@ -1,0 +1,241 @@
+# -*- coding: utf-8 -*-
+"""The Future Owner Academy for classrooms: a school or a teacher runs the
+Academy for a whole class or an entrepreneurship club.
+
+Safe by design for kids' privacy:
+
+- A teacher adds students by first name or nickname only. There is no field
+  for a student's email, birthdate, photo or anything else, and a name that
+  looks like an email address is refused. Each student gets one of the
+  Academy's drawn pictures, never a photo.
+- Students never type anything that is shown to anyone: they pick answers.
+- A student sees only their own lessons and, when the teacher leaves it on,
+  their own class's leaderboard (first names or nicknames and lessons done).
+  Never another class. Academy friends and duels, which can reach other
+  families, are off for students in a class.
+- The teacher's class view and the pilot report are for the workspace's
+  grown-ups only. The pilot report shows totals only, no student names, so
+  it can go to the school office.
+
+Plans, limits and the pilot are in plans.py (class_limits, pilot_status).
+"""
+
+import re
+from datetime import timedelta
+
+from . import academy, plans
+from .db import iso, utcnow
+from .trades import SCHOOL_INDUSTRY
+
+MAX_NAME = 30               # a student's first name or nickname
+MAX_CLASS_NAME = 40         # "Room 12", "Entrepreneurship Club"
+MAX_ADD_AT_ONCE = plans.CLASS_SIZE
+_LOOKS_LIKE_EMAIL = re.compile(r"@|\.(com|org|net|edu)\b", re.I)
+
+
+def invoice_email(cfg):
+    """Where a school writes to pay by invoice."""
+    return cfg.get("SCHOOL_INVOICE_EMAIL") or cfg.get("SUPPORT_EMAIL") or "help@mtrxhorizyn.com"
+
+
+def public_facts(cfg):
+    """What the Academy for schools page and the classes page say about the
+    plans and the pilot, read from plans.py and the settings."""
+    plus_academy = plans.yearly_dollars(plans.PLUS.dollars - plans.PRO.dollars)
+    return {
+        "class_size": plans.CLASS_SIZE,
+        "pilot_days": cfg["CLASSROOM_PILOT_DAYS"],
+        "pilot_classes": plans.PILOT_CLASSES,
+        "classroom": plans.CLASSROOM,
+        "school": plans.SCHOOL,
+        "plans": list(plans.CLASSROOM_PLANS.values()),
+        "plus": plans.PLUS,
+        "plus_academy_yearly": plans.price_label(plus_academy, plans.YEAR, per=False),
+        "online": {key: bool(cfg.get(p.price_setting) and cfg.get("STRIPE_SECRET_KEY"))
+                   for key, p in plans.CLASSROOM_PLANS.items()},
+        "invoice_email": invoice_email(cfg),
+        "tracks": academy.TRACK_LIST,
+        "topic_worlds": len(academy.TOPIC_WORLDS),
+        "fewest_levels": min(t.total for t in academy.TRACK_LIST),
+        "first_lessons": len(academy.TRACKS[academy.DEFAULT_TRACK].topics),
+        "school_industry": SCHOOL_INDUSTRY,
+    }
+
+
+# --- Names ---------------------------------------------------------------------------
+
+def clean_student_name(text):
+    """A first name or nickname, or None: plain text up to MAX_NAME
+    characters, and nothing that looks like an email address."""
+    value = (text or "").strip()
+    value = re.sub(r"\s+", " ", value)
+    if not value or len(value) > MAX_NAME or any(ord(c) < 32 or ord(c) == 127 for c in value):
+        return None
+    if _LOOKS_LIKE_EMAIL.search(value):
+        return None
+    return value
+
+
+def parse_names(text):
+    """The names a teacher typed, one per line (or separated by commas): a
+    list of (name or None, what was typed), empty lines left out."""
+    parts = re.split(r"[\n,;]", text or "")
+    return [(clean_student_name(p), p.strip()) for p in parts if p.strip()]
+
+
+# --- Reading classes -------------------------------------------------------------------
+
+def classes(conn, org_id):
+    """The workspace's classes, oldest first, with their student counts."""
+    return conn.execute(
+        "SELECT classes.*, (SELECT COUNT(*) FROM learners WHERE learners.class_id = classes.id) AS students"
+        " FROM classes WHERE org_id = ? ORDER BY created_at, id", (org_id,)).fetchall()
+
+
+def class_or_none(conn, org_id, class_id):
+    return conn.execute("SELECT * FROM classes WHERE id = ? AND org_id = ?", (class_id, org_id)).fetchone()
+
+
+def students(conn, class_id):
+    return conn.execute("SELECT * FROM learners WHERE class_id = ? ORDER BY nickname COLLATE NOCASE, id",
+                        (class_id,)).fetchall()
+
+
+def _passed_rows(conn, learner_ids, since=None, until=None):
+    if not learner_ids:
+        return []
+    marks = ",".join("?" * len(learner_ids))
+    sql = (f"SELECT learner_id, level, best_stars, completed_at FROM learner_progress"
+           f" WHERE learner_id IN ({marks}) AND best_stars >= 1")
+    args = list(learner_ids)
+    if since is not None:
+        sql += " AND completed_at >= ?"
+        args.append(iso(since))
+    if until is not None:
+        sql += " AND completed_at <= ?"
+        args.append(iso(until))
+    return conn.execute(sql, args).fetchall()
+
+
+def _world_of(level):
+    return academy.world((level % 1_000_000) // 1000)
+
+
+def _has_certificate(rows_for_learner):
+    """Whether a student has a certificate on any track: passed stage 1 of
+    the Owner's Challenge (academy.certificate_for)."""
+    for t in academy.TRACK_LIST:
+        if any(r["level"] == academy.level_id(t, academy.FINAL_WORLD.number, 1) for r in rows_for_learner):
+            return True
+    return False
+
+
+def class_progress(conn, class_row):
+    """The teacher's class view: each student's lessons done, stars, last day
+    played and certificate, and the class totals."""
+    kids = students(conn, class_row["id"])
+    rows = _passed_rows(conn, [k["id"] for k in kids])
+    by_kid = {}
+    for r in rows:
+        by_kid.setdefault(r["learner_id"], []).append(r)
+    last_days = {}
+    if kids:
+        marks = ",".join("?" * len(kids))
+        last_days = {r["learner_id"]: r["day"] for r in conn.execute(
+            f"SELECT learner_id, MAX(day) AS day FROM learner_days WHERE learner_id IN ({marks})"
+            " GROUP BY learner_id", [k["id"] for k in kids])}
+    out = []
+    for k in kids:
+        mine = by_kid.get(k["id"], [])
+        out.append({"learner": k, "lessons": len(mine), "stars": sum(r["best_stars"] for r in mine),
+                    "last_day": last_days.get(k["id"]), "certificate": _has_certificate(mine)})
+    total = sum(s["lessons"] for s in out)
+    return {
+        "students": out,
+        "count": len(out),
+        "lessons": total,
+        "average": round(total / len(out), 1) if out else 0,
+        "certificates": sum(1 for s in out if s["certificate"]),
+        "playing": sum(1 for s in out if s["lessons"]),
+    }
+
+
+def leaderboard(conn, class_row):
+    """A class's leaderboard for its students: first name or nickname,
+    picture and lessons done, most first. Nothing else about anyone."""
+    view = class_progress(conn, class_row)
+    board = sorted(view["students"], key=lambda s: (-s["lessons"], -s["stars"], s["learner"]["nickname"].lower()))
+    return [{"id": s["learner"]["id"], "nickname": s["learner"]["nickname"], "avatar": s["learner"]["avatar"],
+             "lessons": s["lessons"]} for s in board]
+
+
+def report(conn, org, class_row, now=None):
+    """The pilot report for one class: totals only, never a student's name.
+    During or after the workspace's pilot it counts the lessons finished in
+    the pilot's dates; without a pilot, every lesson so far."""
+    now = now or utcnow()
+    pilot = plans.pilot_status(org, now)
+    since = until = None
+    if pilot["state"] != "none":
+        since, until = pilot["started"], min(pilot["ends"], now)
+    kids = students(conn, class_row["id"])
+    rows = _passed_rows(conn, [k["id"] for k in kids], since, until)
+    topics = {}
+    for r in rows:
+        w = _world_of(r["level"])
+        if w is None:
+            continue
+        topics[w.number] = topics.get(w.number, 0) + 1
+    order = {w.number: n for n, w in enumerate(academy.ALL_WORLDS)}
+    covered = [{"world": academy.world(n), "lessons": count,
+                "unit": academy.UNIT_NAMES.get(academy.world(n).unit, "")}
+               for n, count in sorted(topics.items(), key=lambda item: order.get(item[0], 0))]
+    by_kid = {}
+    for r in rows:
+        by_kid.setdefault(r["learner_id"], []).append(r)
+    return {
+        "class": class_row,
+        "pilot": pilot,
+        "since": since,
+        "until": until,
+        "finished": pilot["state"] == "ended",
+        "students": len(kids),
+        "playing": len(by_kid),
+        "lessons": len(rows),
+        "topics": covered,
+        "certificates": sum(1 for rs in by_kid.values() if _has_certificate(rs)),
+    }
+
+
+# --- Limits ------------------------------------------------------------------------------
+
+def can_add_class(conn, org, now=None):
+    """(True, None) when the workspace may add a class now, otherwise
+    (False, why) in plain words."""
+    limits = plans.class_limits(org, now)
+    if not limits["active"]:
+        return False, "Start the free pilot or choose a classroom plan to add a class."
+    count = conn.execute("SELECT COUNT(*) FROM classes WHERE org_id = ?", (org["id"],)).fetchone()[0]
+    if limits["max_classes"] is not None and count >= limits["max_classes"]:
+        many = limits["max_classes"]
+        return False, (f"{limits['name']} is for {many} class{'es' if many != 1 else ''}. "
+                       f"Whole school has as many classes as you like.")
+    return True, None
+
+
+def room_for_students(conn, org, class_row, now=None):
+    """How many more students this class can take now (0 when none)."""
+    limits = plans.class_limits(org, now)
+    if not limits["active"]:
+        return 0
+    count = conn.execute("SELECT COUNT(*) FROM learners WHERE class_id = ?", (class_row["id"],)).fetchone()[0]
+    return max(0, limits["class_size"] - count)
+
+
+def start_pilot(conn, org, days, now=None):
+    """Starts the workspace's one free classroom pilot. Returns False when
+    it has had one already."""
+    now = now or utcnow()
+    return conn.execute("UPDATE orgs SET pilot_started_at = ?, pilot_ends_at = ? WHERE id = ?"
+                        " AND pilot_started_at IS NULL",
+                        (iso(now), iso(now + timedelta(days=days)), org["id"])).rowcount == 1

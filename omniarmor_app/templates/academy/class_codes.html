@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Join codes · {{ cls.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb no-print"><a href="{{ url_for('classes.class_page', class_id=cls.id) }}">← {{ cls.name }}</a></p>
+  <p class="ac-kicker">{{ cls.name }} · {{ g.org.name }}</p>
+  <h1 class="ac-title">Join codes</h1>
+  <p class="muted">On a school device, open <strong>{{ join_url }}</strong> and type the code. Each code works once, for {{ days }} days. A student who joins sees only their own lessons{% if cls.leaderboard %} and the class leaderboard{% endif %}.</p>
+  {% if codes %}
+    <ul class="ac-codes" data-join-codes>
+      {% for c in codes %}
+        <li><span class="ac-code-name">{{ c.nickname }}</span> <span class="mono ac-code">{{ c.code }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="hint no-print">Print this page and cut it into slips. Making new codes replaces these.</p>
+  {% else %}
+    <p class="ac-empty">No codes yet.</p>
+  {% endif %}
+  <form class="no-print mt" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn ac-btn" type="submit">{{ 'Make new codes for everyone' if codes else 'Make a code for every student' }}</button>
+  </form>
+</div>
+{% endblock %}

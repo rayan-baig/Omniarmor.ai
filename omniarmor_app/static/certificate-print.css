@@ -30,3 +30,6 @@ main{padding:0!important}
 .ac-cert-name{font-size:40pt;margin:2mm 0;color:#000}
 .ac-cert-rank{font-size:22pt;margin:3mm 0 6mm;color:#C8231A;background:none;-webkit-text-fill-color:#C8231A}
 .ac-cert-meta{font-size:11pt;color:#555}
+
+/* A class's certificates (academy/class_certificates.html): one to a page. */
+.ac-cert-list .ac-cert + .ac-cert{break-before:page;page-break-before:always}

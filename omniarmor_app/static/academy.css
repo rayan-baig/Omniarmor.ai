@@ -533,3 +533,22 @@
 .ac-offer-lesson{padding:12px 14px;border:1px dashed var(--line);border-radius:14px}
 .ac-offer-lesson strong{display:block;font-family:var(--kid);font-size:18px}
 .ac-offer-lesson p{color:var(--muted);font-size:15px}
+
+/* The Academy for classrooms (academy/class*.html, my_class.html). */
+.ac-class-list{margin-top:8px}
+.ac-class-list .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ac-class-plans{margin-top:8px}
+.ac-class-plans form{margin-top:10px}
+.ac-add textarea{width:100%;min-height:140px;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:inherit}
+.ac-report tfoot th,.ac-report tfoot td{font-weight:800;border-top:2px solid var(--line)}
+.ac-codes{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ac-codes li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--line);border-radius:14px;background:var(--card)}
+.ac-code-name{font-family:var(--kid);font-weight:800;font-size:18px;overflow-wrap:anywhere}
+.ac-code{font-size:15px;letter-spacing:.04em}
+.ac-report-for{margin:4px 0 0;font-size:16px}
+.ac-cert-list .ac-cert + .ac-cert{margin-top:32px}
+@media print{
+  .ac-pilot-report .ac-stats{break-inside:avoid}
+  .ac-pilot-report .ac-h2{margin-top:18px}
+  .ac-codes li{break-inside:avoid}
+}

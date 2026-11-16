@@ -69,6 +69,21 @@ services:
         sync: false
       - key: PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE
         sync: false
+      # Classroom plans for schools, yearly only: the Stripe price ids for
+      # Classroom and Whole school (the prices live in plans.py). Empty: that
+      # plan is sold by invoice and set by hand with
+      # `flask --app wsgi plan <id> classroom|school --until <date>`.
+      - key: CLASSROOM_YEARLY_STRIPE_PRICE
+        sync: false
+      - key: SCHOOL_YEARLY_STRIPE_PRICE
+        sync: false
+      # The free classroom pilot's length, in days (once per workspace).
+      - key: CLASSROOM_PILOT_DAYS
+        value: "30"
+      # Where a school writes for an invoice. Unset: SUPPORT_EMAIL, then
+      # help@mtrxhorizyn.com.
+      - key: SCHOOL_INVOICE_EMAIL
+        sync: false
       # The cancel screen's one-time save offer: a Stripe coupon id, and the
       # amount the screen promises (it must match the coupon). No coupon: no offer.
       - key: SAVE_OFFER_STRIPE_COUPON

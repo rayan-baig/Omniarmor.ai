@@ -408,6 +408,28 @@ MIGRATIONS = [
     );
     CREATE INDEX nudges_shown ON nudges (user_id, shown_at);
     """),
+    # The Academy for classrooms (classrooms.py). A class belongs to a
+    # workspace and has a name the teacher picks; `leaderboard` is whether its
+    # students see the class leaderboard (the teacher can turn it off). A
+    # learner in a class has class_id set (a family's own learners have
+    # none); deleting a class deletes its students and their progress.
+    # pilot_started_at and pilot_ends_at are the workspace's one free
+    # classroom pilot (plans.py).
+    (21, """
+    CREATE TABLE classes (
+        id INTEGER PRIMARY KEY,
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        leaderboard INTEGER NOT NULL DEFAULT 1,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX classes_org ON classes (org_id);
+    ALTER TABLE learners ADD COLUMN class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE;
+    CREATE INDEX learners_class ON learners (class_id);
+    ALTER TABLE orgs ADD COLUMN pilot_started_at TEXT;
+    ALTER TABLE orgs ADD COLUMN pilot_ends_at TEXT;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

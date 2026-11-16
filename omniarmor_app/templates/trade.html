@@ -11,11 +11,18 @@
     <a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a>
     <a class="btn ghost" href="#checklists">See the checklists</a>
   </div>
+  {% if trade.academy %}{% set cp = plan_facts().classroom_plans %}
+  <p class="hint" data-trade-classrooms>Teaching how a business runs? The Future Owner Academy for a whole class starts with a free {{ plan_facts().pilot_days }}-day pilot, then {{ cp[0].name }} at {{ cp[0].yearly_price }} or {{ cp[1].name }} at {{ cp[1].yearly_price }}. <a href="{{ url_for('public.academy_schools') }}">The Academy for schools</a></p>
+  {% endif %}
   {% include "_plan_summary.html" %}
 </section>
 
 <h2 id="checklists">The checklists that fit {{ trade.one }}</h2>
+{% if trade.own %}
+<p class="muted" data-trade-own>OmniArmor has checklists made for {{ trade.name|lower }}: {% for ind in facts.own %}<a href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">{{ ind.brand }}</a> ({{ ind.sector|lower }}){{ ' and ' if not loop.last }}{% endfor %}. Each check is a reminder to do something and write it down, so the record is there when someone asks. Sign up from this page and they're picked for you.</p>
+{% else %}
 <p class="muted">OmniArmor doesn't have a checklist made only for {{ trade.name|lower }}. These are the ones in OmniArmor that fit, and the checks in them that matter most to {{ trade.one }}. Sign up from this page and they're picked for you.</p>
+{% endif %}
 {% for grp in groups %}
   <section class="trade-group" data-trade-industry="{{ grp.industry.id }}">
     <h3><a href="{{ url_for('public.industry_page', slug=grp.industry.brand|lower) }}">{{ grp.industry.brand }}</a> · {{ grp.industry.sector }}</h3>
@@ -34,6 +41,20 @@
 
 <h2>Reminders</h2>
 <p class="muted" data-trade-reminders>{{ facts.dated }} of these checks are counted from a date. Enter the date once and OmniArmor counts for you: your team gets an email {{ days[:-1]|join(', ') }} and {{ days[-1] }} day{{ 's' if days[-1] != 1 }} before each one is due, on the day, and each week it stays overdue. Everyone picks which emails they get.</p>
+
+{% if trade.sister %}
+<div class="trade-note" data-trade-sister>
+  <p><strong>Fridges watched around the clock</strong></p>
+  <p>{{ trade.sister }} See <a href="{{ sister_url }}" rel="noopener">{{ sister_url|replace('https://', '') }}</a>.</p>
+</div>
+{% endif %}
+
+{% if trade.academy %}
+<div class="trade-note" data-trade-academy>
+  <p><strong>For your classrooms too</strong></p>
+  <p>The Future Owner Academy teaches students how a business runs, in short game levels. A teacher can run it for a whole class or an entrepreneurship club, with students added by first name or nickname only. <a href="{{ url_for('public.academy_schools') }}">The Academy for schools and teachers</a></p>
+</div>
+{% endif %}
 
 <div class="trade-note" data-trade-outside>
   <p><strong>What OmniArmor doesn't cover for {{ trade.name|lower }}</strong></p>

@@ -152,7 +152,7 @@ class TestPublicPages(AppTestCase):
     def test_slogan_and_every_industry_page(self):
         self.assertIn(b"before it catches you", self.client.get("/").data)
         sitemap = self.client.get("/sitemap.xml").data.decode()
-        self.assertEqual(sitemap.count("/industries/"), 50)
+        self.assertEqual(sitemap.count("/industries/"), 51)
 
     def test_signup_from_industry_page_preselects_it(self):
         page = self.client.get("/signup?industry=2").data.decode()
@@ -382,7 +382,7 @@ class TestTracking(AppTestCase):
         self.assertIn(b"in the future", self.client.get("/app/industry/1").data)
 
     def test_until_mode(self):
-        for iid in range(1, 51):
+        for iid in range(1, 52):
             try:
                 rule = first_rule(iid, mode="until")
                 break

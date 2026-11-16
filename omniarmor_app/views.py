@@ -174,7 +174,9 @@ def read_only_message(access):
                 " again (or start it again now on the Plans page).")
     why = {"bundle_ended": f"CyberLogix stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
                            " has ended",
-           "plan_ended": "Your plan has ended"}.get(access["reason"], "Your free trial has ended")
+           "plan_ended": "Your plan has ended",
+           "academy_only": "Your Classroom plan covers the Academy for your class, not the school checklist"
+           }.get(access["reason"], "Your free trial has ended")
     return (f"{why}, so the compliance tracker is read-only. Nothing was saved. Your records are safe: you can"
             " still see, print and download them. Choose Pro or Plus to save new checks.")
 

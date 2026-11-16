@@ -2,7 +2,7 @@
 
 *Catch the fine before it catches you.*
 
-This handbook explains OmniArmor from top to bottom in plain language: what it is, who it's for, how every part works, how the code is laid out, how to run it, how it was built, where things stand today, and what is left to do. The appendices at the end list every one of the 500 compliance checks, every Academy world, every Armo personality, every web address the app answers, and every setting.
+This handbook explains OmniArmor from top to bottom in plain language: what it is, who it's for, how every part works, how the code is laid out, how to run it, how it was built, where things stand today, and what is left to do. The appendices at the end list every one of the 510 compliance checks, every Academy world, every Armo personality, every web address the app answers, and every setting.
 
 **If you are picking this project up in a new account:** this document is the project's memory. The code lives in the GitHub repository `rayan-baig/omniarmor.ai`. The latest work is on the branch `claude/wonderful-heisenberg-77tbq9`. Part 12 explains how to keep working on the project the same way it has been built so far.
 
@@ -22,7 +22,7 @@ This handbook explains OmniArmor from top to bottom in plain language: what it i
 10. Design and writing style
 11. How it was built: the history
 12. Where things stand, what's next, and how to keep working
-- Appendix A: All 50 industries and 500 checks
+- Appendix A: All 51 industries and 510 checks
 - Appendix B: Every Academy world, with its lesson cards
 - Appendix C: Armo's 14 personalities
 - Appendix D: Every web address the app answers
@@ -37,12 +37,12 @@ This handbook explains OmniArmor from top to bottom in plain language: what it i
 
 OmniArmor.ai is a self-running compliance service for businesses in regulated industries. A company signs up, picks the industries it works in, and enters each date or reading once. From then on, OmniArmor counts the days by itself, warns the team by email before anything is due, shows what is blocked or close to a limit, and keeps a record of every change that an inspector, auditor or insurer can be shown.
 
-It covers 50 industries. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 500 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
+It covers 51 industries; the newest, SchoolSafetyArmor, holds a K-12 school's safety routines. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 510 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
 
 Two extra parts sit on top of the compliance service:
 
 - **Armo** is the app's mascot and helper: a small, friendly shield character who sits above the tab bar, keeps himself busy while things are calm, and jumps up the moment something needs attention. He has 14 personalities to choose from.
-- **The Future Owner Academy** is a game-like course for the children of family businesses, the people who may run the company one day. It has four tracks of up to 15,700 levels across 43 worlds of business lessons, plus quizzes built from the family company's own rules.
+- **The Future Owner Academy** is a game-like course for the children of family businesses, the people who may run the company one day. It has four tracks of up to 15,750 levels across 43 worlds of business lessons, plus quizzes built from the family company's own rules.
 
 Behind all of it, **Autopilot** keeps the service itself healthy. It fixes small problems on its own and emails the operator about big ones, including new bugs, which it finds by fingerprinting every crash and by running a full self-test every day.
 
@@ -132,11 +132,11 @@ Every check is a small piece of data with these parts:
 - **Policy flag**: true when the limit is an industry standard or a common policy rather than a number fixed by law. Only these can be changed by a company (section 2.6).
 - **Sample**: a realistic example reading, used in demos.
 
-Across all 500 checks there are 208 maximums, 32 minimums, 201 required controls and 59 forbidden conditions.
+Across all 510 checks there are 216 maximums, 33 minimums, 202 required controls and 59 forbidden conditions.
 
 ### 2.3 Dates that count themselves
 
-126 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
+135 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
 
 - **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, RestoArmor's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
@@ -221,14 +221,15 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 Visitors who aren't signed in see:
 
 - a landing page with the slogan, who it's for and, in the first screen, the plans (section 2.12): the free trial (`ACADEMY_TRIAL_DAYS`), Pro and Plus with their prices per location, the free Academy worlds and the Kitchen Safety Bundle. Every number on it is read from the code and settings (`_plan_summary.html`, which the industry pages show too);
-- a list of all 50 industries, and of trades;
-- one page per trade without an industry of its own (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops. Each names the OmniArmor checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what OmniArmor doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
+- a list of all 51 industries, and of trades;
+- one page per trade (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops, which have no industry of their own, and schools (`/for/schools`), which have two, SchoolSafetyArmor's safety routines and SchoolArmor's legal duties, brought together with a note that CyberLogix can watch the nurse's office and cafeteria fridges 24/7 and a link to the Academy for schools. Each names the OmniArmor checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what OmniArmor doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
 - one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
+- the Academy for schools and teachers (`/classrooms`, section 5.13): classes, the class view, certificates, the leaderboard, the free pilot and the classroom prices;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
 - a Help page (`/help`) with 15 questions and answers: the free trial, prices, a card at sign-up, what a check is, the three lights, Done today, updating several checks, when reminder emails go out and how to choose them, the Autopilot, the Academy, a kid's progress report, downloading and deleting data, and getting help. Every number on it is read from the code and settings, like the plan page's, and `SUPPORT_EMAIL`, when set, adds an address to write to. It is linked from every page's footer, the landing page and Settings;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
-The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 50 industry pages, the trade pages, sign up, sign in, Help, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
+The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 51 industry pages, the trade pages, the Academy for schools page, sign up, sign in, Help, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
 
 ### 2.9 Team, invites and roles
 
@@ -286,7 +287,8 @@ The prices live in one place, `omniarmor_app/plans.py`, and every page that name
 - **The plan page** (`/app/plan`; the old `/app/academy/plan` redirects there, so a Stripe checkout that began there still comes back) shows Pro, Plus, the free Academy and the bundle side by side, the workspace's status, and for the owner a **Choose Pro** / **Choose Plus** button (or **Add the Academy with Plus** at the bundle price) and **Manage billing**. Members see it but can't buy. Every number on it comes from `plan_facts()`.
 - **Stripe** (`academy_plan.py`, which kept its name): checkout sends the plan's price (`PRO_STRIPE_PRICE`, `PLUS_STRIPE_PRICE`) with the location count as quantity and writes the plan in the session's and the subscription's metadata. Coming back from checkout settles it at once; the signed webhook keeps it current, and reads the plan from the subscription's price, so switching between Pro and Plus in Stripe's customer portal arrives by itself. All of section 5.10's safety rules apply to every plan: repeats and older events are ignored, events about another subscription too, past due keeps access while Stripe retries, a cancelled plan runs to the end of its period, and checkout never starts a second subscription.
 - **Monthly or yearly.** Each plan can also be paid yearly, for `MONTHS_PAID_YEARLY` (10) months' price: Pro $500, Plus $800 and the bundle's Plus $300 a year per location, "2 months free" (`free_label()`). `plans.py` works the yearly prices out from the monthly ones; nothing types them. Each has its own Stripe price (`PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`); one left empty means that plan is offered monthly only, and with none set no page mentions yearly at all. The plan page and the landing and industry pages have a Monthly / Yearly switch (two radio buttons and CSS, no script; `/app/plan?billing=yearly` opens it on Yearly, as does a workspace already paying yearly), and each card's button sends `interval=year` or `month` to checkout. Checkout writes the interval in the metadata beside the plan; the webhook reads the plan *and* the interval from the subscription's price (`academy_plan.plan_for`), else from the price's own recurring interval or the metadata, and keeps them in `orgs.plan` and `orgs.plan_interval` (schema version 19), so switching between monthly and yearly in Stripe's portal arrives by itself. Settings and the plan page say "billed yearly". A yearly plan cancelled in the portal stays on to the end of the year paid for, with no partial refund (the Help page says so), and then the read-only rules above apply.
-- **By hand**, without Stripe: `flask --app wsgi plan <workspace id> pro|plus|none [--yearly]` (the old `academy-plan <id> active` now means Plus).
+- **By hand**, without Stripe: `flask --app wsgi plan <workspace id> pro|plus|classroom|school|none [--yearly] [--until YYYY-MM-DD]` (the old `academy-plan <id> active` now means Plus). `--until` sets the plan's last day, such as the end of a school year a school paid for by invoice: a plan set by hand with an end date stops by itself at the end of that day (`plans.access`), and so does a plan set by hand that was cancelled to its renewal date.
+- **Classroom plans** (version 1.6.0, section 5.13): **Classroom, $299 a year** (the whole Academy for one class of up to 35 students, no tracker) and **Whole school, $1,490 a year** (every class, up to 35 students each, and the compliance tracker for the school). Yearly only, quantity 1, Stripe price ids in `CLASSROOM_YEARLY_STRIPE_PRICE` and `SCHOOL_YEARLY_STRIPE_PRICE` (the amounts live in `plans.py`, like every price). Why these prices: the Academy's share of Plus is $30 a month (Plus less Pro), or $300 a year at ten months; Classroom is that, a dollar under, for a class instead of a family's 12 learners, and it has no tracker, so it never undercuts Plus for a business. Whole school costs more than a year of Plus, which it includes, and between four and five Classrooms (5 × $299 = $1,495), so it pays from the fifth class, with the school's checklist on top. Tests check all of that (`tests/test_schools.py`).
 - **Pause instead of cancel** (version 1.5.0). The plan page's "Cancel or pause your plan" opens the cancel screen (`/app/plan/cancel`, owner only). It offers, side by side: a **pause** of 1, 2 or 3 months (`plans.PAUSE_MONTHS`) for a plan paid monthly; the **save offer**, once per workspace ever (`orgs.save_offer_used_at`): `SAVE_OFFER_PERCENT` off the next `SAVE_OFFER_MONTHS` months (25% and 2 by default) through the Stripe coupon in `SAVE_OFFER_STRIPE_COUPON` (none set: no offer); and **Cancel my plan**, one click, which cancels at the end of the time paid for (Stripe's `cancel_at_period_end`; a plan set by hand ends at its renewal date, or at once without one). A cancelled plan can be kept before it ends ("Keep my plan"). A pause asks Stripe to void invoices until the chosen day (`pause_collection` with `resumes_at`) and keeps the day in `orgs.paused_until`; the webhook mirrors Stripe's pause both ways. While paused, `plans.access` gives nothing, exactly like no plan: the tracker is read-only, reminders and alerts stop (they already skip read-only workspaces), the free trial doesn't count, the Academy is down to its free worlds, and a banner on every page, Settings and the plan page say so with the date. At `paused_until` the plan is on again by itself, without any job; the daily job emails each owner `RESUME_NOTICE` (3 days) before (kind `plan`, once per pause) and tidies ended pauses. "Start again now" ends a pause early. A yearly plan, one past due or one already cancelled isn't paused, and the bundle's Plus isn't either (the bundle keeps its Pro). Every pause, save and cancel is in the audit trail and counted in the usage counts.
 - **Switching inside the app** (version 1.5.0). A monthly Pro, Plus or bundle Plus whose yearly price is set sees "Switch to yearly, 2 months free" on the plan page (and a link in Settings), with what twelve months cost monthly and what yearly saves. A paid Pro sees "Switch to Plus". Both move the subscription to our price for the plan and interval (`academy_plan.change_price`): Stripe charges the difference at once, less the unused part of the period (`proration_behavior=always_invoice`), and a declined card changes nothing (`payment_behavior=error_if_incomplete`). The portal can still do the same.
 - **Upgrade offers** (`nudges.py`, version 1.5.0), for owners only: when a workspace on Pro (paid, or the bundle's) opens the Academy, its home shows a peek at the first lesson of the first world past the free ones and "Plus includes the Academy", with Plus's price for that workspace; tapping a world outside the free ones opens the same peek for that world (`/app/academy/<learner>/world/<n>/preview`). When an owner adds a second location (section 2.9), HQ shows what paying yearly saves for all their locations, within 14 days, when a yearly price is set. At most one offer a week per person, of any kind, and "No thanks, don't show this again" is for good (the `nudges` table, schema version 20). Offers never show to team members, kids, or a workspace that is paused, past due or read-only.
@@ -445,22 +447,22 @@ A grown-up in the workspace adds a **learner** from the Academy home page. A lea
 
 Each track keeps its own progress, and a learner can switch at any time.
 
-- **Launchpad (Basic), 1,350 levels.** "Blast off with the basics."
+- **Launchpad (Basic), 1,360 levels.** "Blast off with the basics."
   - The 16 core worlds, 50 stages each.
   - The Owner's Challenge, 50 stages.
-  - 50 Rule Quests (one per industry), 10 stages each.
+  - 51 Rule Quests (one per industry), 10 stages each.
   - 5 to 8 questions per level, passing at 60% to 80%.
-- **Trailblazer (Intermediate), 2,700 levels.** "Every world of business."
+- **Trailblazer (Intermediate), 2,710 levels.** "Every world of business."
   - All 43 worlds, 50 stages each.
   - The Owner's Challenge, 50 stages.
   - Rule Quests at 10 stages each.
   - Same question counts and pass marks as Launchpad.
-- **Summit (Advanced), 5,400 levels.** "Twice the stages, tougher questions."
+- **Summit (Advanced), 5,420 levels.** "Twice the stages, tougher questions."
   - 43 worlds, 100 stages each.
   - The Owner's Challenge, 100 stages.
   - Rule Quests at 20 stages each.
   - 6 to 10 questions per level, passing at 70% to 85%.
-- **Titan Mastery, 15,700 levels.** "The ultimate mastery program."
+- **Titan Mastery, 15,750 levels.** "The ultimate mastery program."
   - 43 worlds, 300 stages each.
   - The Owner's Challenge, 300 stages.
   - Rule Quests at 50 stages each.
@@ -468,7 +470,7 @@ Each track keeps its own progress, and a learner can switch at any time.
 
 ### 5.4 Worlds and units
 
-There are 43 topic worlds in 9 units, plus the Owner's Challenge (a boss world) and 50 Rule Quests.
+There are 43 topic worlds in 9 units, plus the Owner's Challenge (a boss world) and 51 Rule Quests.
 
 - **Foundations** (8 worlds, on every track):
   - Meet Your Company
@@ -531,7 +533,7 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
   - a streak counter rises, with a flame and a shimmering bar from 3 in a row;
   - a right answer throws a burst of sparks;
   - the first answer counts.
-- **Grading happens on the server.** Each quiz is generated from a seed made of the learner, track, world, stage and attempt number. The server rebuilds the exact same questions to grade them. A new attempt gets a new seed and new questions. Nothing about a level is stored except the learner's best score and stars, which is why even 15,700 levels add almost nothing to the database.
+- **Grading happens on the server.** Each quiz is generated from a seed made of the learner, track, world, stage and attempt number. The server rebuilds the exact same questions to grade them. A new attempt gets a new seed and new questions. Nothing about a level is stored except the learner's best score and stars, which is why even 15,750 levels add almost nothing to the database.
 - **The results page** shows:
   - the score counting up, and stars popping in;
   - a slow sunburst and confetti on a win;
@@ -638,7 +640,7 @@ All Academy content is written, not generated on the fly, and checked by tests:
 - **1,333** written questions and true-or-false facts in the question banks for the 27 newer worlds, each graded easy (1), medium (2) or hard (3), with lesson cards for each world.
 - **255** leadership scenarios across nine pools: speaking like a pro, owning it, never giving up, respect, hiring, tough calls, customers, competition and pro moves.
 - **201** words in the Word Bank.
-- Questions built from the company's own name, industries and checks, and from the 500-rule catalog for Rule Quests. A Rule Quest's wrong answers never come from the same duty in another industry under another title (the DEA's biennial inventory is a check for drug makers and for pharmacies), and never read almost like the right answer, so each question has exactly one right answer.
+- Questions built from the company's own name, industries and checks, and from the 510-rule catalog for Rule Quests. A Rule Quest's wrong answers never come from the same duty in another industry under another title (the DEA's biennial inventory is a check for drug makers and for pharmacies), and never read almost like the right answer, so each question has exactly one right answer.
 
 The test rules for the question banks:
 
@@ -651,6 +653,20 @@ The test rules for the question banks:
 `tests/test_quiz_fairness.py` checks the quizzes kids actually get, every track's topic worlds and the Owner's Challenge from many seeds, including the questions written into `academy.py` for the first worlds: every question has different options and one right answer; the right answer is the longest option in at most 45% of a world's worded questions and 33% overall; each slot of a three-option question holds at least 20% of the right answers; and true-or-false questions are true 30% to 70% of the time (bank worlds pick a true or a false fact at even odds, and the first worlds draw from mixed pools of facts).
 
 ---
+
+### 5.13 The Academy for classrooms
+
+Version 1.6.0. A school or a teacher runs the Academy for a whole class or an entrepreneurship club (`classrooms.py`, `classroom_views.py`). It builds on the learners a family already has: a student is a learner with a `class_id`.
+
+- **Classes** (`/app/academy/classes`, linked from the Academy home): any grown-up in the workspace adds a class by name ("Room 12", "Entrepreneurship Club") and its students by **first name or nickname only**, one on each line. There is no field for an email, last name, birthdate or photo; a name that looks like an email address is refused, and so is the same name twice in a class. Each student gets one of the drawn pictures. A family's own learners (up to 12) are counted apart from students.
+- **The class view** (`/app/academy/classes/<id>`): each student's lessons done (levels passed with at least one star, on any track), stars, last day played and certificate, and the class totals: students, lessons done, lessons per student, certificates. Only the workspace's grown-ups can open it.
+- **Join codes for the class**: one button makes a code for every student, on one page to print and cut into slips. Each works once, for 7 days, on a school device.
+- **Certificates**: a student who finishes the first lesson of every world on their track and passes stage 1 of the Owner's Challenge earns the certificate; for a student in a class it is a **Certificate of Completion** with their first name or nickname, the class and the school. The class page prints them all, one to a landscape page.
+- **The class leaderboard**: a student sees their own class's board (first name or nickname, picture, lessons done) on "My class" (`/app/academy/<learner_id>/class`), never another class's. The teacher can switch it off. Students in a class have no Academy friends or duels, which could reach other families.
+- **The free pilot**: once per workspace, the owner starts a pilot of `CLASSROOM_PILOT_DAYS` (30) days: one class of up to 35 students and the whole Academy, no card. When it ends, the classes and their progress stay, but no student can be added and the Academy is back to its free worlds until a classroom plan is chosen.
+- **The pilot report** (`/app/academy/classes/<id>/report`): one printable page for the school office with totals only, no names: students in the class, how many finished a lesson, lessons finished and certificates earned in the pilot's dates, and the topics covered with the lessons finished in each.
+- **Classroom plans**: Classroom and Whole school (section 2.12), by card through Stripe Checkout from the classes page, or by invoice: the school writes to `SCHOOL_INVOICE_EMAIL` and the operator sets the plan by hand with an end date (docs/OPERATIONS.md, section 7, "Upgrading to 1.6.0").
+- **The public page** `/classrooms` ("The Academy for schools and teachers") explains all of this with the prices, and is linked from the home page and from `/for/schools`.
 
 ## 6. Autopilot and the bug finder
 
@@ -852,7 +868,7 @@ omniarmor_app (Flask)
    ├── auth.py         sign up, sign in, password reset, invites
    ├── views.py        HQ, industry checks, report, audit trail, Radar, settings
    ├── tracking.py     turns stored readings into today's status
-   ├── catalog.py      the 50 industries and 500 rules, as the app uses them
+   ├── catalog.py      the 51 industries and 510 rules, as the app uses them
    ├── reminders.py    daily digests per company, and time-limit alerts for the hour clocks
    ├── jobs.py         the timer: time-limit alerts each minute; reminders, cleanup, backup each day; sweep locks; CLI commands
    ├── notify.py       email, or the saved log when email isn't set up
@@ -883,9 +899,9 @@ SQLite database (one file on a persistent disk) + daily backups
     - `academy.js`, the lesson stepper, instant feedback, sparks and count-up;
     - `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` and `manifest.webmanifest`, the icons;
     - `og-image.png`, the picture shown when a public page is shared.
-- `omni_armor_rules/`: the 500 rules in ten files (`group_1.py` to `group_10.py`, five industries each), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
-- `omni_armor_platform.py`: the original engine. It holds the theme table of 50 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
-- `dashboard/`: a standalone demo page of all 500 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
+- `omni_armor_rules/`: the 510 rules in eleven files (`group_1.py` to `group_10.py`, five industries each, and `group_11.py` with SchoolArmor), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
+- `omni_armor_platform.py`: the original engine. It holds the theme table of 51 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
+- `dashboard/`: a standalone demo page of all 510 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
 - `tests/`: 723 tests in 40 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
@@ -935,14 +951,15 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 
 - `users`: email, name, password hash, reminder choices (the daily digest, the time-limit alerts, and the weekly Autopilot report for the operator's account), whether it is the operator's account (set only by `make-operator`, section 6.8), Armo personality, the day last seen, and a session counter.
 - `orgs`: companies, with their name, timezone and plan fields (section 2.12):
-  - `plan`: what the subscription is for (`pro`, `plus`, `plus_bundle`, `academy` for the old Academy plan, or `none`);
+  - `plan`: what the subscription is for (`pro`, `plus`, `plus_bundle`, `academy` for the old Academy plan, `classroom`, `school`, or `none`);
   - `plan_interval`: whether it is paid each `month` or each `year`;
   - its status, renewal date and the end date of a cancelled plan (`academy_status`, `academy_renews_at`, `academy_ends_at`: the names are from when only the Academy was paid for), and the free trial's end (`academy_trial_ends`);
   - Stripe customer and subscription ids;
   - the time of the last Stripe event applied;
-  - `bundle_report_at`: when the last validly signed CyberLogix report arrived (the Kitchen Safety Bundle's cover).
+  - `bundle_report_at`: when the last validly signed CyberLogix report arrived (the Kitchen Safety Bundle's cover);
+  - `pilot_started_at` and `pilot_ends_at`: the workspace's one free classroom pilot (section 5.13; schema version 21).
 - `memberships`: who belongs to which company, as owner or member.
-- `org_industries`: which of the 50 industries each company tracks.
+- `org_industries`: which of the 51 industries each company tracks.
 - `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
 - `audit`: every change, with person, time, action, industry, rule, before and after, and a summary. The person's name is stored on the row, so a removed team member's changes still show who made them.
 - `notifications`: every email sent or saved, with status, error and number of attempts. It is the outbox: Autopilot sends failed ones again from here, error reports (section 6.6) included.
@@ -954,7 +971,8 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 
 **Academy:**
 
-- `learners`: nickname, picture, Armo personality, track, whether the track was chosen, and a random device number.
+- `learners`: nickname, picture, Armo personality, track, whether the track was chosen, a random device number, and `class_id` for a student in a class (none for a family's own learner).
+- `classes`: a workspace's classes (section 5.13): the name the teacher picks, whether its leaderboard is on, who made it and when. Deleting a class deletes its students and their progress.
 - `learner_progress`: best score, best stars, attempts and completion time per level. A level's id is `track × 1,000,000 + world × 1,000 + stage`.
 - `learner_days`: levels played per day, which drives the streak and the daily goal.
 - `learner_mistakes`: missed questions, with the miss count, streak and when each is due again.
@@ -979,7 +997,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
 - **1 to 16:** the original worlds (Foundations and Leadership).
 - **17:** the Owner's Challenge.
 - **18 to 44:** the 27 question-bank worlds, in unit order: money, growth, operations, mindset, rules and trust, the big picture, then the Winning Mindset worlds at 43 and 44. (On the map, worlds are shown with a running count instead, so Champion Mindset appears as "World 42".)
-- **101 to 150:** the 50 Rule Quests, numbered 100 plus the industry's number.
+- **101 to 151:** the 51 Rule Quests, numbered 100 plus the industry's number.
 
 New worlds are always added at the end of the list, so existing progress keeps its level ids.
 
@@ -1239,8 +1257,8 @@ These are the habits the project was built with. Keep them:
 
 ---
 
-## Appendix A: All 50 industries and 500 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 126 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
+## Appendix A: All 51 industries and 510 checks
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 135 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -5344,6 +5362,88 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ---
 
+### 51. SchoolSafetyArmor (School Safety & Operations)
+
+**1. Fire and lockdown drills logged** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the last fire or lockdown drill was held and written down
+- Rule: State fire code and school safety drill rules (they vary by state)
+- What a miss costs: A missed or unlogged drill is a common fire marshal finding, can bring fines, and leaves no record if something goes wrong.
+- What to do when it's broken: Hold the next drill on your state's schedule and write down the date, time, kind of drill and how long it took.
+- Example reading used in demos: 21 days
+
+**2. AED and first-aid kits checked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since every AED (ready light, pads, battery) and first-aid kit was last checked and written down
+- Rule: AED maker's instructions; state school health rules (they vary by state)
+- What a miss costs: A dead AED battery or expired pads can cost a life, and an empty first-aid kit is a common inspection finding.
+- What to do when it's broken: Check each AED's ready light and its pad and battery dates, restock every first-aid kit, then write down the date.
+- Example reading used in demos: 12 days
+
+**3. Playground and gym equipment checked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the playground and gym equipment were last inspected and the inspection written down
+- Rule: CPSC Public Playground Safety Handbook; equipment makers' instructions
+- What a miss costs: Broken equipment and worn surfacing cause injuries, and an injury with no inspection record is costly to settle.
+- What to do when it's broken: Walk the playground and gym, close off anything broken, fix or report it, and write down what you checked.
+- Example reading used in demos: 34 days
+
+**4. Medication log and fridge reviewed** (Maximum 7 days, warns from 5 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the nurse's office medication log and fridge temperature log were last reviewed
+- Rule: State school nursing and medication rules (they vary by state); medicine makers' storage instructions
+- What a miss costs: Missed doses, and medicine kept too warm or too cold, put students at risk and are a common state health finding.
+- What to do when it's broken: Check the medication log against the medicine on hand, look over the fridge temperatures, fix any gap and write down the date.
+- Example reading used in demos: 3 days
+
+**5. Cafeteria food-safety check done** (Maximum 7 days, warns from 5 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the cafeteria's food-safety self-check (fridge and freezer temperatures, hot holding, handwashing, date labels) was done and written down
+- Rule: FDA Food Code as adopted by your state; USDA school meal food safety program, 7 CFR 210.13
+- What a miss costs: Food kept at the wrong temperature makes students sick and can bring a failed health inspection or a closed kitchen.
+- What to do when it's broken: Do the food-safety self-check today, fix anything out of range and write down the results.
+- Example reading used in demos: 2 days
+
+**6. Bus and van pre-trip checks reviewed** (Maximum 7 days, warns from 5 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the drivers' pre-trip check sheets for every bus and van were last reviewed
+- Rule: State pupil transportation rules; FMCSA 49 CFR 392.7 and 396.13 for drivers who need a CDL
+- What a miss costs: A bus or van with bad brakes, tires or lights can be put out of service, and missing checks weaken an insurance claim.
+- What to do when it's broken: Collect the pre-trip sheets for every bus and van, follow up on every problem written down, and keep them on file.
+- Example reading used in demos: 4 days
+
+**7. Concussion forms and heat checks** (Must be in place, answered Yes or No; policy)
+
+- Asks: This season, is a signed concussion form on file for every athlete, and is the heat checked and written down before outdoor practice on hot days?
+- Rule: State youth sports concussion laws; your state athletic association's heat rules (they vary by state)
+- What a miss costs: An athlete playing without a signed concussion form, or practicing in dangerous heat, risks serious injury and a costly claim.
+- What to do when it's broken: Hold out any athlete without a signed form, and check and write down the heat before every outdoor practice.
+- Example reading used in demos: Yes
+
+**8. Visitor sign-in log reviewed** (Maximum 7 days, warns from 5 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the visitor sign-in log was last reviewed for missing sign-outs, badges and anything unusual
+- Rule: Your school's own safety plan; state school safety rules (they vary by state)
+- What a miss costs: Without a reviewed sign-in log nobody can say who was in the building, and gaps in the front-desk routine go unnoticed.
+- What to do when it's broken: Review the sign-in log, follow up on missing sign-outs or badges, and write down the date you checked.
+- Example reading used in demos: 9 days
+
+**9. Science lab chemicals stored safely** (Maximum 90 days, warns from 75 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the science lab chemical storage was last checked (labels, safety data sheets, locked cabinets, old stock)
+- Rule: OSHA Laboratory Standard, 29 CFR 1910.1450; OSHA Hazard Communication, 29 CFR 1910.1200
+- What a miss costs: Old, unlabeled or wrongly stored chemicals can cause fires and injuries, bring OSHA penalties, and are costly to clear out.
+- What to do when it's broken: Check labels and safety data sheets, lock up what should be locked, set old stock aside for proper disposal and note the date.
+- Example reading used in demos: 60 days
+
+**10. Staff background checks up to date** (Minimum 0 days, warns from 45 days; policy, a company can set its own limit; counts days until a date)
+
+- Asks: Days until the next staff background-check renewal is due
+- Rule: State school employee background check laws (they vary by state)
+- What a miss costs: Staff working with children on a lapsed background check can break state rules and your insurer's terms, and puts students at risk.
+- What to do when it's broken: Start the renewal now so it's back before it lapses, and keep staff without a current check away from students.
+- Example reading used in demos: 52 days
+
 ## Appendix B: Every Academy world, with its lesson cards
 Stage 1 of every world opens with these lesson cards. The cards of the first worlds use the family company's own name and industries; they are shown here for a sample company, Acme Logistics, that tracks FleetArmor and HRArmor.
 
@@ -5704,7 +5804,7 @@ The boss world. It mixes questions from every world on the learner's track (10 q
 
 ### Rule Quests
 
-One for each of the 50 industries in Appendix A. Each turns that industry's ten checks into questions about the rule, its limit and what to do. A family's own industries are listed first, and the rest can be explored. Each Rule Quest has 10 stages on Launchpad and Trailblazer, 20 on Summit and 50 on Titan Mastery.
+One for each of the 51 industries in Appendix A. Each turns that industry's ten checks into questions about the rule, its limit and what to do. A family's own industries are listed first, and the rest can be explored. Each Rule Quest has 10 stages on Launchpad and Trailblazer, 20 on Summit and 50 on Titan Mastery.
 
 ### The Word Bank (201 words)
 
@@ -6056,6 +6156,19 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/academy/<int:learner_id>/armo` | A learner's Armo personality |
 | GET | `/app/academy/<int:learner_id>/certificate` | The learner's certificate |
 | GET | `/app/academy/<int:learner_id>/progress` | A learner's progress report, for the workspace's grown-ups |
+| GET | `/app/academy/<int:learner_id>/class` | A student's class page and class leaderboard |
+| GET, POST | `/app/academy/classes` | Classes: the list, the pilot, the classroom plans; POST adds a class |
+| POST | `/app/academy/classes/pilot` | Start the free classroom pilot (owners) |
+| POST | `/app/academy/classes/checkout` | Stripe Checkout for Classroom or Whole school (owners) |
+| GET | `/app/academy/classes/<int:class_id>` | A class's progress: lessons per student and the class total |
+| POST | `/app/academy/classes/<int:class_id>/students` | Add students by first name or nickname |
+| POST | `/app/academy/classes/<int:class_id>/students/<int:learner_id>/remove` | Remove a student |
+| POST | `/app/academy/classes/<int:class_id>/leaderboard` | Turn the class leaderboard on or off |
+| POST | `/app/academy/classes/<int:class_id>/rename` | Rename a class |
+| POST | `/app/academy/classes/<int:class_id>/delete` | Delete a class and its students |
+| GET, POST | `/app/academy/classes/<int:class_id>/join-codes` | Join codes for every student, to print |
+| GET | `/app/academy/classes/<int:class_id>/certificates` | Every certificate the class earned, to print |
+| GET | `/app/academy/classes/<int:class_id>/report` | The pilot report: totals only |
 | POST | `/app/academy/<int:learner_id>/delete` | Remove a learner |
 | POST | `/app/academy/<int:learner_id>/devices/sign-out` | Sign a learner out on every device |
 | POST | `/app/academy/<int:learner_id>/duels` | Challenge a friend to a duel |
@@ -6097,12 +6210,14 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/settings/reminders` | Choose one's own reminder emails: daily digest, time-limit alerts (and the weekly Autopilot report, for the operator's account) |
 | POST | `/billing/stripe/webhook` | Stripe webhook (signed) |
 | GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | The icon phones ask for at the root |
+| GET | `/classrooms` | The Academy for schools and teachers |
 | GET | `/favicon.ico` | Favicon |
 | GET, POST | `/forgot` | Ask for a password reset link |
 | GET | `/healthz` | Health check for uptime monitors |
 | GET | `/help` | Help: 15 questions and answers |
-| GET | `/industries` | List of all 50 industries |
+| GET | `/industries` | List of all 51 industries |
 | GET | `/industries/<slug>` | Public page for one industry |
+| GET | `/for/<slug>` | Trade pages: salons, tattoo studios, gyms, shops and schools |
 | GET, POST | `/kids` | A kid enters a join code |
 | POST | `/kids/leave` | A kid device leaves the Academy |
 | GET, POST | `/login` | Sign in |
@@ -6155,13 +6270,17 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `SAVE_OFFER_MONTHS` | 2 | For how many monthly bills (1 to 12). Must match the coupon's duration. |
 | `STRIPE_SECRET_KEY` | (none) | Stripe secret key. Without it (and the prices), a plan is switched by hand with `flask --app wsgi plan`. |
 | `STRIPE_WEBHOOK_SECRET` | (none) | Stripe webhook signing secret, for `/billing/stripe/webhook`. |
+| `CLASSROOM_YEARLY_STRIPE_PRICE` | (none) | The Stripe price id for Classroom, $299 a year (section 2.12). Without it, Classroom is sold by invoice only. |
+| `SCHOOL_YEARLY_STRIPE_PRICE` | (none) | The Stripe price id for Whole school, $1,490 a year. Without it, Whole school is sold by invoice only. |
+| `CLASSROOM_PILOT_DAYS` | 30 | Length of the free classroom pilot, once per workspace (section 5.13), 1 to 365. |
+| `SCHOOL_INVOICE_EMAIL` | (none) | Where a school writes to pay by invoice. Without it, `SUPPORT_EMAIL`, and without that help@mtrxhorizyn.com. |
 | `KITCHEN_BUNDLE_SECRET` | (none) | The secret CyberLogix signs its daily reports with, the same value on both apps. A validly signed report gives the workspace the Kitchen Safety Bundle's Pro (section 2.12). Without it, reports still fill in the checks but none counts. |
 
 ---
 
 ## Appendix F: Glossary
 
-- **Check**: one of the 500 compliance rules a company tracks, for example "Annual vehicle inspection".
+- **Check**: one of the 510 compliance rules a company tracks, for example "Annual vehicle inspection".
 - **Reading**: what a company enters for a check: a number, Yes or No, or a date.
 - **Cleared / Warning / Blocked**: the three answers a check gives. "No reading" means nothing has been entered.
 - **Policy check**: a check whose limit comes from an industry standard or common policy rather than law; a company can set its own limit.

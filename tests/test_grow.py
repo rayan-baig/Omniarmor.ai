@@ -630,6 +630,11 @@ class TestTradePages(AppTestCase):
     def test_no_trade_repeats_an_industry_page_and_unknown_ones_404(self):
         sectors = {i["sector"].lower() for i in INDUSTRIES.values()}
         for t in trades.TRADES:
+            if t.own:
+                # A trade with checklists made for it (schools) brings them
+                # together on one page, beside the Academy for classrooms.
+                self.assertTrue(all(i in INDUSTRIES for i in t.own))
+                continue
             self.assertNotIn(t.name.lower(), sectors)
         self.assertEqual(self.client.get("/for/nothing-here").status_code, 404)
         self.assertEqual(self.client.get("/for/Salons-And-Barbershops").status_code, 301)

@@ -6,10 +6,10 @@ OmniArmor is a product of MTRX Horizyn. In production it runs on its own
 subdomain of MTRX Horizyn's domain, `omniarmor.mtrxhorizyn.com`
 ([docs/OPERATIONS.md](docs/OPERATIONS.md), section 1).
 
-A self-running compliance service for 50 regulated industries. Each industry
+A self-running compliance service for 51 regulated industries, K-12 schools among them. Each industry
 has ten checks covering the compliance failures that cost businesses in that
 industry the most: common, expensive when missed, and cheap to prevent with a
-deadline, a threshold or a checklist. That is 500 checks in all.
+deadline, a threshold or a checklist. That is 510 checks in all.
 
 Companies sign up, pick their industries and enter each date or reading once.
 From then on OmniArmor:
@@ -21,7 +21,8 @@ From then on OmniArmor:
 - **Backs itself up:** daily database backups, with old copies pruned.
 - **Fills in the fridge checks itself (Kitchen Safety Bundle):** connected to CyberLogix, MTRX Horizyn's fridge and freezer alarm app, a restaurant's cold holding check ticks itself from CyberLogix's daily readings, and a breach leaves a note for someone to review. The owner makes the connection key in Settings, Connections; the contract CyberLogix builds against is [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md). A connection sends temperature summaries and roles, never names.
 - **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
-- **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,350 levels), Trailblazer (2,700), Summit (5,400) and Titan Mastery (15,700). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. Plus includes all of it; its first worlds are free for everyone.
+- **Made for schools too:** SchoolSafetyArmor holds a school's safety routines (drills, AED and first-aid kits, playground and gym checks, the nurse's medication log and fridge, the cafeteria, bus and van pre-trip checks, concussion forms and heat checks, visitor sign-in, lab chemicals and background-check renewals), beside SchoolArmor's legal duties, on one page at `/for/schools`. A teacher can run the Academy for a whole class (`/classrooms`): students added by first name or nickname only, a class progress view, printable certificates, a leaderboard the teacher can switch off, and a one-page pilot report with totals only.
+- **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,360 levels), Trailblazer (2,710), Summit (5,420) and Titan Mastery (15,750). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. Plus includes all of it; its first worlds are free for everyone.
 
 ## Plans
 
@@ -68,8 +69,15 @@ from there.
   person, and "No thanks" is for good. Owners add and switch locations in
   Settings.
 - **Trade pages** at `/for/<trade>` (salons and barbershops, tattoo and
-  piercing studios, gyms and fitness studios, shops) name the OmniArmor
-  checklists that fit each trade, and what they don't cover.
+  piercing studios, gyms and fitness studios, shops, schools) name the
+  OmniArmor checklists that fit each trade, and what they don't cover.
+- **Classroom plans for schools**, yearly only: **Classroom, $299 a year**
+  (the whole Academy for one class of up to 35 students) and **Whole school,
+  $1,490 a year** (every class, and the school's checklist). A free 30-day
+  classroom pilot, no card (`CLASSROOM_PILOT_DAYS`). By card
+  (`CLASSROOM_YEARLY_STRIPE_PRICE`, `SCHOOL_YEARLY_STRIPE_PRICE`) or by
+  invoice (`SCHOOL_INVOICE_EMAIL`; set by hand with
+  `flask --app wsgi plan <id> classroom --until <date>`).
 
 Every check answers **Cleared**, **Warning** or **Blocked** and names the rule
 it applies. This is decision support, not legal advice: confirm each rule with
@@ -89,7 +97,7 @@ A virtual environment is needed on most systems: Ubuntu 24.04, Debian 12 and
 Homebrew's Python refuse a plain `pip install`. The first start creates the
 database in `instance/`.
 
-Everything about OmniArmor in plain language, from every feature to all 500 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).
+Everything about OmniArmor in plain language, from every feature to all 510 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).
 
 Production: see [docs/OPERATIONS.md](docs/OPERATIONS.md) (Render one-click
 blueprint, Docker, or `docker compose up -d` on one small server with free
@@ -107,9 +115,9 @@ on first: [docs/STAGING.md](docs/STAGING.md).
 | `omniarmor_app/plans.py` | The plans and their prices, the free trial, read-only without a plan, and the Kitchen Safety Bundle's cover |
 | `omniarmor_app/connections.py` | The Kitchen Safety Bundle: CyberLogix's connection key, daily report and signature ([docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md)) |
 | `omniarmor_app/academy.py` | The Future Owner Academy: worlds, lessons and quiz generation (see `docs/academy-preview/`) |
-| `omni_armor_rules/` | The 500 rules (`group_1.py` … `group_10.py`) and the one `evaluate` every rule uses |
+| `omni_armor_rules/` | The 510 rules (`group_1.py` … `group_11.py`) and the one `evaluate` every rule uses |
 | `omni_armor_platform.py` | The original engine: 25 detailed checks and the console demo |
-| `dashboard/` | A standalone demo page of all 500 checks, built from the catalog |
+| `dashboard/` | A standalone demo page of all 510 checks, built from the catalog |
 | `tools/load_test.py` | The load test and the timing of the scheduled sweeps ([docs/LOAD-TEST.md](docs/LOAD-TEST.md)) |
 | `tests/` | Tests for the engine, the catalog, the web app and the dashboard |
 | `Dockerfile`, `docker-compose.yml`, `Caddyfile`, `render.yaml`, `.github/workflows/ci.yml` | Packaging, hosting and automatic test runs |

@@ -90,6 +90,8 @@ class MoonstoneThemeColors:
         48: {"name": "FirearmArmor (Firearms Dealers)", "color": "Gunmetal Grey", "hex": "#53565A"},
         49: {"name": "CasinoArmor (Casinos & Gaming)", "color": "Felt Table Green", "hex": "#0B7A3E"},
         50: {"name": "ShopArmor (E-commerce)", "color": "Cart Magenta", "hex": "#D63384"},
+        # Industry 51 (1.6.0): a K-12 school's safety routines, beside SchoolArmor's legal duties. Rule catalog only.
+        51: {"name": "SchoolSafetyArmor (School Safety & Operations)", "color": "Chalkboard Green", "hex": "#3A7D5C"},
     }
 
 

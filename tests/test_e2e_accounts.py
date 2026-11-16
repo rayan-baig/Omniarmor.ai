@@ -424,7 +424,7 @@ class TestCsrfEverywhere(AppTestCase):
     def url(self, rule):
         values = {"learner_id": self.lid, "industry_id": 1, "rule_key": "annual_mvr_review", "user_id": self.uid,
                   "world_number": 1, "stage": 1, "duel_id": 1, "friend_id": self.lid, "token": "x",
-                  "org_id": 1, "kind": "academy"}
+                  "org_id": 1, "kind": "academy", "class_id": 1}
         url = rule.rule
         for arg in rule.arguments:
             url = re.sub(rf"<(?:\w+:)?{arg}>", str(values[arg]), url)

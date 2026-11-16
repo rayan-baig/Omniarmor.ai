@@ -408,3 +408,6 @@ details.note .title{color:var(--ink);font-weight:600}
 .trade-note{margin-top:28px;padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--field);border-radius:10px;color:var(--muted);font-size:15px}
 .trade-note p{margin:0 0 8px}
 .trade-note p:last-child{margin:0}
+
+/* The Academy for schools page (academy_schools.html). */
+.school-steps{margin:0 0 12px;padding-left:22px;display:grid;gap:8px}

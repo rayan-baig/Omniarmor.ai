@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}The Academy for schools and teachers{% endblock %}
+{% block description %}Run the Future Owner Academy for a whole class or entrepreneurship club: students added by first name or nickname only, a class progress view, printable certificates and a free {{ facts.pilot_days }}-day pilot.{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">For schools and teachers</p>
+  <h1><span class="blend-text">How a business runs,</span> one short lesson at a time.</h1>
+  <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety, in levels of a few minutes each. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
+  <div class="cta">
+    <a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry) }}">Start a free pilot</a>
+    <a class="btn ghost" href="#price">See the prices</a>
+  </div>
+</section>
+
+<section class="features" aria-label="What a teacher gets">
+  <div>
+    <h3>Safe by design</h3>
+    <p>You add students by first name or nickname only. No student email, no birthdate, no photos, and nothing a student types is shown to anyone. Each student gets a drawn picture.</p>
+  </div>
+  <div>
+    <h3>A class progress view</h3>
+    <p>Lessons done for each student, and the class total, on one page. Only you and your school's other staff in OmniArmor can see it.</p>
+  </div>
+  <div>
+    <h3>Certificates to print</h3>
+    <p>A student who finishes the first lesson of every world and passes the Owner's Challenge earns a certificate of completion with their first name or nickname on it. Print one, or the whole class.</p>
+  </div>
+  <div>
+    <h3>A leaderboard you control</h3>
+    <p>Students can see their own class's leaderboard: first names and lessons done, nothing else, and never another class. Switch it off anytime.</p>
+  </div>
+  <div>
+    <h3>Join codes on paper</h3>
+    <p>Print one code per student. Each one works once, on a school device. Students don't need an email or a password.</p>
+  </div>
+  <div>
+    <h3>A pilot report for the office</h3>
+    <p>At the end of the pilot, print one page with the totals: how many students, how many lessons finished, and the topics covered. No student names.</p>
+  </div>
+</section>
+
+<h2 id="price">Prices</h2>
+<div class="plans" data-classroom-plans>
+  <div data-plan="pilot">
+    <p class="eyebrow">Free pilot</p>
+    <p><b>{{ facts.pilot_days }} days free</b>: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and the whole Academy. No card needed.</p>
+  </div>
+  {% for p in facts.plans %}
+    <div data-plan="{{ p.key }}">
+      <p class="eyebrow">{{ p.name }}</p>
+      <p><b>{{ p.yearly_price }}</b>. {{ p.summary }}</p>
+    </div>
+  {% endfor %}
+</div>
+<p class="hint">Paid once a year. By card, or ask for an invoice: write to <a href="mailto:{{ facts.invoice_email }}">{{ facts.invoice_email }}</a> with your school's name and the plan you want. A family business already on {{ facts.plus.name }} gets the Academy for its own kids included.</p>
+
+<div class="trade-note">
+  <p><strong>Run the school's safety checklists too</strong></p>
+  <p>Drills, AED and first-aid kits, the nurse's office, the cafeteria, buses, athletics, visitors, the science lab and staff background checks, with a reminder before each one is due. Whole school includes them. <a href="{{ url_for('public.trade_page', slug='schools') }}">OmniArmor for schools</a></p>
+</div>
+
+<h2>How to start</h2>
+<ol class="school-steps">
+  <li>Sign up for free with your school's name.</li>
+  <li>Open the Academy, then Classes, and start the {{ facts.pilot_days }}-day pilot.</li>
+  <li>Add your class and type your students' first names or nicknames.</li>
+  <li>Print the join codes and hand them out. Students play on school devices.</li>
+  <li>Watch the class progress, print certificates, and take the pilot report to the office.</li>
+</ol>
+<p class="hint mt">Questions? Read the <a href="{{ url_for('public.help') }}">help page</a> or the <a href="{{ url_for('public.privacy') }}">privacy page</a>.</p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry) }}">Start a free pilot</a></p>
+{% endblock %}

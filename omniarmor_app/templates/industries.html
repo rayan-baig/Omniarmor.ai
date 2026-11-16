@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Industries and trades{% endblock %}
-{% block description %}Compliance checklists and reminders for 50 regulated industries, and for trades like salons, tattoo studios, gyms and shops. {{ SLOGAN }}{% endblock %}
+{% block description %}Compliance checklists and reminders for {{ industries|length }} regulated industries, and for trades like salons, tattoo studios, gyms, shops and schools. {{ SLOGAN }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <p class="eyebrow">50 industries</p>
+    <p class="eyebrow">{{ industries|length }} industries</p>
     <h1>Find your industry</h1>
     <p class="sub">Each one comes with the ten compliance failures that cost businesses like yours the most.</p>
   </div>

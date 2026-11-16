@@ -51,6 +51,30 @@ workspace is read-only exactly as without a plan (reminders stop, nothing is
 deleted), and it starts again by itself on the date chosen (orgs.paused_until).
 A yearly plan is already paid for the year, so it isn't paused.
 
+**Classroom plans** (classrooms.py). A school or a teacher can run the
+Future Owner Academy for a whole class. Two plans, paid yearly only (a school
+pays for a school year, often by invoice):
+
+- **Classroom**: the whole Academy for one class of up to CLASS_SIZE
+  students. No compliance tracker. Its price is the Academy's share of Plus
+  for a year (Plus less Pro, MONTHS_PAID_YEARLY months: $300), a dollar under,
+  so it is never dearer than adding the Academy, and never a cheaper way for
+  a business to get the tracker (it has none).
+- **Whole school**: the whole Academy for any number of classes, and the
+  compliance tracker (SchoolArmor's checklist) for the school. It costs
+  between four and five Classrooms, so it pays from the fifth class, and
+  more than a year of Plus, which it includes.
+
+Each has a Stripe price setting for checkout; a school that wants an invoice
+gets the plan set by hand instead (`flask --app wsgi plan <id> classroom
+--until <date>`), the same mechanism as every plan set by hand. A plan set
+by hand with an end date stops on that date.
+
+**The classroom pilot.** Once per workspace, a free pilot of PILOT_DAYS
+(the CLASSROOM_PILOT_DAYS setting): one class of up to CLASS_SIZE students and
+the whole Academy, no card. It ends by itself; the classes, their progress
+and the pilot report are kept.
+
 **The save offer.** Once per workspace, ever, a monthly payer about to cancel
 can take SAVE_OFFER_PERCENT off the next SAVE_OFFER_MONTHS months, through the
 Stripe coupon named in SAVE_OFFER_STRIPE_COUPON (the settings decide the
@@ -123,6 +147,24 @@ class Plan:
         return self.yearly_price_setting if interval == YEAR else self.price_setting
 
 
+@dataclass(frozen=True)
+class ClassroomPlan:
+    """A plan for running the Academy in a school (see above): a year's price,
+    the Stripe price setting, how many classes (None: no limit) and whether
+    the compliance tracker comes with it."""
+    key: str
+    name: str
+    yearly_dollars: int
+    price_setting: str
+    max_classes: object      # int, or None for no limit
+    tracker: bool
+    summary: str
+
+    @property
+    def yearly_price(self):
+        return price_label(self.yearly_dollars, YEAR, per=False)
+
+
 PRO = Plan("pro", "Pro", 50, "PRO_STRIPE_PRICE", tracker=True, academy=False,
            yearly_price_setting="PRO_YEARLY_STRIPE_PRICE")
 PLUS = Plan("plus", "Plus", 80, "PLUS_STRIPE_PRICE", tracker=True, academy=True,
@@ -140,7 +182,22 @@ KINDS = {
     "plus_bundle": (PLUS.name, False, True),
     # The old standalone Academy plan: kept as it was (see above).
     "academy": ("Academy plan", True, True),
+    # Classroom plans (see above): the Academy for one class, or for every
+    # class and the tracker for the school.
+    "classroom": ("Classroom", False, True),
+    "school": ("Whole school", True, True),
 }
+
+# --- Classroom plans ---------------------------------------------------------------
+CLASS_SIZE = 35                 # students in one class, on every classroom plan and the pilot
+DEFAULT_PILOT_DAYS = 30         # the CLASSROOM_PILOT_DAYS default in config.py
+PILOT_CLASSES = 1
+CLASSROOM = ClassroomPlan("classroom", "Classroom", 299, "CLASSROOM_YEARLY_STRIPE_PRICE", 1, tracker=False,
+                          summary=f"The whole Academy for one class of up to {CLASS_SIZE} students.")
+SCHOOL = ClassroomPlan("school", "Whole school", 1490, "SCHOOL_YEARLY_STRIPE_PRICE", None, tracker=True,
+                       summary=(f"The whole Academy for every class (up to {CLASS_SIZE} students each), and the"
+                                " school safety checklist with reminders for the school."))
+CLASSROOM_PLANS = {p.key: p for p in (CLASSROOM, SCHOOL)}
 
 # --- The Kitchen Safety Bundle -------------------------------------------------
 BUNDLE_NAME = "Kitchen Safety Bundle"
@@ -278,6 +335,47 @@ def bundle_status(org, now=None):
     return {"state": state, "last": last, "covered_until": covered_until, "grace_ends": grace_ends}
 
 
+def _days_left(ends, now):
+    return max(1, -(-int((ends - now).total_seconds()) // 86400))
+
+
+def pilot_status(org, now=None):
+    """The workspace's classroom pilot: 'none' (never started), 'active' or
+    'ended', with its dates and the days left."""
+    now = now or datetime.now(timezone.utc)
+    started = _parse(_get(org, "pilot_started_at"))
+    ends = _parse(_get(org, "pilot_ends_at"))
+    if started is None or ends is None:
+        return {"state": "none", "started": None, "ends": None, "days_left": 0}
+    if ends > now:
+        return {"state": "active", "started": started, "ends": ends, "days_left": _days_left(ends, now)}
+    return {"state": "ended", "started": started, "ends": ends, "days_left": 0}
+
+
+def class_limits(org, now=None):
+    """What the workspace can do with classes right now: the plan it comes
+    from ('school', 'classroom', 'pilot' or None), how many classes
+    (max_classes, None for no limit) and how many students in each."""
+    a = access(org, now)
+    if a["classroom"]:
+        plan = CLASSROOM_PLANS[a["kind"]]
+        return {"source": plan.key, "name": plan.name, "max_classes": plan.max_classes, "class_size": CLASS_SIZE,
+                "active": True, "pilot": pilot_status(org, now)}
+    pilot = pilot_status(org, now)
+    if pilot["state"] == "active" and not a["paused"]:
+        return {"source": "pilot", "name": "Free classroom pilot", "max_classes": PILOT_CLASSES,
+                "class_size": CLASS_SIZE, "active": True, "pilot": pilot}
+    return {"source": None, "name": None, "max_classes": 0, "class_size": CLASS_SIZE, "active": False,
+            "pilot": pilot}
+
+
+def classroom_checkout(cfg, plan_key):
+    """A classroom plan's checkout: (kind, Stripe price id, dollars). An
+    empty price id means it can't be bought online (an invoice instead)."""
+    plan = CLASSROOM_PLANS[plan_key]
+    return plan.key, cfg.get(plan.price_setting) or "", plan.yearly_dollars
+
+
 def access(org, now=None, trial_days=None):
     """What the workspace can use right now, and why.
 
@@ -289,6 +387,11 @@ def access(org, now=None, trial_days=None):
     state = _get(org, "academy_status") or "none"
     kind = _get(org, "plan") or "none"
     paid = state in PAID_STATES
+    hand_end = _parse(_get(org, "academy_ends_at"))
+    if paid and not _get(org, "stripe_subscription_id") and hand_end is not None and hand_end <= now:
+        # A plan set by hand with an end date (an invoiced school year, or a
+        # hand plan cancelled to its renewal date) is over on that date.
+        paid, state = False, "canceled"
     resumes = _parse(_get(org, "paused_until"))
     paused = paid and resumes is not None and resumes > now
     if paid and kind not in KINDS:
@@ -304,6 +407,8 @@ def access(org, now=None, trial_days=None):
     in_trial = ends is not None and ends > now and not paused
     interval = _get(org, "plan_interval")
     trial_days_left = max(1, -(-int((ends - now).total_seconds()) // 86400)) if in_trial else 0
+    pilot = pilot_status(org, now)
+    in_pilot = pilot["state"] == "active" and not paused
     if sub_tracker:
         source = "plan"
     elif bundle["state"] == "covered":
@@ -316,15 +421,17 @@ def access(org, now=None, trial_days=None):
         source = None
     if source is None and paused:
         reason = "paused"
+    elif source is None and paid and kind in CLASSROOM_PLANS:
+        reason = "academy_only"        # Classroom: the Academy for a class, not the tracker
     elif source is None:
         reason = "bundle_ended" if bundle["state"] == "lapsed" else "plan_ended" if kind != "none" else "trial_ended"
     else:
         reason = None
     return {
         "tracker": source is not None,
-        "academy": sub_academy or in_trial,
+        "academy": sub_academy or in_trial or in_pilot,
         "read_only": source is None,
-        "reason": reason,              # why it is read-only
+        "reason": reason,              # why it is read-only (academy_only: a Classroom plan)
         "source": source,              # where the tracker comes from
         "kind": kind, "plan_name": name, "state": state, "paid": paid,
         "interval": interval if interval in INTERVALS else MONTH,
@@ -338,6 +445,10 @@ def access(org, now=None, trial_days=None):
         "paused": paused,              # paused: no charge, read-only, until resumes_at
         "resumes_at": resumes if paused else None,
         "paused_at": _get(org, "paused_at") if paused else None,
+        "pilot": in_pilot,             # the free classroom pilot gives the whole Academy
+        "pilot_ends": pilot["ends"],
+        "pilot_days": pilot["days_left"] if in_pilot else 0,
+        "classroom": kind in CLASSROOM_PLANS and paid and not paused,
     }
 
 

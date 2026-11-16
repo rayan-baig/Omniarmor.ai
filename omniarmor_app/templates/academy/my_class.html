@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import armo, avatar %}
+{% block title %}{{ cls.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ academy_font }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+<div class="ac">
+  <p class="ac-crumb"><a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">← Back to the map</a></p>
+  <section class="ac-player">
+    {{ avatar(learner.avatar, avatars, 72) }}
+    <div class="ac-player-text">
+      <p class="ac-kicker">My class</p>
+      <h1 class="ac-title">{{ cls.name }}</h1>
+    </div>
+  </section>
+  {% if board is not none %}
+    <h2 class="ac-h2">Class leaderboard</h2>
+    <ol class="ac-board" data-class-board>
+      {% for b in board %}
+        <li{% if b.id == learner.id %} class="me"{% endif %}>
+          <span class="ac-board-place">{{ loop.index }}</span>
+          {{ avatar(b.avatar, avatars, 44) }}
+          <span class="ac-board-text">
+            <span class="ac-board-name">{{ b.nickname }}{% if b.id == learner.id %} (you){% endif %}</span>
+            <span class="ac-board-meta">{{ b.lessons }} lesson{{ 's' if b.lessons != 1 }} done</span>
+          </span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="ac-speech" data-board-off>{{ armo(64, 'happy') }}<p>Your teacher has the class leaderboard turned off. Keep going: every lesson counts!</p></div>
+  {% endif %}
+</div>
+{% endblock %}

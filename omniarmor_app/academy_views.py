@@ -245,7 +245,8 @@ def _log_day(conn, learner_id):
 def academy_context():
     return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES,
             "free_world_count": len(academy_plan.FREE_WORLDS),
-            "free_track_name": academy.TRACKS[academy_plan.FREE_TRACK].name}
+            "free_track_name": academy.TRACKS[academy_plan.FREE_TRACK].name,
+            "rule_quest_count": len(academy.INDUSTRY_WORLDS)}
 
 
 # --- Learners --------------------------------------------------------------------
@@ -254,14 +255,16 @@ def academy_context():
 @grown_ups_only
 def home():
     conn = get_db()
-    learners = conn.execute("SELECT * FROM learners WHERE org_id = ? ORDER BY created_at, id", (g.org["id"],)).fetchall()
+    learners = conn.execute("SELECT * FROM learners WHERE org_id = ? AND class_id IS NULL ORDER BY created_at, id",
+                            (g.org["id"],)).fetchall()
+    class_count = conn.execute("SELECT COUNT(*) FROM classes WHERE org_id = ?", (g.org["id"],)).fetchone()[0]
     offer = _academy_offer() if _offer_allowed() else None
     if offer is not None:
         nudges.mark_shown(conn, g.user["id"], "academy")
     return render_template("academy/home.html", summaries=[_summary(l) for l in learners], avatars=academy.AVATARS,
                            max_learners=academy.MAX_LEARNERS, tracks=academy.TRACK_LIST,
                            world_count=len(academy.TOPIC_WORLDS), plan=academy_plan.plan_status(g.org),
-                           offer=offer)
+                           offer=offer, class_count=class_count)
 
 
 # --- The upgrade offer (nudges.py) -----------------------------------------------
@@ -308,7 +311,9 @@ def add_learner():
     avatar = request.form.get("avatar", "")
     buddy = request.form.get("armo", armo.DEFAULT_KID)
     track_key = request.form.get("track", academy.DEFAULT_TRACK)
-    count = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (g.org["id"],)).fetchone()[0]
+    # A family's own learners; students in a class count toward the class (classrooms.py).
+    count = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ? AND class_id IS NULL",
+                         (g.org["id"],)).fetchone()[0]
     if nickname is None:
         flash_error("Pick a nickname up to 30 characters.")
     elif avatar not in academy.AVATARS:
@@ -382,6 +387,8 @@ def delete_learner(learner_id):
     conn.execute("DELETE FROM learners WHERE id = ?", (learner_id,))
     conn.commit()
     flash(f"{learner['nickname']}'s profile and progress were removed.", "ok")
+    if learner["class_id"] is not None:
+        return redirect(url_for("classes.class_page", class_id=learner["class_id"]))
     return redirect(url_for("academy.home"))
 
 
@@ -662,8 +669,12 @@ def certificate(learner_id):
         flash_error("Pass stage 1 of the Owner's Challenge to earn the certificate.")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
     first = progress[academy.level_id(t, academy.FINAL_WORLD.number, 1)]["completed_at"]
+    cls = None
+    if learner["class_id"] is not None:
+        cls = get_db().execute("SELECT * FROM classes WHERE id = ? AND org_id = ?",
+                               (learner["class_id"], g.org["id"])).fetchone()
     return render_template("academy/certificate.html", summary=summary, earned=local_date(first, g.org),
-                           today=org_today(g.org), avatars=academy.AVATARS)
+                           today=org_today(g.org), avatars=academy.AVATARS, cls=cls)
 
 
 # --- A grown-up's view of a learner's progress ------------------------------------
@@ -874,10 +885,28 @@ def academy_turns(learner_id):
     return _turns_waiting(learner_id)
 
 
+def _in_class(learner):
+    """Students in a class (classrooms.py) have no Academy friends or duels,
+    which can reach other families: their class leaderboard is theirs instead."""
+    return learner["class_id"] is not None
+
+
+def _no_friends_in_class(learner):
+    if not _in_class(learner):
+        return None
+    if request.method == "GET":
+        return redirect(url_for("classes.my_class", learner_id=learner["id"]))
+    flash_error("Friends and duels are for family learners. Students in a class have their class page instead.")
+    return redirect(url_for("classes.my_class", learner_id=learner["id"]))
+
+
 @bp.route("/<int:learner_id>/friends")
 @academy_access
 def friends(learner_id):
     learner = _learner_or_404(learner_id)
+    blocked = _no_friends_in_class(learner)
+    if blocked:
+        return blocked
     code = get_db().execute("SELECT * FROM friend_codes WHERE learner_id = ? AND expires_at > ?",
                             (learner_id, now_iso())).fetchone()
     board = sorted([_summary(learner)] + [_summary(f) for f in _friends(learner_id)],
@@ -893,7 +922,9 @@ def friends(learner_id):
 @bp.route("/<int:learner_id>/friends/code", methods=["POST"])
 @grown_ups_only
 def friend_code(learner_id):
-    _learner_or_404(learner_id)
+    blocked = _no_friends_in_class(_learner_or_404(learner_id))
+    if blocked:
+        return blocked
     conn = get_db()
     expires = iso(utcnow() + timedelta(days=academy.FRIEND_CODE_DAYS))
     for _ in range(5):
@@ -912,6 +943,9 @@ def friend_code(learner_id):
 @grown_ups_only
 def add_friend(learner_id):
     learner = _learner_or_404(learner_id)
+    blocked = _no_friends_in_class(learner)
+    if blocked:
+        return blocked
     back = redirect(url_for("academy.friends", learner_id=learner_id))
     keys = [f"friend-org:{g.org['id']}", f"friend-ip:{client_ip()}"]
     if rate_limited([(keys[0], 10), (keys[1], 30)], timedelta(hours=1)):
@@ -958,6 +992,9 @@ def remove_friend(learner_id, friend_id):
 @academy_access
 def new_duel(learner_id):
     learner = _learner_or_404(learner_id)
+    blocked = _no_friends_in_class(learner)
+    if blocked:
+        return blocked
     friend_id = _form_id("friend")
     world_number = _form_id("world")
     back = redirect(url_for("academy.friends", learner_id=learner_id))

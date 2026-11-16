@@ -64,6 +64,16 @@ def load_config(**overrides):
         "PRO_YEARLY_STRIPE_PRICE": env.get("PRO_YEARLY_STRIPE_PRICE", "").strip(),
         "PLUS_YEARLY_STRIPE_PRICE": env.get("PLUS_YEARLY_STRIPE_PRICE", "").strip(),
         "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE": env.get("PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE", "").strip(),
+        # Classroom plans (plans.py, classrooms.py): the Stripe ids of the
+        # yearly Classroom and Whole school prices. Left empty, that plan is
+        # offered by invoice only (set by hand: `flask --app wsgi plan`).
+        "CLASSROOM_YEARLY_STRIPE_PRICE": env.get("CLASSROOM_YEARLY_STRIPE_PRICE", "").strip(),
+        "SCHOOL_YEARLY_STRIPE_PRICE": env.get("SCHOOL_YEARLY_STRIPE_PRICE", "").strip(),
+        # The free classroom pilot's length, in days (once per workspace, no card).
+        "CLASSROOM_PILOT_DAYS": int(env.get("CLASSROOM_PILOT_DAYS", "30")),
+        # Where a school writes to pay by invoice. Unset, SUPPORT_EMAIL, and
+        # without that MTRX Horizyn's help address.
+        "SCHOOL_INVOICE_EMAIL": env.get("SCHOOL_INVOICE_EMAIL", "").strip(),
         # The save offer on the cancel screen (plans.py): a Stripe coupon id,
         # and the amount the screen promises, which must match that coupon
         # (by default 25% off the next 2 months, a coupon with percent_off 25,
@@ -106,4 +116,6 @@ def load_config(**overrides):
         raise RuntimeError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
     if not 1 <= cfg["SAVE_OFFER_PERCENT"] <= 100 or not 1 <= cfg["SAVE_OFFER_MONTHS"] <= 12:
         raise RuntimeError("SAVE_OFFER_PERCENT must be 1 to 100 and SAVE_OFFER_MONTHS 1 to 12")
+    if not 1 <= cfg["CLASSROOM_PILOT_DAYS"] <= 365:
+        raise RuntimeError("CLASSROOM_PILOT_DAYS must be between 1 and 365")
     return cfg

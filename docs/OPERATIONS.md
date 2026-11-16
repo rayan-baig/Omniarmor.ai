@@ -347,9 +347,11 @@ still fill in the checks and nobody gets the bundle's Pro. To change the
 secret, set the new value on both apps at once: reports signed with the old
 one stop counting (the 7-day grace period covers a short gap).
 
-By hand, without Stripe: `flask --app wsgi plan <workspace id> pro`, `plus`
-or `none` (the old `academy-plan <id> active` now means Plus); add
-`--yearly` for a plan paid yearly.
+By hand, without Stripe: `flask --app wsgi plan <workspace id> pro`, `plus`,
+`classroom`, `school` or `none` (the old `academy-plan <id> active` now means
+Plus); add `--yearly` for a plan paid yearly (classroom plans always are),
+and `--until YYYY-MM-DD` for a plan that stops on that day, such as a school
+year paid by invoice.
 
 **Upgrading to 1.4.0 (yearly plans):** schema version 19 runs by itself on
 start and marks every subscription already there as monthly. Nothing changes
@@ -416,6 +418,44 @@ offers each person was shown. Nothing changes for anyone's plan.
    usage counts: plans paused, save offers taken, plans cancelled, upgrade
    offers shown, plan switches and locations added.
 
+**Upgrading to 1.6.0 (schools):** schema version 21 runs by itself on start:
+it adds the `classes` table, `learners.class_id` and each workspace's pilot
+dates. Nothing changes for anyone's plan. What's new:
+
+- **SchoolArmor**, industry 51, a checklist for K-12 schools, and the trade
+  page `/for/schools`. Nothing to set up.
+- **The Academy for classrooms**: a teacher adds a class in the Academy
+  (Classes) and students by first name or nickname only. A free pilot of
+  `CLASSROOM_PILOT_DAYS` (30) days, once per workspace, no card.
+- **Two classroom plans, yearly only**, priced in `omniarmor_app/plans.py`:
+  **Classroom, $299 a year** (the whole Academy for one class of up to 35
+  students, no tracker) and **Whole school, $1,490 a year** (every class, and
+  the tracker for the school).
+
+In Stripe (test mode first, on staging):
+
+1. **Create two products**, **Classroom** and **Whole school**, each with one
+   price billed **every year**, in USD, **not per unit** (quantity 1):
+   **$299 a year** → its id goes in `CLASSROOM_YEARLY_STRIPE_PRICE`;
+   **$1,490 a year** → `SCHOOL_YEARLY_STRIPE_PRICE`. Check each amount
+   against `plans.py` before saving.
+2. Put the ids in the dashboard settings (`render.yaml` lists them with
+   `sync: false`) and redeploy. The classes page then offers "Pay by card".
+   Leave one empty and that plan is sold by invoice only.
+3. Keep the webhook's events as they are: the webhook reads the plan from
+   the price.
+
+**A school that wants an invoice:** it writes to `SCHOOL_INVOICE_EMAIL`
+(unset: `SUPPORT_EMAIL`, then help@mtrxhorizyn.com) with the school's name,
+the plan and the workspace's name. Send the invoice from your own billing
+tool (Stripe Invoicing works too), and once it's paid, on the server:
+
+    flask --app wsgi plan <workspace id> classroom --until 2027-06-30
+
+(`school` for Whole school). The workspace id is in the operator's Settings
+or the database. The plan stops by itself at the end of that day; run the
+command again with a new date for the next school year.
+
 ## 8. Things only you can do
 
 - Make your account the operator's, once, on the server: sign up with the
@@ -432,7 +472,10 @@ offers each person was shown. Nothing changes for anyone's plan.
   for yearly billing `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE` and
   `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE` ("Upgrading to 1.4.0"), for the
   cancel screen's one-time discount create the coupon and set
-  `SAVE_OFFER_STRIPE_COUPON` ("Upgrading to 1.5.0"), and
+  `SAVE_OFFER_STRIPE_COUPON` ("Upgrading to 1.5.0"), for classroom plans
+  create the two yearly prices and set `CLASSROOM_YEARLY_STRIPE_PRICE` and
+  `SCHOOL_YEARLY_STRIPE_PRICE` ("Upgrading to 1.6.0"; a school can also pay
+  by invoice: `SCHOOL_INVOICE_EMAIL`), and
   in Stripe add the webhook
   `https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,

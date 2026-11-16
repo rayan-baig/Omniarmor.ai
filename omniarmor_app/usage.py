@@ -37,6 +37,11 @@ EVENTS = (
     ("nudges_shown", "Upgrade offers shown"),
     ("plan_switches", "Plan switches (to Plus or yearly)"),
     ("locations_added", "Locations added"),
+    # The Academy for classrooms (classroom_views.py): pilots started,
+    # students added to classes, and pilot reports opened.
+    ("classroom_pilots", "Classroom pilots started"),
+    ("class_students", "Students added to classes"),
+    ("pilot_reports", "Pilot reports opened"),
 )
 EVENT_NAMES = dict(EVENTS)
 SHOW_DAYS = 30

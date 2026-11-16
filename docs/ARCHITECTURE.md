@@ -10,7 +10,7 @@ omniarmor_app (Flask)
    ├── views.py      overview, industry checks, report, audit trail, settings
    ├── tracking.py   turns stored readings into today's status ─┐
    │                                                            │ uses
-   ├── catalog.py    the 50 industries and 500 rules ───────────┤
+   ├── catalog.py    the 51 industries and 510 rules ───────────┤
    │                                                            ▼
    │                               omni_armor_rules (rule.py: one evaluate() for every rule)
    ├── reminders.py  daily digests per company
@@ -54,7 +54,7 @@ CyberLogix as who made the change. The contract is
 | `users` | People: email, name, password hash, reminder setting, a session counter that signs out old devices |
 | `orgs` | Companies: name and timezone |
 | `memberships` | Who belongs to which company, as owner or member |
-| `org_industries` | Which of the 50 industries each company tracks |
+| `org_industries` | Which of the 51 industries each company tracks |
 | `items` | One row per company and rule: the number, yes/no or date, plus any policy-limit override |
 | `audit` | Every change, with person, time, before and after |
 | `notifications` | Every email sent or saved, with status and error: the outbox, which Autopilot retries from (error reports to `ERRORS_EMAIL` included) |
@@ -64,7 +64,8 @@ CyberLogix as who made the change. The contract is
 | `job_runs` | One row per day of the daily job, so it runs once |
 | `job_locks` | The lock each sweep (alerts, daily job, Autopilot) holds while it runs, so two server processes never run the same one at once |
 | `usage_counts` | One total per feature per day (checks updated, lessons passed, Help page views...), with no user, workspace or learner id |
-| `learners`, `learner_progress` | Academy players (nickname and picture only) and their best score and stars per level |
+| `learners`, `learner_progress` | Academy players (nickname and picture only; a student in a class has its `class_id`) and their best score and stars per level |
+| `classes` | A school's classes for the Academy: the name the teacher picks and whether the class leaderboard is on |
 | `friend_codes`, `learner_friends`, `duels` | Single-use friend codes, friendships across companies, and head-to-head duels |
 | `join_codes`, `learner_days`, `learner_mistakes` | Kid device codes, daily streaks, and missed questions for spaced practice |
 
@@ -93,10 +94,10 @@ Four tracks share the worlds but keep separate progress, stored as
 
 | Track | Worlds x stages | Owner's Challenge | Rule Quests | Levels |
 |---|---|---|---|---|
-| Launchpad (Basic) | 16 x 50 | 50 | 50 x 10 | 1,350 |
-| Trailblazer (Intermediate) | 43 x 50 | 50 | 50 x 10 | 2,700 |
-| Summit (Advanced) | 43 x 100 | 100 | 50 x 20 | 5,400 |
-| Titan Mastery | 43 x 300 | 300 | 50 x 50 | 15,700 |
+| Launchpad (Basic) | 16 x 50 | 50 | 51 x 10 | 1,360 |
+| Trailblazer (Intermediate) | 43 x 50 | 50 | 51 x 10 | 2,710 |
+| Summit (Advanced) | 43 x 100 | 100 | 51 x 20 | 5,420 |
+| Titan Mastery | 43 x 300 | 300 | 51 x 50 | 15,750 |
 
 Deeper stages ask more questions, draw harder ones from the banks, raise the
 pass mark and mix in review from earlier worlds; every tenth stage is a boss

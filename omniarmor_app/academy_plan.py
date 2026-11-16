@@ -48,9 +48,13 @@ def plan_status(org, now=None):
         # A plan cancelled in Stripe's portal stays on until the paid period ends.
         return {"access": "paid", "state": state, "renews_at": info["renews_at"], "ends_at": info["ends_at"],
                 "trial_days": 0, "plan_name": info["plan_name"]}
-    if info["trial"]:
+    if info["trial"] or info["pilot"]:
+        # The free trial, or the classroom pilot (whichever lasts longer):
+        # the whole Academy for a while, no card.
+        pilot = info["pilot"] and info["pilot_days"] >= info["trial_days"]
         return {"access": "trial", "state": "trial", "renews_at": None, "ends_at": None,
-                "trial_days": info["trial_days"], "plan_name": None}
+                "trial_days": info["pilot_days"] if pilot else info["trial_days"], "plan_name": None,
+                "pilot": pilot}
     return {"access": "free", "state": state, "renews_at": None, "ends_at": None, "trial_days": 0,
             "plan_name": None}
 
@@ -77,14 +81,16 @@ def trial_end_for_new_workspace(days):
     return iso(utcnow() + timedelta(days=days))
 
 
-def set_status(conn, org_id, state, renews_at=None, kind=None, interval=None):
+def set_status(conn, org_id, state, renews_at=None, kind=None, interval=None, ends_at=None):
     """Sets the plan by hand (the `plan` command): its status and, with kind,
-    which plan, paid monthly unless interval says yearly."""
+    which plan, paid monthly unless interval says yearly. ends_at (an ISO
+    time) is when a plan set by hand stops, such as the end of a school year
+    a school paid for by invoice; None runs until it is changed."""
     if kind is not None and interval is None:
         interval = "month"
-    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = NULL,"
+    conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
                  " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
-                 (state, renews_at, kind, interval, org_id))
+                 (state, renews_at, ends_at, kind, interval, org_id))
 
 
 def subscribed(org):
@@ -104,8 +110,11 @@ PRICE_SETTINGS = {
     "PLUS_YEARLY_STRIPE_PRICE": ("plus", "year"),
     "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE": ("plus_bundle", "month"),
     "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE": ("plus_bundle", "year"),
+    # Classroom plans (plans.py): yearly only.
+    "CLASSROOM_YEARLY_STRIPE_PRICE": ("classroom", "year"),
+    "SCHOOL_YEARLY_STRIPE_PRICE": ("school", "year"),
 }
-KINDS = ("pro", "plus", "plus_bundle", "academy")
+KINDS = ("pro", "plus", "plus_bundle", "academy", "classroom", "school")
 INTERVALS = ("month", "year")
 
 
