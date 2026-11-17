@@ -182,7 +182,13 @@ def send_email(cfg, to, subject, body, kind=None):
 
 
 def notify(conn, cfg, kind, recipient, subject, body, org_id=None, user_id=None):
-    status, error = send_email(cfg, recipient, subject, body, kind=kind)
+    from .demo_mode import active
+    if active():
+        # Nothing is ever sent from a demo (demo_mode.py): kept in its
+        # throwaway copy of the demo database, like an email with no server.
+        status, error = "logged", None
+    else:
+        status, error = send_email(cfg, recipient, subject, body, kind=kind)
     conn.execute(
         "INSERT INTO notifications (org_id, user_id, created_at, kind, recipient, subject, body, status, error)"
         " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

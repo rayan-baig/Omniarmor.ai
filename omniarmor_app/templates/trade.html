@@ -9,8 +9,10 @@
   <p class="lead">{{ trade.intro }}</p>
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a>
-    <a class="btn ghost" href="#checklists">See the checklists</a>
+    <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow" data-demo-link>See a demo</a>
+    <a class="btn quiet" href="#checklists">See the checklists</a>
   </div>
+  <p class="hint" data-demo-hint>The demo is a pretend restaurant with a few checks done, so you can see how it works before you sign up.{% if trade.academy %} Teaching a class? <a href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">See the classroom demo</a>.{% endif %}</p>
   {% if trade.academy %}{% set cp = plan_facts().classroom_plans %}
   <p class="hint" data-trade-classrooms>Teaching how a business runs? The Future Owner Academy for a whole class starts with a free {{ plan_facts().pilot_days }}-day pilot, then {{ cp[0].name }} at {{ cp[0].yearly_price }} or {{ cp[1].name }} at {{ cp[1].yearly_price }}. <a href="{{ url_for('public.academy_schools') }}">The Academy for schools</a></p>
   {% endif %}
@@ -62,5 +64,5 @@
 </div>
 
 <p class="hint mt" data-trade-honest>OmniArmor helps you stay on top of your checklists. It doesn't guarantee compliance and it isn't legal advice: rules change and differ from place to place, so check yours with an expert. Each check names the rule it comes from.</p>
-<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a> <a href="{{ url_for('public.industries') }}">All industries and trades</a></p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a> <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow">See a demo</a> <a href="{{ url_for('public.industries') }}">All industries and trades</a></p>
 {% endblock %}

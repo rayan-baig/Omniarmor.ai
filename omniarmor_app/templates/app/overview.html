@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}Overview{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -35,15 +36,19 @@
 {%- endmacro %}
 
 {% if checklist %}
-<section class="card mt checklist" aria-labelledby="first-day">
-  <h2 id="first-day">First day <span class="muted">· {{ checklist.done }} of {{ checklist.total }} done</span></h2>
+<section class="card mt checklist" aria-labelledby="getting-started" data-getting-started>
+  <h2 id="getting-started">Getting started <span class="muted">· {{ checklist.done }} of {{ checklist.total }} done</span></h2>
   <ol class="steps">
     {% for item in checklist["items"] %}
-      <li class="{{ 'done' if item.done else 'todo' }}">
-        <span class="mark" aria-hidden="true">{{ '✓' if item.done else '' }}</span>
+      <li class="{{ 'done' if item.done else 'todo' }}" data-step="{{ item.key }}" data-done="{{ 'yes' if item.done else 'no' }}">
+        <span class="mark" aria-hidden="true">{{ '✓' if item.done else loop.index }}</span>
         <span><span class="title">{{ item.label }}</span><span class="sr">{{ ': done' if item.done else ': not done yet' }}</span>
-          {% if item.progress %}<span class="meta mono"> · {{ item.progress }}</span>{% endif %}
-          {% if not item.done and item.next %}<br><span class="meta">Next: {{ check_link(item.next) }}</span>{% endif %}
+          {% if item.done and item.detail and item.key == 'checklists' %}<span class="meta"> · {{ item.detail }}</span>{% endif %}
+          {% if not item.done %}
+            {% if item.detail %}<br><span class="meta">{{ item.detail }}</span>{% endif %}
+            {% if item.next %}<a class="btn quiet go" href="{{ url_for('app.industry', industry_id=item.next.industry_id) }}#rule-{{ item.next.key }}">Open {{ item.next.rule.title }}</a>
+            {% elif item.link %}<a class="btn quiet go" href="{{ item.link[0] }}">{{ item.link[1] }}</a>{% endif %}
+          {% elif item.link and item.key == 'checklists' %} <a class="meta" href="{{ item.link[0] }}">{{ item.link[1] }}</a>{% endif %}
         </span>
       </li>
     {% endfor %}
@@ -67,7 +72,7 @@
     {% endfor %}
   </ul>
 {% elif missing == total %}
-  <p class="empty">Nothing to flag yet, because no check has a reading. Start with {{ check_link(next_up) }}: enter its date or answer once, and anything blocked or close to a limit shows up here.</p>
+  {{ empty('attention', 'Checks that are overdue or close to a limit will show here. None of your checks has a reading yet, so start with ' ~ next_up.rule.title ~ ' in ' ~ next_up.industry.brand ~ '.', url_for('app.industry', industry_id=next_up.industry_id) ~ '#rule-' ~ next_up.key, 'Open ' ~ next_up.rule.title) }}
 {% elif missing %}
   <p class="empty">Nothing blocked or close to a limit in the {{ total - missing }} check{{ 's' if total - missing != 1 }} with a reading. {{ missing }} still need{{ 's' if missing == 1 }} one; next up: {{ check_link(next_up) }}.</p>
 {% else %}
@@ -86,8 +91,8 @@
   </ul>
 {% elif later %}
   <p class="empty">No tracked deadlines in the next 60 days. The next one is {{ check_link(later) }}, due {{ later.due_label }}.</p>
-{% elif next_dated %}
-  <p class="empty">No deadlines yet. A check counted from a date shows up here once its date is in: try {{ check_link(next_dated) }}.</p>
+{% elif next_dated and not any_dated %}
+  {{ empty('coming-due', 'Deadlines in the next 60 days will show here once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
 {% else %}
   <p class="empty">No tracked deadlines in the next 60 days.</p>
 {% endif %}

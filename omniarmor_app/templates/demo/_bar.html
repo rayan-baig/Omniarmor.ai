@@ -1,0 +1,17 @@
+{# The demo's bar on every page of a demo (demo_mode.py): what this is, where you are in the tour, the next page and the way out. #}
+{% set d = demo_bar %}
+<section class="demo-bar no-print" data-demo-bar="{{ d.kind }}" aria-label="Demo">
+  <p class="demo-tag"><span class="demo-pill">Demo</span> Pretend data. Nothing you do here is saved, and no emails or reminders go out.</p>
+  <ol class="demo-steps">
+    {% for s in d.steps %}<li><a href="{{ s.url }}"{% if s.current %} aria-current="step"{% endif %}>{{ loop.index }}. {{ s.title }}</a></li>{% endfor %}
+  </ol>
+  {% if d.here %}<p class="demo-here" data-demo-step="{{ d.here.number }}"><strong>Step {{ d.here.number }} of {{ d.total }}: {{ d.here.title }}.</strong> {{ d.here.text }}</p>{% endif %}
+  <div class="demo-actions">
+    {% if d.next %}<a class="btn" href="{{ d.next.url }}" data-demo-next>Next: {{ d.next.title }}</a>{% endif %}
+    <a class="btn{{ ' ghost' if d.next }}" href="{{ d.signup }}" data-demo-signup>Start your free trial</a>
+    <form method="post" action="{{ url_for('demo.leave') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="linkbtn" type="submit">Leave the demo</button>
+    </form>
+  </div>
+</section>

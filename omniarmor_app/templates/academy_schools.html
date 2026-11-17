@@ -7,9 +7,11 @@
   <h1><span class="blend-text">How a business runs,</span> one short lesson at a time.</h1>
   <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety, in levels of a few minutes each. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
   <div class="cta">
-    <a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry) }}">Start a free pilot</a>
-    <a class="btn ghost" href="#price">See the prices</a>
+    <a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry, then='classes') }}">Start a free pilot</a>
+    <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow" data-demo-link>See the classroom demo</a>
+    <a class="btn quiet" href="#price">See the prices</a>
   </div>
+  <p class="hint" data-demo-hint>The demo is a sample class with pretend first names: the progress view, join codes and a sample lesson, no sign-up.</p>
 </section>
 
 <section class="features" aria-label="What a teacher gets">
@@ -61,12 +63,12 @@
 
 <h2>How to start</h2>
 <ol class="school-steps">
-  <li>Sign up for free with your school's name.</li>
-  <li>Open the Academy, then Classes, and start the {{ facts.pilot_days }}-day pilot.</li>
+  <li>Sign up for free with your school's name. You land on the Classes page.</li>
+  <li>Start the {{ facts.pilot_days }}-day pilot there.</li>
   <li>Add your class and type your students' first names or nicknames.</li>
   <li>Print the join codes and hand them out. Students play on school devices.</li>
   <li>Watch the class progress, print certificates, and take the pilot report to the office.</li>
 </ol>
 <p class="hint mt">Questions? Read the <a href="{{ url_for('public.help') }}">help page</a> or the <a href="{{ url_for('public.privacy') }}">privacy page</a>.</p>
-<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry) }}">Start a free pilot</a></p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry, then='classes') }}">Start a free pilot</a></p>
 {% endblock %}

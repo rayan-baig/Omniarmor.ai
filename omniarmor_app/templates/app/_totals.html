@@ -7,6 +7,6 @@
 </div>
 {% if total %}
 <div class="bar" role="img" aria-label="{{ counts.BLOCKED }} blocked, {{ counts.WARNING }} warnings, {{ counts.CLEARED }} cleared, {{ counts.NONE }} without a reading, of {{ total }} checks">
-  {% for level in ['BLOCKED', 'WARNING', 'CLEARED', 'NONE'] %}{% if counts[level] %}<span class="{{ level }}" style="flex-grow: {{ counts[level] }}"></span>{% endif %}{% endfor %}
+  {% for level in ['BLOCKED', 'WARNING', 'CLEARED', 'NONE'] %}{% if counts[level] %}<span class="{{ level }} grow-{{ counts[level]|pct(total, 1) }}"></span>{% endif %}{% endfor %}
 </div>
 {% endif %}

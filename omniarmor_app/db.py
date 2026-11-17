@@ -443,6 +443,15 @@ MIGRATIONS = [
         SELECT MIN(orgs.pilot_started_at) FROM memberships JOIN orgs ON orgs.id = memberships.org_id
         WHERE memberships.user_id = users.id AND memberships.role = 'owner' AND orgs.pilot_started_at IS NOT NULL);
     """),
+    # 1.7.0. users.reminders_chosen_at: when this person last saved their
+    # reminder email choices in Settings, which ticks the last step of the
+    # overview's getting-started list (views.getting_started). Filled in for
+    # the accounts already here, so the new list doesn't come back to
+    # workspaces long past their first days.
+    (23, """
+    ALTER TABLE users ADD COLUMN reminders_chosen_at TEXT;
+    UPDATE users SET reminders_chosen_at = created_at;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
@@ -502,7 +511,13 @@ def migrate(conn, trial_days=14):
 
 def get_db():
     if "db" not in g:
-        g.db = connect(current_app.config["DATABASE"])
+        if g.get("demo") is not None:
+            # Inside a demo, this request's own throwaway copy of the demo
+            # database (demo_mode.py), never the real one.
+            from .demo_mode import sandbox
+            g.db = sandbox()
+        else:
+            g.db = connect(current_app.config["DATABASE"])
     return g.db
 
 

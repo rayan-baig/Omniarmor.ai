@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}Compliance report{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -11,6 +12,9 @@
 </div>
 {% set total = counts.BLOCKED + counts.WARNING + counts.CLEARED + counts.NONE %}
 {% include "app/_totals.html" %}
+{% if total and counts.NONE == total and next_up %}
+  {{ empty('report', 'Each check\'s status, reading and due date will show here as you save them, ready to print or download for an inspector.', url_for('app.industry', industry_id=next_up.industry_id) ~ '#rule-' ~ next_up.key, 'Complete your first check') }}
+{% endif %}
 {% for group in groups %}
   <h2>{{ group.industry.brand }} <span class="muted">· {{ group.industry.sector }}</span></h2>
   <div class="table-wrap">

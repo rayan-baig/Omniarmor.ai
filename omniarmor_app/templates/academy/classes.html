@@ -9,6 +9,29 @@
 {% set pilot = limits.pilot %}
 <div class="ac">
   <p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Future Owner Academy</a></p>
+  {% if steps %}
+  <section class="ac-card checklist ac-start" aria-labelledby="teacher-start" data-getting-started="teacher">
+    <h2 class="ac-h3" id="teacher-start">Getting started <span class="muted">· {{ steps.done }} of {{ steps.total }} done</span></h2>
+    <ol class="steps">
+      {% for item in steps["items"] %}
+        <li class="{{ 'done' if item.done else 'todo' }}" data-step="{{ item.key }}" data-done="{{ 'yes' if item.done else 'no' }}">
+          <span class="mark" aria-hidden="true">{{ '✓' if item.done else loop.index }}</span>
+          <span><span class="title">{{ item.label }}</span><span class="sr">{{ ': done' if item.done else ': not done yet' }}</span>
+          {% if not item.done %}
+            {% if item.detail %}<br><span class="meta">{{ item.detail }}</span>{% endif %}
+            {% if item.key in ('pilot', 'class') %}<a class="btn quiet go" href="{{ item.anchor }}">{{ ('Start the free pilot' if item.anchor == '#pilot' else 'See the classroom plans') if item.key == 'pilot' else 'Add a class' }}</a>
+            {% elif item.key == 'students' and item.class_page %}<a class="btn quiet go" href="{{ url_for('classes.class_page', class_id=item.class_page.id) }}{{ item.anchor }}">Add students to {{ item.class_page.name }}</a>
+            {% elif item.key == 'codes' and item.codes_page %}<a class="btn quiet go" href="{{ url_for('classes.join_codes', class_id=item.codes_page.id) }}">Open the join codes</a>
+            {% elif item.key == 'lesson' and item.class_page %}<a class="btn quiet go" href="{{ url_for('classes.class_page', class_id=item.class_page.id) }}">See the class progress</a>{% endif %}
+          {% endif %}
+          </span>
+        </li>
+      {% endfor %}
+    </ol>
+    <p class="hint">Each step ticks itself. This list goes away once all {{ steps.total }} are done.</p>
+  </section>
+  {% endif %}
+
   <section class="ac-hero">
     {{ armo(110, 'cheer') }}
     <div>
@@ -37,11 +60,14 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="ac-empty">No classes yet.{% if not limits.active and pilot_available %} Start the free pilot to add your first one.{% elif not limits.active %} Choose a classroom plan to add your first one.{% endif %}</p>
+    {% from "_empty.html" import empty %}
+    {% if limits.active %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Start by adding your first class.', '#add-class', 'Add your first class') }}
+    {% elif pilot_available %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Start the free pilot to add your first one.', '#pilot', 'Start with the free pilot') }}
+    {% else %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Choose a classroom plan to add your first one.', '#plans', 'See the classroom plans') }}{% endif %}
   {% endif %}
 
   {% if can_add %}
-    <form class="ac-card ac-add mt" method="post" action="{{ url_for('classes.add_class') }}">
+    <form class="ac-card ac-add mt" id="add-class" method="post" action="{{ url_for('classes.add_class') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <h2 class="ac-h3">Add a class</h2>
       <label class="field"><span>Class name</span>
@@ -56,7 +82,7 @@
     <p class="ac-banner" data-pilot="used">The free pilot is one per owner, and it was used in another of your locations. Choose a classroom plan below to add a class here.</p>
   {% endif %}
   {% if pilot.state == 'none' and not limits.active and pilot_available %}
-    <section class="ac-card mt" data-pilot-offer>
+    <section class="ac-card mt" id="pilot" data-pilot-offer>
       <h2 class="ac-h3">Try it free for {{ facts.pilot_days }} days</h2>
       <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page pilot report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
       {% if g.role == 'owner' %}

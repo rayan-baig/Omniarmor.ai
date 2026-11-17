@@ -42,6 +42,8 @@ EVENTS = (
     ("classroom_pilots", "Classroom pilots started"),
     ("class_students", "Students added to classes"),
     ("pilot_reports", "Pilot reports opened"),
+    # Demos opened without an account (demo_mode.py), business or classroom.
+    ("demos_opened", "Demos opened"),
 )
 EVENT_NAMES = dict(EVENTS)
 SHOW_DAYS = 30

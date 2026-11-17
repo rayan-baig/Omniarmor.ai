@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "academy/_art.html" import avatar, emblem, stars %}
+{% from "_empty.html" import empty %}
 {% block title %}{{ learner.nickname }}'s progress{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -63,7 +64,7 @@
     </table>
     </div>
   {% else %}
-    <p class="ac-empty">No lessons played yet. <a href="{{ url_for('academy.level_map', learner_id=learner.id) }}">Open {{ learner.nickname }}'s map</a> to start the first one.</p>
+    {{ empty('lessons', 'No lessons played yet. Each lesson ' ~ learner.nickname ~ ' plays will show here, with the best score and stars.', url_for('academy.level_map', learner_id=learner.id), 'Open ' ~ learner.nickname ~ '\'s map') }}
   {% endif %}
 </div>
 {% endblock %}

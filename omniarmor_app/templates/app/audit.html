@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}Audit trail{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -30,6 +31,10 @@
   {% if more %}<a href="{{ url_for('app.audit', page=page + 1) }}">Older</a>{% endif %}
 </div>
 {% else %}
-  <p class="empty">No changes yet. Every check you save, and every team or settings change, shows up here with who and when. <a href="{{ url_for('app.overview') }}">Back to HQ</a></p>
+  {% if next_up %}
+    {{ empty('audit', 'Every check you save, and every team or settings change, will show here with who made it and when.', url_for('app.industry', industry_id=next_up.industry_id) ~ '#rule-' ~ next_up.key, 'Complete your first check') }}
+  {% else %}
+    {{ empty('audit', 'Every check you save, and every team or settings change, will show here with who made it and when.', url_for('app.overview'), 'Back to HQ') }}
+  {% endif %}
 {% endif %}
 {% endblock %}

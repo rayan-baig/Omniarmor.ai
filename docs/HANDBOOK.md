@@ -91,11 +91,11 @@ A new customer opens the sign-up page and enters:
 
 - their name and email address,
 - a password of at least 10 characters,
-- the company's name,
+- the business or school name (shown on reports and reminder emails),
 - the company's timezone (used to count days and hours correctly; the page fills in the device's own timezone, so most people never change it), and
-- every industry that applies, ticked from the list of 50 (already ticked when they came from that industry's public page).
+- every industry that applies, ticked from the list of 51 (already ticked, and listed first, when they came from that industry's or a trade's public page). A box above the list finds an industry by typing part of its name or sector.
 
-That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on HQ.
+That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on HQ. A teacher who signs up from the Academy for schools page (`/signup?...&then=classes`) lands on the classes page instead (section 5.13). On a brand-new industry page, "Update several at once" is folded away and one line says to start with the Top 5. Saving a date says when the reminder emails for it go out ("Reminder set: ... 30, 7 and 1 day before it's due on ..."), or that an overdue check is in the weekly reminder.
 
 ### 2.1.1 The top 5 checks of each industry
 
@@ -107,9 +107,27 @@ Each industry page starts with five checks, chosen by one rule from the catalog 
 
 Each top check shows a "Why this matters" line: the first part of its "What a miss costs" sentence when that part is a whole clause and already names the serious consequence, otherwise the whole sentence. Nothing is added to it.
 
-### 2.1.2 The first-day checklist
+### 2.1.2 Getting started
 
-Until it is done, HQ shows a **First day** list: create your workspace; save your first check; fill in the top 5 checks (of each industry); give every check its first reading. Each step ticks itself from what is saved, not from what was clicked, shows how far along it is ("3 of 5") and links to the next check to fill in. When all four are done the list goes away. It comes back if an industry is added or a reading is cleared, since a step is then no longer true.
+Version 1.7.0. Until it is done, HQ shows a **Getting started** list (`views.getting_started`):
+
+1. Pick your checklists (done at sign-up; a link to change them in Settings).
+2. Complete your first check (any check with a reading), with a button to the first top check.
+3. Set your first reminder: any check counted from a date has its date, so its reminder emails are on their way. A button opens the next such check.
+4. For the owner, invite a teammate or choose your reminder emails (a teammate, an invite link made, or the reminder choices saved in Settings, `users.reminders_chosen_at`); for a team member, choose your reminder emails.
+
+Each step ticks itself from what is saved, not from what was clicked. When all four are done the list goes away. It comes back if a step stops being true (the only reading is cleared, say). Accounts made before 1.7.0 have step 4 done already, so the list doesn't return to workspaces long past their first days.
+
+### 2.1.3 The demos
+
+Version 1.7.0. Anyone can try OmniArmor without an account (`demo_mode.py`):
+
+- **The business demo** (`/demo/business`, "See a demo" on the landing page and every trade page): Sample Kitchen (demo), a pretend restaurant tracking RestoArmor and HRArmor, with a pretend owner and cook, a few checks done, one overdue (the 7-day date marking), an I-9 due tomorrow, a COBRA notice coming due, the audit trail, this morning's reminder digest in Radar (kept, never sent) and the report.
+- **The classroom demo** (`/demo/classroom`, from the Academy for schools page, the home page and the schools trade page): Sample School (demo) on the free pilot, with Room 12's eight students under pretend first names, their progress, join codes that work nowhere (`KID-DEMO0001`...) and a sample first lesson to play.
+- A bar on every demo page says it is pretend data and that nothing is saved or sent, shows the tour's pages in order (four for the business, five for the classroom) with a **Next** button, and **Start your free trial** (on the last page, the main button). "Leave the demo" replaces "Sign out".
+- **Nothing is kept.** Each page works on its own copy of the demo data, made in memory from a template and thrown away when the page is done; the real database never sees it. Forms are refused with "This is the demo, with pretend data, so nothing is saved..." except the sample lesson's quiz, which is graded in that page's copy and forgotten.
+- **Nothing is sent.** The pretend people have `.example` addresses, `notify()` refuses inside a demo, and the timers only open the real database.
+- **Limits.** A demo pass lasts 30 minutes (`PASS_MINUTES`); after that the app's pages go to `/demo`, which offers both demos again. One address can open a demo 20 times an hour (`STARTS_PER_HOUR`, noted in `login_failures`). The template is rebuilt every hour (`REBUILD_EVERY`), so its dates stay true. `/demo` is closed to crawlers in `robots.txt`.
 
 A person belongs to one workspace. Other people join by invitation (section 2.9).
 
@@ -192,7 +210,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **HQ (the overview).** The top line shows the company name and today's date in its timezone, then four counts: blocked, warnings, cleared and without a reading, with a thin colored bar showing the proportions. Below that:
 
-- **First day**: the checklist of section 2.1.2, until it is done.
+- **Getting started**: the list of section 2.1.2, until it is done.
 - **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with its message and a link to the check. With none, it says why and what to do next: no check has a reading yet (with a link to the first one to fill in), or how many checks still need one, or "Nice work" when every check has a reading.
 - **Coming up**: date-tracked checks due within the next 60 days that aren't a problem yet. With none, it names the next deadline after that, or, before any date is in, a check counted from a date to start with.
 - A summary per industry.
@@ -225,6 +243,7 @@ Visitors who aren't signed in see:
 - one page per trade (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops, which have no industry of their own, and schools (`/for/schools`), which have two, SchoolSafetyArmor's safety routines and SchoolArmor's legal duties, brought together with a note that CyberLogix can watch the nurse's office and cafeteria fridges 24/7 and a link to the Academy for schools. Each names the OmniArmor checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what OmniArmor doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
 - one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
 - the Academy for schools and teachers (`/classrooms`, section 5.13): classes, the class view, certificates, the leaderboard, the free pilot and the classroom prices;
+- the demos (`/demo`, section 2.1.3), opened from "See a demo" on the landing page and the trade pages and "See the classroom demo" on the Academy for schools page;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
 - a Help page (`/help`) with 15 questions and answers: the free trial, prices, a card at sign-up, what a check is, the three lights, Done today, updating several checks, when reminder emails go out and how to choose them, the Autopilot, the Academy, a kid's progress report, downloading and deleting data, and getting help. Every number on it is read from the code and settings, like the plan page's, and `SUPPORT_EMAIL`, when set, adds an address to write to. It is linked from every page's footer, the landing page and Settings;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
@@ -666,7 +685,8 @@ Version 1.6.0. A school or a teacher runs the Academy for a whole class or an en
 - **The free pilot**: once per owner (1.6.2: `users.pilot_used_at`, whichever of their locations it was in, and kept when that location is deleted), the owner starts a pilot of `CLASSROOM_PILOT_DAYS` (30) days: one class of up to 35 students and the whole Academy, no card. When it ends, the classes and their progress stay, but no student can be added and the Academy is back to its free worlds until a classroom plan is chosen.
 - **The pilot report** (`/app/academy/classes/<id>/report`): one printable page for the school office with totals only, no names: students in the class, how many finished a lesson, lessons finished and certificates earned in the pilot's dates, and the topics covered with the lessons finished in each.
 - **Classroom plans**: Classroom and Whole school (section 2.12), by card through Stripe Checkout from the classes page, or by invoice: the school writes to `SCHOOL_INVOICE_EMAIL` and the operator sets the plan by hand with an end date (docs/OPERATIONS.md, section 7, "Upgrading to 1.6.0"), which ends at 23:59:59 that day in the workspace's timezone. While an invoiced plan runs, the owner can already set up the card for the same plan ("Pay by card from ..."): Stripe Checkout with `subscription_data[trial_end]` at the invoiced plan's end (at least 49 hours ahead, Stripe's minimum), so the first card charge is that day and nothing is paid twice.
-- **The public page** `/classrooms` ("The Academy for schools and teachers") explains all of this with the prices, and is linked from the home page and from `/for/schools`.
+- **The public page** `/classrooms` ("The Academy for schools and teachers") explains all of this with the prices, and is linked from the home page and from `/for/schools`. Its sign-up buttons land a teacher on the classes page, and "See the classroom demo" opens the classroom demo (section 2.1.3).
+- **Getting started for a teacher** (1.7.0, `classrooms.getting_started`): the classes page lists start the free pilot (or choose a classroom plan when the pilot was used), create a class, add students, print and share the join codes (done once codes are made or a student has played), and a student finishes a first lesson. Each step ticks itself and has a button for it; the list goes away when all five are done.
 
 ## 6. Autopilot and the bug finder
 
@@ -803,7 +823,7 @@ Every point below is in the code today.
 - **CSRF:** every change carries a form token that must match the session.
 - **Cookies** are HttpOnly and SameSite=Lax, and Secure in production (so production must use HTTPS). Sessions last 14 days.
 - **Security headers on every response:**
-  - a strict Content Security Policy that allows only the site's own scripts, plus fonts and styles from Google Fonts;
+  - a strict Content Security Policy that allows only the site's own scripts and stylesheets, plus fonts and styles from Google Fonts, and no inline script or style at all (1.7.0: progress bars and meters take their widths from classes, `.grow-N` and `.pct-N`, through the `pct` filter);
   - no framing (X-Frame-Options DENY and frame-ancestors none);
   - no MIME sniffing;
   - a same-origin referrer policy;
@@ -921,7 +941,8 @@ SQLite database (one file on a persistent disk) + daily backups
   - Version 1.5.0: `test_grow.py` (36: the cancel screen offers 1, 2 and 3 months and keeps Cancel one click; a pause makes the workspace read-only, stops reminders and alerts, keeps the data and says so on every screen, sends Stripe `pause_collection` and follows its webhook both ways, ends on the chosen day by itself with one email 3 days before, and can end early; what can't be paused; owner only; the save offer once per workspace ever, its amount from the settings, none without a coupon or for yearly payers; cancel in one click, while paused and after the save offer, kept back before it ends, by hand; the usage counts; switching to yearly and to Plus, and a declined card; the Academy offer once a week, the lesson preview of a tapped world, "No thanks" for good, never for Plus, the trial, a paused plan or team members, and the bundle's price; adding and switching locations and the yearly saving once; one offer a week across kinds; the trade pages, their titles, descriptions, checks, prices and honest line, the sitemap and the index; and schema version 20).
   - Version 1.6.2: `test_plan_edges.py` (a pause in Stripe with no end date is a pause, on every screen, until lifted; a portal switch to yearly while the save offer runs is flagged in the audit trail and the log, and the portal settings are written down; the class certificates page shows every certificate on any track, as the class view counts; at most 100 classes and 20 an hour; a location added later has no trial, and the pilot is one per owner even after a delete; `--until` ends in the workspace's timezone; `plan` refuses over a running Stripe subscription without `--force`; paying by card from the day an invoiced plan ends, the same plan only, Stripe's 48-hour minimum, and whom to write to otherwise; deleting one location keeps the owner signed in; and schema version 22).
   - `test_parity.py` (1: dashboard against engine, run with Node).
-  - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the first-day checklist, the empty states, and the plain-words questions).
+  - `test_first_ten_minutes.py` (26: the landing page's audience, price and trial from the code, sign-up straight to the industry page, the top 5 checks and their why lines, the getting-started list, the empty states, and the plain-words questions).
+  - Version 1.7.0: `test_demo_and_first_steps.py` (23: the business and classroom demos open labelled with pretend data and every tour page works; they send nothing even with a mail server set up; nothing can be changed, each page starts from a fresh copy and the template is rebuilt on schedule; opening one is rate limited; the pass runs out; sign-up from a demo uses the real app; the links, `robots.txt` and the CSP; the sample lesson plays and is forgotten; the demo join codes work nowhere; every demo name and address is pretend; the owner's and the teacher's getting-started lists tick themselves; and every empty screen of a new workspace and class says what will show there, with a button).
   - `test_shared_parent_domain.py` (11: on a subdomain of MTRX Horizyn's domain, the sign-in cookie never carries a `Domain`, no page or preflight grants another origin, framing stays refused, and the Terms, Privacy, footer and every email name MTRX Horizyn, and no page, email or file in the repository uses the company's old spelling).
   - `test_logs.py` (4: the main flows against gunicorn as the Docker image runs it and against the development server, then the daily job, the alerts, Autopilot and a crash, with every log line searched for passwords, tokens, cookies, keys and full email addresses) and `test_cookies_and_time.py` (7: the one cookie's flags and lifetime through every way in and out; dates shown in the workspace's time zone; no naive or local clock in the code).
 - `docs/`:
@@ -1107,6 +1128,8 @@ What the app does to stay cheap:
 
 
 ### 9.8 A demo workspace
+
+The demos anyone can open from the site (section 2.1.3) need nothing set up: they are built in memory by each server process. The `seed-demo` command below is for a separate demo database to sign in to, for screenshots and sales calls.
 
 `flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking PharmacyArmor and HRArmor, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept in Radar (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
 ---
@@ -6212,6 +6235,9 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/billing/stripe/webhook` | Stripe webhook (signed) |
 | GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | The icon phones ask for at the root |
 | GET | `/classrooms` | The Academy for schools and teachers |
+| GET | `/demo` | The two demos, and where an ended or limited demo leads (section 2.1.3) |
+| GET | `/demo/business`, `/demo/classroom` | Open a demo: a 30-minute demo pass, 20 an hour per address |
+| POST | `/demo/leave` | Leave the demo |
 | GET | `/favicon.ico` | Favicon |
 | GET, POST | `/forgot` | Ask for a password reset link |
 | GET | `/healthz` | Health check for uptime monitors |

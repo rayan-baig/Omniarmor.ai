@@ -524,6 +524,14 @@ added in Settings starts without a free trial (one per owner), at most 100
 classes fit in a workspace, and `plan` refuses over a running Stripe
 subscription unless `--force`.
 
+**Upgrading to 1.7.0:** schema version 23 runs by itself on start: it adds
+`users.reminders_chosen_at` (the last step of HQ's getting-started list),
+filled in for the accounts already there. The demos (`/demo/business` and
+`/demo/classroom`) need nothing set up: each server process builds them in
+memory, they never touch the database beyond noting each demo opened (for
+the limit of 20 an hour per address) and the daily usage count "Demos
+opened", and they never send email. Nothing else to do.
+
 ## 8. Things only you can do
 
 - Make your account the operator's, once, on the server: sign up with the

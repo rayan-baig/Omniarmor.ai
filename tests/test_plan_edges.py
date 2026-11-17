@@ -378,7 +378,7 @@ class TestMigration22(unittest.TestCase):
             conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES"
                          " (1, 1, 'owner', ?), (2, 2, 'owner', ?)", (now, now))
             conn.commit()
-            self.assertEqual(migrate(conn), 22)
+            self.assertEqual(migrate(conn), dbmod.SCHEMA_VERSION)
             used = dict(conn.execute("SELECT id, pilot_used_at FROM users").fetchall())
             self.assertEqual(used, {1: now, 2: None})
             self.assertEqual(conn.execute("SELECT pause_open FROM orgs WHERE id = 1").fetchone()[0], 0)

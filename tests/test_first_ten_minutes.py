@@ -2,6 +2,7 @@
 checks of each industry, the first-day checklist and the empty states."""
 
 import os
+from datetime import date, timedelta
 import re
 import sys
 import tempfile
@@ -193,49 +194,41 @@ class TestSignUp(AppTestCase):
         self.assertTrue(r.headers["Location"].endswith("/app"))
 
 
-class TestFirstDayChecklist(AppTestCase):
+class TestGettingStarted(AppTestCase):
+    """The overview's getting-started list: pick the checklists, complete the
+    first check, set the first reminder, then invite a teammate or choose the
+    reminder emails. Ticked from what is saved; gone once all four are done."""
+
     def overview(self):
         return text(self.client.get("/app"))
 
     def test_it_ticks_itself_from_what_is_saved_and_goes_away(self):
         self.signup(industries=(2,))
         page = self.overview()
-        self.assertIn("First day · 1 of 4 done", page)
-        self.assertIn("Create your workspace : done", page)
-        self.assertIn("Save your first check : not done yet", page)
-        self.assertIn(f"Fill in the top {TOP_COUNT} checks : not done yet · 0 of 5", page)
-        top = top_checks(2)
-        self.assertIn(f"Next: {top[0].title} in RestoArmor", page)
-
-        def fill(rule):
-            if rule.kind in ("required", "forbidden"):
-                self.change(2, rule.key, answer="yes" if rule.kind == "required" else "no")
-            else:
-                self.change(2, rule.key, value=str(rule.limit))
-
-        fill(top[0])
+        self.assertIn("Getting started · 1 of 4 done", page)
+        self.assertIn("Pick your checklists : done · RestoArmor", page)
+        self.assertIn("Complete your first check : not done yet", page)
+        self.assertIn(f"Open {top_checks(2)[0].title}", page)
+        self.change(2, "overtime_pay", answer="yes")
         page = self.overview()
-        self.assertIn("First day · 2 of 4 done", page)
-        self.assertIn("Save your first check : done", page)
-        self.assertIn("· 1 of 5", page)
-        self.assertIn(f"Next: {top[1].title} in RestoArmor", page)
-        for r in top[1:]:
-            fill(r)
-        page = self.overview()
-        self.assertIn("First day · 3 of 4 done", page)
-        self.assertIn(f"Fill in the top {TOP_COUNT} checks : done", page)
-        for r in rules_for(2):
-            if r not in top:
-                fill(r)
-        self.assertNotIn("First day", self.overview())
-        # Clearing a reading brings its steps back: the list follows what is saved.
-        self.change(2, top[0].key, action="clear")
-        self.assertIn("First day · 2 of 4 done", self.overview())
+        self.assertIn("Getting started · 2 of 4 done", page)
+        self.assertIn("Complete your first check : done", page)
+        self.assertIn("Set your first reminder : not done yet", page)
+        r = self.change(2, "date_marking", date=(date.today() - timedelta(days=2)).isoformat())
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("Getting started · 3 of 4 done", self.overview())
+        self.post("/app/settings/reminders", {"email_reminders": "on", "email_alerts": "on"})
+        self.assertNotIn("Getting started", self.overview())
+        # Clearing the only reading brings its steps back: the list follows what is saved.
+        self.change(2, "overtime_pay", action="clear")
+        self.change(2, "date_marking", action="clear")
+        self.assertIn("Getting started · 2 of 4 done", self.overview())
 
-    def test_several_industries_count_every_top_check(self):
-        self.signup(industries=(1, 2))
-        self.assertIn(f"Fill in the top {TOP_COUNT} checks of each industry : not done yet · 0 of 10",
-                      self.overview())
+    def test_an_invite_link_ticks_the_last_step(self):
+        self.signup(industries=(2,))
+        self.assertIn("Invite a teammate or choose your reminder emails : not done yet", self.overview())
+        self.post("/app/settings/invite")
+        self.assertIn("Invite a teammate or choose your reminder emails : done", self.overview())
 
 
 class TestEmptyStates(AppTestCase):
@@ -243,12 +236,12 @@ class TestEmptyStates(AppTestCase):
         self.signup(industries=(2,))
         page = text(self.client.get("/app"))
         first = top_checks(2)[0]
-        self.assertIn(f"Nothing to flag yet, because no check has a reading. Start with {first.title} in RestoArmor",
-                      page)
+        self.assertIn("Checks that are overdue or close to a limit will show here. None of your checks has a reading"
+                      f" yet, so start with {first.title} in RestoArmor. Open {first.title}", page)
         self.assertNotIn("Nice work", page)
         dated = next(r for r in sorted(rules_for(2), key=lambda r: top_rank(2, r.key) or 99) if date_mode(r))
-        self.assertIn(f"No deadlines yet. A check counted from a date shows up here once its date is in: try"
-                      f" {dated.title} in RestoArmor", page)
+        self.assertIn("Deadlines in the next 60 days will show here once a check counted from a date has its date,"
+                      f" such as {dated.title} in RestoArmor. Open {dated.title}", page)
         self.change(2, "overtime_pay", answer="yes")
         page = text(self.client.get("/app"))
         self.assertIn("Nothing blocked or close to a limit in the 1 check with a reading. 9 still need one;"
@@ -264,8 +257,8 @@ class TestEmptyStates(AppTestCase):
     def test_only_problems_with_nothing_entered_says_why(self):
         self.signup(industries=(2,))
         page = text(self.client.get("/app/industry/2?only=problems"))
-        self.assertIn("No problems yet, because no RestoArmor check has a reading. Show all checks and start with"
-                      f" the top {TOP_COUNT}.", page)
+        self.assertIn("Checks that are overdue or close to a limit will show here. No RestoArmor check has a reading"
+                      f" yet: start with the top {TOP_COUNT}. Show all checks", page)
         self.change(2, "overtime_pay", answer="yes")
         page = text(self.client.get("/app/industry/2?only=problems"))
         self.assertIn("No problems in RestoArmor right now. 9 checks still need a first reading: Show all checks",
@@ -274,7 +267,8 @@ class TestEmptyStates(AppTestCase):
     def test_radar_points_to_a_dated_check(self):
         self.signup(industries=(2,))
         page = text(self.client.get("/app/notifications"))
-        self.assertIn("No reminders yet. They start once checks counted from a date have their dates: try", page)
+        self.assertIn("Every reminder email sent to your team will show here. They start once a check counted from a"
+                      " date has its date, such as", page)
 
     def test_the_trial_starts_with_the_workspace_not_the_first_learner(self):
         self.signup(industries=(2,))

@@ -31,7 +31,7 @@
 <ul>
   <li>The server writes a log line for each page you open: your IP address, the time, the page, the page you came from, and your browser type. We hide password reset links, invite links and the link back from a Stripe payment in that log, and we shorten any email address in it to its first letter and its domain (like p***@example.com).</li>
   <li>We save the date you last used the app (just the date).</li>
-  <li>When someone types a wrong password, asks for a password reset, signs up, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes.</li>
+  <li>When someone types a wrong password, asks for a password reset, signs up, opens a demo, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes, and from opening the demo over and over.</li>
 </ul>
 <p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened. They can also have a short report of each server error emailed to one inbox, at most {{ facts.error_emails_per_day }} a day: the time, the page address without anything after the "?", and where in our code it failed, with no form, cookie, email address or IP address in it.</p>
 <p><strong>When you pay for a plan (Pro or Plus):</strong> we keep Stripe's customer and subscription numbers, which plan it is, its status, renewal date and, if you cancel, the date it ends. If you pause it, we keep when the pause began and the date it ends; if you take the one-time discount, the date you took it. We never see your card number.</p>
@@ -39,7 +39,7 @@
 
 <h2 id="cookies">Cookies</h2>
 <ul>
-  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: MTRX Horizyn's other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days }} days from the last time you use the site. Before that, it only holds a form token and goes away when you close your browser.</li>
+  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: MTRX Horizyn's other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days }} days from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
   <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
   <li>No ad cookies. No tracking cookies.</li>
 </ul>

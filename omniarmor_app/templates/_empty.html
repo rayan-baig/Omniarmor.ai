@@ -1,0 +1,7 @@
+{# An empty screen: one plain sentence about what will show here, and a button for the next step. #}
+{% macro empty(key, sentence, href, label) -%}
+<div class="empty-state" data-empty="{{ key }}">
+  <p>{{ sentence }}</p>
+  {% if href %}<a class="btn quiet" href="{{ href }}">{{ label }}</a>{% endif %}
+</div>
+{%- endmacro %}

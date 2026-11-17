@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "academy/_art.html" import armo, avatar, emblem, stars %}
 {% from "academy/_offer.html" import academy_offer %}
+{% from "_empty.html" import empty %}
 {% block title %}Future Owner Academy{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -53,11 +54,11 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="ac-empty">No learners yet. Add one below to start the adventure!</p>
+    {{ empty('learners', 'Your learners will show here, with their levels, stars and streaks. Add one to start the first lesson.', '#add-learner', 'Add a learner') }}
   {% endif %}
 
   {% if summaries|length < max_learners %}
-  <form class="ac-card ac-add" method="post" action="{{ url_for('academy.add_learner') }}">
+  <form class="ac-card ac-add" id="add-learner" method="post" action="{{ url_for('academy.add_learner') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h2 class="ac-h3">Add a learner</h2>
     <label class="field"><span>Nickname</span>

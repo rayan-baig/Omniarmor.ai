@@ -16,8 +16,8 @@ from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, r
 from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import (academy_views, armo_views, autopilot, auth, classroom_views, connections, errormail, plan_views, usage,
-               views)
+from . import (academy_views, armo_views, autopilot, auth, classroom_views, connections, demo_mode, errormail,
+               plan_views, usage, views)
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -197,10 +197,11 @@ PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "pub
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
-# and invite links, the kids' join page, and the addresses only programs use.
+# and invite links, the kids' join page, the demos (each opening one counts
+# toward its limit) and the addresses only programs use.
 # ("/app$" and "/app/", not "/app", which would also close /apple-touch-icon.png.)
 ROBOTS_DISALLOW = ("/app$", "/app/", "/reset/", "/signup?invite=", "/forgot", "/kids", "/logout", "/billing/", "/api/",
-                   "/healthz")
+                   "/healthz", "/demo")
 
 
 def public_page():
@@ -354,6 +355,15 @@ def _set_up_logging():
             each.addFilter(RedactingFilter())
 
 
+def percent(part, whole, least=0):
+    """part of whole as a whole number from 0 to 100, for the .pct-N and
+    .grow-N classes (app.css) that stand in for style attributes. Anything
+    above nothing shows as at least `least`."""
+    if not whole or not part:
+        return 0
+    return max(least, min(100, round(100 * part / whole)))
+
+
 def create_app(**overrides):
     cfg = load_config(**overrides)
     app = OmniArmorFlask(__name__, instance_relative_config=False)
@@ -370,6 +380,7 @@ def create_app(**overrides):
     app.teardown_appcontext(close_db)
     app.before_request(load_user)
     app.before_request(check_csrf)
+    app.before_request(demo_mode.guard)
     app.after_request(security_headers)
     app.after_request(robots_header)
     app.after_request(connections.api_headers)
@@ -377,6 +388,7 @@ def create_app(**overrides):
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config))
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
+    app.jinja_env.filters["pct"] = percent
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 
     # Browsers keep CSS, JS and images for a year, so repeat visits cost no
@@ -406,6 +418,7 @@ def create_app(**overrides):
     app.register_blueprint(plan_views.plan)
     app.register_blueprint(armo_views.bp)
     app.register_blueprint(connections.api)
+    app.register_blueprint(demo_mode.bp)
     register_cli(app)
 
     @app.errorhandler(400)

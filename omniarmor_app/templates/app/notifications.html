@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}Reminders{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -24,6 +25,10 @@
     {% endfor %}
   </ul>
 {% else %}
-  <p class="empty">No reminders yet. They start once checks counted from a date have their dates{% if next_dated %}: try <a href="{{ url_for('app.industry', industry_id=next_dated.industry_id) }}#rule-{{ next_dated.key }}">{{ next_dated.rule.title }}</a> in {{ next_dated.industry.brand }}{% endif %}.</p>
+  {% if next_dated %}
+    {{ empty('reminders', 'Every reminder email sent to your team will show here. They start once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
+  {% else %}
+    {{ empty('reminders', 'Every reminder email sent to your team will show here, starting with the next check that comes due.', url_for('app.settings', _anchor='reminders'), 'Choose your reminder emails') }}
+  {% endif %}
 {% endif %}
 {% endblock %}

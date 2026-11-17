@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}Join codes · {{ cls.name }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -18,11 +19,17 @@
     </ul>
     <p class="hint no-print">Print this page and cut it into slips. Making new codes replaces these.</p>
   {% else %}
-    <p class="ac-empty">No codes yet.</p>
+    {% if has_students %}
+      {{ empty('codes', 'Each student\'s join code will show here, ready to print and cut into slips.', none, none) }}
+    {% else %}
+      {{ empty('codes', 'Each student\'s join code will show here, ready to print. Add your students first.', url_for('classes.class_page', class_id=cls.id) ~ '#add-students', 'Add students') }}
+    {% endif %}
   {% endif %}
+  {% if has_students %}
   <form class="no-print mt" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn ac-btn" type="submit">{{ 'Make new codes for everyone' if codes else 'Make a code for every student' }}</button>
   </form>
+  {% endif %}
 </div>
 {% endblock %}

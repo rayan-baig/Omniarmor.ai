@@ -59,9 +59,9 @@
         {% for ind in nav_industries or [] %}
           <a href="{{ url_for('app.industry', industry_id=ind.id) }}" {% if ep == 'app.industry' and request.view_args.industry_id == ind.id %}aria-current="page"{% endif %}>{{ ind.brand }}</a>
         {% endfor %}
-        <form method="post" action="{{ url_for('auth.logout') }}">
+        <form method="post" action="{{ url_for('demo.leave') if g.demo else url_for('auth.logout') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit">Sign out</button>
+          <button type="submit">{{ 'Leave the demo' if g.demo else 'Sign out' }}</button>
         </form>
       {% elif g.kid %}
         <a href="{{ url_for('academy.level_map', learner_id=g.kid.id) }}" aria-current="page">{{ g.kid.nickname }}'s Academy</a>
@@ -113,6 +113,7 @@
         </div>
       {% endif %}
     {% endif %}
+    {% if demo_bar %}{% include "demo/_bar.html" %}{% endif %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flashes" role="status">

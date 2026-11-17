@@ -136,7 +136,7 @@ a.row:hover{background:var(--hover)}
 .msg.BLOCKED{color:var(--block-text)}.msg.WARNING{color:var(--warn-text)}.msg.NONE{color:var(--muted)}
 .due{font-size:14px;color:var(--muted)}
 details{font-size:14px;color:var(--muted)}
-summary{cursor:pointer;width:max-content;min-height:32px;display:flex;align-items:center;gap:6px;color:var(--faint);list-style:none}
+summary{cursor:pointer;width:max-content;max-width:100%;min-height:32px;display:flex;align-items:center;gap:6px;color:var(--faint);list-style:none}
 summary::-webkit-details-marker{display:none}
 summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s ease;margin-right:2px}
 details[open] summary::before{transform:rotate(45deg)}
@@ -314,7 +314,8 @@ details.note .title{color:var(--ink);font-weight:600}
 /* Industry page: update several checks at once */
 .bulk{margin-top:20px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
 .bulk .hint{margin:4px 0 12px}
-.bulk-title{margin:0;font-weight:600}
+.bulk-title{margin:0;font-weight:600;cursor:pointer;min-height:28px}
+.bulk[open] .bulk-title{margin-bottom:4px}
 .pick{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--muted);cursor:pointer}
 .pick input{width:18px;height:18px;accent-color:var(--accent)}
 
@@ -411,3 +412,41 @@ details.note .title{color:var(--ink);font-weight:600}
 
 /* The Academy for schools page (academy_schools.html). */
 .school-steps{margin:0 0 12px;padding-left:22px;display:grid;gap:8px}
+
+/* Shares of a bar set by class, never by a style attribute (the CSP allows
+   none): .grow-N takes N shares of the status totals' bar, from the pct
+   filter. (The Academy's meters have .pct-N, in academy.css.) */
+.grow-1{flex-grow:1}.grow-2{flex-grow:2}.grow-3{flex-grow:3}.grow-4{flex-grow:4}.grow-5{flex-grow:5}.grow-6{flex-grow:6}.grow-7{flex-grow:7}.grow-8{flex-grow:8}.grow-9{flex-grow:9}.grow-10{flex-grow:10}.grow-11{flex-grow:11}.grow-12{flex-grow:12}.grow-13{flex-grow:13}.grow-14{flex-grow:14}.grow-15{flex-grow:15}.grow-16{flex-grow:16}.grow-17{flex-grow:17}.grow-18{flex-grow:18}.grow-19{flex-grow:19}.grow-20{flex-grow:20}.grow-21{flex-grow:21}.grow-22{flex-grow:22}.grow-23{flex-grow:23}.grow-24{flex-grow:24}.grow-25{flex-grow:25}.grow-26{flex-grow:26}.grow-27{flex-grow:27}.grow-28{flex-grow:28}.grow-29{flex-grow:29}.grow-30{flex-grow:30}.grow-31{flex-grow:31}.grow-32{flex-grow:32}.grow-33{flex-grow:33}.grow-34{flex-grow:34}.grow-35{flex-grow:35}.grow-36{flex-grow:36}.grow-37{flex-grow:37}.grow-38{flex-grow:38}.grow-39{flex-grow:39}.grow-40{flex-grow:40}.grow-41{flex-grow:41}.grow-42{flex-grow:42}.grow-43{flex-grow:43}.grow-44{flex-grow:44}.grow-45{flex-grow:45}.grow-46{flex-grow:46}.grow-47{flex-grow:47}.grow-48{flex-grow:48}.grow-49{flex-grow:49}.grow-50{flex-grow:50}.grow-51{flex-grow:51}.grow-52{flex-grow:52}.grow-53{flex-grow:53}.grow-54{flex-grow:54}.grow-55{flex-grow:55}.grow-56{flex-grow:56}.grow-57{flex-grow:57}.grow-58{flex-grow:58}.grow-59{flex-grow:59}.grow-60{flex-grow:60}.grow-61{flex-grow:61}.grow-62{flex-grow:62}.grow-63{flex-grow:63}.grow-64{flex-grow:64}.grow-65{flex-grow:65}.grow-66{flex-grow:66}.grow-67{flex-grow:67}.grow-68{flex-grow:68}.grow-69{flex-grow:69}.grow-70{flex-grow:70}.grow-71{flex-grow:71}.grow-72{flex-grow:72}.grow-73{flex-grow:73}.grow-74{flex-grow:74}.grow-75{flex-grow:75}.grow-76{flex-grow:76}.grow-77{flex-grow:77}.grow-78{flex-grow:78}.grow-79{flex-grow:79}.grow-80{flex-grow:80}.grow-81{flex-grow:81}.grow-82{flex-grow:82}.grow-83{flex-grow:83}.grow-84{flex-grow:84}.grow-85{flex-grow:85}.grow-86{flex-grow:86}.grow-87{flex-grow:87}.grow-88{flex-grow:88}.grow-89{flex-grow:89}.grow-90{flex-grow:90}.grow-91{flex-grow:91}.grow-92{flex-grow:92}.grow-93{flex-grow:93}.grow-94{flex-grow:94}.grow-95{flex-grow:95}.grow-96{flex-grow:96}.grow-97{flex-grow:97}.grow-98{flex-grow:98}.grow-99{flex-grow:99}.grow-100{flex-grow:100}
+.bar span{flex-basis:0}
+
+/* Empty screens: one sentence about what will show here, and the next step */
+.empty-state{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px 18px;margin:8px 0;border:1px dashed var(--field);border-radius:12px;color:var(--muted)}
+.empty-state p{margin:0}
+.empty-state .btn{max-width:100%}
+
+/* The demo (demo_mode.py): what it is, the tour and the way out */
+.demo-bar{display:grid;gap:10px;padding:14px 16px;margin:0 0 20px;border:1px solid var(--accent);border-radius:12px;background:var(--raise)}
+.demo-bar p{margin:0}
+.demo-tag{font-size:15px}
+.demo-pill{display:inline-block;margin-right:6px;padding:1px 9px;border-radius:999px;background:var(--blend);color:var(--on-accent);font-weight:700;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+.demo-steps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 6px}
+.demo-steps a{display:inline-flex;align-items:center;min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);color:var(--muted);text-decoration:none;font-size:14px}
+.demo-steps a[aria-current]{color:var(--ink);border-color:var(--accent)}
+.demo-here{font-size:15px;color:var(--muted)}
+.demo-here strong{color:var(--ink)}
+.demo-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.demo-actions form{margin:0}
+.demo-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.demo-picks h2{margin:6px 0 8px}
+.demo-picks p{margin:0 0 14px}
+
+/* Getting started lists: a link to each step's next action */
+.steps .go{display:flex;width:max-content;max-width:100%;margin-top:8px;padding-block:8px;line-height:1.3;text-align:left}
+.steps .todo .mark{color:var(--muted)}
+.signup-find{margin:4px 0 0}
+@media (max-width:560px){
+  .demo-bar{padding:12px 14px;gap:8px}
+  .demo-steps,.demo-actions form{display:none}
+  .demo-tag,.demo-here{font-size:14px}
+  .demo-actions .btn{min-height:40px;padding:0 14px;font-size:14px}
+}

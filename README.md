@@ -14,6 +14,7 @@ deadline, a threshold or a checklist. That is 510 checks in all.
 Companies sign up, pick their industries and enter each date or reading once.
 From then on OmniArmor:
 
+- **Can be tried without signing up:** "See a demo" opens a pretend restaurant (a few checks done, one overdue, a reminder and a report), and the Academy for schools page opens a pretend class with its progress view, join codes and a sample lesson. Nothing in a demo is saved and nothing is sent (`omniarmor_app/demo_mode.py`).
 - **Tracks deadlines by itself:** it counts the days from each saved date, every day, in the company's timezone, and the hours from each saved start time for the checks that run in hours.
 - **Sends reminders:** one email per team member when something is 30, 7 or 1 day from due, due today, or overdue (weekly). Missed days catch up, and failed emails are retried. Hour and minute clocks also email when they reach their warning point and when they become overdue, checked every minute. Each person chooses in Settings whether they get the daily digest, the time-limit alerts, both or neither.
 - **Restarts recurring duties:** pressing Done today starts the next cycle.
@@ -113,6 +114,7 @@ on first: [docs/STAGING.md](docs/STAGING.md).
 |---|---|
 | `omniarmor_app/` | The web app: accounts, workspaces, tracking, reminders, reports, daily jobs |
 | `omniarmor_app/plans.py` | The plans and their prices, the free trial, read-only without a plan, and the Kitchen Safety Bundle's cover |
+| `omniarmor_app/demo_mode.py` | The demos anyone can open without an account, each page on a throwaway in-memory copy of pretend data |
 | `omniarmor_app/connections.py` | The Kitchen Safety Bundle: CyberLogix's connection key, daily report and signature ([docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md)) |
 | `omniarmor_app/academy.py` | The Future Owner Academy: worlds, lessons and quiz generation (see `docs/academy-preview/`) |
 | `omni_armor_rules/` | The 510 rules (`group_1.py` … `group_11.py`) and the one `evaluate` every rule uses |

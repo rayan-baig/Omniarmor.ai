@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_empty.html" import empty %}
 {% block title %}{{ 'Pilot report' if r.pilot.state != 'none' else 'Class report' }} · {{ r.class.name }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ academy_font }}">
@@ -31,7 +32,7 @@
     </table>
     </div>
   {% else %}
-    <p class="ac-empty">No lessons finished yet.</p>
+    {{ empty('report', 'No lessons finished yet. The topics your class finishes will show here, with how many lessons each.', url_for('classes.join_codes', class_id=request.view_args.class_id), 'Hand out the join codes') }}
   {% endif %}
 
   <p class="hint mt">Totals only: this report names no student. A lesson is one level of the Academy passed with at least one star. The Future Owner Academy teaches how a business runs: money, customers, teamwork, leading, rules and safety, in short game levels. Made with OmniArmor.ai.</p>

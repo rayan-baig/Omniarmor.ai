@@ -99,6 +99,12 @@ def load_user():
     A kid who joined with a join code gets g.kid (their learner) and g.org
     instead, and can only use the Academy."""
     g.user = g.org = g.role = g.kid = None
+    if session.get("demo") is not None and session.get("user_id") is None:
+        # A demo pass (demo_mode.py): the demo's pretend owner, on the app's
+        # pages only, in a throwaway copy of the demo database.
+        from . import demo_mode
+        if demo_mode.load():
+            return
     user_id = session.get("user_id")
     if user_id is None:
         if session.get("kid") is not None:
@@ -257,7 +263,7 @@ def clear_failures(email):
 # --- Headers -------------------------------------------------------------
 
 CSP = (
-    "default-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline';"
+    "default-src 'self'; style-src 'self' https://fonts.googleapis.com;"
     " font-src https://fonts.gstatic.com;"
     " img-src 'self' data:; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
     " object-src 'none'"

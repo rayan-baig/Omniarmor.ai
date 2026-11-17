@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}See a demo{% endblock %}
+{% block description %}Try OmniArmor with pretend data, no sign-up: a restaurant's checklists and reminders, or a teacher's class in the Future Owner Academy.{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">No sign-up needed</p>
+  <h1><span class="blend-text">See a demo</span> with pretend data.</h1>
+  <p class="lead">Click around a workspace that's already in use. Nothing you do in a demo is saved, and no emails or reminders go out. A demo lasts {{ minutes }} minutes.</p>
+</section>
+<div class="demo-picks" data-demo-picks>
+  <section class="card">
+    <p class="eyebrow">For a business</p>
+    <h2>A restaurant</h2>
+    <p>A few checks done, one overdue, this morning's reminder and a report ready to print.</p>
+    {% if not limited %}<a class="btn" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow">Open the business demo</a>{% endif %}
+  </section>
+  <section class="card">
+    <p class="eyebrow">For a teacher</p>
+    <h2>A class in the Academy</h2>
+    <p>A sample class with pretend first names, the class progress view, join codes and a sample lesson.</p>
+    {% if not limited %}<a class="btn" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">Open the classroom demo</a>{% endif %}
+  </section>
+</div>
+<p class="cta mt"><a class="btn ghost" href="{{ url_for('auth.signup') }}">Start your free trial</a></p>
+{% endblock %}

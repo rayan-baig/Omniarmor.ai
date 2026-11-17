@@ -7,8 +7,10 @@
   <p class="lead">For businesses in {{ facts.industries }} regulated industries, such as {{ facts.examples[:-1]|join(', ') }} and {{ facts.examples[-1] }}. OmniArmor tracks the {{ facts.per_industry }} compliance failures that cost your industry the most. Enter a date once and it counts the days, warns your team before anything is due, and keeps the record an inspector asks for.</p>
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup') }}">Start your free trial</a>
-    <a class="btn ghost" href="{{ url_for('public.industries') }}">Find your industry</a>
+    <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow" data-demo-link>See a demo</a>
+    <a class="btn quiet" href="{{ url_for('public.industries') }}">Find your industry</a>
   </div>
+  <p class="hint" data-demo-hint>The demo is a pretend restaurant you can click around, no sign-up. Teaching a class? <a href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">See the classroom demo</a>.</p>
   {% include "_plan_summary.html" %}
   <p class="hint">Questions about the trial, prices, reminders or your data? <a href="{{ url_for('public.help') }}">Read the help page</a>.</p>
 </section>

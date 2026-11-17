@@ -14,3 +14,27 @@
   }
   box.value = zone;
 })();
+
+// Sign-up: a box to find your industry among the many, by name or sector.
+// Ticked ones always stay in view. Without JavaScript the box stays hidden
+// and the whole list shows.
+(function () {
+  var wrap = document.querySelector('[data-industry-find]');
+  var box = document.querySelector('[data-industry-filter]');
+  var none = document.querySelector('[data-industry-none]');
+  if (!wrap || !box) return;
+  var items = Array.prototype.slice.call(document.querySelectorAll('[data-industry-name]'));
+  wrap.hidden = false;
+  box.addEventListener('input', function () {
+    var words = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    var shown = 0;
+    items.forEach(function (item) {
+      var name = item.getAttribute('data-industry-name');
+      var ticked = item.querySelector('input').checked;
+      var match = ticked || words.every(function (w) { return name.indexOf(w) !== -1; });
+      item.hidden = !match;
+      if (match) shown += 1;
+    });
+    if (none) none.hidden = shown > 0;
+  });
+})();

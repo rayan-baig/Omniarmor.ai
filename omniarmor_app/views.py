@@ -57,9 +57,10 @@ def overview():
         by_industry.append({"industry": INDUSTRIES[i], "counts": tally(mine)})
     return render_template("app/overview.html", counts=tally(states), problems=problems, upcoming=upcoming,
                            missing=len(missing), by_industry=by_industry, today=today, total=len(states),
-                           checklist=first_day_checklist(states, ids), next_up=next_reading(states, ids),
+                           checklist=getting_started(conn, states, ids), next_up=next_reading(states, ids),
                            next_dated=next_reading(states, ids, dated=True), later=later[0] if later else None,
-                           top_count=TOP_COUNT, location_nudge=_location_nudge(conn))
+                           top_count=TOP_COUNT, location_nudge=_location_nudge(conn),
+                           any_dated=any(s.mode and s.due_date is not None for s in states))
 
 
 def _location_nudge(conn):
@@ -85,21 +86,33 @@ def next_reading(states, ids, dated=False):
     return next((s for s in _in_page_order(states, ids) if s.level == "NONE" and (s.mode or not dated)), None)
 
 
-def first_day_checklist(states, ids):
-    """The new workspace's first steps, each ticked from what is saved, not
-    from what was clicked. None once every step is done, so it disappears."""
-    tops = [s for s in states if top_rank(s.industry_id, s.key) is not None]
-    first_top = next((s for s in _in_page_order(tops, ids) if s.level == "NONE"), None)
-    first_any = next_reading(states, ids)
+def getting_started(conn, states, ids):
+    """A new workspace's first steps: pick the checklists, complete the first
+    check, set the first reminder, then invite a teammate or choose your
+    reminder emails. Each is ticked from what is saved, not from what was
+    clicked, and the list is None once every step is done, so it disappears."""
     read = [s for s in states if s.level != "NONE"]
-    top_read = [s for s in tops if s.level != "NONE"]
+    dated = [s for s in states if s.mode and s.due_date is not None]
+    owner = g.role == "owner"
+    teammate = conn.execute("SELECT COUNT(*) FROM memberships WHERE org_id = ?", (g.org["id"],)).fetchone()[0] > 1
+    invited = conn.execute("SELECT 1 FROM invites WHERE org_id = ? LIMIT 1", (g.org["id"],)).fetchone() is not None
+    chose = bool(g.user["reminders_chosen_at"])
+    first_top = next((s for s in _in_page_order(states, ids)
+                      if s.level == "NONE" and top_rank(s.industry_id, s.key) is not None), None)
     items = [
-        {"label": "Create your workspace", "done": True},
-        {"label": "Save your first check", "done": bool(read), "next": first_any},
-        {"label": f"Fill in the top {TOP_COUNT} checks" + (" of each industry" if len(ids) > 1 else ""),
-         "done": len(top_read) == len(tops), "progress": f"{len(top_read)} of {len(tops)}", "next": first_top},
-        {"label": "Give every check its first reading", "done": len(read) == len(states),
-         "progress": f"{len(read)} of {len(states)}", "next": first_any},
+        {"key": "checklists", "label": "Pick your checklists", "done": bool(ids),
+         "detail": ", ".join(INDUSTRIES[i]["brand"] for i in ids),
+         "link": (url_for("app.settings"), "Change them in Settings") if owner else None},
+        {"key": "first_check", "label": "Complete your first check", "done": bool(read),
+         "next": first_top or next_reading(states, ids),
+         "detail": "Answer it or enter its date, then press Save."},
+        {"key": "first_reminder", "label": "Set your first reminder", "done": bool(dated),
+         "next": next_reading(states, ids, dated=True),
+         "detail": "Enter the date of a check that is counted from a date. OmniArmor emails you before it's due."},
+        {"key": "team", "label": "Invite a teammate or choose your reminder emails" if owner
+         else "Choose your reminder emails", "done": chose or (owner and (teammate or invited)),
+         "link": (url_for("app.settings", _anchor="team" if owner else "reminders"),
+                  "Open Settings")},
     ]
     if all(item["done"] for item in items):
         return None
@@ -212,10 +225,30 @@ def change(industry_id, rule_key):
         message = apply_change(get_db(), g.org, g.user["id"], industry_id, rule_key, action, request.form)
         usage.count(get_db(), "checks_updated")
         flash(message, "ok")
+        if action in ("save", "done_today"):
+            line = reminder_line(industry_id, rule_key)
+            if line:
+                flash(line, "ok")
     except ValidationError as exc:
         flash_error(str(exc))
     target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
     return redirect(f"{target}#rule-{rule_key}")
+
+
+def reminder_line(industry_id, rule_key):
+    """After a save: when the reminder emails for this check go out, for a
+    check counted in days from a date. Empty for the others."""
+    from .reminders import REMINDER_DAYS
+    state = next((s for s in states_for_org(get_db(), g.org, industry_ids=[industry_id]) if s.key == rule_key), None)
+    if state is None or not state.mode or state.due_date is None or state.minutes_left is not None:
+        return ""
+    if not g.user["email_reminders"]:
+        return "Your daily reminder emails are off; turn them on in Settings to get one before it's due."
+    days = ", ".join(str(d) for d in REMINDER_DAYS[:-1]) + f" and {REMINDER_DAYS[-1]}"
+    if state.overdue:
+        return "It's overdue, so the team's reminder email lists it each week until it's done."
+    return (f"Reminder set: the team gets an email {days} day{'s' if REMINDER_DAYS[-1] != 1 else ''} before it's due"
+            f" on {state.due_label}, and on the day.")
 
 
 @bp.route("/industry/<int:industry_id>/bulk", methods=["POST"])
@@ -247,7 +280,12 @@ def audit():
     # Past SQLite's integer range a page number crashed the query; no trail is that long.
     page = min(max(1, request.args.get("page", 1, type=int)), 10 ** 9)
     rows = list(_audit_rows(limit=AUDIT_PAGE + 1, offset=(page - 1) * AUDIT_PAGE))
-    return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE)
+    next_up = None
+    if not rows:
+        conn = get_db()
+        next_up = next_reading(states_for_org(conn, g.org), org_industry_ids(conn, g.org["id"]))
+    return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE,
+                           next_up=next_up)
 
 
 # Newest first. The index audit_org_at_id (migration 12) holds this order.
@@ -316,7 +354,8 @@ def report():
     for i in org_industry_ids(get_db(), g.org["id"]):
         mine = sorted([s for s in states if s.industry_id == i], key=lambda s: s.sort_key)
         groups.append({"industry": INDUSTRIES[i], "states": mine, "counts": tally(mine)})
-    return render_template("app/report.html", groups=groups, counts=tally(states), today=org_today(g.org))
+    return render_template("app/report.html", groups=groups, counts=tally(states), today=org_today(g.org),
+                           next_up=next_reading(states, org_industry_ids(get_db(), g.org["id"])))
 
 
 @bp.route("/report.csv")
@@ -422,8 +461,8 @@ def settings_reminders():
     choices = EMAIL_CHOICES + weekly
     picked = {field: request.form.get(field) == "on" for field, _ in choices}
     conn = get_db()
-    conn.execute(f"UPDATE users SET {', '.join(f'{field} = ?' for field in picked)} WHERE id = ?",
-                 (*(int(on) for on in picked.values()), g.user["id"]))
+    conn.execute(f"UPDATE users SET {', '.join(f'{field} = ?' for field in picked)}, reminders_chosen_at = ?"
+                 " WHERE id = ?", (*(int(on) for on in picked.values()), now_iso(), g.user["id"]))
     conn.commit()
     said = ", ".join(f"{name} {'on' if picked[field] else 'off'}" for field, name in choices)
     flash(f"Saved: {said[0].upper()}{said[1:]}.", "ok")

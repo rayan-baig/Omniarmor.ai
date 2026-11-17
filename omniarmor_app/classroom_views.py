@@ -52,8 +52,10 @@ def index():
     cfg = current_app.config
     conn = get_db()
     can_add, why = classrooms.can_add_class(conn, g.org)
-    return render_template("academy/classes.html", classes=classrooms.classes(conn, g.org["id"]),
-                           limits=plans.class_limits(g.org), access=plans.access(g.org),
+    rows = classrooms.classes(conn, g.org["id"])
+    limits = plans.class_limits(g.org)
+    return render_template("academy/classes.html", classes=rows, limits=limits, access=plans.access(g.org),
+                           steps=classrooms.getting_started(conn, g.org, limits, rows),
                            facts=classrooms.public_facts(cfg), can_add=can_add, why=why,
                            pilot_available=classrooms.pilot_available(conn, g.org),
                            card_from=_card_from(g.org))
@@ -299,6 +301,7 @@ def join_codes(class_id):
         conn.commit()
         return redirect(url_for("classes.join_codes", class_id=class_id))
     return render_template("academy/class_codes.html", cls=row, codes=_active_codes(conn, row),
+                           has_students=bool(classrooms.students(conn, class_id)),
                            days=JOIN_CODE_DAYS, join_url=url_for("kids.join", _external=True))
 
 

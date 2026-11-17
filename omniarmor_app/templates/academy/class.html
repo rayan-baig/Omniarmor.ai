@@ -46,11 +46,13 @@
     </div>
     <p class="hint">A lesson is one level passed with at least one star. A certificate comes with passing stage 1 of the Owner's Challenge, after the first lesson of every world.</p>
   {% else %}
-    <p class="ac-empty">No students yet. Add them below.</p>
+    {% from "_empty.html" import empty %}
+    {% if room %}{{ empty('students', 'Each student will show here with their lessons done, stars and certificate. Add your students by first name or nickname.', '#add-students', 'Add students') }}
+    {% else %}{{ empty('students', 'Each student will show here with their lessons done, stars and certificate. Choose a classroom plan to add students.', url_for('classes.index') ~ '#plans', 'See the classroom plans') }}{% endif %}
   {% endif %}
 
   {% if room %}
-  <form class="ac-card ac-add mt no-print" method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
+  <form class="ac-card ac-add mt no-print" id="add-students" method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h2 class="ac-h3">Add students</h2>
     <label class="field"><span>First names or nicknames, one on each line</span>

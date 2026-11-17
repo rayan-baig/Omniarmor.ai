@@ -3,6 +3,54 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.7.0 (17 November 2026)
+
+The first five minutes, for a small business owner and for a teacher.
+
+- **See a demo, no sign-up.** "See a demo" on the landing page and the
+  trade pages opens a pretend restaurant: a few checks done, one overdue,
+  this morning's reminder in Radar and a report ready to print. The
+  Academy for schools page opens a classroom demo: a sample class with
+  pretend first names, the class progress view, join codes and a sample
+  lesson to try. A bar on every demo page says it is pretend data, walks
+  through the pages in order and ends with "Start your free trial".
+- **The demo keeps nothing and sends nothing.** Each page of a demo works
+  on its own fresh copy of the demo data, made in memory and thrown away
+  afterwards, so nothing reaches the real database. Forms say "nothing is
+  saved in the demo" instead of saving (the sample lesson's quiz still
+  gives its result). No email or reminder is ever sent from a demo. A demo
+  lasts 30 minutes, its data is rebuilt every hour from today's date, and
+  one address can open it 20 times an hour.
+- **Getting started on HQ.** A short list replaces the first-day list:
+  pick your checklists, complete your first check, set your first
+  reminder, then invite a teammate or choose your reminder emails. Each
+  step ticks itself from what is saved, has a button for the next action,
+  and the list goes away when all four are done. Accounts made before this
+  version don't get the last step back.
+- **"Reminder set".** Saving a date on a check now says when the reminder
+  emails go out (30, 7 and 1 day before the due date, and on the day), or
+  that an overdue check is in the weekly reminder.
+- **Getting started for teachers.** The classes page has its own list:
+  start the free pilot, create a class, add students, share the join
+  codes, and a student's first lesson. Signing up from the Academy for
+  schools page now lands on the classes page, not the school checklist.
+- **Sign-up is clearer.** "Business or school name" instead of "Company
+  name", the free trial and "no card needed" said up front, a box to find
+  your industry among the 51 by typing, and the industries you came with
+  listed first. On a brand-new industry page, "Update several at once" is
+  folded away and one line says where to start.
+- **No blank screens.** Every screen a new workspace or class can open
+  empty (HQ, Only problems, Radar, the report, the team, the Academy,
+  classes, a class, join codes, certificates, the class report and a
+  learner's progress) says in one sentence what will show there, with a
+  button for the next step.
+- **Phones.** A long reminder subject in Radar no longer pushes the page
+  sideways, the first lesson's card no longer makes the page wider while it
+  slides in, and the demo bar is shorter on a phone.
+- **A stricter Content Security Policy.** The progress bars and meters now
+  get their widths from classes, not style attributes, so the policy no
+  longer allows any inline style.
+
 ## 1.6.2 (17 November 2026)
 
 More from the pre-launch review: plans, pauses, locations and classrooms.

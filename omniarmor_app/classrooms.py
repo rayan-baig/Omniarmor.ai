@@ -103,6 +103,39 @@ def students(conn, class_id):
                         (class_id,)).fetchall()
 
 
+def getting_started(conn, org, limits, class_rows):
+    """A teacher's first steps, for the classes page: start the pilot (or a
+    plan), create a class, add students, share the join codes, and a
+    student's first lesson. Each is ticked from what is saved; None once
+    every step is done, so the list disappears."""
+    in_class = "SELECT id FROM learners WHERE org_id = ? AND class_id IS NOT NULL"
+    students_in = conn.execute(f"SELECT COUNT(*) FROM ({in_class})", (org["id"],)).fetchone()[0]
+    codes = conn.execute(f"SELECT 1 FROM join_codes WHERE learner_id IN ({in_class}) LIMIT 1",
+                         (org["id"],)).fetchone() is not None
+    played = conn.execute(f"SELECT 1 FROM learner_progress WHERE learner_id IN ({in_class}) LIMIT 1",
+                          (org["id"],)).fetchone() is not None
+    lesson = conn.execute(f"SELECT 1 FROM learner_progress WHERE learner_id IN ({in_class}) AND best_stars >= 1"
+                          " LIMIT 1", (org["id"],)).fetchone() is not None
+    first = class_rows[0] if class_rows else None
+    can_pilot = pilot_available(conn, org)
+    items = [
+        {"key": "pilot", "label": "Start the free pilot" if can_pilot else "Choose a classroom plan",
+         "done": bool(limits["active"] or limits["pilot"]["state"] != "none"),
+         "anchor": "#pilot" if can_pilot else "#plans"},
+        {"key": "class", "label": "Create a class", "done": first is not None, "anchor": "#add-class"},
+        {"key": "students", "label": "Add your students by first name or nickname", "done": students_in > 0,
+         "class_page": first, "anchor": "#add-students"},
+        {"key": "codes", "label": "Print and share the join codes", "done": codes or played,
+         "codes_page": first if students_in else None},
+        {"key": "lesson", "label": "A student finishes a first lesson", "done": lesson,
+         "class_page": first if students_in else None,
+         "detail": "Students type their code once on a school device, then start with lesson one."},
+    ]
+    if all(item["done"] for item in items):
+        return None
+    return {"items": items, "done": sum(item["done"] for item in items), "total": len(items)}
+
+
 def _passed_rows(conn, learner_ids, since=None, until=None):
     if not learner_ids:
         return []

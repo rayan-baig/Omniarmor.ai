@@ -57,6 +57,12 @@ def _taken_message(invite):
             f" To join {invite['org_name']}, use a different email address.")
 
 
+def _then_classes(values):
+    """Whether the sign-up came from the Academy for schools page (then=classes):
+    a teacher, who starts on the classes page."""
+    return values.get("then") == "classes"
+
+
 def _start_industry(form):
     """The industry whose page the sign-up came from, if any."""
     start = form.get("start", type=int)
@@ -107,7 +113,7 @@ def signup():
                 flash_error(e)
             return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
                                    timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
-                                   start_industry=_start_industry(form)), 400
+                                   start_industry=_start_industry(form), then_classes=_then_classes(form)), 400
         record_event([signup_key])
         now = now_iso()
         if invite is not None:
@@ -127,7 +133,7 @@ def signup():
             flash_error(_taken_message(invite))
             return render_template("auth/signup.html", invite=None if invite is None else _invite(conn, token), token=token,
                                    industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
-                                   start_industry=_start_industry(form)), 400
+                                   start_industry=_start_industry(form), then_classes=_then_classes(form)), 400
         if invite is None:
             # Every new workspace starts its free trial of everything in Plus (plans.py).
             org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends) VALUES (?, ?, ?, ?)",
@@ -150,6 +156,11 @@ def signup():
         if invite is not None:
             flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")
             return redirect(url_for("app.overview"))
+        if _then_classes(form):
+            # A teacher from the Academy for schools page starts with the class.
+            flash("Welcome to OmniArmor. Start the free pilot below, then add your class and your students. Your"
+                  " school's safety checklist is in HQ whenever you want it.", "ok")
+            return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.
         flash(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
@@ -160,7 +171,7 @@ def signup():
     preselect = preselected[0] if preselected else None
     return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
                            timezones=COMMON_TIMEZONES, form=form, picked=set(preselected),
-                           start_industry=preselect)
+                           start_industry=preselect, then_classes=_then_classes(request.args))
 
 
 @bp.route("/login", methods=["GET", "POST"])
