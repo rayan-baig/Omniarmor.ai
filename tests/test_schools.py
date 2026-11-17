@@ -476,6 +476,33 @@ class TestClassroomPlans(ClassCase):
         self.assertFalse(plans.access(org, now=after)["paid"])
         self.assertFalse(plans.class_limits(org, now=after)["active"])
 
+    def test_an_invoiced_plan_stops_even_after_an_old_card_subscription(self):
+        """A school that paid by card one year and by invoice the next: the
+        old Stripe subscription's id stayed on the workspace, so the end date
+        set by hand was never applied and the plan ran on for free."""
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_status = 'canceled', plan = 'classroom',"
+                         " stripe_customer_id = 'cus_old', stripe_subscription_id = 'sub_old' WHERE id = 1")
+            conn.commit()
+        self.set_plan("classroom", "--until", "2027-06-30")
+        org = self.org()
+        self.assertIsNone(org["stripe_subscription_id"])
+        self.assertEqual(org["stripe_customer_id"], "cus_old")      # the card and invoices stay findable
+        self.assertTrue(plans.access(org, now=datetime(2027, 6, 30, 12, tzinfo=timezone.utc))["paid"])
+        after = datetime(2027, 7, 1, 1, tzinfo=timezone.utc)
+        self.assertFalse(plans.access(org, now=after)["paid"])
+        self.assertFalse(plans.class_limits(org, now=after)["active"])
+        # Cancelling it in the app ends it here, without asking Stripe about the old subscription.
+        self.assertFalse(plans.cancel_options(self.app.config, org)["online"])
+
+    def test_a_plan_set_by_hand_leaves_a_running_card_subscription_alone(self):
+        with self.db() as conn:
+            conn.execute("UPDATE orgs SET academy_status = 'active', stripe_customer_id = 'cus_1',"
+                         " stripe_subscription_id = 'sub_live' WHERE id = 1")
+            conn.commit()
+        self.set_plan("school")
+        self.assertEqual(self.org()["stripe_subscription_id"], "sub_live")
+
     def test_a_bad_date_is_refused(self):
         result = self.app.test_cli_runner().invoke(args=["plan", "1", "school", "--until", "June"])
         self.assertNotEqual(result.exit_code, 0)

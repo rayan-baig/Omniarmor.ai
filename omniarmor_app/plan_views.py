@@ -122,6 +122,9 @@ def switch_offer(cfg, org, access, interval, to_plus=False):
     else:
         if access["interval"] != plans.MONTH or access["kind"] not in ("pro", "plus", "plus_bundle"):
             return None
+        if plans.save_offer_running(cfg, org):
+            # The save offer's discount would come off a whole year's charge.
+            return None
         target = plans.PLUS.key if access["kind"] == "plus_bundle" else access["kind"]
     kind, price, dollars = plans.checkout_choice(cfg, org, target, interval)
     if not price or (not to_plus and kind != access["kind"]):
@@ -284,9 +287,10 @@ def resume():
         flash_error("This plan isn't paused.")
         return redirect(url_for("plan.plan_page"))
     conn = get_db()
+    billed_today = False
     try:
         if options["online"]:
-            academy_plan.resume_subscription(conn, cfg, g.org)
+            billed_today = academy_plan.resume_subscription(conn, cfg, g.org)
     except academy_plan.StripeError as exc:
         conn.rollback()
         _stripe_failed(exc, "start your plan again")
@@ -295,7 +299,9 @@ def resume():
                  (g.org["id"],))
     record_audit(conn, g.org["id"], g.user["id"], "workspace", "Plan started again before the end of its pause")
     conn.commit()
-    flash("Welcome back! Your plan is on again: checks can be saved and reminders are back on.", "ok")
+    flash("Welcome back! Your plan is on again: checks can be saved and reminders are back on."
+          + (" A renewal fell inside the pause and wasn't charged, so billing starts again today, with a new"
+             " month from now." if billed_today else ""), "ok")
     return redirect(url_for("plan.plan_page"))
 
 

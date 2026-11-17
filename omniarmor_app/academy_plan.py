@@ -44,7 +44,8 @@ def plan_status(org, now=None):
     from . import plans
     info = plans.access(org, now)
     state = info["state"]
-    if info["paid"] and plans.KINDS.get(info["kind"], (None, False, False))[2]:
+    if info["paid"] and not info["paused"] and plans.KINDS.get(info["kind"], (None, False, False))[2]:
+        # (A paused plan gives none of it until it starts again: the free worlds then.)
         # A plan cancelled in Stripe's portal stays on until the paid period ends.
         return {"access": "paid", "state": state, "renews_at": info["renews_at"], "ends_at": info["ends_at"],
                 "trial_days": 0, "plan_name": info["plan_name"]}
@@ -88,15 +89,23 @@ def set_status(conn, org_id, state, renews_at=None, kind=None, interval=None, en
     a school paid for by invoice; None runs until it is changed."""
     if kind is not None and interval is None:
         interval = "month"
+    # A Stripe subscription that is over (cancelled, or never paid) has
+    # nothing more to say about this workspace: its id is let go, so the plan
+    # set by hand is read as one (its end date applies, and cancelling it
+    # doesn't ask Stripe about the old subscription). The customer is kept.
     conn.execute("UPDATE orgs SET academy_status = ?, academy_renews_at = ?, academy_ends_at = ?,"
-                 " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval) WHERE id = ?",
+                 " plan = COALESCE(?, plan), plan_interval = COALESCE(?, plan_interval),"
+                 " stripe_subscription_id = CASE WHEN academy_status IN ('canceled', 'incomplete_expired')"
+                 " THEN NULL ELSE stripe_subscription_id END WHERE id = ?",
                  (state, renews_at, ends_at, kind, interval, org_id))
 
 
 def subscribed(org):
     """Whether the workspace has a subscription that counts (paid, or past
-    due while Stripe retries): checkout never starts a second one."""
-    return (org["academy_status"] or "none") in PAID_STATES
+    due while Stripe retries): checkout never starts a second one. A plan set
+    by hand counts until its end date, and not after (plans.access)."""
+    from . import plans
+    return plans.access(org)["paid"]
 
 
 # --- Stripe ---------------------------------------------------------------------
@@ -446,8 +455,30 @@ def pause_subscription(conn, cfg, org, resumes_at):
 
 
 def resume_subscription(conn, cfg, org):
-    """Ends a pause now (an empty pause_collection clears it)."""
-    return update_subscription(conn, cfg, org, {"pause_collection": ""})
+    """Ends a pause now (an empty pause_collection clears it). Returns True
+    when billing starts again today.
+
+    A pause voids each renewal inside it. When one was voided, the period
+    running now was never paid for: billing restarts today, a new month from
+    now with nothing prorated, or starting again just after a skipped
+    renewal (and pausing again just before the next) would never pay.
+    Inside the period paid for before the pause, nothing more is charged."""
+    fields = {"pause_collection": ""}
+    current = _stripe(cfg, _subscription_path(org), {}, method="GET")
+    started = _period_start(current)
+    paused_at = None
+    if org["paused_at"]:
+        try:
+            paused_at = datetime.fromisoformat(str(org["paused_at"]).replace("Z", "+00:00"))
+        except ValueError:
+            paused_at = None
+    if paused_at is not None and paused_at.tzinfo is None:
+        paused_at = paused_at.replace(tzinfo=timezone.utc)
+    restart = started is not None and paused_at is not None and started > paused_at.timestamp()
+    if restart:
+        fields.update({"billing_cycle_anchor": "now", "proration_behavior": "none"})
+    update_subscription(conn, cfg, org, fields)
+    return restart
 
 
 def apply_coupon(conn, cfg, org, coupon):
@@ -520,6 +551,17 @@ def _period_end(subscription):
         items = (subscription.get("items") or {}).get("data") or []
         value = next((i.get("current_period_end") for i in items
                       if isinstance(i, dict) and isinstance(i.get("current_period_end"), int)), None)
+    return value
+
+
+def _period_start(subscription):
+    """When the subscription's current period began, as a Unix time, or None
+    (on the subscription, or on its items in newer Stripe API versions)."""
+    value = subscription.get("current_period_start")
+    if not isinstance(value, int):
+        items = (subscription.get("items") or {}).get("data") or []
+        value = next((i.get("current_period_start") for i in items
+                      if isinstance(i, dict) and isinstance(i.get("current_period_start"), int)), None)
     return value
 
 

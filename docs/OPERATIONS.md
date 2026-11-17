@@ -454,7 +454,10 @@ tool (Stripe Invoicing works too), and once it's paid, on the server:
 
 (`school` for Whole school). The workspace id is in the operator's Settings
 or the database. The plan stops by itself at the end of that day; run the
-command again with a new date for the next school year.
+command again with a new date for the next school year. If the school paid
+by card before, cancel that Stripe subscription first: a cancelled one is let
+go when the plan is set by hand (1.6.1), but one still running goes on
+charging, and Stripe's next update would replace the plan set by hand.
 
 ## 8. Things only you can do
 

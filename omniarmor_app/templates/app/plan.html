@@ -139,6 +139,7 @@
       </form>
       <a href="{{ url_for('plan.cancel_page') }}">Cancel instead</a>
     </div>
+    <p class="hint" data-resume-billing>If a renewal fell inside the pause (it wasn't charged), starting again now starts billing today, with a new month from today.</p>
   </section>
 {% endif %}
 {% if g.role == 'owner' and switch_yearly %}

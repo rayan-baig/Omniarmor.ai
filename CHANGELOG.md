@@ -3,6 +3,37 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.6.1 (17 November 2026)
+
+Fixes from a review of the plans, the pause, the save offer and the
+classroom plans before launch.
+
+- **Starting a paused plan again early now bills from that day when a
+  renewal was skipped.** A pause cancels the renewals that fall inside it.
+  Starting again by hand right after one of them used to run free until the
+  next renewal, and pausing again just before it made every month free.
+  Now, when a renewal fell inside the pause, starting again starts a new
+  month of billing that day (nothing prorated). Starting again inside the
+  month paid for before the pause still charges nothing extra.
+- **No switch to yearly while the save offer's discount runs.** The discount
+  is on the subscription for its months, and Stripe takes it off every
+  invoice then, so switching to yearly took it off a whole year's charge.
+  The yearly offer comes back when the discount's months are over. Moving
+  up to Plus is unchanged.
+- **Buying a plan after a plan set by hand has ended.** A plan set by hand
+  stops on its end date (`--until`, or cancelled to its renewal date), but
+  checkout still said "You already have a plan" for good. It now opens once
+  the plan has ended, for Pro, Plus and the classroom plans.
+- **A plan set by hand with an end date stops on that date even after an
+  old card subscription.** A school that paid by card one year and by
+  invoice the next kept the old, cancelled Stripe subscription's id, so the
+  end date was never applied and the plan ran on. Setting a plan by hand
+  now lets go of a subscription that is over (the Stripe customer is kept);
+  a subscription still running is left alone.
+- **A paused plan no longer tells the Academy "every track and every
+  world".** Its paid worlds are locked while paused; the Academy now shows
+  its free worlds, as without a plan.
+
 ## 1.6.0 (16 November 2026)
 
 OmniArmor for schools: a school safety checklist, and the Academy for classrooms.

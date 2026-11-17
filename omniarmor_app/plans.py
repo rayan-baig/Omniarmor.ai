@@ -246,6 +246,18 @@ def save_offer_terms(cfg):
     return int(cfg.get("SAVE_OFFER_PERCENT") or 0), int(cfg.get("SAVE_OFFER_MONTHS") or 0)
 
 
+def save_offer_running(cfg, org, now=None):
+    """Whether the save offer's discount is still on the subscription: taken
+    less than SAVE_OFFER_MONTHS months ago. Stripe takes it off every invoice
+    in those months, so no yearly switch is offered then (a year's charge
+    would get it too)."""
+    taken = _parse(_get(org, "save_offer_used_at"))
+    if taken is None:
+        return False
+    months = int(cfg.get("SAVE_OFFER_MONTHS") or 0)
+    return add_months(taken, max(months, 1)) > (now or datetime.now(timezone.utc))
+
+
 def discounted(dollars, percent):
     """A monthly price with percent off, to the cent."""
     return round(dollars * (100 - percent) / 100, 2)

@@ -440,6 +440,84 @@ class TestSwitch(StripeGrowCase):
         self.assertEqual(self.org()["plan_interval"], "month")
 
 
+class TestReviewFixes(StripeGrowCase):
+    """Found in the pre-launch review: ways a plan could be used without
+    paying for it, or paid for and then not bought again."""
+
+    def test_starting_again_after_a_skipped_renewal_bills_from_today(self):
+        """A pause voids the renewals that fall inside it. Starting again by
+        hand after one of them used to run free to the next renewal, and
+        pausing again just before it made every month free."""
+        self.post("/app/plan/pause", {"months": "1"})
+        paused_at = datetime.fromisoformat(self.org()["paused_at"]).timestamp()
+        # A renewal falls inside the pause: Stripe voids its invoice and starts a new period.
+        self.stripe.sub["current_period_start"] = int(paused_at) + 2 * DAY
+        self.post("/app/plan/resume")
+        fields = self.stripe.posts()[-1]
+        self.assertEqual(fields["pause_collection"], "")
+        self.assertEqual((fields.get("billing_cycle_anchor"), fields.get("proration_behavior")), ("now", "none"))
+        self.assertFalse(plans.access(self.org())["paused"])
+
+    def test_starting_again_inside_the_period_paid_for_bills_nothing_extra(self):
+        self.stripe.sub["current_period_start"] = int(time.time()) - 5 * DAY
+        self.post("/app/plan/pause", {"months": "1"})
+        self.post("/app/plan/resume")
+        self.assertEqual(self.stripe.posts()[-1], {"pause_collection": ""})
+
+    def test_no_yearly_switch_while_the_save_offer_discount_runs(self):
+        """The save offer's coupon is on the subscription for its months, and
+        Stripe takes it off every invoice then, a year's switch charge too."""
+        self.post("/app/plan/save-offer")
+        self.assertNotIn("data-yearly-offer", self.page("/app/plan"))
+        self.post("/app/plan/switch", {"to": "yearly"})
+        self.assertEqual([f for f in self.stripe.posts() if "items[0][price]" in f], [])
+        self.assertEqual(self.org()["plan_interval"], "month")
+        # Once its months are over, the yearly switch is back.
+        months = self.app.config["SAVE_OFFER_MONTHS"]
+        long_ago = plans.add_months(utcnow(), -months) - timedelta(days=1)
+        self.set_org(save_offer_used_at=iso(long_ago))
+        self.assertIn("data-yearly-offer", self.page("/app/plan"))
+        # Moving up to Plus, monthly, is still fine: the offer was for the coming months.
+        self.set_org(save_offer_used_at=iso(utcnow()))
+        self.post("/app/plan/switch", {"to": "plus"})
+        self.assertEqual(self.stripe.posts()[-1]["items[0][price]"], "price_plus")
+
+
+class TestPausedAcademy(GrowCase):
+    def test_a_paused_plan_doesnt_say_every_world_is_open(self):
+        """While paused the Academy's paid worlds are locked, but its pages
+        still said "You have Plus: every track and every world"."""
+        self.on_plan("plus")
+        self.post("/app/plan/pause", {"months": "1"})
+        status = academy_plan.plan_status(self.org())
+        self.assertNotEqual(status["access"], "paid")
+        self.assertFalse(plans.access(self.org())["academy"])
+        self.assertNotIn("every track and every world", words(self.page("/app/academy")))
+
+
+class TestBuyingAfterAPlanSetByHand(GrowCase):
+    def setUp(self):
+        super().setUp()
+        self.app.config.update(STRIPE_SECRET_KEY="sk_test_grow", **PRICES)
+
+    def test_checkout_opens_once_a_plan_set_by_hand_has_ended(self):
+        """A plan set by hand ends on its date, but its status stays 'active':
+        checkout said "You already have a plan" for good."""
+        self.on_plan("pro", academy_ends_at=iso(utcnow() - timedelta(days=1)))
+        self.assertFalse(plans.access(self.org())["paid"])
+        with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://checkout.stripe.test/x"}):
+            response = self.post("/app/plan/checkout", {"plan": "pro", "interval": "month"})
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers["Location"], "https://checkout.stripe.test/x")
+
+    def test_still_refused_while_it_runs(self):
+        self.on_plan("pro", academy_ends_at=iso(utcnow() + timedelta(days=5)))
+        with mock.patch.object(academy_plan, "_stripe") as stripe:
+            response = self.post("/app/plan/checkout", {"plan": "pro", "interval": "month"})
+        self.assertEqual(response.status_code, 302)
+        stripe.assert_not_called()
+
+
 # --- Upgrade offers: weekly at most, never after "No thanks" ---------------------------
 
 class TestAcademyNudge(StripeGrowCase):
