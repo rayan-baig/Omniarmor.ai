@@ -430,6 +430,19 @@ MIGRATIONS = [
     ALTER TABLE orgs ADD COLUMN pilot_started_at TEXT;
     ALTER TABLE orgs ADD COLUMN pilot_ends_at TEXT;
     """),
+    # 1.6.2. pause_open: Stripe has paused the plan with no end date (a
+    # pause_collection without resumes_at, set in Stripe's dashboard): the
+    # workspace is paused until Stripe resumes it. users.pilot_used_at: when
+    # this owner started the free classroom pilot, which is one per owner,
+    # whichever of their locations it was in (and kept when that location is
+    # deleted). Filled in from the pilots already started.
+    (22, """
+    ALTER TABLE orgs ADD COLUMN pause_open INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN pilot_used_at TEXT;
+    UPDATE users SET pilot_used_at = (
+        SELECT MIN(orgs.pilot_started_at) FROM memberships JOIN orgs ON orgs.id = memberships.org_id
+        WHERE memberships.user_id = users.id AND memberships.role = 'owner' AND orgs.pilot_started_at IS NOT NULL);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

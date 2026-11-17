@@ -78,7 +78,7 @@ def plan_page():
     session_id = request.args.get("session_id")
     if session_id is not None:
         # Back from Stripe Checkout: settle the payment now, not when the webhook comes.
-        if not academy_plan.subscribed(g.org):
+        if not academy_plan.subscribed(g.org) or academy_plan.card_after_invoice(g.org):
             conn = get_db()
             try:
                 if academy_plan.confirm_checkout(conn, cfg, g.org, session_id):
@@ -101,6 +101,8 @@ def plan_page():
                            start_yearly=yearly_toggle and (request.args.get("billing") == "yearly"
                                                            or (access["paid"] and access["yearly"])),
                            has_customer=bool(g.org["stripe_customer_id"]),
+                           card_from=(academy_plan.card_after_invoice(g.org)
+                                      if access["kind"] in plans.PLANS else None),
                            switch_yearly=switch_offer(cfg, g.org, access, plans.YEAR),
                            switch_plus=switch_offer(cfg, g.org, access, plans.MONTH, to_plus=True))
 
@@ -163,13 +165,17 @@ def checkout():
         flash_error("Pick Pro or Plus.")
         return redirect(url_for("plan.plan_page"))
     access = plans.access(g.org)
-    if academy_plan.subscribed(g.org):
-        flash_error(f"You already have {access['plan_name'] or 'a plan'}. Use Manage billing to change it.")
-        return redirect(url_for("plan.plan_page"))
     if key == plans.BUNDLE_INCLUDES.key and access["bundle"]["state"] == "covered":
         flash_error(f"{plans.BUNDLE_INCLUDES.name} is already included with your {plans.BUNDLE_NAME}.")
         return redirect(url_for("plan.plan_page"))
     kind, price, _ = plans.checkout_choice(cfg, g.org, key, interval)
+    trial_end = None
+    if academy_plan.subscribed(g.org):
+        refused = already_paid(cfg, g.org, access, kind)
+        if refused:
+            flash_error(refused)
+            return redirect(url_for("plan.plan_page"))
+        trial_end = academy_plan.first_charge_at(academy_plan.card_after_invoice(g.org))
     if not price and interval == plans.YEAR:
         flash_error(f"{plans.PLANS[key].name} can't be paid yearly yet. Choose monthly instead.")
         return redirect(url_for("plan.plan_page"))
@@ -183,12 +189,29 @@ def checkout():
                                         + "&session_id={CHECKOUT_SESSION_ID}",
                                         url_for("plan.plan_page", _external=True),
                                         price=price, kind=kind, quantity=plans.location_count(g.org),
-                                        interval=interval)
+                                        interval=interval, trial_end=trial_end)
     except academy_plan.StripeError as exc:
         current_app.logger.warning("Stripe checkout failed: %s", exc)
         flash_error("We couldn't open checkout just now. Please try again in a minute.")
         return redirect(url_for("plan.plan_page"))
     return redirect(url, code=303)
+
+
+def already_paid(cfg, org, access, kind):
+    """Why a workspace that has a plan can't check out for this one (kind),
+    or None when it may: the same plan as one set by hand with an end date
+    (an invoiced school year), by card from that day (card_after_invoice)."""
+    from .classrooms import invoice_email
+    name = access["plan_name"] or "a plan"
+    ends = academy_plan.card_after_invoice(org)
+    if ends is not None:
+        if kind == access["kind"]:
+            return None
+        return (f"Your {name} runs until {local_date(iso(ends), org)}, paid by invoice. You can pay for {name} by"
+                f" card from then; to change plan, write to {invoice_email(cfg)}.")
+    if not org["stripe_subscription_id"]:
+        return f"Your {name} was set up for you, by invoice. To change it, write to {invoice_email(cfg)}."
+    return f"You already have {name}. Use Manage billing to change it."
 
 
 @plan.route("/app/plan/manage", methods=["POST"])
@@ -267,7 +290,8 @@ def pause():
         conn.rollback()
         _stripe_failed(exc, "pause your plan")
         return _back_to_cancel()
-    conn.execute("UPDATE orgs SET paused_until = ?, paused_at = ?, pause_reminded_at = NULL WHERE id = ?",
+    conn.execute("UPDATE orgs SET paused_until = ?, pause_open = 0, paused_at = ?, pause_reminded_at = NULL"
+                 " WHERE id = ?",
                  (iso(until), iso(now), g.org["id"]))
     record_audit(conn, g.org["id"], g.user["id"], "workspace",
                  f"Plan paused for {months} month{'s' if months != 1 else ''}, until {until.date().isoformat()}")
@@ -295,8 +319,7 @@ def resume():
         conn.rollback()
         _stripe_failed(exc, "start your plan again")
         return redirect(url_for("plan.plan_page"))
-    conn.execute("UPDATE orgs SET paused_until = NULL, paused_at = NULL, pause_reminded_at = NULL WHERE id = ?",
-                 (g.org["id"],))
+    academy_plan.clear_pause(conn, g.org["id"])
     record_audit(conn, g.org["id"], g.user["id"], "workspace", "Plan started again before the end of its pause")
     conn.commit()
     flash("Welcome back! Your plan is on again: checks can be saved and reminders are back on."
@@ -358,8 +381,8 @@ def cancel():
         elif g.org["academy_renews_at"]:
             conn.execute("UPDATE orgs SET academy_ends_at = academy_renews_at WHERE id = ?", (g.org["id"],))
         else:
-            conn.execute("UPDATE orgs SET academy_status = 'canceled', paused_until = NULL WHERE id = ?",
-                         (g.org["id"],))
+            conn.execute("UPDATE orgs SET academy_status = 'canceled' WHERE id = ?", (g.org["id"],))
+            academy_plan.clear_pause(conn, g.org["id"])
     except academy_plan.StripeError as exc:
         conn.rollback()
         _stripe_failed(exc, "cancel your plan")

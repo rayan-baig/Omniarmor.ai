@@ -1,6 +1,8 @@
 {# What the workspace's plan is right now, in one sentence (plans.access), for Settings and the plan page. #}
 {% macro status_line(a, facts) -%}
-{%- if a.paused -%}
+{%- if a.pause_open -%}
+{{ a.plan_name }} is paused, with no end date: no charges, reminders are off and the workspace is read-only. Everything is kept, and it starts again when the pause is lifted.
+{%- elif a.paused -%}
 {{ a.plan_name }} is paused until {{ a.resumes_at|local_date }}: no charges, reminders are off and the workspace is read-only. Everything is kept, and it starts again by itself that day.
 {%- elif a.paid and a.state == 'past_due' -%}
 Your last payment for {{ a.plan_name }} didn't go through. {{ 'Update your card' if g.role == 'owner' else 'The workspace owner can update the card' }} to keep it.

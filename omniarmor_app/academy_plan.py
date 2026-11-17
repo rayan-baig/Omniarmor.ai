@@ -17,6 +17,7 @@ everyone; the rest of the Academy needs Plus.
 import hashlib
 import hmac
 import json
+import logging
 import re
 import time
 import urllib.error
@@ -24,11 +25,15 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-from .db import iso, utcnow
+from .db import iso, record_audit, utcnow
+
+log = logging.getLogger(__name__)
 
 FREE_TRACK = "launchpad"
 FREE_WORLDS = {1, 2, 3}
 PAID_STATES = {"active", "trialing", "past_due"}  # past_due keeps access while Stripe retries the card
+# A Stripe subscription in one of these can still charge: a plan isn't set by hand over it (the `plan` command).
+RUNNING_STATES = PAID_STATES | {"unpaid", "incomplete"}
 STRIPE_API = "https://api.stripe.com/v1"
 WEBHOOK_TOLERANCE = 300  # seconds
 
@@ -189,10 +194,39 @@ def _stripe(cfg, path, fields, method="POST"):
         raise StripeError(str(exc)) from exc
 
 
-def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity, interval="month"):
+# Stripe Checkout takes a subscription's trial_end only at least 48 hours ahead; an hour more for clocks.
+STRIPE_MIN_TRIAL_SECONDS = 49 * 3600
+
+
+def card_after_invoice(org, now=None):
+    """When a plan set by hand with an end date (an invoiced school year,
+    say) ends, if this workspace is on one now: its card subscription can be
+    set up already, its first charge that day (checkout_url's trial_end), so
+    it is never paid for twice. None otherwise: no plan, a plan paid through
+    Stripe, or one set by hand with no end date."""
+    from . import plans
+    now = now or utcnow()
+    if org["stripe_subscription_id"] or not plans.access(org, now)["paid"]:
+        return None
+    ends = plans._parse(org["academy_ends_at"])
+    return ends if ends is not None and ends > now else None
+
+
+def first_charge_at(ends, now=None):
+    """The card subscription's first charge, as a Unix time: the day the
+    invoiced plan ends, or Stripe's earliest when that is under 48 hours away
+    (then up to two days come free, never twice paid)."""
+    now = now or utcnow()
+    return max(int(ends.timestamp()), int(now.timestamp()) + STRIPE_MIN_TRIAL_SECONDS)
+
+
+def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity, interval="month",
+                 trial_end=None):
     """A Stripe Checkout page for one plan: its monthly or yearly price,
     `quantity` locations (plans.location_count), and the plan and interval
-    written in the metadata of the session and of the subscription it makes."""
+    written in the metadata of the session and of the subscription it makes.
+    trial_end (a Unix time) puts off the first charge until then: a plan set
+    by hand that is already paid for until that day (card_after_invoice)."""
     fields = {
         "mode": "subscription",
         "line_items[0][price]": price,
@@ -208,6 +242,8 @@ def checkout_url(cfg, org, email, success_url, cancel_url, price, kind, quantity
         "subscription_data[metadata][interval]": interval,
         "allow_promotion_codes": "true",
     }
+    if trial_end is not None:
+        fields["subscription_data[trial_end]"] = str(int(trial_end))
     if org["stripe_customer_id"]:
         fields["customer"] = org["stripe_customer_id"]
     else:
@@ -367,6 +403,7 @@ def apply_event(conn, event, cfg=None):
         last = org["stripe_event_at"]
         if created is not None and last is not None and created < last:
             return None
+        _flag_yearly_during_save_offer(conn, cfg or {}, org, interval, deleted=kind.endswith("deleted"))
         state = _apply_subscription(conn, org, obj, plan_kind, interval, deleted=kind.endswith("deleted"),
                                     paid=paid)
         if state is None:
@@ -381,6 +418,24 @@ def apply_event(conn, event, cfg=None):
                      (org["id"],))
         return "past_due"
     return None
+
+
+def _flag_yearly_during_save_offer(conn, cfg, org, interval, deleted=False):
+    """A switch to yearly in Stripe's customer portal while the save offer's
+    discount runs. The app never offers it (plan_views.switch_offer), but the
+    portal can, if it lists yearly prices: Stripe then took the discount off
+    the year's charge, and that charge is already made when this webhook
+    comes, so nothing here can undo it. It is written in the audit trail and
+    the log for the operator to settle by hand (docs/OPERATIONS.md, "Stripe's
+    customer portal")."""
+    from . import plans
+    if deleted or interval != "year" or org["plan_interval"] != "month" or not plans.save_offer_running(cfg, org):
+        return
+    log.warning("Workspace %s switched to yearly in Stripe's portal while its save offer discount ran;"
+                " check the yearly charge in Stripe", org["id"])
+    record_audit(conn, org["id"], None, "workspace",
+                 "Switched to yearly in Stripe's portal while the save offer's discount ran: the discount may have"
+                 " come off the yearly charge", actor="Stripe")
 
 
 def _apply_subscription(conn, org, obj, plan_kind, interval, deleted=False, paid=None):
@@ -414,16 +469,27 @@ def _apply_subscription(conn, org, obj, plan_kind, interval, deleted=False, paid
 
 def _apply_pause(conn, org, pause, state):
     """Mirrors Stripe's pause_collection: a pause with a resume date pauses
-    the plan until then; none (or a subscription no longer paid) ends it."""
+    the plan until then; one with no resume date (set in Stripe's dashboard)
+    pauses it until Stripe resumes it (pause_open); none (or a subscription
+    no longer paid) ends it."""
     resumes = pause.get("resumes_at") if isinstance(pause, dict) else None
     if isinstance(resumes, int) and state in PAID_STATES:
         until = iso(_from_timestamp(resumes))
-        conn.execute("UPDATE orgs SET paused_until = ?, paused_at = COALESCE(paused_at, ?),"
+        conn.execute("UPDATE orgs SET paused_until = ?, pause_open = 0, paused_at = COALESCE(paused_at, ?),"
                      " pause_reminded_at = CASE WHEN paused_until IS ? THEN pause_reminded_at END WHERE id = ?",
                      (until, iso(utcnow()), until, org["id"]))
+    elif isinstance(pause, dict) and state in PAID_STATES:
+        # Stripe has stopped charging and named no day to start again.
+        conn.execute("UPDATE orgs SET paused_until = NULL, pause_open = 1, paused_at = COALESCE(paused_at, ?),"
+                     " pause_reminded_at = NULL WHERE id = ?", (iso(utcnow()), org["id"]))
     else:
-        conn.execute("UPDATE orgs SET paused_until = NULL, paused_at = NULL, pause_reminded_at = NULL WHERE id = ?",
-                     (org["id"],))
+        clear_pause(conn, org["id"])
+
+
+def clear_pause(conn, org_id):
+    """Ends the workspace's pause, dated or open."""
+    conn.execute("UPDATE orgs SET paused_until = NULL, pause_open = 0, paused_at = NULL, pause_reminded_at = NULL"
+                 " WHERE id = ?", (org_id,))
 
 
 # --- Changing the subscription from the app ----------------------------------------

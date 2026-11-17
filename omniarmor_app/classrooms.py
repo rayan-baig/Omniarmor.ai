@@ -30,6 +30,8 @@ from .trades import SCHOOL_INDUSTRY
 MAX_NAME = 30               # a student's first name or nickname
 MAX_CLASS_NAME = 40         # "Room 12", "Entrepreneurship Club"
 MAX_ADD_AT_ONCE = plans.CLASS_SIZE
+MAX_CLASSES = 100           # classes in one workspace, on any plan (Whole school's "any number")
+CLASSES_PER_HOUR = 20       # classes one workspace can add in an hour
 _LOOKS_LIKE_EMAIL = re.compile(r"@|\.(com|org|net|edu)\b", re.I)
 
 
@@ -216,6 +218,9 @@ def can_add_class(conn, org, now=None):
     if not limits["active"]:
         return False, "Start the free pilot or choose a classroom plan to add a class."
     count = conn.execute("SELECT COUNT(*) FROM classes WHERE org_id = ?", (org["id"],)).fetchone()[0]
+    if count >= MAX_CLASSES:
+        return False, (f"A workspace can have up to {MAX_CLASSES} classes. Delete a class you no longer use,"
+                       " or write to us for more.")
     if limits["max_classes"] is not None and count >= limits["max_classes"]:
         many = limits["max_classes"]
         return False, (f"{limits['name']} is for {many} class{'es' if many != 1 else ''}. "
@@ -232,10 +237,43 @@ def room_for_students(conn, org, class_row, now=None):
     return max(0, limits["class_size"] - count)
 
 
+def _owner_ids(conn, org_id):
+    return [r[0] for r in conn.execute("SELECT user_id FROM memberships WHERE org_id = ? AND role = 'owner'",
+                                       (org_id,))]
+
+
+def pilot_available(conn, org):
+    """Whether this workspace can still start the free pilot. It is one per
+    owner, whichever of their locations it was in (users.pilot_used_at, kept
+    when that location is deleted), and one per workspace."""
+    if org["pilot_started_at"]:
+        return False
+    owners = _owner_ids(conn, org["id"])
+    if not owners:
+        return False
+    marks = ",".join("?" * len(owners))
+    return conn.execute(f"SELECT 1 FROM users WHERE id IN ({marks}) AND pilot_used_at IS NOT NULL",
+                        owners).fetchone() is None
+
+
 def start_pilot(conn, org, days, now=None):
-    """Starts the workspace's one free classroom pilot. Returns False when
-    it has had one already."""
+    """Starts the free classroom pilot, one per owner (pilot_available).
+    Returns False when the workspace or its owner has had one already. The
+    owner is claimed first, in the same transaction, so two locations
+    started at once can't both get one."""
     now = now or utcnow()
-    return conn.execute("UPDATE orgs SET pilot_started_at = ?, pilot_ends_at = ? WHERE id = ?"
-                        " AND pilot_started_at IS NULL",
-                        (iso(now), iso(now + timedelta(days=days)), org["id"])).rowcount == 1
+    owners = _owner_ids(conn, org["id"])
+    if not owners:
+        return False
+    marks = ",".join("?" * len(owners))
+    claimed = conn.execute(f"UPDATE users SET pilot_used_at = ? WHERE id IN ({marks}) AND pilot_used_at IS NULL",
+                           [iso(now), *owners]).rowcount
+    if claimed != len(owners):
+        conn.rollback()
+        return False
+    if conn.execute("UPDATE orgs SET pilot_started_at = ?, pilot_ends_at = ? WHERE id = ?"
+                    " AND pilot_started_at IS NULL",
+                    (iso(now), iso(now + timedelta(days=days)), org["id"])).rowcount != 1:
+        conn.rollback()
+        return False
+    return True

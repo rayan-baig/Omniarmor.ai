@@ -84,8 +84,13 @@
       {% set pa = plan_access %}
       {% if pa.read_only and pa.reason == 'paused' %}
         <div class="plan-banner paused no-print" data-paused-banner>
+          {% if pa.pause_open %}
+          <p><strong>Paused, with no end date.</strong>
+          No charges, and no reminder emails or alerts go out. The workspace is read-only: see, print and download everything, but new checks can't be saved. Nothing is deleted, and it all starts again when the pause is lifted.
+          {% else %}
           <p><strong>Paused until {{ pa.resumes_at|local_date }}.</strong>
           No charges, and no reminder emails or alerts go out. The workspace is read-only: see, print and download everything, but new checks can't be saved. Nothing is deleted, and it all starts again by itself on {{ pa.resumes_at|local_date }}.
+          {% endif %}
           {% if g.role == 'owner' %}<a href="{{ url_for('plan.plan_page') }}">Start again now</a>{% endif %}</p>
         </div>
       {% elif pa.read_only and pa.reason == 'academy_only' %}
@@ -97,7 +102,7 @@
       {% elif pa.read_only %}
         <div class="plan-banner readonly no-print" data-readonly-banner>
           <p><strong>Read-only.</strong>
-          {% if pa.reason == 'bundle_ended' %}CyberLogix stopped sending signed reports, so the Pro your Kitchen Safety Bundle included has ended.{% elif pa.reason == 'plan_ended' %}Your plan has ended.{% else %}Your free trial has ended.{% endif %}
+          {% if pa.reason == 'bundle_ended' %}CyberLogix stopped sending signed reports, so the Pro your Kitchen Safety Bundle included has ended.{% elif pa.reason == 'plan_ended' %}Your plan has ended.{% elif pa.reason == 'new_location' %}This location has no plan yet: the free trial is one per owner, and was used in your first location.{% else %}Your free trial has ended.{% endif %}
           Your records are safe: see, print and download them any time, and nothing is deleted. New checks can't be saved and reminders are paused until you
           <a href="{{ url_for('plan.plan_page') }}">choose Pro or Plus</a>.</p>
         </div>

@@ -397,12 +397,27 @@ def register_cli(app):
         """Send reminders, back up the database and clean up."""
         click.echo(run_daily(dict(app.config), force=force) or "Not due yet, or already done today.")
 
-    def _set_plan(org_id, state, kind, interval=None, ends_at=None):
-        from .academy_plan import set_status
+    def _set_plan(org_id, state, kind, interval=None, ends_at=None, force=False, until=None):
+        """Sets the plan by hand. Refused over a Stripe subscription that is
+        still running, unless force: it would go on charging, and Stripe's
+        next update would replace what was set here. until (a date) ends the
+        plan at 23:59:59 that day in the workspace's own timezone."""
+        from .academy_plan import RUNNING_STATES, set_status
         conn = connect(app.config["DATABASE"])
         try:
-            if conn.execute("SELECT 1 FROM orgs WHERE id = ?", (org_id,)).fetchone() is None:
+            org = conn.execute("SELECT * FROM orgs WHERE id = ?", (org_id,)).fetchone()
+            if org is None:
                 raise click.ClickException(f"No workspace with id {org_id}.")
+            if org["stripe_subscription_id"] and org["academy_status"] in RUNNING_STATES and not force:
+                raise click.ClickException(
+                    f"Workspace {org_id} pays through the Stripe subscription {org['stripe_subscription_id']}"
+                    f" ({org['academy_status']}). Cancel it in Stripe first, or run this again with --force: Stripe"
+                    " would go on charging, and its next update would replace the plan set here.")
+            if until is not None:
+                from datetime import datetime as _dt, time as _time, timezone as _tz
+                from zoneinfo import ZoneInfo
+                zone = ZoneInfo(org["timezone"]) if org["timezone"] else _tz.utc
+                ends_at = iso(_dt.combine(until, _time(23, 59, 59), tzinfo=zone).astimezone(_tz.utc))
             set_status(conn, org_id, state, kind=kind, interval=interval, ends_at=ends_at)
             conn.commit()
         finally:
@@ -413,22 +428,24 @@ def register_cli(app):
     @click.argument("plan", type=click.Choice(["pro", "plus", "classroom", "school", "none"]))
     @click.option("--yearly", is_flag=True, help="Paid yearly rather than monthly (classroom plans always are).")
     @click.option("--until", "until", metavar="YYYY-MM-DD",
-                  help="The last day of the plan, such as the end of a school year paid by invoice.")
-    def plan_command(org_id, plan, yearly, until):
+                  help="The last day of the plan (to 23:59:59 in the workspace's timezone), such as the end of"
+                       " a school year paid by invoice.")
+    @click.option("--force", is_flag=True,
+                  help="Set it even over a Stripe subscription that is still running.")
+    def plan_command(org_id, plan, yearly, until, force):
         """Put a workspace on Pro, Plus, Classroom or Whole school by hand, or take its plan away
         (no Stripe needed: a school that pays by invoice, say)."""
-        from datetime import date, datetime as _dt, time as _time, timezone as _tz
+        from datetime import date
         from .plans import CLASSROOM_PLANS
-        ends_at = None
+        last = None
         if until:
             try:
                 last = date.fromisoformat(until)
             except ValueError:
                 raise click.ClickException("--until takes a date: YYYY-MM-DD.")
-            ends_at = iso(_dt.combine(last, _time(23, 59, 59), tzinfo=_tz.utc))
         yearly = yearly or plan in CLASSROOM_PLANS
         _set_plan(org_id, "none" if plan == "none" else "active", None if plan == "none" else plan,
-                  None if plan == "none" else ("year" if yearly else "month"), ends_at=ends_at)
+                  None if plan == "none" else ("year" if yearly else "month"), force=force, until=last)
         name = CLASSROOM_PLANS[plan].name if plan in CLASSROOM_PLANS else plan.title()
         click.echo(f"Workspace {org_id}: " + ("no plan." if plan == "none"
                                               else f"{name} on" + (", yearly" if yearly else "")
@@ -437,10 +454,11 @@ def register_cli(app):
     @app.cli.command("academy-plan")
     @click.argument("org_id", type=int)
     @click.argument("status", type=click.Choice(["active", "none", "canceled"]))
-    def academy_plan_command(org_id, status):
+    @click.option("--force", is_flag=True, help="Set it even over a Stripe subscription that is still running.")
+    def academy_plan_command(org_id, status, force):
         """The old command, kept for scripts: "active" now puts the workspace on Plus (the plan the
         Academy plan became). Prefer `plan`."""
-        _set_plan(org_id, status, "plus" if status == "active" else None)
+        _set_plan(org_id, status, "plus" if status == "active" else None, force=force)
         click.echo(f"Workspace {org_id}: Academy plan {status}" + (" (Plus)." if status == "active" else "."))
 
     @app.cli.command("make-operator")

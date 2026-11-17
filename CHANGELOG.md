@@ -3,6 +3,46 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.6.2 (17 November 2026)
+
+More from the pre-launch review: plans, pauses, locations and classrooms.
+
+- **A pause with no end date.** A pause set in Stripe's dashboard without a
+  day to start again used to leave the workspace fully on while nothing was
+  charged. Now it is paused like any pause (read-only, no reminders) until
+  the pause is lifted, and every screen says "paused, with no end date".
+  Start again now still works.
+- **Stripe's customer portal.** OPERATIONS.md now lists the exact portal
+  settings: switching only between Pro and Plus monthly, never to yearly
+  (the plan page does that, and refuses while the save offer's discount
+  runs), never the bundle prices, Classroom or Whole school. If a switch to
+  yearly still comes in from the portal while the discount runs, the yearly
+  charge has already been made with it and the app can't take it back, so
+  it writes it in the audit trail and the log for the operator to settle.
+- **Certificates agree.** A class's certificates page shows every
+  certificate each student has earned, on any track, the same ones the
+  class view counts. A student who changed track no longer loses one.
+- **At most 100 classes in a workspace**, and up to 20 added an hour.
+- **One free trial and one classroom pilot per owner.** A location added in
+  Settings starts without a trial: the owner chooses a plan for it, and the
+  Add a location box says so. The pilot can be started once, in any one of
+  the owner's locations, and deleting that location and adding another
+  doesn't bring it back.
+- **A plan set by hand with `--until` ends at 23:59:59 that day in the
+  workspace's own timezone**, not in UTC (which ended a New York school's
+  plan at 8 pm).
+- **No plan set by hand over a running Stripe subscription.** The `plan`
+  command (and the old `academy-plan`) refuses with a clear message unless
+  `--force` is given: Stripe would go on charging, and its next update would
+  replace the plan set by hand.
+- **From invoice to card.** A school on an invoiced plan can set up its card
+  for the same plan before the plan ends ("Pay by card from ..."): the first
+  card charge is the day the invoiced plan ends, so it never pays twice. The
+  old "Use Manage billing" message, which led nowhere for an invoiced plan,
+  now says whom to write to.
+- **Deleting one location keeps you signed in**, in another of your
+  locations. Deleting your last one signs you out, as before.
+
 ## 1.6.1 (17 November 2026)
 
 Fixes from a review of the plans, the pause, the save offer and the

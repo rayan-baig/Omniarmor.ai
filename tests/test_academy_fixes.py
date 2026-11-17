@@ -214,7 +214,8 @@ class TestStripeEvents(AppTestCase):
         with mock.patch.object(academy_plan, "checkout_url", side_effect=AssertionError("no checkout")):
             response = self.post("/app/plan/checkout", {"plan": "plus"})
         self.assertTrue(response.headers["Location"].endswith("/app/plan"))
-        self.assertIn(b"Use Manage billing to change it", self.client.get("/app/plan").data)
+        # A plan with no Stripe subscription was set by hand (1.6.2): it says whom to write to.
+        self.assertIn(b"was set up for you, by invoice. To change it, write to", self.client.get("/app/plan").data)
 
     def test_replayed_event_is_ignored(self):
         self.sub("evt_a", "updated", "sub_1", "active")

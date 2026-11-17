@@ -12,7 +12,7 @@
   </div>
 </div>
 
-<p class="muted">Every new workspace gets a {{ facts.trial_days }}-day free trial of everything in {{ facts.plus.name }}, with no card. Prices are per {{ facts.location }}: a workspace is one {{ facts.location }}, so a company with several sites has a workspace for each. Without a plan your records stay: you can see, print and download them, and nothing is deleted, but new checks can't be saved and reminders pause.</p>
+<p class="muted">Every sign-up gets a {{ facts.trial_days }}-day free trial of everything in {{ facts.plus.name }}, with no card: one per owner, so a location added later starts without one. Prices are per {{ facts.location }}: a workspace is one {{ facts.location }}, so a company with several sites has a workspace for each. Without a plan your records stay: you can see, print and download them, and nothing is deleted, but new checks can't be saved and reminders pause.</p>
 
 {% if a.paid and a.kind == 'plus_bundle' and a.read_only %}
   <p class="plan-banner readonly" data-bundle-ended>Your {{ facts.plus.name }} is billed at the {{ b.name }} price, which covers the Academy only, and the bundle that included {{ b.includes.name }} has ended. {% if g.role == 'owner' %}Use Manage billing to switch to {{ facts.plus.name }} or {{ facts.pro.name }} at the full price.{% else %}The workspace owner can switch plans.{% endif %}</p>
@@ -130,8 +130,13 @@
 
 {% if g.role == 'owner' and a.paused %}
   <section class="offer-card mt" data-paused-plan>
+    {% if a.pause_open %}
+    <h2>Paused, with no end date</h2>
+    <p>No charges, and no reminders, while it's paused. Your records are all kept and the workspace is read-only. It starts again when the pause is lifted: start it again here whenever you like.</p>
+    {% else %}
     <h2>Paused until {{ a.resumes_at|local_date }}</h2>
     <p>No charges, and no reminders, until then. Your records are all kept and the workspace is read-only. It starts again by itself on {{ a.resumes_at|local_date }}, and we email you a few days before.</p>
+    {% endif %}
     <div class="offer-actions">
       <form method="post" action="{{ url_for('plan.resume') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -140,6 +145,18 @@
       <a href="{{ url_for('plan.cancel_page') }}">Cancel instead</a>
     </div>
     <p class="hint" data-resume-billing>If a renewal fell inside the pause (it wasn't charged), starting again now starts billing today, with a new month from today.</p>
+  </section>
+{% endif %}
+{% if g.role == 'owner' and card_from and ready[a.kind] %}
+  <section class="offer-card mt" data-card-from>
+    <h2>Pay by card from {{ card_from.isoformat()|local_date }}</h2>
+    <p>Your {{ a.plan_name }} was set up for you and runs until {{ card_from.isoformat()|local_date }}. Set up the card now to keep it going after that: its first charge is that day, so you never pay twice.</p>
+    <form method="post" action="{{ url_for('plan.checkout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="plan" value="{{ a.kind }}">
+      <input type="hidden" name="interval" value="{{ a.interval }}">
+      <button class="btn" type="submit">Pay by card from {{ card_from.isoformat()|local_date }}</button>
+    </form>
   </section>
 {% endif %}
 {% if g.role == 'owner' and switch_yearly %}

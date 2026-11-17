@@ -37,7 +37,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="ac-empty">No classes yet.{% if not limits.active %} Start the free pilot to add your first one.{% endif %}</p>
+    <p class="ac-empty">No classes yet.{% if not limits.active and pilot_available %} Start the free pilot to add your first one.{% elif not limits.active %} Choose a classroom plan to add your first one.{% endif %}</p>
   {% endif %}
 
   {% if can_add %}
@@ -52,7 +52,10 @@
     <p class="hint mt">{{ why }}</p>
   {% endif %}
 
-  {% if pilot.state == 'none' and not limits.active %}
+  {% if pilot.state == 'none' and not limits.active and not pilot_available %}
+    <p class="ac-banner" data-pilot="used">The free pilot is one per owner, and it was used in another of your locations. Choose a classroom plan below to add a class here.</p>
+  {% endif %}
+  {% if pilot.state == 'none' and not limits.active and pilot_available %}
     <section class="ac-card mt" data-pilot-offer>
       <h2 class="ac-h3">Try it free for {{ facts.pilot_days }} days</h2>
       <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page pilot report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
@@ -81,6 +84,13 @@
               <button class="btn quiet" type="submit">Pay for {{ p.name }} by card</button>
             </form>
           {% endif %}
+        {% elif g.role == 'owner' and card_from and access.kind == p.key and facts.online[p.key] %}
+          <form method="post" action="{{ url_for('classes.checkout') }}" data-card-from>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan" value="{{ p.key }}">
+            <button class="btn quiet" type="submit">Pay by card from {{ card_from.isoformat()|local_date }}</button>
+          </form>
+          <p class="hint">Your invoiced {{ p.name }} runs until then. Set up the card now: its first charge is that day, so you never pay twice.</p>
         {% endif %}
       </div>
     {% endfor %}

@@ -472,7 +472,9 @@ class TestClassroomPlans(ClassCase):
         last = datetime(2027, 6, 30, 12, tzinfo=timezone.utc)
         self.assertTrue(plans.access(org, now=last)["paid"])
         self.assertTrue(plans.class_limits(org, now=last)["active"])
-        after = datetime(2027, 7, 1, 1, tzinfo=timezone.utc)
+        # The end of that day in the workspace's timezone (New York): 03:59:59 UTC on 1 July.
+        self.assertTrue(plans.access(org, now=datetime(2027, 7, 1, 3, tzinfo=timezone.utc))["paid"])
+        after = datetime(2027, 7, 1, 4, 1, tzinfo=timezone.utc)
         self.assertFalse(plans.access(org, now=after)["paid"])
         self.assertFalse(plans.class_limits(org, now=after)["active"])
 
@@ -489,7 +491,7 @@ class TestClassroomPlans(ClassCase):
         self.assertIsNone(org["stripe_subscription_id"])
         self.assertEqual(org["stripe_customer_id"], "cus_old")      # the card and invoices stay findable
         self.assertTrue(plans.access(org, now=datetime(2027, 6, 30, 12, tzinfo=timezone.utc))["paid"])
-        after = datetime(2027, 7, 1, 1, tzinfo=timezone.utc)
+        after = datetime(2027, 7, 1, 4, 1, tzinfo=timezone.utc)   # past 23:59:59 that day in New York
         self.assertFalse(plans.access(org, now=after)["paid"])
         self.assertFalse(plans.class_limits(org, now=after)["active"])
         # Cancelling it in the app ends it here, without asking Stripe about the old subscription.
@@ -500,7 +502,7 @@ class TestClassroomPlans(ClassCase):
             conn.execute("UPDATE orgs SET academy_status = 'active', stripe_customer_id = 'cus_1',"
                          " stripe_subscription_id = 'sub_live' WHERE id = 1")
             conn.commit()
-        self.set_plan("school")
+        self.set_plan("school", "--force")      # refused without it (test_plan_edges)
         self.assertEqual(self.org()["stripe_subscription_id"], "sub_live")
 
     def test_a_bad_date_is_refused(self):

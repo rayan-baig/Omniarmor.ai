@@ -10,7 +10,7 @@
 
 <h2 id="reminders">Your reminder emails</h2>
 <p class="muted">Sent to {{ g.user.email }}. Everyone on the team chooses their own. Radar keeps a copy of each.</p>
-{% if access.paused %}<p class="plan-banner paused" data-reminders-paused><strong>Off while your plan is paused.</strong> No reminder emails or alerts go out until {{ access.resumes_at|local_date }}, whatever you pick here. They start again by themselves that day.</p>{% endif %}
+{% if access.paused %}<p class="plan-banner paused" data-reminders-paused><strong>Off while your plan is paused.</strong> {% if access.pause_open %}No reminder emails or alerts go out while it's paused (with no end date), whatever you pick here. They start again with the plan.{% else %}No reminder emails or alerts go out until {{ access.resumes_at|local_date }}, whatever you pick here. They start again by themselves that day.{% endif %}</p>{% endif %}
 <form method="post" action="{{ url_for('app.settings_reminders') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Daily digest: checks coming due in 30, 7 and 1 days, due today, and each week they stay overdue</label>
@@ -90,7 +90,7 @@
   <form method="post" action="{{ url_for('app.add_location') }}" class="narrow mt-s" data-add-location>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label class="field"><span>Add a location</span><input type="text" name="name" maxlength="120" required placeholder="For example: {{ g.org.name }} Downtown"></label>
-    <p class="hint">It starts with this location's industries and timezone, and its own free trial. You own it; invite its team from its Settings.</p>
+    <p class="hint" data-location-trial>It starts with this location's industries and timezone. It has no free trial: the free trial is one per owner, and yours came with your first workspace. Choose a plan for the new location on its Plans page; until then it is read-only. Deleting a location and adding it again doesn't bring a trial back. You own it; invite its team from its Settings.</p>
     <button class="btn quiet" type="submit">Add location</button>
   </form>
 {% endif %}

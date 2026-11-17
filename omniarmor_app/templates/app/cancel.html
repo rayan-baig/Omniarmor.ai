@@ -28,8 +28,13 @@
   <div class="offer-grid">
     {% if a.paused %}
       <section class="offer-card" data-resume>
+        {% if a.pause_open %}
+        <h2>Paused, with no end date</h2>
+        <p>No charges and no reminders while it's paused. It starts again when the pause is lifted: start it again below, or ask us.</p>
+        {% else %}
         <h2>Paused until {{ a.resumes_at|local_date }}</h2>
         <p>No charges and no reminders until then. It starts again by itself that day.</p>
+        {% endif %}
         {% if o.can_resume %}
           <form method="post" action="{{ url_for('plan.resume') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

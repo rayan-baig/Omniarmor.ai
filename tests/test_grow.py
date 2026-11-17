@@ -510,10 +510,17 @@ class TestBuyingAfterAPlanSetByHand(GrowCase):
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["Location"], "https://checkout.stripe.test/x")
 
-    def test_still_refused_while_it_runs(self):
-        self.on_plan("pro", academy_ends_at=iso(utcnow() + timedelta(days=5)))
-        with mock.patch.object(academy_plan, "_stripe") as stripe:
+    def test_while_it_runs_the_card_starts_the_day_it_ends(self):
+        ends = utcnow().replace(microsecond=0) + timedelta(days=5)
+        self.on_plan("pro", academy_ends_at=iso(ends))
+        with mock.patch.object(academy_plan, "_stripe", return_value={"url": "https://checkout.stripe.test/x"}) as stripe:
             response = self.post("/app/plan/checkout", {"plan": "pro", "interval": "month"})
+            self.assertEqual(response.status_code, 303)
+            fields = stripe.call_args[0][2]
+        self.assertEqual(int(fields["subscription_data[trial_end]"]), int(ends.timestamp()))
+        # Another plan isn't bought that way while it runs.
+        with mock.patch.object(academy_plan, "_stripe") as stripe:
+            response = self.post("/app/plan/checkout", {"plan": "plus", "interval": "month"})
         self.assertEqual(response.status_code, 302)
         stripe.assert_not_called()
 

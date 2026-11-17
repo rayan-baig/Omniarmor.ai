@@ -37,7 +37,7 @@
             <td data-lessons>{{ s.lessons }}</td>
             <td class="ac-wide-only">{{ s.stars }}</td>
             <td class="ac-wide-only ac-nowrap">{{ s.last_day or 'Not yet' }}</td>
-            <td>{% if s.certificate %}<a href="{{ url_for('academy.certificate', learner_id=s.learner.id) }}">Print</a>{% else %}<span class="muted">Not yet</span>{% endif %}</td>
+            <td>{% if s.certificate %}<a href="{{ url_for('classes.certificates', class_id=cls.id) }}">Print</a>{% else %}<span class="muted">Not yet</span>{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>

@@ -16,7 +16,7 @@ from . import academy, academy_plan, armo, classrooms, plans, usage
 from .academy_views import (JOIN_CODE_DAYS, _learner_or_404, _progress, _summary, academy_access,
                             grown_ups_only)
 from .db import get_db, iso, now_iso, record_audit, utcnow
-from .security import clean_text, flash_error, new_device_epoch
+from .security import clean_text, flash_error, new_device_epoch, rate_limited, record_event
 from .tracking import local_date, org_today
 
 bp = Blueprint("classes", __name__)
@@ -54,7 +54,9 @@ def index():
     can_add, why = classrooms.can_add_class(conn, g.org)
     return render_template("academy/classes.html", classes=classrooms.classes(conn, g.org["id"]),
                            limits=plans.class_limits(g.org), access=plans.access(g.org),
-                           facts=classrooms.public_facts(cfg), can_add=can_add, why=why)
+                           facts=classrooms.public_facts(cfg), can_add=can_add, why=why,
+                           pilot_available=classrooms.pilot_available(conn, g.org),
+                           card_from=_card_from(g.org))
 
 
 @bp.route("/app/academy/classes/pilot", methods=["POST"])
@@ -65,7 +67,8 @@ def start_pilot():
     conn = get_db()
     days = current_app.config["CLASSROOM_PILOT_DAYS"]
     if not classrooms.start_pilot(conn, g.org, days):
-        flash_error("This workspace has had its free pilot already. Choose a classroom plan to keep going.")
+        flash_error("This workspace has had its free pilot already (the pilot is one per owner, in any of your"
+                    " locations). Choose a classroom plan to keep going.")
         return _back()
     record_audit(conn, g.org["id"], g.user["id"], "workspace", f"Free classroom pilot started ({days} days)")
     conn.commit()
@@ -88,6 +91,12 @@ def add_class():
     if not allowed:
         flash_error(why)
         return _back()
+    key = f"class-add:{g.org['id']}"
+    if rate_limited([(key, classrooms.CLASSES_PER_HOUR)], timedelta(hours=1)):
+        flash_error(f"Too many classes added in the last hour (up to {classrooms.CLASSES_PER_HOUR}). Please wait a"
+                    " little and try again.")
+        return _back()
+    record_event([key])
     class_id = conn.execute("INSERT INTO classes (org_id, name, created_by, created_at) VALUES (?, ?, ?, ?)",
                             (g.org["id"], name, g.user["id"], now_iso())).lastrowid
     record_audit(conn, g.org["id"], g.user["id"], "workspace", f"Class added: {name}")
@@ -109,10 +118,16 @@ def checkout():
         flash_error("Pick Classroom or Whole school.")
         return _back()
     plan = plans.CLASSROOM_PLANS[key]
-    if academy_plan.subscribed(g.org):
-        flash_error("This workspace already has a plan. Use Manage billing on the plan page to change it.")
-        return _back()
     kind, price, _ = plans.classroom_checkout(cfg, key)
+    trial_end = None
+    if academy_plan.subscribed(g.org):
+        from .plan_views import already_paid
+        refused = already_paid(cfg, g.org, plans.access(g.org), kind)
+        if refused:
+            flash_error(refused)
+            return _back()
+        # The invoiced plan runs on to its end date; the card's first charge is that day.
+        trial_end = academy_plan.first_charge_at(academy_plan.card_after_invoice(g.org))
     if not academy_plan.stripe_ready(cfg, price):
         flash_error(f"{plan.name} can't be paid online yet. Write to {classrooms.invoice_email(cfg)} for an"
                     " invoice.")
@@ -122,12 +137,20 @@ def checkout():
                                         url_for("plan.plan_page", welcome=1, _external=True)
                                         + "&session_id={CHECKOUT_SESSION_ID}",
                                         url_for("classes.index", _external=True),
-                                        price=price, kind=kind, quantity=1, interval=plans.YEAR)
+                                        price=price, kind=kind, quantity=1, interval=plans.YEAR,
+                                        trial_end=trial_end)
     except academy_plan.StripeError as exc:
         current_app.logger.warning("Stripe classroom checkout failed: %s", exc)
         flash_error("We couldn't open checkout just now. Please try again in a minute.")
         return _back()
     return redirect(url, code=303)
+
+
+def _card_from(org):
+    """The day an invoiced classroom plan ends, when its card subscription
+    can be set up now (academy_plan.card_after_invoice), else None."""
+    ends = academy_plan.card_after_invoice(org)
+    return ends if ends is not None and org["plan"] in plans.CLASSROOM_PLANS else None
 
 
 # --- One class ------------------------------------------------------------------------
@@ -284,18 +307,22 @@ def join_codes(class_id):
 @bp.route("/app/academy/classes/<int:class_id>/certificates")
 @grown_ups_only
 def certificates(class_id):
-    """Every certificate the class has earned, one to a printed page, each
-    with the student's first name or nickname."""
+    """Every certificate the class has earned, on every track, one to a
+    printed page, each with the student's first name or nickname. The same
+    certificates the class view counts (classrooms.class_progress): a
+    student who earned one on a track and then changed track keeps it."""
     row = _class_or_404(class_id)
     conn = get_db()
     earned = []
     for kid in classrooms.students(conn, class_id):
-        t = academy.track(kid["track"])
-        progress = _progress(kid["id"], t)
-        summary = _summary(kid, progress)
-        if summary["certificate"]:
-            first = progress[academy.level_id(t, academy.FINAL_WORLD.number, 1)]["completed_at"]
-            earned.append((summary, local_date(first, g.org)))
+        for t in academy.TRACK_LIST:
+            progress = _progress(kid["id"], t)
+            final = progress.get(academy.level_id(t, academy.FINAL_WORLD.number, 1))
+            if final is None or final["best_stars"] < 1:
+                continue
+            summary = _summary(dict(kid, track=t.key), progress)
+            if summary["certificate"]:
+                earned.append((summary, local_date(final["completed_at"], g.org)))
     return render_template("academy/class_certificates.html", cls=row, earned=earned, avatars=academy.AVATARS,
                            today=org_today(g.org))
 

@@ -332,8 +332,9 @@ Before deploying, in Stripe (test mode first, on staging):
    `PLUS_STRIPE_PRICE` and `PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`. Without the
    last one, bundle workspaces are offered Plus at its full price, with a note.
 2. In the customer portal settings, allow switching between the Pro and Plus
-   prices (and cancelling at the end of the period). Changing plan happens
-   there; the webhook reads the new price and moves the workspace.
+   monthly prices (and cancelling at the end of the period): "Stripe's
+   customer portal" below has every setting. The webhook reads the new price
+   and moves the workspace.
 3. Keep the webhook's events as they are (section 8).
 4. Remove `ACADEMY_PRICE_LABEL` and `ACADEMY_STRIPE_PRICE`: nothing reads
    them now. The old Academy plan's subscriptions keep renewing as they are.
@@ -350,8 +351,9 @@ one stop counting (the 7-day grace period covers a short gap).
 By hand, without Stripe: `flask --app wsgi plan <workspace id> pro`, `plus`,
 `classroom`, `school` or `none` (the old `academy-plan <id> active` now means
 Plus); add `--yearly` for a plan paid yearly (classroom plans always are),
-and `--until YYYY-MM-DD` for a plan that stops on that day, such as a school
-year paid by invoice.
+and `--until YYYY-MM-DD` for a plan that stops at the end of that day in the
+workspace's timezone, such as a school year paid by invoice. It refuses over
+a Stripe subscription that is still running unless you add `--force`.
 
 **Upgrading to 1.4.0 (yearly plans):** schema version 19 runs by itself on
 start and marks every subscription already there as monthly. Nothing changes
@@ -376,17 +378,58 @@ with the code. In Stripe (test mode first, on staging):
    `sync: false`) and redeploy. The plan page, Settings, Help, the landing
    and industry pages then show a Monthly / Yearly switch and the yearly
    prices with "2 months free".
-3. In the customer portal settings (Settings → Billing → Customer portal →
-   Subscriptions), add the yearly prices next to the monthly ones in the
-   products customers may switch between, so an owner can move between
-   monthly and yearly there. The webhook reads the new price and sets both
-   the plan and the interval.
+3. **Don't** add the yearly prices to the customer portal's plan switching
+   (changed in 1.6.2): the app's plan page switches a monthly plan to yearly
+   itself, and refuses while the save offer's discount runs. See "Stripe's
+   customer portal" below for the exact portal settings. The webhook reads
+   the price either way and sets both the plan and the interval.
 4. Keep cancellations **at the end of the billing period**, with **no
    proration on cancel**: a yearly plan stays on to the end of the year paid
    for, with no partial refund, which is what the Help page and Terms say.
    For switches, Stripe's default proration (credit for the unused part of
    the old price on the next invoice) is fine.
 5. Keep the webhook's events as they are (section 8).
+
+**Stripe's customer portal (1.6.2):** set it once, in Stripe's dashboard
+(Settings → Billing → Customer portal), the same in test mode and live:
+
+- **Payment methods** and **invoice history**: on.
+- **Cancel subscriptions**: on, **at the end of the billing period**, with
+  **no proration** on cancel (a yearly plan stays on to the end of the year
+  paid for, with no partial refund, as Help and the Terms say).
+- **Pause subscriptions**: off, if your account shows the option. The app
+  pauses a monthly plan itself, for 1, 2 or 3 months.
+- **Switch plans**: on, between **Pro and Plus, monthly prices only**: on
+  the Pro product only `PRO_STRIPE_PRICE`, on the Plus product only
+  `PLUS_STRIPE_PRICE`. Proration on, invoiced at once (the app's own switch
+  does the same, `always_invoice`). Do **not** list:
+  - the **yearly** prices (`PRO_YEARLY_STRIPE_PRICE`,
+    `PLUS_YEARLY_STRIPE_PRICE`, `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`):
+    the plan page switches to yearly itself and refuses while the save
+    offer's discount runs, because Stripe takes that discount off every
+    invoice in its months, a year's charge too;
+  - the **Kitchen Safety Bundle** prices (`PLUS_BUNDLE_UPGRADE_STRIPE_PRICE`
+    and its yearly one): only checkout gives them, to a workspace the bundle
+    covers;
+  - **Classroom** and **Whole school** (`CLASSROOM_YEARLY_STRIPE_PRICE`,
+    `SCHOOL_YEARLY_STRIPE_PRICE`): leave their products out of plan
+    switching altogether. A school changes between them by writing to
+    `SCHOOL_INVOICE_EMAIL`; their subscribers can still update the card,
+    see invoices and cancel in the portal.
+- A yearly subscriber who picks a monthly price there gets Stripe's credit
+  for the unused part of the year on their Stripe balance (credit for later
+  invoices, not money back). If you'd rather not allow that, turn **Switch
+  plans** off altogether: the plan page still switches Pro to Plus and
+  monthly to yearly.
+
+If a switch the app wouldn't allow still arrives (the portal set up
+differently, say, and a monthly plan moved to yearly while the save offer's
+discount ran), the webhook applies the new plan as Stripe has it, and since
+the yearly charge is already made with the discount, nothing in the app can
+take it back. Instead it writes "Switched to yearly in Stripe's portal while
+the save offer's discount ran" in the workspace's audit trail and a warning
+in the log. Settle it in Stripe by hand (an invoice item for the difference,
+or leave it as goodwill).
 
 **Upgrading to 1.5.0 (pause, the save offer, upgrade offers, locations,
 trade pages):** schema version 20 runs by itself on start: it adds the pause
@@ -398,8 +441,9 @@ offers each person was shown. Nothing changes for anyone's plan.
    `pause_collection` (invoices in the pause are voided; Stripe starts
    charging again by itself on the date chosen). The webhook you already
    have (`customer.subscription.updated`) keeps the app in step. Leave
-   pausing **off** in Stripe's customer portal: the app does it, and a pause
-   with no end date from the portal isn't understood by the app.
+   pausing **off** in Stripe's customer portal: the app does it. A pause
+   with no end date (from Stripe's dashboard) is understood since 1.6.2: the
+   workspace is paused, read-only, with no end date, until it is lifted.
 2. **The save offer:** in Stripe, create a coupon, **25% off**, duration
    **repeating**, **2 months** (Products → Coupons), and put its id in
    `SAVE_OFFER_STRIPE_COUPON`. `SAVE_OFFER_PERCENT` (25) and
@@ -453,11 +497,32 @@ tool (Stripe Invoicing works too), and once it's paid, on the server:
     flask --app wsgi plan <workspace id> classroom --until 2027-06-30
 
 (`school` for Whole school). The workspace id is in the operator's Settings
-or the database. The plan stops by itself at the end of that day; run the
-command again with a new date for the next school year. If the school paid
-by card before, cancel that Stripe subscription first: a cancelled one is let
-go when the plan is set by hand (1.6.1), but one still running goes on
-charging, and Stripe's next update would replace the plan set by hand.
+or the database. The plan stops by itself at 23:59:59 that day **in the
+workspace's own timezone** (1.6.2; it was UTC before); run the command again
+with a new date for the next school year. If the school paid by card before,
+cancel that Stripe subscription first: a cancelled one is let go when the
+plan is set by hand (1.6.1), but over one still running (active, trialing,
+past due, unpaid or incomplete) the command refuses and says so, because
+Stripe would go on charging and its next update would replace the plan set
+by hand. `--force` sets it anyway; the same goes for `academy-plan`.
+
+**From invoice to card:** while an invoiced plan runs, the owner sees "Pay
+by card from <its last day>" on the classes page (or the plan page for Pro
+and Plus) for the **same** plan. Checkout then starts the card subscription
+with Stripe's `trial_end` at the invoiced plan's end, so the first charge is
+that day and the school never pays twice (Stripe needs a trial to end at
+least 48 hours ahead: an invoiced plan ending sooner gets up to two free
+days). Another plan isn't bought that way while the invoiced one runs: the
+school writes to `SCHOOL_INVOICE_EMAIL`.
+
+**Upgrading to 1.6.2:** schema version 22 runs by itself on start: it adds
+`orgs.pause_open` (a pause in Stripe with no end date) and
+`users.pilot_used_at` (the classroom pilot is one per owner), filled in from
+the pilots already started. In Stripe, set the customer portal as in
+"Stripe's customer portal" above. Nothing else to do. From now on a location
+added in Settings starts without a free trial (one per owner), at most 100
+classes fit in a workspace, and `plan` refuses over a running Stripe
+subscription unless `--force`.
 
 ## 8. Things only you can do
 

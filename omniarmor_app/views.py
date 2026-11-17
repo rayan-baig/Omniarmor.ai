@@ -9,7 +9,7 @@ from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, 
                    stream_with_context, url_for)
 
 from . import connections, nudges, plans, usage
-from .academy_plan import charges_again, trial_end_for_new_workspace
+from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
@@ -168,6 +168,10 @@ def page_order(state):
 
 def read_only_message(access):
     """Why nothing can be saved, and what still works."""
+    if access["reason"] == "paused" and access["pause_open"]:
+        return ("Your plan is paused, with no end date, so the compliance tracker is read-only. Nothing was saved."
+                " Your records are safe, and saving comes back when the plan starts again (or start it again now"
+                " on the Plans page).")
     if access["reason"] == "paused":
         return (f"Your plan is paused until {local_date(access['resumes_at'], g.org)}, so the compliance tracker is"
                 " read-only. Nothing was saved. Your records are safe, and saving comes back when the plan starts"
@@ -175,6 +179,8 @@ def read_only_message(access):
     why = {"bundle_ended": f"CyberLogix stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
                            " has ended",
            "plan_ended": "Your plan has ended",
+           "new_location": "This location has no plan yet (the free trial is one per owner, and was used in your"
+                           " first location)",
            "academy_only": "Your Classroom plan covers the Academy for your class, not the school checklist"
            }.get(access["reason"], "Your free trial has ended")
     return (f"{why}, so the compliance tracker is read-only. Nothing was saved. Your records are safe: you can"
@@ -459,8 +465,11 @@ def settings_company():
 def add_location():
     """Another location for the same business: a new workspace the owner
     owns, with this one's timezone and industries (both can be changed in
-    its Settings). Each location is billed on its own (plans.location_count),
-    and starts with the free trial, like a new sign-up."""
+    its Settings). Each location is billed on its own (plans.location_count).
+    The free trial is one per owner, used by the workspace they signed up
+    with: a location added later starts without one (its trial ends the
+    moment it is made), so the owner chooses a plan for it. Deleting a
+    location and adding it again doesn't give a new one either."""
     conn = get_db()
     name = clean_text(request.form.get("name"), 120)
     owned = conn.execute("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND role = 'owner'",
@@ -474,8 +483,7 @@ def add_location():
     now = now_iso()
     industries = org_industry_ids(conn, g.org["id"])
     org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends) VALUES (?, ?, ?, ?)",
-                          (name, g.org["timezone"], now,
-                           trial_end_for_new_workspace(current_app.config["ACADEMY_TRIAL_DAYS"]))).lastrowid
+                          (name, g.org["timezone"], now, now)).lastrowid
     conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
                  (g.user["id"], org_id, now))
     conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)", [(org_id, i) for i in industries])
@@ -485,7 +493,8 @@ def add_location():
     usage.count(conn, "locations_added")
     session["org_id"] = org_id
     flash(f"{name} is ready, with the same industries as {g.org['name']}. You're working in it now; switch"
-          " locations in Settings.", "ok")
+          " locations in Settings. It has no free trial (that's one per owner): choose a plan for it on the Plans"
+          " page.", "ok")
     return redirect(url_for("app.overview"))
 
 
@@ -551,11 +560,21 @@ def delete_workspace():
                     " cancelled you can delete right away, even before the paid time runs out.")
         return redirect(url_for("app.settings"))
     member_ids = [r["user_id"] for r in conn.execute("SELECT user_id FROM memberships WHERE org_id = ?", (org_id,))]
+    name = g.org["name"]
     conn.execute("DELETE FROM orgs WHERE id = ?", (org_id,))
     for uid in member_ids:
         conn.execute("DELETE FROM users WHERE id = ? AND NOT EXISTS (SELECT 1 FROM memberships WHERE user_id = ?)",
                      (uid, uid))
     conn.commit()
+    # One location of several: the owner stays signed in, in another of
+    # their locations. Their last one: signed out, as the account is gone.
+    other = conn.execute("SELECT orgs.id, orgs.name FROM memberships JOIN orgs ON orgs.id = memberships.org_id"
+                         " WHERE memberships.user_id = ? ORDER BY memberships.role = 'owner' DESC,"
+                         " memberships.created_at, orgs.id LIMIT 1", (g.user["id"],)).fetchone()
+    if other is not None:
+        session["org_id"] = other["id"]
+        flash(f"{name} and its data were deleted. You're working in {other['name']} now.", "ok")
+        return redirect(url_for("app.overview"))
     session.clear()
     flash("Your workspace and its data were deleted.", "ok")
     return redirect(url_for("public.home"))

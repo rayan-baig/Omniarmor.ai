@@ -8,7 +8,7 @@ that no template types a price.
 
 The plans:
 
-- **Free trial**: every new workspace gets everything in Plus for
+- **Free trial**: every sign-up's workspace gets everything in Plus for
   ACADEMY_TRIAL_DAYS days (the trial length the app already had), from the
   day it signs up. No card.
 - **Pro**: the compliance tracker (checks, reminders, reports, bulk entry,
@@ -49,6 +49,8 @@ free, at its old price, until it changes plan or the subscription ends.
 months) instead of cancelled: Stripe stops charging (pause_collection), the
 workspace is read-only exactly as without a plan (reminders stop, nothing is
 deleted), and it starts again by itself on the date chosen (orgs.paused_until).
+A pause set in Stripe's dashboard with no end date (orgs.pause_open) is the
+same, with no end date, until Stripe resumes it.
 A yearly plan is already paid for the year, so it isn't paused.
 
 **Classroom plans** (classrooms.py). A school or a teacher can run the
@@ -68,9 +70,17 @@ pays for a school year, often by invoice):
 Each has a Stripe price setting for checkout; a school that wants an invoice
 gets the plan set by hand instead (`flask --app wsgi plan <id> classroom
 --until <date>`), the same mechanism as every plan set by hand. A plan set
-by hand with an end date stops on that date.
+by hand with an end date stops at 23:59:59 that day in the workspace's
+timezone. A school on such a plan can set up its card subscription before
+then: its first charge is that day (Stripe's trial_end), so it never pays
+twice (academy_plan.card_after_invoice).
 
-**The classroom pilot.** Once per workspace, a free pilot of PILOT_DAYS
+**The free trial and the pilot are one per owner.** A location added later
+(views.add_location) starts without a trial, and the pilot can be started
+once, in whichever of the owner's locations (users.pilot_used_at, kept when
+that location is deleted).
+
+**The classroom pilot.** Once per owner, a free pilot of PILOT_DAYS
 (the CLASSROOM_PILOT_DAYS setting): one class of up to CLASS_SIZE students and
 the whole Academy, no card. It ends by itself; the classes, their progress
 and the pilot report are kept.
@@ -405,7 +415,9 @@ def access(org, now=None, trial_days=None):
         # hand plan cancelled to its renewal date) is over on that date.
         paid, state = False, "canceled"
     resumes = _parse(_get(org, "paused_until"))
-    paused = paid and resumes is not None and resumes > now
+    # Paused with no end date in Stripe (pause_open): paused until Stripe resumes it.
+    pause_open = bool(_get(org, "pause_open")) and resumes is None
+    paused = paid and (pause_open or (resumes is not None and resumes > now))
     if paid and kind not in KINDS:
         # A paid subscription that never said which plan it is began before
         # Pro and Plus (every checkout since names its plan): the old Academy plan.
@@ -437,6 +449,11 @@ def access(org, now=None, trial_days=None):
         reason = "academy_only"        # Classroom: the Academy for a class, not the tracker
     elif source is None:
         reason = "bundle_ended" if bundle["state"] == "lapsed" else "plan_ended" if kind != "none" else "trial_ended"
+        if reason == "trial_ended" and _get(org, "created_at") and _get(org, "academy_trial_ends") == _get(
+                org, "created_at"):
+            # A location added later: its trial ended the moment it was made
+            # (the trial is one per owner, views.add_location), so no plan yet.
+            reason = "new_location"
     else:
         reason = None
     return {
@@ -455,7 +472,8 @@ def access(org, now=None, trial_days=None):
         "ends_at": _get(org, "academy_ends_at") if paid else None,
         "legacy": paid and kind == "academy",
         "paused": paused,              # paused: no charge, read-only, until resumes_at
-        "resumes_at": resumes if paused else None,
+        "resumes_at": resumes if paused and not pause_open else None,
+        "pause_open": paused and pause_open,   # paused in Stripe with no end date
         "paused_at": _get(org, "paused_at") if paused else None,
         "pilot": in_pilot,             # the free classroom pilot gives the whole Academy
         "pilot_ends": pilot["ends"],
