@@ -3,7 +3,6 @@
 {% from "academy/_certificate.html" import certificate with context %}
 {% block title %}Certificates · {{ cls.name }}{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='certificate-print.css') }}" media="print">
 {% endblock %}
@@ -15,7 +14,7 @@
     {% if earned %}
       <p class="muted">{{ earned|length }} student{{ 's have' if earned|length != 1 else ' has' }} earned one. Use your browser's Print: each certificate prints on its own landscape page.</p>
     {% else %}
-      {{ empty('certificates', 'Certificates will show here, ready to print. A student earns one by finishing the first lesson of every world and passing stage 1 of the Owner\'s Challenge.', url_for('classes.class_page', class_id=cls.id), 'See the class progress') }}
+      {{ empty('certificates', 'Certificates will show here, ready to print. A student earns one by finishing the first lesson of every world and passing the Class Challenge.', url_for('classes.class_page', class_id=cls.id), 'See the class progress') }}
     {% endif %}
   </div>
   <div class="ac-cert-list">

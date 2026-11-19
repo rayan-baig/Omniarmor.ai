@@ -678,8 +678,14 @@ class TestTradePages(AppTestCase):
             self.assertIn(f"<title>{html.escape(t.title, quote=True)} · OmniArmor.ai</title>", page)
             self.assertIn(f'<meta name="description" content="{html.escape(t.description, quote=True)}">', page)
             self.assertIn(f'<link rel="canonical" href="https://omniarmor.test/for/{t.slug}">', page)
-            self.assertIn(plans.PRO.price, text)
-            self.assertIn(plans.PLUS.price, text)
+            if t.academy:
+                # A school's page has the school's prices, not a business's.
+                self.assertNotIn(plans.PRO.price, text)
+                self.assertIn(plans.CLASSROOM.yearly_price, text)
+                self.assertIn(plans.SCHOOL.yearly_price, text)
+            else:
+                self.assertIn(plans.PRO.price, text)
+                self.assertIn(plans.PLUS.price, text)
             self.assertIn("helps you stay on top of your checklists", text)
             self.assertIn("doesn't guarantee compliance and it isn't legal advice", text)
             for industry_id, keys, _ in t.groups:
@@ -687,6 +693,9 @@ class TestTradePages(AppTestCase):
                     rule = find_rule(industry_id, key)
                     self.assertIsNotNone(rule, (t.slug, industry_id, key))
                     self.assertIn(html.escape(rule.title, quote=True), page)
+            if t.academy:
+                self.assertIn("/signup?then=classes", page)
+                continue
             # Sign-up from the page picks its checklists.
             ids = [i for i, _, _ in t.groups]
             self.assertIn("/signup?" + "&amp;".join(f"industry={i}" for i in ids), page)

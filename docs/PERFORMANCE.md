@@ -16,14 +16,14 @@ alone is 150 KB of HTML.
 ## 2. Page weight on the first visit
 
 What the browser downloads from OmniArmor for one page: the HTML and our CSS
-and JavaScript (Google Fonts not counted; they come from Google and are
+and JavaScript (fonts not counted; since 1.9.0 they come from the app itself and are
 cached across sites). "Slow phone" is Chrome's "Slow 3G" setting, 400 kbit/s:
 the time just to download those bytes, before any round trips.
 
 | Page | Before | After | Slow phone before | Slow phone after |
 |---|---|---|---|---|
 | Landing page | 59.9 KB | 14.8 KB | 1.2 s | 0.3 s |
-| HQ (signed in) | 68.5 KB | 16.6 KB | 1.4 s | 0.3 s |
+| Home (signed in) | 68.5 KB | 16.6 KB | 1.4 s | 0.3 s |
 | Academy map | 226.6 KB | 35.9 KB | 4.5 s | 0.7 s |
 | Academy lesson (the game) | 117.6 KB | 26.2 KB | 2.4 s | 0.5 s |
 
@@ -55,9 +55,9 @@ service grows. Timed on a big database (2,000 workspaces, 4,000 people,
 
 | Query | Runs | Before | After |
 |---|---|---|---|
-| Radar (a workspace's emails, and the emails to one person) | each Radar page | 35.5 ms | 0.2 ms |
+| Reminders (a workspace's emails, and the emails to one person) | each Reminders page | 35.5 ms | 0.2 ms |
 | Autopilot: failed emails to send again, and stuck ones | every 10 minutes | 28 ms | 0.02 ms |
-| A workspace's team (memberships by workspace) | HQ, Settings, every digest | 0.20 ms | 0.01 ms |
+| A workspace's team (memberships by workspace) | Home, Settings, every digest | 0.20 ms | 0.01 ms |
 
 **What changed:** three indexes (schema version 24):
 `notifications (user_id, created_at)`, `notifications (status, created_at)`

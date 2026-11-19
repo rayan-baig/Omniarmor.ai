@@ -98,8 +98,8 @@ class TestCompanion(AppTestCase):
         self.assertIn("reminders are off", tips)
 
     def test_armo_explains_each_page(self):
-        for path, words in [("/app", "This is HQ"), ("/app/report", "This is Intel"), ("/app/audit", "This is the Vault"),
-                            ("/app/notifications", "This is Radar"), ("/app/settings", "This is the Armory"),
+        for path, words in [("/app", "This is Home"), ("/app/report", "This is the Report"), ("/app/audit", "This is History"),
+                            ("/app/notifications", "This is Reminders"), ("/app/settings", "This is Settings"),
                             ("/app/industry/1", "Done today")]:
             self.assertIn(words, self.client.get(path).data.decode(), path)
 

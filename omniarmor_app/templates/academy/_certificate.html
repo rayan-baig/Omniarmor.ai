@@ -9,7 +9,7 @@
     <h1 class="ac-cert-title">Certificate of Completion</h1>
     <p class="ac-cert-line">This certifies that</p>
     <p class="ac-cert-name">{{ summary.learner.nickname }}</p>
-    <p class="ac-cert-line">finished the first lesson of every {{ summary.track.name }} world and passed the Owner's Challenge, with {{ "{:,}".format(summary.done) }} lesson{{ 's' if summary.done != 1 }} done in all, and is a</p>
+    <p class="ac-cert-line">finished the first lesson of every {{ summary.track.name }} world and passed the {{ "Owner's Challenge" if summary.track.rule_quests else 'Class Challenge' }}, with {{ "{:,}".format(summary.done) }} lesson{{ 's' if summary.done != 1 }} done in all, and is a</p>
     <p class="ac-cert-rank">{{ summary.certificate }}</p>
     <p class="ac-cert-meta">{{ cls.name }} · {{ g.org.name }} · {{ summary.stars }} stars earned · First earned {{ earned }}</p>
     {% else %}

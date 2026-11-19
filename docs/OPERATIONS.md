@@ -150,7 +150,7 @@ with Docker Compose, the Shell tab on Render, or a shell on any other host.
    `/readyz` too within a few minutes (`flask --app wsgi ready` says why if
    not). Sign in
    (passwords and sessions are as they were at the backup). Open an industry
-   page and see its readings, the Vault (the audit trail ends at the backup's
+   page and see its readings, History (the audit trail ends at the backup's
    time), and the Academy with each learner's progress.
 6. **Tell the customers (2 min)** what was lost: every change made after the
    backup's time has to be entered again. Reminders already sent are not
@@ -364,7 +364,7 @@ Docker image marks itself unhealthy the same way (`HEALTHCHECK`, shown by
 For screenshots and sales calls, one command makes a believable workspace
 with made-up names: Juniper Lane Pharmacy, tracking Pharmacies and Employers
 & HR, with an owner and a pharmacist on the team, checks done, coming due and
-overdue, a few weeks of audit trail, the morning's reminder digest in Radar
+overdue, a few weeks of audit trail, the morning's reminder digest under Reminders
 (kept, never sent), an Academy with two learners partway through (one with a
 certificate) on the Academy plan, and Autopilot's history with one real pass
 run at the end (which makes the first backup, in a folder of its own beside
@@ -562,7 +562,7 @@ offers each person was shown. Nothing changes for anyone's plan.
 4. **Cancelling** from the app cancels at the end of the period paid for,
    like the portal; the portal's own cancel button keeps working.
 5. The daily job emails each owner 3 days before a pause ends (kind `plan`
-   in Radar) and tidies ended pauses. The operator's Settings shows the new
+   under Reminders) and tidies ended pauses. The operator's Settings shows the new
    usage counts: plans paused, save offers taken, plans cancelled, upgrade
    offers shown, plan switches and locations added.
 
@@ -628,6 +628,16 @@ added in Settings starts without a free trial (one per owner), at most 100
 classes fit in a workspace, and `plan` refuses over a running Stripe
 subscription unless `--force`.
 
+**Upgrading to 1.9.0 (made for a classroom):** schema version 25 runs by
+itself on start. It adds `orgs.kind` and marks as schools the workspaces
+that use the classroom plans, the pilot or classes and track only the school
+checklists; and it moves the students already in a class to the Classroom
+track (what they finished still counts in the class view and the pilot
+report). Nothing to set: the fonts now come from the app's own
+`static/fonts`, and the security policy no longer allows Google's. Set
+`SUPPORT_EMAIL` if help mail should go somewhere other than
+help@mtrxhorizyn.com, which every "Contact us" uses when it is empty.
+
 **Upgrading to 1.8.0 (fast and solid):** schema version 24 runs by itself
 on start: it adds the timers' "last ran at" table and three indexes (a
 second or two on a big database). Then:
@@ -644,7 +654,7 @@ second or two on a big database). Then:
    leaves them as they are.
 
 **Upgrading to 1.7.0:** schema version 23 runs by itself on start: it adds
-`users.reminders_chosen_at` (the last step of HQ's getting-started list),
+`users.reminders_chosen_at` (the last step of Home's getting-started list),
 filled in for the accounts already there. The demos (`/demo/business` and
 `/demo/classroom`) need nothing set up: each server process builds them in
 memory, they never touch the database beyond noting each demo opened (for

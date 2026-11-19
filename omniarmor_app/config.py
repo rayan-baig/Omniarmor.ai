@@ -13,6 +13,16 @@ def _flag(name, default):
     return value.strip().lower() in ("1", "true", "yes", "on")
 
 
+# Where people write for help when SUPPORT_EMAIL isn't set: MTRX Horizyn's
+# help address, so no page ever ends without a way to reach a person.
+DEFAULT_SUPPORT_EMAIL = "help@mtrxhorizyn.com"
+
+
+def support_email(cfg):
+    """The address pages give for help and for "contact us"."""
+    return (cfg.get("SUPPORT_EMAIL") or "").strip() or DEFAULT_SUPPORT_EMAIL
+
+
 class SettingsError(RuntimeError):
     """A setting is missing or wrong. The message says which and what to do,
     in plain words: it is what the server log shows when the app won't start."""

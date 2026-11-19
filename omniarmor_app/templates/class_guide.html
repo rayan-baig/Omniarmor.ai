@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{# The teacher guide for the Classroom track (academy.class_guide), in plain words, to read or print. #}
+{% block title %}Teacher guide{% endblock %}
+{% block description %}The Future Owner Academy's Classroom track for teachers: what each of its {{ facts.class_worlds }} worlds teaches, how long it takes, and questions to talk about with the class.{% endblock %}
+{% block content %}
+<div class="narrow guide" data-teacher-guide>
+  <p class="eyebrow">Future Owner Academy · for teachers</p>
+  <h1>Teacher guide</h1>
+  <p class="sub">The Classroom track: {{ facts.class_worlds }} worlds and {{ facts.class_lessons }} lessons in all.</p>
+
+  <h2>How it works</h2>
+  <ul>
+    <li>Your class runs a pretend business: a lemonade stand called {{ facts.class_business }}. The lessons use it for every example.</li>
+    <li>A lesson is {{ facts.lesson_questions }} questions and takes about {{ facts.lesson_minutes }} minutes. A student needs most of them right to unlock the next lesson. A retry asks the same questions in a new order.</li>
+    <li>No question comes back in a later lesson of the same world, so a world has only as many lessons as it has questions for.</li>
+    <li>The first lesson of each world opens the next world. After the first lesson of every world comes the Class Challenge: {{ facts.track.final_questions }} questions from the whole track. Passing it earns a certificate you can print from the class page.</li>
+    <li>Students missed a question? It comes back in "Practice my mistakes" a day, three days and a week later.</li>
+  </ul>
+
+  <h2>The worlds, in order</h2>
+  <ol class="guide-worlds">
+    {% for item in guide %}
+      <li data-guide-world="{{ item.world.key }}">
+        <h3>{{ item.world.title }}</h3>
+        <p class="meta">{{ item.lessons }} lesson{{ 's' if item.lessons != 1 }} · about {{ item.minutes }} minutes{% if item.unit %} · {{ item.unit }}{% endif %}</p>
+        <p>{{ item.teaches }}</p>
+        <p class="guide-talk"><strong>Talk about it:</strong></p>
+        <ul>{% for q in item.talk %}<li>{{ q }}</li>{% endfor %}</ul>
+      </li>
+    {% endfor %}
+    <li data-guide-world="final">
+      <h3>The Class Challenge</h3>
+      <p class="meta">1 test · about {{ facts.lesson_minutes * 2 }} minutes</p>
+      <p>{{ facts.track.final_questions }} questions from across the track. Passing it earns the certificate.</p>
+    </li>
+  </ol>
+
+  <h2>Tips</h2>
+  <ul>
+    <li>One world a week works well: a lesson or two in class, a short talk using the questions above, and the rest as practice.</li>
+    <li>The class leaderboard shows first names and lessons done for your class only. Switch it off on the class page if you prefer.</li>
+    <li>Students only pick answers: nothing they type is shown to anyone.</li>
+  </ul>
+  <p class="no-print mt"><a class="btn quiet" href="{{ url_for('public.academy_schools') }}">The Academy for schools</a></p>
+</div>
+{% endblock %}

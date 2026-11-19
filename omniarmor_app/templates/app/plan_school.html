@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{# The plan page for a school's workspace (plan_views._school_plan_page): the free class pilot and the classroom plans only. Every price comes from plans.py through classrooms.public_facts(). #}
+{% block title %}Plans{% endblock %}
+{% block content %}
+{% set a = access %}
+{% set pilot = limits.pilot %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · Classroom plans</p>
+    <h1>{% if a.classroom or (a.paid and a.kind == 'school') %}You're on {{ a.plan_name }}{% elif limits.source == 'pilot' %}Your free class pilot is on{% elif pilot.state == 'ended' %}Your free class pilot has ended{% else %}Choose a classroom plan{% endif %}</h1>
+    <p class="sub" data-plan-line>
+      {%- if a.paused -%}{{ a.plan_name }} is paused: no charges, and everything is kept.
+      {%- elif a.paid and a.kind in ('classroom', 'school') -%}{{ a.plan_name }}, paid yearly{% if a.ends_at %}, ends {{ a.ends_at|local_date }}{% elif a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}.
+      {%- elif limits.source == 'pilot' -%}Free class pilot: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}.
+      {%- elif pilot.state == 'ended' -%}It ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the pilot report are kept.
+      {%- else -%}Try the Academy free with your class for {{ facts.pilot_days }} days, no card needed.
+      {%- endif -%}
+    </p>
+  </div>
+</div>
+
+<p class="muted">The free class pilot is {{ facts.pilot_days }} days: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and every lesson of the Classroom track, with no card. When it ends, your classes, their progress and the pilot report are kept, and the first worlds stay open.</p>
+
+{% if pilot.state == 'none' and not limits.active and pilot_available and g.role == 'owner' %}
+  <section class="offer-card mt" data-pilot-offer>
+    <h2>Start the free {{ facts.pilot_days }}-day pilot</h2>
+    <p>One class of up to {{ facts.class_size }} students. No card needed.</p>
+    <form method="post" action="{{ url_for('classes.start_pilot') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Start the free pilot</button>
+    </form>
+  </section>
+{% endif %}
+
+<div class="plan-grid mt" data-classroom-plans>
+  {% for p in facts.plans %}
+    {% set mine = a.paid and a.kind == p.key %}
+    <section class="plan-card{% if mine %} current{% endif %}" data-plan="{{ p.key }}">
+      {% if mine %}<span class="plan-here">Your plan</span>{% endif %}
+      <h2>{{ p.name }}</h2>
+      <p class="plan-price" data-price>{{ p.yearly_price }}</p>
+      <ul>
+        {% if p.key == 'classroom' %}
+          <li>The whole Classroom track for one class of up to {{ facts.class_size }} students</li>
+          <li>The class progress view, join codes, certificates and the class report</li>
+          <li>For a teacher or a club</li>
+        {% else %}
+          <li>The whole Classroom track for every class, up to {{ facts.class_size }} students each</li>
+          <li>The school safety checklist, with reminder emails before each check is due</li>
+          <li>For the whole school</li>
+        {% endif %}
+      </ul>
+      {% if g.role == 'owner' and not a.subscribed %}
+        {% if confirming %}
+          <p class="hint">Thank you! We're confirming your payment with Stripe. It usually takes a few seconds: <a href="{{ url_for('plan.plan_page', welcome=1) }}">reload this page</a>. There's no need to pay again.</p>
+        {% elif facts.online[p.key] %}
+          <form method="post" action="{{ url_for('classes.checkout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan" value="{{ p.key }}">
+            <button class="btn{% if p.key != 'classroom' %} quiet{% endif %}" type="submit">Pay for {{ p.name }} by card</button>
+          </form>
+        {% else %}
+          <p class="hint" data-contact>Paying online isn't set up yet. <a href="mailto:{{ facts.invoice_email }}?subject={{ (p.name ~ ' for ' ~ g.org.name)|urlencode }}">Contact us</a> at {{ facts.invoice_email }} and we'll send an invoice.</p>
+        {% endif %}
+      {% elif g.role == 'owner' and card_from and a.kind == p.key and facts.online[p.key] %}
+        <form method="post" action="{{ url_for('classes.checkout') }}" data-card-from>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="plan" value="{{ p.key }}">
+          <button class="btn quiet" type="submit">Pay by card from {{ card_from.isoformat()|local_date }}</button>
+        </form>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+<p class="hint" data-invoice>Paid once a year. Does your school want an invoice? Write to <a href="mailto:{{ facts.invoice_email }}">{{ facts.invoice_email }}</a> with the school's name, the plan and this workspace's name, {{ g.org.name }}. We send the invoice and turn the plan on for the school year.</p>
+
+{% if g.role == 'owner' %}
+  {% if a.paid %}
+    <p class="mt" data-cancel-link><a href="{{ url_for('plan.cancel_page') }}">{{ 'Cancel your plan' if not a.ends_at else 'Your cancellation' }}</a></p>
+  {% endif %}
+  {% if a.paid and has_customer %}
+    <form method="post" action="{{ url_for('plan.manage') }}" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn quiet" type="submit">Manage billing</button>
+      <span class="hint">Update your card, see invoices or cancel, on Stripe's secure page.</span>
+    </form>
+  {% endif %}
+{% else %}
+  <p class="hint mt">Only the workspace owner can change the plan.</p>
+{% endif %}
+<p class="hint mt">Questions? Write to <a href="mailto:{{ support }}">{{ support }}</a>, or see the <a href="{{ url_for('public.class_guide') }}">teacher guide</a>.</p>
+{% endblock %}

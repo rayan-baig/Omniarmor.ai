@@ -8,7 +8,6 @@
   document.addEventListener("DOMContentLoaded", function () {
     var story = document.querySelector("[data-story]");
     var quiz = document.querySelector("[data-quiz]");
-    countUp();
     if (!quiz) return;
 
     // --- Lesson cards, one at a time ---------------------------------------
@@ -205,23 +204,6 @@
     }
     label.appendChild(spray);
     setTimeout(function () { spray.remove(); }, 900);
-  }
-
-  // Scores on the results page count up from zero.
-  function countUp() {
-    Array.prototype.forEach.call(document.querySelectorAll("[data-countup]"), function (el) {
-      var target = parseInt(el.textContent, 10);
-      if (!(target > 0) || reduceMotion()) return;
-      var start = null;
-      var step = function (now) {
-        if (start === null) start = now;
-        var t = Math.min(1, (now - start) / 700);
-        el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
-        if (t < 1) window.requestAnimationFrame(step);
-      };
-      el.textContent = "0";
-      window.requestAnimationFrame(step);
-    });
   }
 
   function button(text, className) {

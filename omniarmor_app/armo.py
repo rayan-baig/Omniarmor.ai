@@ -72,7 +72,7 @@ def live_issues(conn, org):
     if failed:
         soon.insert(0, {"level": "soon", "kind": "email", "title": f"{_plural(failed, 'email')} failed to send this week",
                         "where": "Reminders", "detail": "Someone on your team may have missed a reminder.",
-                        "action": "Open Radar to see the error, then check your email settings.", "cost": "",
+                        "action": "Open Reminders to see the error, then check your email settings.", "cost": "",
                         "url": url_for("app.notifications")})
 
     missing = [s for s in states if s.level == "NONE"]
@@ -100,13 +100,13 @@ def summary(conn, org):
 
 # What each page is for, so Armo can explain wherever you are.
 PAGE_HELP = {
-    "app.overview": "This is HQ. Anything blocked or close to a limit is listed first. Click a check to fix it.",
+    "app.overview": "This is Home. Anything blocked or close to a limit is listed first. Click a check to fix it.",
     "app.industry": "Enter each check's date or reading once and I'll track it. When a recurring task is done, "
                     "press Done today and I'll restart the countdown.",
-    "app.report": "This is Intel, your compliance report. Print it, or export the CSV for an inspector, auditor or insurer.",
-    "app.audit": "This is the Vault. It records every change: what changed, who changed it and when.",
-    "app.notifications": "This is Radar. It lists every reminder email I've sent or saved, and why any failed.",
-    "app.settings": "This is the Armory. Invite your team, choose your industries, set your timezone "
+    "app.report": "This is the Report, your compliance report. Print it, or export the CSV for an inspector, auditor or insurer.",
+    "app.audit": "This is History. It records every change: what changed, who changed it and when.",
+    "app.notifications": "This is Reminders. It lists every reminder email I've sent or saved, and why any failed.",
+    "app.settings": "This is Settings. Invite your team, choose your industries, set your timezone "
                     "and turn email reminders on or off.",
 }
 
@@ -129,13 +129,13 @@ def tips(conn, org, user, state, mail_ready):
                               "and I'll track it from then on.", "url": missing[0]["url"]})
     members = conn.execute("SELECT COUNT(*) FROM memberships WHERE org_id = ?", (org["id"],)).fetchone()[0]
     if members == 1:
-        found.append({"text": "You're the only one here. Invite your team in the Armory so reminders reach everyone.",
+        found.append({"text": "You're the only one here. Invite your team in Settings so reminders reach everyone.",
                       "url": url_for("app.settings")})
     if not user["email_reminders"] and not user["email_alerts"]:
-        found.append({"text": "Your email reminders are off. Turn them on in the Armory so a deadline never "
+        found.append({"text": "Your email reminders are off. Turn them on in Settings so a deadline never "
                               "sneaks up on you.", "url": url_for("app.settings", _anchor="reminders")})
     if not mail_ready:
-        found.append({"text": "Email isn't set up yet, so reminders are saved in Radar instead of sent.",
+        found.append({"text": "Email isn't set up yet, so reminders are saved in Reminders instead of sent.",
                       "url": url_for("app.notifications")})
     learners = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (org["id"],)).fetchone()[0]
     if not learners:
@@ -143,7 +143,7 @@ def tips(conn, org, user, state, mail_ready):
         found.append({"text": "Got future owners at home? The Academy teaches kids the business in "
                               f"{TOTAL_LEVELS:,} game levels.",
                       "url": url_for("academy.home")})
-    found.append({"text": "Need proof for an inspector? Intel prints a full compliance report.",
+    found.append({"text": "Need proof for an inspector? The Report prints a full compliance report.",
                   "url": url_for("app.report")})
-    found.append({"text": "Every change is saved in the Vault, with who made it and when.", "url": url_for("app.audit")})
+    found.append({"text": "Every change is saved in History, with who made it and when.", "url": url_for("app.audit")})
     return found

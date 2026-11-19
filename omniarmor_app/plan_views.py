@@ -11,6 +11,7 @@ from flask import Blueprint, abort, current_app, flash, g, jsonify, redirect, re
 
 from . import academy, academy_plan, plans, usage
 from .academy_views import grown_ups_only
+from .config import support_email
 from .db import get_db, iso, record_audit, utcnow
 from .security import flash_error, owner_required
 from .tracking import local_date
@@ -67,6 +68,7 @@ def plan_facts(cfg):
         "classroom_plans": list(plans.CLASSROOM_PLANS.values()),
         "class_size": plans.CLASS_SIZE,
         "pilot_days": cfg["CLASSROOM_PILOT_DAYS"],
+        "support_email": support_email(cfg),
     }
 
 
@@ -90,12 +92,22 @@ def plan_page():
     if welcome and access["paid"]:
         flash(f"Thank you! {access['plan_name']} is on for {g.org['name']}.", "ok")
         return redirect(url_for("plan.plan_page"))
+    from .classrooms import is_class_workspace
+    if is_class_workspace(g.org):
+        return _school_plan_page(access, welcome)
     facts = plan_facts(cfg)
     offers = _offers(cfg, g.org)
     # The yearly toggle shows when any plan this workspace can buy is offered
     # yearly; ?billing=yearly opens the page with it on.
     yearly_toggle = any(o[plans.YEAR]["offered"] for o in offers.values())
+    from .connections import TEMPERATURE_CHECKS
+    from .tracking import org_industry_ids
+    # The Kitchen Safety Bundle only for a workspace it can help (one CyberLogix
+    # fills in a check for) or one already on it.
+    ids = set(org_industry_ids(get_db(), g.org["id"]))
+    show_bundle = access["bundle"]["state"] != "none" or any(i in ids for i, _ in TEMPERATURE_CHECKS)
     return render_template("app/plan.html", access=access, confirming=welcome, facts=facts, offers=offers,
+                           show_bundle=show_bundle,
                            ready={key: o[plans.MONTH]["ready"] for key, o in offers.items()},
                            yearly_toggle=yearly_toggle,
                            start_yearly=yearly_toggle and (request.args.get("billing") == "yearly"
@@ -105,6 +117,20 @@ def plan_page():
                                       if access["kind"] in plans.PLANS else None),
                            switch_yearly=switch_offer(cfg, g.org, access, plans.YEAR),
                            switch_plus=switch_offer(cfg, g.org, access, plans.MONTH, to_plus=True))
+
+
+def _school_plan_page(access, confirming):
+    """The plan page for a school's workspace: the free class pilot, and the
+    two classroom plans, Classroom and Whole school, and nothing for a
+    business (no Pro, Plus or Kitchen Safety Bundle)."""
+    from . import classrooms
+    from .classroom_views import _card_from
+    cfg = current_app.config
+    conn = get_db()
+    return render_template("app/plan_school.html", access=access, limits=plans.class_limits(g.org),
+                           facts=classrooms.public_facts(cfg), support=support_email(cfg),
+                           pilot_available=classrooms.pilot_available(conn, g.org), card_from=_card_from(g.org),
+                           has_customer=bool(g.org["stripe_customer_id"]), confirming=confirming)
 
 
 def switch_offer(cfg, org, access, interval, to_plus=False):

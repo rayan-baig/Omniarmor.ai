@@ -35,9 +35,23 @@ CLASSES_PER_HOUR = 20       # classes one workspace can add in an hour
 _LOOKS_LIKE_EMAIL = re.compile(r"@|\.(com|org|net|edu)\b", re.I)
 
 
+SCHOOL_KIND = "school"     # orgs.kind for a school's workspace (a teacher's)
+
+
+def is_class_workspace(org):
+    """Whether this is a school's workspace, made for running the Academy in
+    classes (orgs.kind, set by the teacher sign-up): its menus, plan page and
+    lessons are a classroom's, not a business's."""
+    try:
+        return org is not None and org["kind"] == SCHOOL_KIND
+    except (KeyError, IndexError):
+        return False
+
+
 def invoice_email(cfg):
     """Where a school writes to pay by invoice."""
-    return cfg.get("SCHOOL_INVOICE_EMAIL") or cfg.get("SUPPORT_EMAIL") or "help@mtrxhorizyn.com"
+    from .config import support_email
+    return cfg.get("SCHOOL_INVOICE_EMAIL") or support_email(cfg)
 
 
 def public_facts(cfg):
@@ -56,10 +70,14 @@ def public_facts(cfg):
         "online": {key: bool(cfg.get(p.price_setting) and cfg.get("STRIPE_SECRET_KEY"))
                    for key, p in plans.CLASSROOM_PLANS.items()},
         "invoice_email": invoice_email(cfg),
-        "tracks": academy.TRACK_LIST,
-        "topic_worlds": len(academy.TOPIC_WORLDS),
-        "fewest_levels": min(t.total for t in academy.TRACK_LIST),
-        "first_lessons": len(academy.TRACKS[academy.DEFAULT_TRACK].topics),
+        # The Classroom track, which every student in a class learns on.
+        "track": academy.CLASSROOM,
+        "class_worlds": len(academy.CLASSROOM.topics),
+        "class_lessons": academy.CLASSROOM.total,
+        "lesson_questions": academy.LESSON_QUESTIONS,
+        "lesson_minutes": academy.LESSON_MINUTES,
+        "class_business": academy.CLASS_BUSINESS,
+        "first_lessons": len(academy.CLASSROOM.topics),
         "school_industry": SCHOOL_INDUSTRY,
     }
 
@@ -83,6 +101,40 @@ def parse_names(text):
     list of (name or None, what was typed), empty lines left out."""
     parts = re.split(r"[\n,;]", text or "")
     return [(clean_student_name(p), p.strip()) for p in parts if p.strip()]
+
+
+def why_not_a_name(typed):
+    """Why clean_student_name refused what was typed, in plain words."""
+    value = re.sub(r"\s+", " ", (typed or "").strip())
+    if _LOOKS_LIKE_EMAIL.search(value):
+        return "looks like an email address: first names or nicknames only"
+    if len(value) > MAX_NAME:
+        return f"is longer than {MAX_NAME} characters: try a shorter name or nickname"
+    return "has characters that can't be used in a name"
+
+
+def sort_names(parsed, taken, room):
+    """Which of the names a teacher typed (parse_names) can be added to a
+    class that already has the names in `taken` (lowercase) and room for
+    `room` more: (names to add, [(what was typed, why it wasn't added)]).
+    One name that can't be added never stops the others."""
+    added, rejected, seen = [], [], set()
+    for name, typed in parsed:
+        if name is None:
+            rejected.append((typed, why_not_a_name(typed)))
+            continue
+        key = name.lower()
+        if key in taken:
+            rejected.append((typed, f"is already in this class: add a last initial to tell them apart, like"
+                                    f" {name} B"))
+        elif key in seen:
+            rejected.append((typed, f"was typed twice: add a last initial to tell them apart, like {name} B"))
+        elif len(added) >= room:
+            rejected.append((typed, "didn't fit: the class is full"))
+        else:
+            seen.add(key)
+            added.append(name)
+    return added, rejected
 
 
 # --- Reading classes -------------------------------------------------------------------
@@ -119,7 +171,8 @@ def getting_started(conn, org, limits, class_rows):
     first = class_rows[0] if class_rows else None
     can_pilot = pilot_available(conn, org)
     items = [
-        {"key": "pilot", "label": "Start the free pilot" if can_pilot else "Choose a classroom plan",
+        {"key": "pilot", "label": ("Start the free pilot" if can_pilot or limits["pilot"]["state"] != "none"
+                                   else "Choose a classroom plan"),
          "done": bool(limits["active"] or limits["pilot"]["state"] != "none"),
          "anchor": "#pilot" if can_pilot else "#plans"},
         {"key": "class", "label": "Create a class", "done": first is not None, "anchor": "#add-class"},
@@ -159,7 +212,7 @@ def _world_of(level):
 def _has_certificate(rows_for_learner):
     """Whether a student has a certificate on any track: passed stage 1 of
     the Owner's Challenge (academy.certificate_for)."""
-    for t in academy.TRACK_LIST:
+    for t in academy.ALL_TRACKS:
         if any(r["level"] == academy.level_id(t, academy.FINAL_WORLD.number, 1) for r in rows_for_learner):
             return True
     return False

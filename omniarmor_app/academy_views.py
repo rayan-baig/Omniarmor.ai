@@ -27,8 +27,8 @@ from .tracking import local_date, org_industry_ids, org_today
 
 bp = Blueprint("academy", __name__, url_prefix="/app/academy")
 kids = Blueprint("kids", __name__, url_prefix="/kids")
-FONT_URL = "https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap"
 JOIN_CODE_DAYS = 7
+FAMILY_TRACKS = {t.key for t in academy.TRACK_LIST}   # the tracks a family's learner can pick
 DAILY_GOAL = 3          # levels a day for the daily goal
 PRACTICE_SIZE = 8       # mistakes per practice round
 REVIEW_DAYS = [1, 3, 7]  # spaced repetition: days until a fixed mistake comes back
@@ -95,6 +95,12 @@ def _learner_or_404(learner_id):
 
 
 def _track(learner):
+    """The learner's track. Students in a class are always on the Classroom
+    track; a family's learners on the one they picked."""
+    if learner["class_id"] is not None:
+        return academy.CLASSROOM
+    if learner["track"] not in FAMILY_TRACKS:
+        return academy.TRACKS[academy.DEFAULT_TRACK]
     return academy.track(learner["track"])
 
 
@@ -126,8 +132,10 @@ def _today_levels(learner_id, today):
     return row["levels"] if row else 0
 
 
-def _summary(learner, progress=None):
-    t = _track(learner)
+def _summary(learner, progress=None, t=None):
+    """A learner's totals on their track (or on track t: a certificate earned
+    on an earlier track)."""
+    t = t or _track(learner)
     progress = _progress(learner["id"], t) if progress is None else progress
     passed = _passed(progress)
     final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
@@ -149,7 +157,7 @@ def _summary(learner, progress=None):
 
 
 def _world_or_404(number, t):
-    w = academy.world(number)
+    w = academy.world_for(t, number)
     if w is None or not t.has(w):
         abort(404)
     return w
@@ -243,7 +251,7 @@ def _log_day(conn, learner_id):
 
 @bp.app_context_processor
 def academy_context():
-    return {"academy_font": FONT_URL, "academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES,
+    return {"academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES,
             "free_world_count": len(academy_plan.FREE_WORLDS),
             "free_track_name": academy.TRACKS[academy_plan.FREE_TRACK].name,
             "rule_quest_count": len(academy.INDUSTRY_WORLDS)}
@@ -254,6 +262,11 @@ def academy_context():
 @bp.route("")
 @grown_ups_only
 def home():
+    from .classrooms import is_class_workspace
+    if is_class_workspace(g.org):
+        # A school's Academy is its classes: students learn in a class, with
+        # the Classroom track, not as a family's own learners.
+        return redirect(url_for("classes.index"))
     conn = get_db()
     learners = conn.execute("SELECT * FROM learners WHERE org_id = ? AND class_id IS NULL ORDER BY created_at, id",
                             (g.org["id"],)).fetchall()
@@ -320,7 +333,7 @@ def add_learner():
         flash_error("Pick a picture.")
     elif buddy not in armo.PERSONALITIES:
         flash_error("Pick an Armo for your learner.")
-    elif track_key not in academy.TRACKS:
+    elif track_key not in FAMILY_TRACKS:
         flash_error("Pick a track.")
     elif count >= academy.MAX_LEARNERS:
         flash_error(f"A workspace can have up to {academy.MAX_LEARNERS} learners.")
@@ -362,9 +375,14 @@ def change_armo(learner_id):
 @academy_access
 def choose_track(learner_id):
     learner = _learner_or_404(learner_id)
+    if learner["class_id"] is not None:
+        # Students in a class all learn on the Classroom track, made for a class.
+        if request.method == "POST":
+            flash_error("Students in a class learn on the Classroom track.")
+        return redirect(url_for("academy.level_map", learner_id=learner_id))
     if request.method == "POST":
         key = request.form.get("track", "")
-        if key not in academy.TRACKS:
+        if key not in FAMILY_TRACKS:
             flash_error("Pick a track.")
             return redirect(url_for("academy.choose_track", learner_id=learner_id))
         conn = get_db()
@@ -411,8 +429,9 @@ def level_map(learner_id):
         if cards:
             units.append({"key": key, "name": name, "cards": cards,
                           "done": sum(c["done"] for c in cards), "stages": sum(c["stages"] for c in cards)})
-    final = _world_card(t, academy.FINAL_WORLD, progress, passed)
-    industry_cards = [_world_card(t, w, progress, passed) for w in academy.INDUSTRY_WORLDS]
+    final = _world_card(t, academy.world_for(t, academy.FINAL_WORLD.number), progress, passed)
+    # The Classroom track has no industry Rule Quests.
+    industry_cards = [_world_card(t, w, progress, passed) for w in academy.INDUSTRY_WORLDS] if t.rule_quests else []
     mine = [c for c in industry_cards if c["world"].industry_id in family]
     explore = [c for c in industry_cards if c["world"].industry_id not in family]
     up_next = next((c for c in topics + [final] + mine if c["next"] and not c["paid"]), None)
@@ -534,8 +553,7 @@ def play(learner_id, world_number, stage):
     if not academy.unlocked(t, w, stage, _passed(progress)):
         flash_error("Finish the stage before this one to unlock it.")
         return redirect(url_for("academy.world_page", learner_id=learner_id, world_number=world_number))
-    company = g.org["name"]
-    industry_ids = org_industry_ids(get_db(), g.org["id"])
+    company, industry_ids = _lesson_company(t)
     lid = academy.level_id(t, world_number, stage)
     row = progress.get(lid)
     attempt = (row["attempts"] if row else 0) + 1
@@ -591,6 +609,15 @@ def play(learner_id, world_number, stage):
         goal_hit=before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
         missed=sum(1 for r in results if not r["right"]),
     )
+
+
+def _lesson_company(t):
+    """Whose business the lessons are about: the family's company and its
+    industries, or, on the Classroom track, the class's pretend lemonade stand
+    (never the school, and never "your family's company")."""
+    if t.key == academy.CLASSROOM_KEY:
+        return academy.CLASS_BUSINESS, []
+    return g.org["name"], org_industry_ids(get_db(), g.org["id"])
 
 
 # --- Practice my mistakes (spaced repetition) ---------------------------------------
@@ -685,7 +712,7 @@ PROGRESS_ROWS = 60      # the most recent lessons the progress page lists
 def _level_parts(level):
     """A stored level id back into (track, world, stage), or None if it no longer exists."""
     index, rest = divmod(level, 1_000_000)
-    t = next((t for t in academy.TRACK_LIST if t.index == index), None)
+    t = next((t for t in academy.ALL_TRACKS if t.index == index), None)
     w = academy.world(rest // 1000)
     if t is None or w is None or not t.has(w) or not 1 <= rest % 1000 <= t.stages(w):
         return None
@@ -702,7 +729,7 @@ def progress_report(learner_id):
     rows = get_db().execute("SELECT * FROM learner_progress WHERE learner_id = ?"
                             " ORDER BY completed_at IS NULL, completed_at DESC, level DESC", (learner_id,)).fetchall()
     tracks, lessons = [], []
-    for t in academy.TRACK_LIST:
+    for t in academy.ALL_TRACKS:
         progress = {r["level"]: r for r in rows if r["level"] // 1_000_000 == t.index}
         if not progress and t.key != learner["track"]:
             continue

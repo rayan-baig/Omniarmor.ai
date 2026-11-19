@@ -26,7 +26,8 @@ def words(page):
 class TestPlanPage(AppTestCase):
     def setUp(self):
         super().setUp()
-        self.signup()
+        # A restaurant among its industries: the Kitchen Safety Bundle is for it.
+        self.signup(industries=(1, 2))
 
     def page(self):
         response = self.client.get("/app/plan")
@@ -57,6 +58,13 @@ class TestPlanPage(AppTestCase):
         expected += [f"{t.name} ({'{:,}'.format(t.total)} levels)" for t in academy.TRACK_LIST]
         for fact in expected:
             self.assertIn(fact, text)
+
+    def test_the_bundle_only_where_cyberlogix_can_help(self):
+        other = self.app.test_client()
+        self.signup(email="logistics@example.com", industries=(1, 18), client=other)
+        page = words(other.get("/app/plan").data.decode())
+        self.assertNotIn(plans.BUNDLE_NAME, page)
+        self.assertIn(plans.BUNDLE_NAME, self.page())
 
     def test_a_changed_setting_changes_the_page(self):
         self.app.config.update(ACADEMY_TRIAL_DAYS=30)

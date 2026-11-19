@@ -109,7 +109,7 @@ def self_test():
         step("Sign up", "POST", "/signup", (302,), {
             "name": "Self Test", "email": "selftest@example.com", "password": "selftest password 123",
             "org_name": "Selftest Co", "timezone": "UTC", "industries": ["1", "18"]})
-        step("HQ overview", "GET", "/app")
+        step("Home overview", "GET", "/app")
         step("An industry's checks", "GET", "/app/industry/1")
         step("Compliance report", "GET", "/app/report")
         step("Report CSV", "GET", "/app/report.csv")
@@ -159,7 +159,7 @@ def check_content(samples=3, seed=None):
     from . import academy
     rng = random.Random(seed)
     problems = []
-    for t in academy.TRACK_LIST:
+    for t in academy.ALL_TRACKS:
         for w in t.worlds:
             n = t.stages(w)
             for stage in {1, n} | {rng.randint(1, n) for _ in range(samples)}:

@@ -91,7 +91,8 @@ class TestHelpPage(AppTestCase):
         for fact in ("21-day free trial", "Plus: $90 a month per location.", "after 07:00 UTC", "about 30 days",
                      f"only the difference, ${90 - plans.PRO.dollars} a month"):
             self.assertIn(fact, text)
-        self.assertNotIn("Write to us", text)
+        # Without SUPPORT_EMAIL, Help still ends with a way to reach a person: the help address.
+        self.assertIn("Write to us at help@mtrxhorizyn.com", text)
         self.app.config["SUPPORT_EMAIL"] = "help@example.com"
         self.assertIn('href="mailto:help@example.com"', self.page())
 

@@ -41,7 +41,7 @@
   </form>
   {% if p.key == 'plus' and access.bundle.state == 'covered' and not upgrade %}<p class="plan-note" data-bundle-full-price>{{ p.name }} at the {{ facts.bundle.name }} price isn't set up {{ 'for yearly billing' if i == 'year' else 'yet' }}, so it is billed at its full price. Your bundle's {{ facts.bundle.includes.name }} stays included either way.</p>{% endif %}
 {% else %}
-  <p class="hint">Online sign-up is coming soon. Contact us to start {{ p.name }}.</p>
+  <p class="hint" data-contact>Online sign-up is coming soon. <a href="mailto:{{ facts.support_email }}?subject={{ ('Start ' ~ p.name)|urlencode }}">Contact us</a> at {{ facts.support_email }} to start {{ p.name }}.</p>
 {% endif %}
 {%- endmacro %}
 
@@ -73,7 +73,7 @@
       <ul>
         {% if p.key == 'pro' %}
           <li>All {{ facts.checks }} checks across {{ facts.industries }} industries: pick the ones your company works in</li>
-          <li>Reminder emails and time-limit alerts, Radar, Intel reports and exports, the audit trail</li>
+          <li>Reminder emails and time-limit alerts, the report and its exports, the history of every change</li>
           <li>Update several checks at once, your own limits, the whole team</li>
           <li>The Academy's free worlds</li>
         {% else %}
@@ -112,6 +112,7 @@
     </ul>
   </section>
 
+  {% if show_bundle %}
   <section class="plan-card{% if a.source in ('bundle', 'bundle_grace') %} current{% endif %}" data-plan="bundle">
     <h2>{{ b.name }}</h2>
     <p class="plan-price">{{ b.price }}, through CyberLogix</p>
@@ -125,6 +126,7 @@
     {% elif a.bundle.state == 'grace' %}<p class="plan-status">No signed report since {{ a.bundle.last|local_date }}. Included until {{ a.bundle.grace_ends|local_date }}.</p>{% endif %}
     <p><a href="{{ url_for('app.settings', _anchor='connections') }}">Connections</a></p>
   </section>
+  {% endif %}
 </div>
 </div>
 

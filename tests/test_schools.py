@@ -94,7 +94,12 @@ class TestSchoolPages(AppTestCase):
         self.assertIn("watched 24/7", page)
         self.assertIn('href="https://cyberlogix.mtrxhorizyn.com"', response.data.decode())
         self.assertIn('href="/classrooms"', response.data.decode())
-        self.assertIn(f"industry={SCHOOL}", response.data.decode())
+        # A school signs up as a school, and sees the classroom demo and prices.
+        self.assertIn("/signup?then=classes", response.data.decode())
+        self.assertIn('href="/demo/classroom"', response.data.decode())
+        self.assertNotIn('href="/demo/business"', response.data.decode())
+        self.assertIn(plans.SCHOOL.yearly_price, page)
+        self.assertNotIn(plans.PRO.price, page)
 
     def test_schools_are_in_the_sitemap_and_the_trade_list(self):
         sitemap = self.client.get("/sitemap.xml").data.decode()
@@ -102,7 +107,7 @@ class TestSchoolPages(AppTestCase):
         self.assertIn("<loc>https://omniarmor.test/classrooms</loc>", sitemap)
         self.assertIn("<loc>https://omniarmor.test/industries/schoolsafetyarmor</loc>", sitemap)
         trades_list = self.client.get("/industries").data.decode()
-        by_trade = trades_list[trades_list.index('id="trades"'):trades_list.index("All industries")]
+        by_trade = trades_list[trades_list.index('data-trades'):trades_list.index("data-all-industries")]
         self.assertIn('href="/for/schools"', by_trade)
 
     def test_the_academy_for_schools_page(self):
@@ -156,18 +161,22 @@ class ClassCase(AppTestCase):
             return {r["nickname"]: r["id"] for r in conn.execute(
                 "SELECT id, nickname FROM learners WHERE class_id = ?", (class_id,))}
 
-    def pass_levels(self, learner_id, worlds, when=None):
+    def pass_levels(self, learner_id, worlds, when=None, t=BASIC):
         """Marks stage 1 of each world passed for a learner."""
         when = when or datetime.now(timezone.utc)
         with self.db() as conn:
             for number in worlds:
                 conn.execute("INSERT INTO learner_progress (learner_id, level, attempts, best_score, best_stars,"
                              " completed_at) VALUES (?, ?, 1, 5, 2, ?)",
-                             (learner_id, academy.level_id(BASIC, number, 1), iso(when)))
+                             (learner_id, academy.level_id(t, number, 1), iso(when)))
             conn.commit()
 
     def flashes(self, response):
-        return words(self.client.get(response.headers["Location"]).data.decode())
+        """What the page after a form says: the page it redirects to, or the
+        page it answered with (adding students that weren't all added)."""
+        if response.status_code in (301, 302, 303):
+            return words(self.client.get(response.headers["Location"]).data.decode())
+        return words(response.data.decode())
 
     def kid_client(self, learner_id):
         code = academy.new_join_code()
@@ -207,8 +216,9 @@ class TestTeacherAddsStudents(ClassCase):
         self.start_pilot()
         _, class_id = self.add_class()
         response = self.add_students(class_id, ["Sam", "sam.smith@example.com"])
-        self.assertIn("no email addresses", self.flashes(response))
-        self.assertEqual(self.students(class_id), {})
+        page = self.flashes(response)
+        self.assertIn("sam.smith@example.com: looks like an email address", page)
+        self.assertEqual(list(self.students(class_id)), ["Sam"])
         for bad in ("kid@school", "x" * 31, "Ana\x07"):
             self.assertIsNone(classrooms.clean_student_name(bad))
         self.assertEqual(classrooms.clean_student_name("  Jo   B "), "Jo B")
@@ -272,7 +282,8 @@ class TestClassProgress(ClassCase):
         _, class_id = self.add_class()
         self.add_students(class_id, ["Sam", "Priya"])
         kids = self.students(class_id)
-        self.pass_levels(kids["Sam"], list(BASIC.topics) + [academy.FINAL_WORLD.number])
+        self.pass_levels(kids["Sam"], list(academy.CLASSROOM.topics) + [academy.FINAL_WORLD.number],
+                         t=academy.CLASSROOM)
         page = self.client.get(f"/app/academy/classes/{class_id}/certificates").data.decode()
         self.assertEqual(re.findall(r'data-certificate="([^"]+)"', page), ["Sam"])
         self.assertIn("Certificate of Completion", page)
@@ -443,12 +454,12 @@ class TestClassroomPlans(ClassCase):
         self.assertIn("Your Classroom plan covers the Academy for your class", page)
         self.assertNotIn("data-readonly-banner", self.client.get("/app/academy/classes").data.decode())
 
-    def test_too_many_at_once_is_refused_whole(self):
+    def test_too_many_at_once_adds_the_ones_that_fit(self):
         self.set_plan("classroom")
         _, class_id = self.add_class()
         response = self.add_students(class_id, [f"Kid {n}" for n in range(plans.CLASS_SIZE + 1)])
-        self.assertIn("room for 35 more", self.flashes(response).lower())
-        self.assertEqual(self.students(class_id), {})
+        self.assertIn(f"Kid {plans.CLASS_SIZE}: didn't fit: the class is full", self.flashes(response))
+        self.assertEqual(len(self.students(class_id)), plans.CLASS_SIZE)
 
     def test_the_pilot_is_one_class(self):
         self.start_pilot()

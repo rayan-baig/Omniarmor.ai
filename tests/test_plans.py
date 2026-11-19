@@ -205,7 +205,8 @@ class TestCheckout(StripeCase):
         self.app.config["PRO_STRIPE_PRICE"] = ""
         self.checkout("pro")
         self.assertEqual(self.calls, [])
-        self.assertIn("Online sign-up is coming soon. Contact us to start Pro.", words(self.page("/app/plan")))
+        self.assertIn("Online sign-up is coming soon. Contact us at help@mtrxhorizyn.com to start Pro.",
+                      words(self.page("/app/plan")))
 
     def test_only_the_owner_checks_out(self):
         self.post("/app/settings/invite")
@@ -689,7 +690,8 @@ class TestYearlyPrices(YearlyCase):
         for path in ("/", "/industries/restoarmor", "/app/plan"):
             self.assertIn("data-billing-toggle", self.page(path), path)
         self.assertIn("$300 a year", words(self.page("/help")), "the bundle's difference, yearly")
-        self.assertIn("$300 a year", words(self.page("/")))
+        self.assertIn("$300 a year", words(self.page("/industries/restoarmor")))
+        self.assertNotIn("$300 a year", words(self.page("/")), "the bundle isn't on the landing page")
 
     def test_changed_prices_change_the_yearly_prices(self):
         pro = plans.Plan("pro", "Pro", 55, "PRO_STRIPE_PRICE", True, False, "PRO_YEARLY_STRIPE_PRICE")

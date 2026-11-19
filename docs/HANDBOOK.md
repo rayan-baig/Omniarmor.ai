@@ -52,12 +52,12 @@ Behind all of it, **Autopilot** keeps the service itself healthy. It fixes small
 - The slogan is **"Catch the fine before it catches you."**
 - Each industry has an "Armor" brand name, for example **FleetArmor** for motor carriers, **RestoArmor** for restaurants, **HRArmor** for employers and **ShopArmor** for e-commerce. The full list is in Appendix A.
 - The app's six main screens have short names, shown in a tab bar at the bottom of every page:
-  - **HQ**: the overview of everything.
-  - **Intel**: the compliance report.
-  - **Vault**: the audit trail.
-  - **Radar**: every reminder email, sent or saved.
+  - **Home**: the overview of everything (a school's workspace: its classes).
+  - **Report**: the compliance report.
+  - **History**: the audit trail.
+  - **Reminders**: every reminder email, sent or saved.
   - **Academy**: the Future Owner Academy.
-  - **Armory**: settings.
+  - **Settings**: settings and plans.
 
 ### 1.3 Who it's for
 
@@ -95,7 +95,7 @@ A new customer opens the sign-up page and enters:
 - the company's timezone (used to count days and hours correctly; the page fills in the device's own timezone, so most people never change it), and
 - every industry that applies, ticked from the list of 51 (already ticked, and listed first, when they came from that industry's or a trade's public page). A box above the list finds an industry by typing part of its name or sector.
 
-That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on HQ. A teacher who signs up from the Academy for schools page (`/signup?...&then=classes`) lands on the classes page instead (section 5.13). On a brand-new industry page, "Update several at once" is folded away and one line says to start with the Top 5. Saving a date says when the reminder emails for it go out ("Reminder set: ... 30, 7 and 1 day before it's due on ..."), or that an overdue check is in the weekly reminder.
+That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on Home. A teacher who signs up from the Academy for schools page (`/signup?...&then=classes`) lands on the classes page instead (section 5.13). On a brand-new industry page, "Update several at once" is folded away and one line says to start with the Top 5. Saving a date says when the reminder emails for it go out ("Reminder set: ... 30, 7 and 1 day before it's due on ..."), or that an overdue check is in the weekly reminder.
 
 ### 2.1.1 The top 5 checks of each industry
 
@@ -109,7 +109,7 @@ Each top check shows a "Why this matters" line: the first part of its "What a mi
 
 ### 2.1.2 Getting started
 
-Version 1.7.0. Until it is done, HQ shows a **Getting started** list (`views.getting_started`):
+Version 1.7.0. Until it is done, Home shows a **Getting started** list (`views.getting_started`):
 
 1. Pick your checklists (done at sign-up; a link to change them in Settings).
 2. Complete your first check (any check with a reading), with a button to the first top check.
@@ -122,7 +122,7 @@ Each step ticks itself from what is saved, not from what was clicked. When all f
 
 Version 1.7.0. Anyone can try OmniArmor without an account (`demo_mode.py`):
 
-- **The business demo** (`/demo/business`, "See a demo" on the landing page and every trade page): Sample Kitchen (demo), a pretend restaurant tracking RestoArmor and HRArmor, with a pretend owner and cook, a few checks done, one overdue (the 7-day date marking), an I-9 due tomorrow, a COBRA notice coming due, the audit trail, this morning's reminder digest in Radar (kept, never sent) and the report.
+- **The business demo** (`/demo/business`, "See a demo" on the landing page and every trade page): Sample Kitchen (demo), a pretend restaurant tracking RestoArmor and HRArmor, with a pretend owner and cook, a few checks done, one overdue (the 7-day date marking), an I-9 due tomorrow, a COBRA notice coming due, the audit trail, this morning's reminder digest under Reminders (kept, never sent) and the report.
 - **The classroom demo** (`/demo/classroom`, from the Academy for schools page, the home page and the schools trade page): Sample School (demo) on the free pilot, with Room 12's eight students under pretend first names, their progress, join codes that work nowhere (`KID-DEMO0001`...) and a sample first lesson to play.
 - A bar on every demo page says it is pretend data and that nothing is saved or sent, shows the tour's pages in order (four for the business, five for the classroom) with a **Next** button, and **Start your free trial** (on the last page, the main button). "Leave the demo" replaces "Sign out".
 - **Nothing is kept.** Each page works on its own copy of the demo data, made in memory from a template and thrown away when the page is done; the real database never sees it. Forms are refused with "This is the demo, with pretend data, so nothing is saved..." except the sample lesson's quiz, which is graded in that page's copy and forgotten.
@@ -208,7 +208,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 ### 2.7 What each screen shows
 
-**HQ (the overview).** The top line shows the company name and today's date in its timezone, then four counts: blocked, warnings, cleared and without a reading, with a thin colored bar showing the proportions. Below that:
+**Home (the overview).** The top line shows the company name and today's date in its timezone, then four counts: blocked, warnings, cleared and without a reading, with a thin colored bar showing the proportions. Below that:
 
 - **Getting started**: the list of section 2.1.2, until it is done.
 - **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with its message and a link to the check. With none, it says why and what to do next: no check has a reading yet (with a link to the first one to fill in), or how many checks still need one, or "Nice work" when every check has a reading.
@@ -217,13 +217,13 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Industry pages.** One page per industry the company tracks, with the industry's counts at the top and its ten checks below: problems first, then the top 5 (section 2.1.1), then the rest. With **Only problems** on and none to show, it says whether that is because nothing has a reading yet. Each check shows its status, its message, the due date and days left when it's date-tracked (for example "15 days overdue · 2026-10-10"), "Why it matters" (the cost and the citation), and its input form.
 
-**Intel (the compliance report).** A table of every check: status, reading, due date, the rule citation, and who last updated it and when. It prints cleanly, and **Export CSV** downloads the same data. The CSV is formula-safe: a cell that starts with a character a spreadsheet could treat as a formula is escaped.
+**Report (the compliance report).** A table of every check: status, reading, due date, the rule citation, and who last updated it and when. It prints cleanly, and **Export CSV** downloads the same data. The CSV is formula-safe: a cell that starts with a character a spreadsheet could treat as a formula is escaped.
 
-**Vault (the audit trail).** Every change in the workspace: readings, limits, invites and team changes, with the time (UTC), the person, the industry and a "before → after" description, for example "COBRA election notice sent: no reading → date 2026-10-05". It also exports to CSV.
+**History (the audit trail).** Every change in the workspace: readings, limits, invites and team changes, with the time (UTC), the person, the industry and a "before → after" description, for example "COBRA election notice sent: no reading → date 2026-10-05". It also exports to CSV.
 
-**Radar (reminders).** Every reminder and account email OmniArmor has sent the team, newest first, with its status (sent, saved or failed) and the error for any failure. When email isn't set up, reminders are saved here instead, and a note says so.
+**Reminders.** Every reminder and account email OmniArmor has sent the team, newest first, with its status (sent, saved or failed) and the error for any failure. When email isn't set up, reminders are saved here instead, and a note says so.
 
-**Armory (settings).**
+**Settings.**
 
 - **Everyone:** their own reminder emails (the daily digest and the time-limit alerts, each on or off; the operator's account also chooses whether to get the weekly Autopilot report), their Armo personality, the workspace's plan (section 2.12), with "Pro included with your Kitchen Safety Bundle" while the bundle covers it, and About: the version number, and where to get help (the Help page, and the `SUPPORT_EMAIL` address when it is set).
 - **Owners also:**
@@ -259,7 +259,7 @@ There are two roles: **owner** and **member**.
 - **Owners** can invite people, remove members, change company settings, manage the CyberLogix connection key, and delete the workspace.
 - **Members** can do everything else: enter readings, use Done today, view reports, and change their own reminder switch and Armo.
 
-An invite is a one-time link valid for 7 days. Only a hash of the link is stored, so a stolen database can't be used to join. The invite is recorded in the Vault.
+An invite is a one-time link valid for 7 days. Only a hash of the link is stored, so a stolen database can't be used to join. The invite is recorded in History.
 
 ### 2.10 Signing in and staying safe
 
@@ -273,10 +273,10 @@ The full list of protections is in Part 7.
 
 CyberLogix is MTRX Horizyn's fridge and freezer alarm app. Connected, it fills in OmniArmor's temperature-log checks from its own readings, so a restaurant doesn't type in a fridge temperature by hand. Today that is RestoArmor's **Cold holding at 41°F or below** (`TEMPERATURE_CHECKS` in `omniarmor_app/connections.py`); a workspace that doesn't track RestoArmor has nothing for it to fill in.
 
-- **Connecting.** The owner opens Settings, **Connections**, and presses **Create CyberLogix connection key**. The key is shown once, on that page; OmniArmor keeps only its hash (like invite links), so it can't show it again, and afterwards the page shows its last 4 characters, when it was made and when it was last used. One key is active per workspace. **Regenerate key** makes a new one and stops the old one at once; **Revoke key** stops it. Each is in the Vault. Members see the status but can't change the key.
+- **Connecting.** The owner opens Settings, **Connections**, and presses **Create CyberLogix connection key**. The key is shown once, on that page; OmniArmor keeps only its hash (like invite links), so it can't show it again, and afterwards the page shows its last 4 characters, when it was made and when it was last used. One key is active per workspace. **Regenerate key** makes a new one and stops the old one at once; **Revoke key** stops it. Each is in History. Members see the status but can't change the key.
 - **Each day** CyberLogix sends one summary for the site's day to `POST /api/connect/cyberlogix/daily`, with the key as its sign-in: how many units it watches, how many stayed in range all day, the warmest reading, any breaches (unit, times, peak and limit, the role of who acknowledged it, such as "on-call staff", and a code for what was done) and a link to its log. Names never arrive: roles and actions come from fixed lists.
-- **A clean day ticks the check.** When every unit stayed in range, the check gets the day's warmest reading through `tracking.apply_change`, the same code a person's Save goes through, and the Vault says "From CyberLogix: 7 of 7 units in range all day", with CyberLogix as who made the change. OmniArmor judges the reading against its own 41°F limit.
-- **A breach ticks nothing.** It leaves a note on the check, such as "CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit 0°F); acknowledged by on-call staff", with the date, the site and a link to the CyberLogix log, until someone on the team presses **Mark reviewed**. The note is in the Vault too.
+- **A clean day ticks the check.** When every unit stayed in range, the check gets the day's warmest reading through `tracking.apply_change`, the same code a person's Save goes through, and History says "From CyberLogix: 7 of 7 units in range all day", with CyberLogix as who made the change. OmniArmor judges the reading against its own 41°F limit.
+- **A breach ticks nothing.** It leaves a note on the check, such as "CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit 0°F); acknowledged by on-call staff", with the date, the site and a link to the CyberLogix log, until someone on the team presses **Mark reviewed**. The note is in History too.
 - **Safe to send twice.** Reports are kept per workspace, check and day: the same day again changes nothing, and a corrected report replaces the note. A report never takes a reading away, never overwrites one someone on the team saved that day or later, and an older day never overwrites a newer one.
 - **What it shows.** Until connected, the temperature check and Settings say "Kitchen Safety Bundle: let CyberLogix fill this in automatically", with a link to Connections; once reports arrive, "Connected to CyberLogix · last report 2026-11-12".
 
@@ -291,11 +291,11 @@ The full contract the CyberLogix side builds against (the body, every field's li
 The prices live in one place, `omniarmor_app/plans.py`, and every page that names a plan reads them from there through `plan_facts()` in `plan_views.py`: the plan page, Help, Settings, the landing page, the industry pages and the Terms. A test fails if any template has a price typed into it, and another changes the prices in code and checks every page follows.
 
 - **Free trial.** Every new workspace gets everything in Plus for `ACADEMY_TRIAL_DAYS` days (14 by default; the setting kept the name it had when only the Academy had a trial), from the day it signs up (`orgs.academy_trial_ends`). No card. A workspace made some other way, with no trial end saved, counts it from its creation.
-- **Pro, $50 a month per location:** the compliance tracker: checks, reminders and time-limit alerts, reports and exports, bulk entry, Radar, Intel, the team.
+- **Pro, $50 a month per location:** the compliance tracker: checks, reminders and time-limit alerts, reports and exports, bulk entry, Reminders, the report, the team.
 - **Plus, $80 a month per location:** everything in Pro, plus the whole Future Owner Academy at no extra cost. The Academy's first worlds stay free for everyone, plan or not.
 - **A location is a workspace.** A workspace holds one site: one timezone, one reading per check, and CyberLogix sends one report per workspace a day. So a subscription's quantity is `location_count()`, which is 1, and a company with several sites makes a workspace (and a subscription) for each.
 - **Without a plan** (the trial over, nothing paid, no bundle), the compliance tracker is **read-only**:
-  - every record can still be seen, printed and downloaded (Intel, Vault and both CSV exports), and nothing is ever deleted;
+  - every record can still be seen, printed and downloaded (the report, History and both CSV exports), and nothing is ever deleted;
   - no check can be saved: single saves, Done today, Clear, limits and bulk updates are refused with a message saying why ("Your free trial has ended, so the compliance tracker is read-only. Nothing was saved..."), and the industry pages show the questions without Save buttons;
   - reminder digests and time-limit alerts pause (`reminders.paused`). Nothing is marked reminded meanwhile, so choosing a plan picks up where they left off, as after a missed day;
   - a banner on every page says so, why (trial ended, plan ended, or the bundle's Pro ended) and links to the plans;
@@ -310,7 +310,7 @@ The prices live in one place, `omniarmor_app/plans.py`, and every page that name
 - **Classroom plans** (version 1.6.0, section 5.13): **Classroom, $299 a year** (the whole Academy for one class of up to 35 students, no tracker) and **Whole school, $1,490 a year** (every class, up to 35 students each, and the compliance tracker for the school). Yearly only, quantity 1, Stripe price ids in `CLASSROOM_YEARLY_STRIPE_PRICE` and `SCHOOL_YEARLY_STRIPE_PRICE` (the amounts live in `plans.py`, like every price). Why these prices: the Academy's share of Plus is $30 a month (Plus less Pro), or $300 a year at ten months; Classroom is that, a dollar under, for a class instead of a family's 12 learners, and it has no tracker, so it never undercuts Plus for a business. Whole school costs more than a year of Plus, which it includes, and between four and five Classrooms (5 × $299 = $1,495), so it pays from the fifth class, with the school's checklist on top. Tests check all of that (`tests/test_schools.py`).
 - **Pause instead of cancel** (version 1.5.0). The plan page's "Cancel or pause your plan" opens the cancel screen (`/app/plan/cancel`, owner only). It offers, side by side: a **pause** of 1, 2 or 3 months (`plans.PAUSE_MONTHS`) for a plan paid monthly; the **save offer**, once per workspace ever (`orgs.save_offer_used_at`): `SAVE_OFFER_PERCENT` off the next `SAVE_OFFER_MONTHS` months (25% and 2 by default) through the Stripe coupon in `SAVE_OFFER_STRIPE_COUPON` (none set: no offer); and **Cancel my plan**, one click, which cancels at the end of the time paid for (Stripe's `cancel_at_period_end`; a plan set by hand ends at its renewal date, or at once without one). A cancelled plan can be kept before it ends ("Keep my plan"). A pause asks Stripe to void invoices until the chosen day (`pause_collection` with `resumes_at`) and keeps the day in `orgs.paused_until`; the webhook mirrors Stripe's pause both ways. While paused, `plans.access` gives nothing, exactly like no plan: the tracker is read-only, reminders and alerts stop (they already skip read-only workspaces), the free trial doesn't count, the Academy is down to its free worlds, and a banner on every page, Settings and the plan page say so with the date. A pause set in Stripe's dashboard with no end date (`pause_collection` without `resumes_at`) is the same, with no end date (`orgs.pause_open`, 1.6.2), until Stripe or "Start again now" lifts it; the daily job neither ends it nor emails about it. At `paused_until` the plan is on again by itself, without any job; the daily job emails each owner `RESUME_NOTICE` (3 days) before (kind `plan`, once per pause) and tidies ended pauses. "Start again now" ends a pause early; when a renewal fell inside the pause (Stripe voided it), it also restarts billing that day (`billing_cycle_anchor=now`, nothing prorated), so pausing just before each renewal and starting again just after can't make every month free (1.6.1). While the save offer's discount runs (`plans.save_offer_running`), the app offers no switch to yearly, since the coupon would come off the year's charge. A yearly plan, one past due or one already cancelled isn't paused, and the bundle's Plus isn't either (the bundle keeps its Pro). Every pause, save and cancel is in the audit trail and counted in the usage counts.
 - **Switching inside the app** (version 1.5.0). A monthly Pro, Plus or bundle Plus whose yearly price is set sees "Switch to yearly, 2 months free" on the plan page (and a link in Settings), with what twelve months cost monthly and what yearly saves. A paid Pro sees "Switch to Plus". Both move the subscription to our price for the plan and interval (`academy_plan.change_price`): Stripe charges the difference at once, less the unused part of the period (`proration_behavior=always_invoice`), and a declined card changes nothing (`payment_behavior=error_if_incomplete`). The portal can still do the same.
-- **Upgrade offers** (`nudges.py`, version 1.5.0), for owners only: when a workspace on Pro (paid, or the bundle's) opens the Academy, its home shows a peek at the first lesson of the first world past the free ones and "Plus includes the Academy", with Plus's price for that workspace; tapping a world outside the free ones opens the same peek for that world (`/app/academy/<learner>/world/<n>/preview`). When an owner adds a second location (section 2.9), HQ shows what paying yearly saves for all their locations, within 14 days, when a yearly price is set. At most one offer a week per person, of any kind, and "No thanks, don't show this again" is for good (the `nudges` table, schema version 20). Offers never show to team members, kids, or a workspace that is paused, past due or read-only.
+- **Upgrade offers** (`nudges.py`, version 1.5.0), for owners only: when a workspace on Pro (paid, or the bundle's) opens the Academy, its home shows a peek at the first lesson of the first world past the free ones and "Plus includes the Academy", with Plus's price for that workspace; tapping a world outside the free ones opens the same peek for that world (`/app/academy/<learner>/world/<n>/preview`). When an owner adds a second location (section 2.9), Home shows what paying yearly saves for all their locations, within 14 days, when a yearly price is set. At most one offer a week per person, of any kind, and "No thanks, don't show this again" is for good (the `nudges` table, schema version 20). Offers never show to team members, kids, or a workspace that is paused, past due or read-only.
 
 ---
 
@@ -389,12 +389,12 @@ The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject,
 
 - **Once each:** each email is recorded in `reminder_marks` by the clock's due moment (in UTC) and its stage (`clock-warning` or `clock-overdue`), so neither is sent twice. Done now, or a new start time, gives the clock a new due moment, and both emails can go out again for it.
 - **Only news:** only the stage the clock is in now is sent: a clock entered after it ran out gets the overdue email only. A stage reached more than 24 hours ago (the server was down, or the clock was entered days late) is left to the digest.
-- **Retry:** as with the digest, an alert only counts as sent once at least one email went out (or was saved when email isn't set up). If every send failed, the next check, a minute later, tries again. A failed copy is sent again in place, so Radar keeps one copy per person with its number of attempts, and a copy Autopilot already got through is not sent again.
+- **Retry:** as with the digest, an alert only counts as sent once at least one email went out (or was saved when email isn't set up). If every send failed, the next check, a minute later, tries again. A failed copy is sent again in place, so Reminders keeps one copy per person with its number of attempts, and a copy Autopilot already got through is not sent again.
 - **Several server processes:** only one process runs the alerts sweep at a time (it holds a lock in the database while it runs, section 3.5), and each alert is claimed in `reminder_marks` before it is sent, so only one process sends it.
 
 ### 3.4 How every email looks
 
-Every email OmniArmor sends (the digest, the time-limit alerts, password reset links and Autopilot's emails to the operator) has two parts with the same words: plain text, as above, and HTML, one column 600 pixels wide in the site's colors, with the OmniArmor.ai name on black, the red-to-orange line under it, and a button for each "Open ...:" or "Set a new password:" link. Both are made from the one plain-text body (`omniarmor_app/notify.py`, `templates/email/message.html`), which is also the copy Radar keeps. Under a line, every email ends with "OmniArmor is a product of MTRX Horizyn."; reminders add the link to choose which reminder emails you get (and a `List-Unsubscribe` header pointing there), Autopilot's emails say Autopilot sent them, and the weekly report says where to turn it off. If the HTML part ever fails to draw, the email goes out as plain text rather than not at all. `tests/test_emails.py` makes the app send one of each and checks them all.
+Every email OmniArmor sends (the digest, the time-limit alerts, password reset links and Autopilot's emails to the operator) has two parts with the same words: plain text, as above, and HTML, one column 600 pixels wide in the site's colors, with the OmniArmor.ai name on black, the red-to-orange line under it, and a button for each "Open ...:" or "Set a new password:" link. Both are made from the one plain-text body (`omniarmor_app/notify.py`, `templates/email/message.html`), which is also the copy Reminders keeps. Under a line, every email ends with "OmniArmor is a product of MTRX Horizyn."; reminders add the link to choose which reminder emails you get (and a `List-Unsubscribe` header pointing there), Autopilot's emails say Autopilot sent them, and the weekly report says where to turn it off. If the HTML part ever fails to draw, the email goes out as plain text rather than not at all. `tests/test_emails.py` makes the app send one of each and checks them all.
 
 ### 3.5 The daily job
 
@@ -435,13 +435,13 @@ Armo is OmniArmor's mascot: a round, friendly shield with big sparkly eyes, a wa
 - **Walks through every pressing issue.** He shows the most urgent issue with "What to do" (the check's action) and a **Fix it** link straight to the check, then **Next (1 of 8)** for the rest. He walks through up to 8 issues.
 - **Checks for changes every minute** while the page is visible, by asking the app's status feed. When the list of issues changes, he jumps up again. When the last issue is fixed, he celebrates.
 - **Remembers being dismissed.** Closing him saves which set of issues was dismissed, so he doesn't nag again until something changes.
-- **Explains pages.** The first click on a page explains what the page is for. For example, on Intel: "This is Intel, your compliance report. Print it, or export the CSV for an inspector, auditor or insurer."
+- **Explains pages.** The first click on a page explains what the page is for. For example, on the Report: "This is the Report, your compliance report. Print it, or export the CSV for an inspector, auditor or insurer."
 - **Shares real tips** from the company's own data, mixed into his chatter:
   - the next deadline;
   - how many checks have no reading yet, and where to start;
   - "You're the only one here", which suggests inviting the team;
   - a nudge when the person's email reminders are off, or when email isn't set up on the server;
-  - pointers to the Academy, Intel and the Vault.
+  - pointers to the Academy, the report and History.
 - **Has his own page** (`/app/armo`) that lists everything he found, each with "What to do" and a Fix it button, plus the personality picker.
 
 ### 4.3 Personalities
@@ -606,7 +606,7 @@ Since 1.3.0 the whole Academy comes with **Plus** (section 2.12), and the old st
 - **Free trial.** The workspace's free trial (section 2.12) includes the whole Academy. It starts at sign-up, not with the first learner.
 - **After the trial**, the first three Launchpad worlds stay free for everyone, and everything else needs Plus (or the old Academy plan). Pro doesn't include them.
 - **The plan page** (section 2.12) explains Pro, Plus, the free Academy and the bundle side by side in plain words. Every number and name on it comes from `plan_facts()` in `plan_views.py`, and a test checks that the template has no number typed into its words.
-- **Finding the plan.** The Academy home always links to the plan page: to choose Plus, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in the Armory.
+- **Finding the plan.** The Academy home always links to the plan page: to choose Plus, to manage or cancel it once paid, or to update the card after a failed payment. Owners also find it in Settings.
 - **Payment** goes through **Stripe Checkout**, and the customer portal handles changes and cancellations. When a family comes back from paying, the plan page asks Stripe about that checkout and turns the plan on at once, without waiting for the webhook (and doesn't offer checkout again while the payment is being confirmed). A signed Stripe webhook keeps the plan's status current:
   - **Access:** active, trialing, and past due (which keeps access while Stripe retries the card).
   - **No access:** canceled, unpaid, incomplete or none.
@@ -688,6 +688,17 @@ Version 1.6.0. A school or a teacher runs the Academy for a whole class or an en
 - **The public page** `/classrooms` ("The Academy for schools and teachers") explains all of this with the prices, and is linked from the home page and from `/for/schools`. Its sign-up buttons land a teacher on the classes page, and "See the classroom demo" opens the classroom demo (section 2.1.3).
 - **Getting started for a teacher** (1.7.0, `classrooms.getting_started`): the classes page lists start the free pilot (or choose a classroom plan when the pilot was used), create a class, add students, print and share the join codes (done once codes are made or a student has played), and a student finishes a first lesson. Each step ticks itself and has a button for it; the list goes away when all five are done.
 
+### 5.14 A school's workspace and the Classroom track
+
+Version 1.9.0, after an honest product review.
+
+- **A school's workspace** (`orgs.kind = 'school'`, `classrooms.is_class_workspace`). The teacher sign-up (`/signup?then=classes`, linked from `/classrooms` and `/for/schools`) asks only for a name, a school email, a password and the school's name: no industry list. It makes a school's workspace with the school safety checklist (SchoolSafetyArmor) ready for Whole school, starts the free class pilot at once, and sets the free time to end with the pilot, so a teacher sees one countdown. Workspaces already here that use the classroom plans, the pilot or classes, and track no checklist but the school ones, became schools in the upgrade (schema version 25).
+- **Its menus.** The top bar shows the school's name, not a checklist's brand. The tab bar is Home (the classes page), Checklist, Reminders, History and Settings, and signing in lands on the classes page. The family learners page sends a school to its classes.
+- **Its plan page** (`/app/plan`, `templates/app/plan_school.html`) shows only the free class pilot (with its days left), Classroom and Whole school, with a card button when Stripe is set up, or "Contact us" by email when it isn't. No Pro, Plus or Kitchen Safety Bundle. Settings says the same in one line.
+- **The Classroom track** (`academy.CLASSROOM`). Every student in a class learns on it (students already in a class moved to it in the upgrade; what they finished before still counts in the class view and the pilot report). The class runs a pretend lemonade stand, Sunny Cup Lemonade, and the first worlds use it: Meet the Class Stand, Rules at the Stand, Money at the Stand and Work as a Team, then worlds about running any business that suit a class. Left out: the family company, the app's own lights and reminders, hiring and letting people go, taxes, loans and the industry Rule Quests; a question that mentions a family's own shop or the app is never asked. Each world is a fixed list of questions cut into lessons of five, so no question comes back in a later lesson of the same world, and a world has only as many lessons as it has questions for (at most 8): the level count is what a student plays. It ends with the Class Challenge (10 questions) and the certificate.
+- **The teacher guide** (`/classrooms/guide`, to read or print): what each world teaches, its lessons and about how long they take (3 minutes a lesson), and two questions to talk about.
+- **Adding students** keeps what was typed: every name that can be added is; the others are listed with the reason (too long, looks like an email address, already in the class, typed twice, or no room left) and put back in the box.
+
 ## 6. Autopilot and the bug finder
 
 ### 6.1 Why
@@ -738,7 +749,7 @@ The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up
 - **The daily self-test.** Once a day, Autopilot starts a private copy of the app on an empty, throwaway database in a temporary folder, and clicks through the main paths:
   1. the home page, industries page and health check;
   2. signing up a test company;
-  3. HQ, an industry page, the report and its CSV, the audit trail, Radar, settings and Armo's status feed;
+  3. Home, an industry page, the report and its CSV, the audit trail, Reminders, settings and Armo's status feed;
   4. the Academy home, adding a learner, picking a track, the map and a world page;
   5. opening a level, finishing it with all answers right, and confirming it was saved with 3 stars;
   6. practice, friends, the plan page and signing out.
@@ -823,7 +834,7 @@ Every point below is in the code today.
 - **CSRF:** every change carries a form token that must match the session.
 - **Cookies** are HttpOnly and SameSite=Lax, and Secure in production (so production must use HTTPS). Sessions last 14 days.
 - **Security headers on every response:**
-  - a strict Content Security Policy that allows only the site's own scripts and stylesheets, plus fonts and styles from Google Fonts, and no inline script or style at all (1.7.0: progress bars and meters take their widths from classes, `.grow-N` and `.pct-N`, through the `pct` filter);
+  - a strict Content Security Policy that allows only the site's own scripts and stylesheets, with the fonts served from the app itself (static/fonts, 1.9.0), and no inline script or style at all (1.7.0: progress bars and meters take their widths from classes, `.grow-N` and `.pct-N`, through the `pct` filter);
   - no framing (X-Frame-Options DENY and frame-ancestors none);
   - no MIME sniffing;
   - a same-origin referrer policy;
@@ -886,7 +897,7 @@ Browser (HTML forms, no JavaScript needed)
 omniarmor_app (Flask)
    ├── security.py     sign-in, form tokens, rate limits, security headers
    ├── auth.py         sign up, sign in, password reset, invites
-   ├── views.py        HQ, industry checks, report, audit trail, Radar, settings
+   ├── views.py        Home, industry checks, report, audit trail, Reminders, settings
    ├── tracking.py     turns stored readings into today's status
    ├── catalog.py      the 51 industries and 510 rules, as the app uses them
    ├── reminders.py    daily digests per company, and time-limit alerts for the hour clocks
@@ -1088,13 +1099,13 @@ The Docker image:
 
 ### 9.3 Email
 
-Without email settings, reminders and password-reset links are saved on Radar instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
+Without email settings, reminders and password-reset links are saved under Reminders instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
 
 ### 9.4 Backups and restore
 
 Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
 
-To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: copy the backup to a fresh file beside the database, check it, point `DATABASE_PATH` at it and restart, then check sign-in, the checks, the Academy and the Vault. The old database stays as it was, so going back is one setting. `tests/test_operations.py` rehearses it on every push.
+To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: copy the backup to a fresh file beside the database, check it, point `DATABASE_PATH` at it and restart, then check sign-in, the checks, the Academy and History. The old database stays as it was, so going back is one setting. `tests/test_operations.py` rehearses it on every push.
 
 ### 9.5 Monitoring
 
@@ -1132,7 +1143,7 @@ What the app does to stay cheap:
 
 The demos anyone can open from the site (section 2.1.3) need nothing set up: they are built in memory by each server process. The `seed-demo` command below is for a separate demo database to sign in to, for screenshots and sales calls.
 
-`flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking PharmacyArmor and HRArmor, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept in Radar (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
+`flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking PharmacyArmor and HRArmor, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept under Reminders (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
 ---
 
 ## 10. Design and writing style
@@ -1148,7 +1159,7 @@ Type:
 - **IBM Plex Mono** for labels, dates and citations;
 - **Baloo 2**, a rounded face, for the Academy.
 
-Controls are at least 44 pixels tall, text meets WCAG AA contrast, Warnings differ from Blocks by shape as well as color, and everything works without JavaScript. The bottom tab bar (HQ, Intel, Vault, Radar, Academy, Armory) appears on every signed-in page, on desktop and phone.
+Controls are at least 44 pixels tall, text meets WCAG AA contrast, Warnings differ from Blocks by shape as well as color, and everything works without JavaScript. The bottom tab bar (Home, Report, History, Reminders, Academy, Settings; in a school's workspace Home, Checklist, Reminders, History, Settings) appears on every signed-in page, on desktop and phone.
 
 ### 10.2 The writing
 
@@ -6175,7 +6186,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/` | Landing page |
 | POST | `/api/connect/cyberlogix/daily` | CyberLogix's daily temperature report (JSON, with the workspace's connection key; docs/CYBERLOGIX-CONNECTION.md) |
 | GET | `/api/stats` | User counts and the last 30 days of usage counts for MTRX Horizyn's console (only with `STATS_KEY`, and only to that key) |
-| GET | `/app` | HQ, the overview |
+| GET | `/app` | Home, the overview |
 | GET | `/app/academy` | Academy home for grown-ups |
 | GET | `/app/academy/<int:learner_id>` | A learner's map |
 | POST | `/app/academy/<int:learner_id>/armo` | A learner's Armo personality |
@@ -6212,19 +6223,19 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/app/armo` | Armo's page: everything he found |
 | POST | `/app/armo/personality` | Pick Armo's personality |
 | GET | `/app/armo/status` | Armo's live status feed (JSON) |
-| GET | `/app/audit` | Vault, the audit trail |
+| GET | `/app/audit` | History, the audit trail |
 | POST | `/app/connections/cyberlogix/review` | Mark a CyberLogix note on a temperature check reviewed |
 | GET | `/app/audit.csv` | The audit trail as CSV |
 | GET | `/app/industry/<int:industry_id>` | One industry's ten checks |
 | POST | `/app/industry/<int:industry_id>/bulk` | Update several checks at once: done today, Yes, No or one date |
 | POST | `/app/industry/<int:industry_id>/rule/<rule_key>` | Save, clear, Done today or change a limit on one check |
-| GET | `/app/notifications` | Radar, every reminder email |
+| GET | `/app/notifications` | Reminders, every reminder email |
 | GET | `/app/plan` | The plan page: Pro, Plus, the free Academy and the Kitchen Safety Bundle |
 | POST | `/app/plan/checkout` | Start Stripe Checkout for Pro or Plus (`plan`), billed per location |
 | POST | `/app/plan/manage` | Open the Stripe customer portal (change plan, card, cancel) |
-| GET | `/app/report` | Intel, the compliance report |
+| GET | `/app/report` | Report, the compliance report |
 | GET | `/app/report.csv` | The report as CSV |
-| GET | `/app/settings` | Armory, settings |
+| GET | `/app/settings` | Settings |
 | POST | `/app/settings/company` | Company name, timezone and industries (owners) |
 | POST | `/app/settings/connections/cyberlogix/create` | Create the CyberLogix connection key, shown once (owners) |
 | POST | `/app/settings/connections/cyberlogix/regenerate` | Replace the CyberLogix connection key, shown once (owners) |
@@ -6236,6 +6247,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/billing/stripe/webhook` | Stripe webhook (signed) |
 | GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | The icon phones ask for at the root |
 | GET | `/classrooms` | The Academy for schools and teachers |
+| GET | `/classrooms/guide` | The teacher guide for the Classroom track, to read or print |
 | GET | `/demo` | The two demos, and where an ended or limited demo leads (section 2.1.3) |
 | GET | `/demo/business`, `/demo/classroom` | Open a demo: a 30-minute demo pass, 20 an hour per address |
 | POST | `/demo/leave` | Leave the demo |
@@ -6274,7 +6286,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | `DATABASE_PATH` | instance/omniarmor.db | Where the SQLite database lives. Use a persistent disk. |
 | `BACKUP_DIR` | a `backups` folder next to the database | Where daily backups go. |
 | `BACKUP_KEEP` | 14 | How many backups to keep. |
-| `SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD` | empty, 587 | Email provider. Without SMTP_HOST, emails are saved in Radar instead of sent. |
+| `SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD` | empty, 587 | Email provider. Without SMTP_HOST, emails are saved under Reminders instead of sent. |
 | `SMTP_STARTTLS` | 1 | Use STARTTLS with the email provider. |
 | `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. Live: `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`. |
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
@@ -6319,7 +6331,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 - **Digest**: the daily reminder email.
 - **Time-limit alert**: the email an hour or minute clock sends when it reaches its warning point, and when it becomes overdue.
 - **Workspace**: one company's account, with its owners and members.
-- **HQ, Intel, Vault, Radar, Academy, Armory**: the overview, report, audit trail, reminder log, Academy and settings.
+- **Home, Report, History, Reminders, Academy, Settings**: the overview, report, audit trail, reminder log, Academy and settings (before 1.9.0 they were called Home, the report, History, Reminders, Academy and Settings).
 - **Armo**: the shield mascot and helper.
 - **Learner**: a child in the Academy (a nickname and a picture).
 - **Track**: Launchpad, Trailblazer, Summit or Titan Mastery.

@@ -45,6 +45,8 @@ class Rule:
 
 
 def _fmt(value, unit):
+    if unit == "$" and isinstance(value, float) and not value.is_integer():
+        return f"${value:,.2f}"     # money keeps its cents: $15.50, not $15.5
     number = f"{value:,.2f}".rstrip("0").rstrip(".") if isinstance(value, float) else f"{value:,}"
     if not unit:
         return number

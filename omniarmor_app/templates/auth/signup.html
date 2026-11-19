@@ -2,6 +2,32 @@
 {% block title %}Create your account{% endblock %}
 {% block head %}{% if not invite %}<script src="{{ url_for('static', filename='signup.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
+{% if then_classes and not invite %}
+{# The teacher sign-up: the Academy for a class, no industry list (auth._school_workspace). #}
+<div class="narrow" data-teacher-signup>
+  <p class="eyebrow">For teachers</p>
+  <h1>Start your free class pilot</h1>
+  <p class="sub">{{ plan_facts().pilot_days }}-day free pilot, no card needed. Add your class, then your students by first name or nickname.</p>
+  <form class="card mt" method="post" action="{{ url_for('auth.signup') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="then" value="classes">
+    <input type="hidden" name="timezone" value="{{ form.get('timezone', 'America/New_York') }}" data-auto-timezone>
+    <label class="field"><span>Your name</span>
+      <input type="text" name="name" value="{{ form.get('name', '') }}" autocomplete="name" required maxlength="100"></label>
+    <label class="field"><span>School email</span>
+      <input type="email" name="email" value="{{ form.get('email', '') }}" autocomplete="email" required></label>
+    <label class="field"><span>Password</span>
+      <input type="password" name="password" autocomplete="new-password" required minlength="10" aria-describedby="pw-hint">
+      <span class="hint" id="pw-hint">At least 10 characters.</span></label>
+    <label class="field"><span>School name</span>
+      <input type="text" name="org_name" value="{{ form.get('org_name', '') }}" autocomplete="organization" required maxlength="120" aria-describedby="org-hint">
+      <span class="hint" id="org-hint">Shown on your class pages and the pilot report. You can change it later.</span></label>
+    <button class="btn" type="submit">Start my free pilot</button>
+    <p class="hint mt-s">Students never sign up: you add them by first name or nickname, and they join with a code. Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+  </form>
+  <p class="hint mt">Running a business instead? <a href="{{ url_for('auth.signup') }}">Create a business workspace</a>.</p>
+</div>
+{% else %}
 <div class="narrow">
   <p class="eyebrow">{{ 'Join ' ~ invite.org_name if invite else 'Start free' }}</p>
   <h1>{{ 'Join your team' if invite else 'Create your workspace' }}</h1>
@@ -33,19 +59,30 @@
         <p class="hint signup-find">Each one adds its checklist. You can add or remove them later in Settings.</p>
         <label class="field mt-s" data-industry-find hidden><span class="sr">Find your industry</span>
           <input type="search" placeholder="Type to find your industry, like restaurant" autocomplete="off" data-industry-filter></label>
-        <div class="checks" data-industry-list>
-          {% for ind in industries.values() if ind.id in picked %}
+        {% set lead_ids = signup_lead|map(attribute=0)|list %}
+        <div class="checks" data-industry-list data-lead-industries>
+          {% for id, label in signup_lead %}{% set ind = industries[id] %}
+            <label class="check" data-industry-name="{{ label|lower }} {{ ind.brand|lower }} {{ ind.sector|lower }}"><input type="checkbox" name="industries" value="{{ ind.id }}"{% if ind.id in picked %} checked{% endif %}> {{ label }} <span class="faint">· {{ ind.brand }}</span></label>
+          {% endfor %}
+          {% for ind in industries.values() if ind.id in picked and ind.id not in lead_ids %}
             <label class="check" data-industry-name="{{ ind.brand|lower }} {{ ind.sector|lower }}"><input type="checkbox" name="industries" value="{{ ind.id }}" checked> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
           {% endfor %}
-          {% for ind in industries.values() if ind.id not in picked %}
-            <label class="check" data-industry-name="{{ ind.brand|lower }} {{ ind.sector|lower }}"><input type="checkbox" name="industries" value="{{ ind.id }}"> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
-          {% endfor %}
         </div>
+        <details class="more-industries mt-s" data-more-industries>
+          <summary>More industries (starter lists)</summary>
+          <div class="checks" data-industry-list>
+            {% for ind in industries.values() if ind.id not in picked and ind.id not in lead_ids %}
+              <label class="check" data-industry-name="{{ ind.brand|lower }} {{ ind.sector|lower }}"><input type="checkbox" name="industries" value="{{ ind.id }}"> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
+            {% endfor %}
+          </div>
+        </details>
         <p class="hint" data-industry-none hidden>No industry matches. Try another word, or <a href="{{ url_for('public.industries') }}">see all industries and trades</a>.</p>
       </fieldset>
     {% endif %}
     <button class="btn" type="submit">{{ 'Join the team' if invite else 'Create my workspace' }}</button>
     <p class="hint mt-s">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
   </form>
+  {% if not invite %}<p class="hint mt">Teaching a class? <a href="{{ url_for('auth.signup', then='classes') }}">Start a free class pilot</a> instead.</p>{% endif %}
 </div>
+{% endif %}
 {% endblock %}

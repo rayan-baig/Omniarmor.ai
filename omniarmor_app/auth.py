@@ -11,10 +11,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from . import usage
 from .academy_plan import trial_end_for_new_workspace
 from .catalog import INDUSTRIES, TOP_COUNT
+from .trades import SCHOOL_INDUSTRY, SIGNUP_LEAD
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
 from .security import (
-    clean_text, clear_failures, client_ip, flash_error, hash_token, new_token, normalize_email, password_problem, rate_limited,
+    clean_text, clear_failures, client_ip, flash_error, hash_token, home_url, new_token, normalize_email, password_problem, rate_limited,
     record_event, record_failure,
     safe_next, start_session, too_many_failures, valid_email,
 )
@@ -27,6 +28,7 @@ COMMON_TIMEZONES = [
     "Europe/London", "Europe/Berlin", "Europe/Paris", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore",
     "Asia/Tokyo", "Australia/Sydney", "UTC",
 ]
+TEACHER_TIMEZONE = "America/New_York"   # a teacher's workspace when the device sent no timezone we know
 INVITE_DAYS = 7
 RESET_HOURS = 1
 SIGNUPS_PER_HOUR = 10
@@ -72,7 +74,7 @@ def _start_industry(form):
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if g.get("user") is not None:
-        return redirect(url_for("app.overview"))
+        return redirect(home_url())
     conn = get_db()
     token = request.values.get("invite", "")
     invite = _invite(conn, token)
@@ -86,6 +88,14 @@ def signup():
         org_name = clean_text(form.get("org_name"), 120)
         tz = form.get("timezone", "UTC")
         picked = sorted({int(i) for i in form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6 and int(i) in INDUSTRIES})
+        teacher = invite is None and _then_classes(form)
+        if teacher:
+            # A teacher's sign-up has no industry list: the school's workspace
+            # gets the school safety checklist, ready for Whole school, and the
+            # device's timezone (or New York's, if it sent none we know).
+            picked = [SCHOOL_INDUSTRY]
+            if not valid_timezone(tz):
+                tz = TEACHER_TIMEZONE
         errors = []
         # Sign-ups from one place are limited: each costs a password hash, and
         # an unlimited form could tie the server up or fill the database.
@@ -101,7 +111,7 @@ def signup():
             errors.append(problem)
         if invite is None:
             if not org_name:
-                errors.append("Enter your company name.")
+                errors.append("Enter your school's name." if teacher else "Enter your company name.")
             if not picked:
                 errors.append("Pick at least one industry.")
             if not valid_timezone(tz):
@@ -112,7 +122,7 @@ def signup():
             for e in errors:
                 flash_error(e)
             return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
-                                   timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
+                                   timezones=COMMON_TIMEZONES, signup_lead=SIGNUP_LEAD, form=form, picked=set(picked),
                                    start_industry=_start_industry(form), then_classes=_then_classes(form)), 400
         record_event([signup_key])
         now = now_iso()
@@ -132,9 +142,11 @@ def signup():
             conn.rollback()
             flash_error(_taken_message(invite))
             return render_template("auth/signup.html", invite=None if invite is None else _invite(conn, token), token=token,
-                                   industries=INDUSTRIES, timezones=COMMON_TIMEZONES, form=form, picked=set(picked),
+                                   industries=INDUSTRIES, timezones=COMMON_TIMEZONES, signup_lead=SIGNUP_LEAD, form=form, picked=set(picked),
                                    start_industry=_start_industry(form), then_classes=_then_classes(form)), 400
-        if invite is None:
+        if invite is None and teacher:
+            org_id = _school_workspace(conn, user_id, org_name, tz, now)
+        elif invite is None:
             # Every new workspace starts its free trial of everything in Plus (plans.py).
             org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends) VALUES (?, ?, ?, ?)",
                                   (org_name, tz, now, trial_end_for_new_workspace(
@@ -155,11 +167,12 @@ def signup():
         start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
         if invite is not None:
             flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")
-            return redirect(url_for("app.overview"))
-        if _then_classes(form):
-            # A teacher from the Academy for schools page starts with the class.
-            flash("Welcome to OmniArmor. Start the free pilot below, then add your class and your students. Your"
-                  " school's safety checklist is in HQ whenever you want it.", "ok")
+            return redirect(home_url())
+        if teacher:
+            # A teacher starts with the class; the free pilot is already on.
+            days = current_app.config["CLASSROOM_PILOT_DAYS"]
+            flash(f"Welcome to OmniArmor. Your free {days}-day class pilot is on: add your class, then your"
+                  " students by first name or nickname.", "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.
@@ -170,14 +183,34 @@ def signup():
     preselected = [i for i in request.args.getlist("industry", type=int) if i in INDUSTRIES][:10]
     preselect = preselected[0] if preselected else None
     return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
-                           timezones=COMMON_TIMEZONES, form=form, picked=set(preselected),
+                           timezones=COMMON_TIMEZONES, signup_lead=SIGNUP_LEAD, form=form, picked=set(preselected),
                            start_industry=preselect, then_classes=_then_classes(request.args))
+
+
+def _school_workspace(conn, user_id, name, tz, now):
+    """A teacher's new workspace: a school's (orgs.kind), with the school
+    safety checklist and the free class pilot started, so the teacher sees
+    one countdown, the pilot's. Its free time is the pilot's
+    CLASSROOM_PILOT_DAYS, for the checklist too."""
+    from . import classrooms
+    days = current_app.config["CLASSROOM_PILOT_DAYS"]
+    org_id = conn.execute("INSERT INTO orgs (name, timezone, created_at, academy_trial_ends, kind)"
+                          " VALUES (?, ?, ?, ?, ?)",
+                          (name, tz, now, trial_end_for_new_workspace(days), classrooms.SCHOOL_KIND)).lastrowid
+    conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
+                 (user_id, org_id, now))
+    conn.execute("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)", (org_id, SCHOOL_INDUSTRY))
+    record_audit(conn, org_id, user_id, "workspace", "School workspace created")
+    org = conn.execute("SELECT * FROM orgs WHERE id = ?", (org_id,)).fetchone()
+    if classrooms.start_pilot(conn, org, days):
+        record_audit(conn, org_id, user_id, "workspace", f"Free classroom pilot started ({days} days)")
+    return org_id
 
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if g.get("user") is not None:
-        return redirect(url_for("app.overview"))
+        return redirect(home_url())
     if request.method == "POST":
         email = normalize_email(request.form.get("email"))
         password = request.form.get("password", "")
@@ -269,7 +302,7 @@ def reset(token):
         clear_failures(user["email"])
         flash("Your password is changed. Every other device was signed out.", "ok")
         start_session(user)
-        return redirect(url_for("app.overview"))
+        return redirect(home_url())
     return render_template("auth/reset.html", token=token)
 
 

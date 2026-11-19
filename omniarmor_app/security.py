@@ -222,14 +222,29 @@ def owner_required(view):
     return wrapped
 
 
+def home_url():
+    """A signed-in person's home page: the classes page in a school's
+    workspace (classrooms.is_class_workspace), the overview in a business's.
+    Right after sign-in g.org isn't loaded yet, so it is read from the session."""
+    from .classrooms import is_class_workspace
+    org = g.get("org")
+    if org is None and session.get("user_id") is not None:
+        chosen = session.get("org_id")
+        rows = get_db().execute(
+            "SELECT orgs.* FROM memberships JOIN orgs ON orgs.id = memberships.org_id WHERE memberships.user_id = ?"
+            " ORDER BY memberships.created_at, orgs.id", (session["user_id"],)).fetchall()
+        org = next((r for r in rows if r["id"] == chosen), rows[0] if rows else None)
+    return url_for("classes.index") if is_class_workspace(org) else url_for("app.overview")
+
+
 def safe_next(target):
     """Only allow redirects back into this site after sign-in. Rejects anything a
     browser could read as another site, including tricks with tabs or backslashes."""
     if not target or any(ord(c) < 33 or ord(c) == 127 or c == "\\" for c in target):
-        return url_for("app.overview")
+        return home_url()
     parts = urlsplit(target)
     if parts.scheme or parts.netloc or not target.startswith("/") or target.startswith("//"):
-        return url_for("app.overview")
+        return home_url()
     return target
 
 
@@ -290,8 +305,9 @@ def clear_failures(email):
 # --- Headers -------------------------------------------------------------
 
 CSP = (
-    "default-src 'self'; style-src 'self' https://fonts.googleapis.com;"
-    " font-src https://fonts.gstatic.com;"
+    # Fonts come from this site too (static/fonts): no outside company sees a visit.
+    "default-src 'self'; style-src 'self';"
+    " font-src 'self';"
     " img-src 'self' data:; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
     " object-src 'none'"
 )

@@ -12,7 +12,7 @@ The plans:
   ACADEMY_TRIAL_DAYS days (the trial length the app already had), from the
   day it signs up. No card.
 - **Pro**: the compliance tracker (checks, reminders, reports, bulk entry,
-  Radar, Intel, the team), per location a month.
+  the reminders and report pages, the team), per location a month.
 - **Plus**: everything in Pro and the whole Future Owner Academy.
 - The Academy's first worlds (academy_plan.FREE_WORLDS) stay free for everyone.
 

@@ -5,13 +5,18 @@
 <section class="hero">
   <p class="eyebrow">For schools and teachers</p>
   <h1><span class="blend-text">How a business runs,</span> one short lesson at a time.</h1>
-  <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety, in levels of a few minutes each. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
+  <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety. Your class learns by running a pretend lemonade stand, {{ facts.class_business }}. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
   <div class="cta">
-    <a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry, then='classes') }}">Start a free pilot</a>
+    <a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free pilot</a>
     <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow" data-demo-link>See the classroom demo</a>
     <a class="btn quiet" href="#price">See the prices</a>
   </div>
   <p class="hint" data-demo-hint>The demo is a sample class with pretend first names: the progress view, join codes and a sample lesson, no sign-up.</p>
+</section>
+
+<section class="trade-note" data-class-track>
+  <p><strong>The Classroom track: {{ facts.class_worlds }} worlds, {{ facts.class_lessons }} lessons</strong></p>
+  <p>Each lesson is {{ facts.lesson_questions }} questions, about {{ facts.lesson_minutes }} minutes, and no question comes back in a later lesson of the same world. It starts with the class's lemonade stand (what a business is, rules that keep customers safe, money and teamwork), then speaking like a pro, owning mistakes, prices, budgets, honest ads, doing the right thing and staying safe online. It ends with the Class Challenge and a certificate. <a href="{{ url_for('public.class_guide') }}">Read the teacher guide</a>: what each world teaches, how long it takes and questions to talk about.</p>
 </section>
 
 <section class="features" aria-label="What a teacher gets">
@@ -25,7 +30,7 @@
   </div>
   <div>
     <h3>Certificates to print</h3>
-    <p>A student who finishes the first lesson of every world and passes the Owner's Challenge earns a certificate of completion with their first name or nickname on it. Print one, or the whole class.</p>
+    <p>A student who finishes the first lesson of every world and passes the Class Challenge earns a certificate of completion with their first name or nickname on it. Print one, or the whole class.</p>
   </div>
   <div>
     <h3>A leaderboard you control</h3>
@@ -70,5 +75,5 @@
   <li>Watch the class progress, print certificates, and take the pilot report to the office.</li>
 </ol>
 <p class="hint mt">Questions? Read the <a href="{{ url_for('public.help') }}">help page</a> or the <a href="{{ url_for('public.privacy') }}">privacy page</a>.</p>
-<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.school_industry, then='classes') }}">Start a free pilot</a></p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free pilot</a></p>
 {% endblock %}

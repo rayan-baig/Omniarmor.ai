@@ -20,9 +20,9 @@ industries each, readings, running clocks, a learner on an Academy trial, two
 people each), then starts the app with **the Dockerfile's own gunicorn
 command** (one process, 8 threads, the scheduler on, production settings).
 Each simulated person signs in with their password and then clicks, about
-every 3 seconds, through a mix of pages: HQ, an industry page, updating a
+every 3 seconds, through a mix of pages: Home, an industry page, updating a
 check, the bulk form, the Academy (home, map, a lesson and its quiz),
-Settings (and saving reminder choices), the Vault and the report. Every
+Settings (and saving reminder choices), History and the report. Every
 redirect is followed like a browser. After each stage it reads the server
 log for locked databases, timeouts, tracebacks and memory errors; at the end
 it counts every saved change in the audit trail.
@@ -38,9 +38,9 @@ it counts every saved change in the audit trail.
 | 1,000 | 71 | 0 | 8.5 s | 14.6 s | 336 MB |
 
 Per page at 100 people (median / 95th percentile): industry page 6 / 16 ms,
-update a check 5 / 12 ms, bulk form 5 / 13 ms, HQ 6 / 13 ms, Academy map
+update a check 5 / 12 ms, bulk form 5 / 13 ms, Home 6 / 13 ms, Academy map
 8 / 12 ms, Academy lesson 4 / 10 ms, quiz answer 7 / 16 ms, Settings 6 / 18 ms,
-Vault 5 / 16 ms, report 6 / 17 ms. Signing in: 97 / 165 ms (the password
+History 5 / 16 ms, report 6 / 17 ms. Signing in: 97 / 165 ms (the password
 hash is slow on purpose). At 500 people every page takes about the same
 2.6 s: the time is spent waiting for the one process, not in any page.
 
@@ -138,7 +138,7 @@ played), backed up with the app's own `flask --app wsgi backup` while the
 server ran, one more change made, then restored by docs/OPERATIONS.md,
 section 4, exactly as it was written, and the app started on it: health
 check ok, sign-in, the industry page, the learner's progress report and the
-Vault all there, the change made after the backup gone (24 audit rows back
+History all there, the change made after the backup gone (24 audit rows back
 to 21), integrity check ok. The written steps worked on a plain server, but:
 
 1. **No commands**, and on Docker they don't work as written: once the
@@ -159,7 +159,7 @@ to 21), integrity check ok. The written steps worked on a plain server, but:
 The steps are now a 10-minute checklist in docs/OPERATIONS.md, section 4:
 copy the backup to a fresh file, check it, point `DATABASE_PATH` at it and
 restart, check the app; the old database stays for a week. It was rehearsed
-the same way (healthz, sign-in, checks, Academy, Vault all there), and
+the same way (healthz, sign-in, checks, Academy, History all there), and
 `tests/test_operations.py` (`TestRestoreRehearsal`) does it on every push,
 including that the daily job on the restored copy sends no second digest.
 

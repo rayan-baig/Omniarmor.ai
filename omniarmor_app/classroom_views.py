@@ -161,46 +161,29 @@ def _card_from(org):
 @grown_ups_only
 def class_page(class_id):
     """The teacher's class view: lessons done per student and the class total."""
-    row = _class_or_404(class_id)
-    conn = get_db()
-    return render_template("academy/class.html", cls=row, view=classrooms.class_progress(conn, row),
-                           room=classrooms.room_for_students(conn, g.org, row), limits=plans.class_limits(g.org),
-                           avatars=academy.AVATARS, max_name=classrooms.MAX_NAME,
-                           codes=_active_codes(conn, row))
+    return _class_view(_class_or_404(class_id))
 
 
 @bp.route("/app/academy/classes/<int:class_id>/students", methods=["POST"])
 @grown_ups_only
 def add_students(class_id):
+    """Adds the students a teacher typed, one per line. Every name that can be
+    added is; the ones that can't are listed with the reason and put back in
+    the box to fix, so nothing typed is lost."""
     row = _class_or_404(class_id)
     conn = get_db()
     names = classrooms.parse_names(request.form.get("names"))
     if not names:
         flash_error("Type each student's first name or nickname, one on each line.")
         return _back(class_id)
-    bad = [typed for name, typed in names if name is None]
-    if bad:
-        flash_error(f"First names or nicknames only, up to {classrooms.MAX_NAME} characters, and no email"
-                    f" addresses. Check: {', '.join(t[:40] for t in bad[:3])}.")
-        return _back(class_id)
     room = classrooms.room_for_students(conn, g.org, row)
     if room == 0:
         limits = plans.class_limits(g.org)
         flash_error(f"This class is full ({limits['class_size']} students)." if limits["active"] else
                     "Start the free pilot or choose a classroom plan to add students.")
-        return _back(class_id)
+        return _class_view(row, [(typed, None) for _, typed in names], 400)
     taken = {k["nickname"].lower() for k in classrooms.students(conn, class_id)}
-    wanted, seen = [], set()
-    for name, _ in names:
-        if name.lower() in taken or name.lower() in seen:
-            flash_error(f"{name} is already in this class. Add a last initial, like {name} B.")
-            return _back(class_id)
-        seen.add(name.lower())
-        wanted.append(name)
-    if len(wanted) > room:
-        flash_error(f"There's room for {room} more student{'s' if room != 1 else ''} in this class, and you typed"
-                    f" {len(wanted)}.")
-        return _back(class_id)
+    wanted, rejected = classrooms.sort_names(names, taken, room)
     pictures = list(academy.AVATARS)
     start = conn.execute("SELECT COUNT(*) FROM learners WHERE class_id = ?", (class_id,)).fetchone()[0]
     for n, name in enumerate(wanted):
@@ -208,11 +191,30 @@ def add_students(class_id):
             "INSERT INTO learners (org_id, class_id, nickname, avatar, armo, track, track_chosen, created_by,"
             " created_at, device_epoch) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
             (g.org["id"], class_id, name, pictures[(start + n) % len(pictures)], armo.DEFAULT_KID,
-             academy.DEFAULT_TRACK, g.user["id"], now_iso(), new_device_epoch()))
+             academy.CLASSROOM.key, g.user["id"], now_iso(), new_device_epoch()))
     conn.commit()
-    usage.count(conn, "class_students", len(wanted))
-    flash(f"Added {len(wanted)} student{'s' if len(wanted) != 1 else ''} to {row['name']}.", "ok")
-    return _back(class_id)
+    if wanted:
+        usage.count(conn, "class_students", len(wanted))
+        flash(f"Added {len(wanted)} student{'s' if len(wanted) != 1 else ''} to {row['name']}.", "ok")
+    if not rejected:
+        return _back(class_id)
+    many = len(rejected)
+    flash_error(f"{many} name{'s' if many != 1 else ''} {'weren' if many != 1 else 'wasn'}'t added. "
+                f"{'They are' if many != 1 else 'It is'} listed below the box, with the reason, and back in the box"
+                " to fix.")
+    return _class_view(conn.execute("SELECT * FROM classes WHERE id = ?", (class_id,)).fetchone(), rejected,
+                       200 if wanted else 400)
+
+
+def _class_view(row, rejected=(), status=200):
+    """The class page; rejected is [(what was typed, why it wasn't added)]
+    after adding students, shown under the box and put back in it."""
+    conn = get_db()
+    return render_template("academy/class.html", cls=row, view=classrooms.class_progress(conn, row),
+                           room=classrooms.room_for_students(conn, g.org, row), limits=plans.class_limits(g.org),
+                           avatars=academy.AVATARS, max_name=classrooms.MAX_NAME,
+                           codes=_active_codes(conn, row), rejected=list(rejected),
+                           names_back="\n".join(typed for typed, _ in rejected)), status
 
 
 @bp.route("/app/academy/classes/<int:class_id>/students/<int:learner_id>/remove", methods=["POST"])
@@ -318,12 +320,12 @@ def certificates(class_id):
     conn = get_db()
     earned = []
     for kid in classrooms.students(conn, class_id):
-        for t in academy.TRACK_LIST:
+        for t in academy.ALL_TRACKS:
             progress = _progress(kid["id"], t)
             final = progress.get(academy.level_id(t, academy.FINAL_WORLD.number, 1))
             if final is None or final["best_stars"] < 1:
                 continue
-            summary = _summary(dict(kid, track=t.key), progress)
+            summary = _summary(kid, progress, t)
             if summary["certificate"]:
                 earned.append((summary, local_date(final["completed_at"], g.org)))
     return render_template("academy/class_certificates.html", cls=row, earned=earned, avatars=academy.AVATARS,

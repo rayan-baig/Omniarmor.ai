@@ -22,7 +22,7 @@ From then on OmniArmor:
 - **Backs itself up:** daily database backups, with old copies pruned.
 - **Fills in the fridge checks itself (Kitchen Safety Bundle):** connected to CyberLogix, MTRX Horizyn's fridge and freezer alarm app, a restaurant's cold holding check ticks itself from CyberLogix's daily readings, and a breach leaves a note for someone to review. The owner makes the connection key in Settings, Connections; the contract CyberLogix builds against is [docs/CYBERLOGIX-CONNECTION.md](docs/CYBERLOGIX-CONNECTION.md). A connection sends temperature summaries and roles, never names.
 - **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
-- **Made for schools too:** SchoolSafetyArmor holds a school's safety routines (drills, AED and first-aid kits, playground and gym checks, the nurse's medication log and fridge, the cafeteria, bus and van pre-trip checks, concussion forms and heat checks, visitor sign-in, lab chemicals and background-check renewals), beside SchoolArmor's legal duties, on one page at `/for/schools`. A teacher can run the Academy for a whole class (`/classrooms`): students added by first name or nickname only, a class progress view, printable certificates, a leaderboard the teacher can switch off, and a one-page pilot report with totals only.
+- **Made for schools too:** SchoolSafetyArmor holds a school's safety routines (drills, AED and first-aid kits, playground and gym checks, the nurse's medication log and fridge, the cafeteria, bus and van pre-trip checks, concussion forms and heat checks, visitor sign-in, lab chemicals and background-check renewals), beside SchoolArmor's legal duties, on one page at `/for/schools`. A teacher signs up as a school and runs the Academy for a whole class (`/classrooms`), on the Classroom track: a pretend class lemonade stand, 16 worlds and 107 short lessons with no repeats, and a printable teacher guide (`/classrooms/guide`): students added by first name or nickname only, a class progress view, printable certificates, a leaderboard the teacher can switch off, and a one-page pilot report with totals only.
 - **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (1,360 levels), Trailblazer (2,710), Summit (5,420) and Titan Mastery (15,750). It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. Plus includes all of it; its first worlds are free for everyone.
 
 ## Plans
@@ -33,7 +33,7 @@ from there.
 - **Free trial:** everything in Plus for `ACADEMY_TRIAL_DAYS` days (14 by
   default) from sign-up. No card.
 - **Pro, $50 a month per location:** the compliance tracker: checks,
-  reminders, reports, bulk entry, Radar, Intel and the team.
+  reminders, reports, bulk entry, the reminder log and the team.
 - **Plus, $80 a month per location:** everything in Pro and the whole Future
   Owner Academy at no extra cost. The Academy's first worlds stay free for
   everyone.
@@ -90,7 +90,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 777 tests
+python3 -m unittest discover -s tests     # 955 tests
 flask --app wsgi seed-demo --force demo.db   # a made-up demo workspace (docs/OPERATIONS.md, section 6)
 ```
 

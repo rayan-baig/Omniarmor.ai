@@ -290,8 +290,8 @@ def _rules(industry_id):
     return rules_for(industry_id)
 
 
-def _learner(conn, org_id, owner_id, spec, today, rng):
-    t = academy.TRACKS[academy.DEFAULT_TRACK]
+def _learner(conn, org_id, owner_id, spec, today, rng, t=None):
+    t = t or academy.TRACKS[academy.DEFAULT_TRACK]
     added = today - timedelta(days=40)
     learner_id = conn.execute(
         "INSERT INTO learners (org_id, nickname, avatar, armo, track, track_chosen, created_by, created_at,"

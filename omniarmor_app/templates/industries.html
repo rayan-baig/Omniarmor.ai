@@ -1,31 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Industries and trades{% endblock %}
-{% block description %}Compliance checklists and reminders for {{ industries|length }} regulated industries, and for trades like salons, tattoo studios, gyms, shops and schools. {{ SLOGAN }}{% endblock %}
+{% block description %}Compliance checklists and reminders for small businesses: restaurants, bars, salons, child care, dental offices, construction and shops, and starter lists for {{ industries|length }} industries. {{ SLOGAN }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <p class="eyebrow">{{ industries|length }} industries</p>
-    <h1>Find your industry</h1>
-    <p class="sub">Each one comes with the ten compliance failures that cost businesses like yours the most.</p>
+    <p class="eyebrow">Small businesses</p>
+    <h1>Find your trade</h1>
+    <p class="sub">Each one comes with the compliance checks that cost businesses like yours the most, and a reminder before each one is due.</p>
   </div>
 </div>
-<h2 id="trades">By trade</h2>
-<p class="muted">Small businesses with checklists of their own. Each page says which of OmniArmor's checklists fit.</p>
+<div class="grid-ind" data-lead-trades>
+  {% for name, endpoint, args, what in lead %}
+    <a class="row" href="{{ url_for(endpoint, **args) }}"><span><span class="title">{{ name }}</span><br><span class="meta">{{ what }}</span></span></a>
+  {% endfor %}
+</div>
+
+<h2 id="more">More industries (starter lists)</h2>
+<p class="muted">Ten checks each, a starting point to adapt to your own rules. Some trades have a page that says which checklists fit them.</p>
 <div class="grid-ind" data-trades>
   {% for t in trades %}
-    <a class="row" href="{{ url_for('public.trade_page', slug=t.slug) }}"><span><span class="title">{{ t.name }}</span></span></a>
+    <a class="row" href="{{ url_for('public.trade_page', slug=t.slug) }}"><span><span class="title">{{ t.name }}</span><br><span class="meta">Trade page</span></span></a>
   {% endfor %}
   {% for name, ind in existing %}
     <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}"><span><span class="title">{{ name }}</span><br><span class="meta">{{ ind.brand }}</span></span></a>
   {% endfor %}
 </div>
-<h2>All industries</h2>
-<div class="grid-ind">
-  {% for ind in industries.values() %}
-    <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">
-      <span><span class="title">{{ ind.brand }}</span><br><span class="meta">{{ ind.sector }}</span></span>
-      <span class="faint mono" aria-hidden="true">{{ '%02d' % ind.id }}</span>
-    </a>
-  {% endfor %}
-</div>
+<details class="more-industries mt" data-all-industries>
+  <summary>All {{ industries|length }} industries</summary>
+  <div class="grid-ind mt-s">
+    {% for ind in industries.values() %}
+      <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">
+        <span><span class="title">{{ ind.brand }}</span><br><span class="meta">{{ ind.sector }}</span></span>
+        <span class="faint mono" aria-hidden="true">{{ '%02d' % ind.id }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</details>
 {% endblock %}

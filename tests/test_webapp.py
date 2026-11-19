@@ -130,8 +130,11 @@ class TestPublicPages(AppTestCase):
         self.assertIn("check each copy before we keep it", page)
         self.assertIn("p***@example.com", page)  # the log shortens email addresses (redact.redact_line)
         # Every outside service that receives data is named.
-        for service in ["hosting company", "email service", "Google Fonts", "Stripe"]:
+        for service in ["hosting company", "email service", "Stripe"]:
             self.assertIn(service, page)
+        # The fonts are served from our own server: no outside company sees a visit.
+        self.assertNotIn("Google", page)
+        self.assertIn("Our pages, fonts and pictures all come from our own server", page)
         terms = " ".join(self.client.get("/terms").data.decode().split())
         self.assertIn(f"free {cfg['ACADEMY_TRIAL_DAYS']}-day trial", terms)
         self.assertIn("not legal advice", terms)

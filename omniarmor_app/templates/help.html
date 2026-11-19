@@ -76,7 +76,7 @@
 
 <h2 id="reminders">When do reminder emails go out?</h2>
 <p>Once a day, after {{ '%02d:00' % facts.daily_hour_utc }} UTC, OmniArmor sends each person on the team one email, the daily digest, when a check is {{ days[:-1]|join(', ') }} or {{ days[-1] }} day{{ 's' if days[-1] != 1 }} from due, due today, or overdue (then once a week while it stays overdue). A missed day is caught up the next day. Checks counted in hours or minutes also send a time-limit alert when they reach their warning point and when they become overdue; OmniArmor looks for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
-<p>Every email is also kept in the app, under Radar.</p>
+<p>Every email is also kept in the app, under Reminders.</p>
 
 <h2 id="choose">How do I choose which reminder emails I get?</h2>
 <p>In Settings, under Your reminder emails, each person picks for themselves: the daily digest, the time-limit alerts, both or neither. Both start on. Every reminder email has a link to that page.</p>
@@ -100,8 +100,8 @@
 
 <h2 id="download">How do I download my data?</h2>
 <ul>
-  <li><strong>The report</strong> (Intel): every check's status, print it or press Export CSV for a spreadsheet.</li>
-  <li><strong>The audit trail</strong> (Vault): every change, who made it and when; press Export CSV.</li>
+  <li><strong>The report</strong> (the Report tab): every check's status, print it or press Export CSV for a spreadsheet.</li>
+  <li><strong>The audit trail</strong> (the History tab): every change, who made it and when; press Export CSV.</li>
 </ul>
 
 <h2 id="delete">How do I delete my data?</h2>
@@ -117,7 +117,7 @@
   <li>Start with Armo: his page (See everything) lists what needs attention, with a fix for each.</li>
   <li>Can't sign in? Use the <a href="{{ url_for('auth.forgot') }}">Forgot your password?</a> link on the sign-in page. The link we email works once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}.</li>
   <li>Need access, a new invite or a change to the company settings? Ask your workspace owner: only they can invite or remove people and change the company.</li>
-  {% if facts.support_email %}<li>Still stuck? Write to us at <a href="mailto:{{ facts.support_email }}">{{ facts.support_email }}</a>.</li>{% endif %}
+  <li>Still stuck? Write to us at <a href="mailto:{{ facts.support_email }}" data-support-email>{{ facts.support_email }}</a>.</li>
 </ul>
 </div>
 {% endblock %}

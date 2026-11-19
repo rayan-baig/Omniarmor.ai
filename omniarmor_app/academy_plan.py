@@ -59,7 +59,8 @@ def plan_status(org, now=None):
     if info["trial"] or info["pilot"]:
         # The free trial, or the classroom pilot (whichever lasts longer):
         # the whole Academy for a while, no card.
-        pilot = info["pilot"] and info["pilot_days"] >= info["trial_days"]
+        from .classrooms import is_class_workspace
+        pilot = info["pilot"] and (info["pilot_days"] >= info["trial_days"] or is_class_workspace(org))
         return {"access": "trial", "state": "trial", "renews_at": None, "ends_at": None,
                 "trial_days": info["pilot_days"] if pilot else info["trial_days"], "plan_name": None,
                 "pilot": pilot}
@@ -81,7 +82,14 @@ def full_access(org):
 
 def allows(org, track, world):
     """Whether this workspace's plan includes a world on a track."""
-    return full_access(org) or (track.key == FREE_TRACK and world.number in FREE_WORLDS)
+    if full_access(org):
+        return True
+    if track.key == FREE_TRACK:
+        return world.number in FREE_WORLDS
+    # The Classroom track's first worlds are free the same way, for a class
+    # whose pilot or plan has ended.
+    from .academy import CLASSROOM_KEY
+    return track.key == CLASSROOM_KEY and world.number in track.topics[:len(FREE_WORLDS)]
 
 
 def trial_end_for_new_workspace(days):

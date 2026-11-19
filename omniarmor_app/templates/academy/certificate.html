@@ -2,7 +2,6 @@
 {% from "academy/_certificate.html" import certificate with context %}
 {% block title %}{{ summary.certificate }} Certificate{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='certificate-print.css') }}" media="print">
 {% endblock %}

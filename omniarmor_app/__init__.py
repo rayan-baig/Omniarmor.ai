@@ -21,11 +21,11 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from . import (academy_views, armo_views, autopilot, auth, classroom_views, compress, connections, demo_mode,
                errormail, health, plan_views, usage, views)
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
-from .config import SettingsError, load_config
+from .config import SettingsError, load_config, support_email
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
 from .redact import RedactingFilter, redact
-from .security import check_csrf, csrf_token, load_user, security_headers
+from .security import check_csrf, csrf_token, home_url, load_user, security_headers
 from .tracking import format_quantity, local_date
 from .version import __version__
 
@@ -37,10 +37,11 @@ public = Blueprint("public", __name__)
 @public.route("/")
 def home():
     if g.get("user") is not None:
-        return redirect(url_for("app.overview"))
+        return redirect(home_url())
     if g.get("kid") is not None:
         return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
-    return render_template("home.html", industries=INDUSTRIES, facts=_landing_facts())
+    from .trades import lead_trades
+    return render_template("home.html", industries=INDUSTRIES, facts=_landing_facts(), lead=lead_trades())
 
 
 # Industries named on the landing page as examples of who OmniArmor is for.
@@ -69,9 +70,12 @@ def _landing_facts():
 
 @public.route("/industries")
 def industries():
-    from .trades import EXISTING, TRADES
-    return render_template("industries.html", industries=INDUSTRIES, trades=TRADES,
-                           existing=[(name, INDUSTRIES[i]) for name, i in EXISTING])
+    from .trades import EXISTING, LEAD_TRADES, TRADES, lead_trades
+    lead_slugs = {ref for _, kind, ref in LEAD_TRADES if kind == "trade"}
+    lead_ids = {ref for _, kind, ref in LEAD_TRADES if kind == "industry"}
+    return render_template("industries.html", industries=INDUSTRIES, lead=lead_trades(),
+                           trades=[t for t in TRADES if t.slug not in lead_slugs],
+                           existing=[(name, INDUSTRIES[i]) for name, i in EXISTING if i not in lead_ids])
 
 
 @public.route("/industries/<slug>")
@@ -82,7 +86,9 @@ def industry_page(slug):
         abort(404)
     top = top_checks(match["id"])
     rest = [r for r in rules_for(match["id"]) if r not in top]
-    return render_template("industry_public.html", info=match, top=top, rest=rest, why_line=why_line)
+    from .connections import TEMPERATURE_CHECKS
+    return render_template("industry_public.html", info=match, top=top, rest=rest, why_line=why_line,
+                           bundle_industry=any(i == match["id"] for i, _ in TEMPERATURE_CHECKS))
 
 
 @public.route("/for/<slug>")
@@ -107,8 +113,17 @@ def academy_schools():
     return render_template("academy_schools.html", facts=classrooms.public_facts(current_app.config))
 
 
+@public.route("/classrooms/guide")
+def class_guide():
+    """The teacher guide, to read or print: what each world of the Classroom
+    track teaches, how long it takes and questions to talk about."""
+    from . import academy, classrooms
+    return render_template("class_guide.html", guide=academy.class_guide(),
+                           facts=classrooms.public_facts(current_app.config))
+
+
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "17 November 2026"
+RULES_UPDATED = "19 November 2026"
 
 
 def _rules_facts():
@@ -177,7 +192,7 @@ def _help_facts():
         "backup_keep": cfg["BACKUP_KEEP"],
         "reset_hours": RESET_HOURS,
         "join_code_days": JOIN_CODE_DAYS,
-        "support_email": cfg.get("SUPPORT_EMAIL", ""),
+        "support_email": support_email(cfg),
         "pause_months": PAUSE_MONTHS,
         "resume_notice_days": RESUME_NOTICE.days,
     })
@@ -195,7 +210,7 @@ def help_page():
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
 PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page",
-                "public.academy_schools", "public.terms", "public.privacy", "public.help", "auth.signup", "auth.login"}
+                "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.help", "auth.signup", "auth.login"}
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
@@ -250,7 +265,7 @@ def sitemap():
     paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
     from .trades import TRADES
     paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
-    paths.append(url_for("public.academy_schools"))
+    paths += [url_for("public.academy_schools"), url_for("public.class_guide")]
     paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
               url_for("public.privacy")]
     if current_app.config.get("NOINDEX"):
@@ -411,7 +426,7 @@ def create_app(**overrides):
     app.after_request(robots_header)
     app.after_request(connections.api_headers)
     app.after_request(compress.gzip_response)
-    app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__,
+    app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config))
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)

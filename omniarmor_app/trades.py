@@ -171,6 +171,45 @@ EXISTING = (
 )
 
 
+# The small-business trades the industry lists lead with, in this order:
+# (name, "industry" and its id, or "trade" and its slug). Every other
+# industry stays, under "More industries (starter lists)".
+LEAD_TRADES = (
+    ("Restaurants and cafés", "industry", 2),
+    ("Bars and breweries", "industry", 47),
+    ("Salons and barbershops", "trade", "salons-and-barbershops"),
+    ("Child care", "industry", 45),
+    ("Dental and medical offices", "industry", 27),
+    ("Construction", "industry", 29),
+    ("Shops and retail", "trade", "shops-and-retail-stores"),
+)
+# The sign-up's first industries, for the same trades (a trade without an
+# industry of its own is named with the checklist its page starts with):
+# (industry id, what the sign-up calls it).
+SIGNUP_LEAD = (
+    (2, "Restaurants and cafés"),
+    (47, "Bars, breweries and liquor stores"),
+    (45, "Child care and daycares"),
+    (27, "Dental and medical offices"),
+    (29, "Construction"),
+    (30, "Salons, shops and other small employers: staff pay and hiring"),
+    (32, "Shops and retail: card payments"),
+    (50, "Online shops"),
+)
+
+
+def lead_trades():
+    """LEAD_TRADES with each one's page: [(name, url endpoint, its arguments, what it is)]."""
+    out = []
+    for name, kind, ref in LEAD_TRADES:
+        if kind == "industry":
+            out.append((name, "public.industry_page", {"slug": INDUSTRIES[ref]["brand"].lower()},
+                        INDUSTRIES[ref]["brand"]))
+        else:
+            out.append((name, "public.trade_page", {"slug": ref}, "Trade page"))
+    return out
+
+
 def describe(rule):
     """How OmniArmor keeps track of a check, in plain words."""
     mode = date_mode(rule)

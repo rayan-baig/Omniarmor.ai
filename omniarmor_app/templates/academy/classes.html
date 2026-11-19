@@ -2,13 +2,12 @@
 {% from "academy/_art.html" import armo %}
 {% block title %}Classes{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
 {% set pilot = limits.pilot %}
 <div class="ac">
-  <p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Future Owner Academy</a></p>
+  {% if not class_workspace %}<p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Future Owner Academy</a></p>{% endif %}
   {% if steps %}
   <section class="ac-card checklist ac-start" aria-labelledby="teacher-start" data-getting-started="teacher">
     <h2 class="ac-h3" id="teacher-start">Getting started <span class="muted">· {{ steps.done }} of {{ steps.total }} done</span></h2>
@@ -37,7 +36,8 @@
     <div>
       <p class="ac-kicker">For teachers and schools</p>
       <h1 class="ac-title">The Academy for your class</h1>
-      <p class="ac-lead">Run the Future Owner Academy for a whole class or an entrepreneurship club. Add students by first name or nickname only: no email, no birthdate, no photo. You see each student's lessons and the class total.</p>
+      <p class="ac-lead">Run the Future Owner Academy for a whole class or an entrepreneurship club. Your students learn by running a pretend lemonade stand, {{ facts.class_business }}: {{ facts.class_worlds }} worlds, {{ facts.class_lessons }} short lessons. Add students by first name or nickname only: no email, no birthdate, no photo. You see each student's lessons and the class total.</p>
+      <p><a href="{{ url_for('public.class_guide') }}" data-guide-link>Teacher guide</a>: what each world teaches, how long it takes and questions to talk about.</p>
     </div>
   </section>
 

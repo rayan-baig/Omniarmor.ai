@@ -2,7 +2,6 @@
 {% from "academy/_art.html" import armo, avatar, emblem, hue, level_icon, star, sticker %}
 {% block title %}{{ summary.learner.nickname }}'s adventure{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% macro world_card(card, learner_id, number=None) -%}
@@ -30,7 +29,7 @@
 {% set buddy = armo_personality(summary.learner.armo, 'sweet') %}
 {% set lid = summary.learner.id %}
 <div class="ac">
-  {% if not g.kid %}<p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← All learners</a></p>{% endif %}
+  {% if not g.kid %}<p class="ac-crumb">{% if summary.learner.class_id %}<a href="{{ url_for('classes.class_page', class_id=summary.learner.class_id) }}">← The class</a>{% else %}<a href="{{ url_for('academy.home') }}">← All learners</a>{% endif %}</p>{% endif %}
   <section class="ac-player">
     {{ avatar(summary.learner.avatar, avatars, 88, summary.tier) }}
     <div class="ac-player-text">
@@ -42,9 +41,13 @@
       <p class="ac-xp-label">{{ summary.done }} / {{ "{:,}".format(summary.total) }} levels · {{ summary.stars }} stars
         {% if summary.next_rank %} · {{ summary.next_rank[0] - summary.done }} more to {{ summary.next_rank[1] }}{% endif %}</p>
     </div>
+    {% if track.rule_quests %}
     <a class="ac-track-chip" href="{{ url_for('academy.choose_track', learner_id=lid) }}" title="Change track">
       {{ emblem(track.key, 40) }}<span><strong>{{ track.name }}</strong><small>{{ track.level }} · change</small></span>
     </a>
+    {% else %}
+    <span class="ac-track-chip">{{ emblem(track.key, 40) }}<span><strong>{{ track.name }}</strong><small>{{ track.tagline }}</small></span></span>
+    {% endif %}
   </section>
 
   <ul class="ac-stats" aria-label="Your stats">
@@ -56,7 +59,7 @@
   {% if plan.access == 'trial' and not g.kid %}
     <p class="ac-banner">{{ 'Classroom pilot' if plan.pilot else 'Free trial' }}: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} of the full Academy left. <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
   {% elif plan.access == 'free' %}
-    <p class="ac-banner">{% if g.kid %}Some worlds are locked. Ask a grown-up about Plus!{% else %}You're on the free Academy: the first {{ free_world_count }} {{ free_track_name }} worlds. <a href="{{ url_for('plan.plan_page') }}">Unlock everything</a>{% endif %}</p>
+    <p class="ac-banner">{% if g.kid %}Some worlds are locked. {{ 'Ask your teacher!' if summary.learner.class_id else 'Ask a grown-up about Plus!' }}{% elif summary.learner.class_id %}The class's pilot or plan has ended: the first {{ free_world_count }} worlds stay open. <a href="{{ url_for('plan.plan_page') }}">See the classroom plans</a>{% else %}You're on the free Academy: the first {{ free_world_count }} {{ free_track_name }} worlds. <a href="{{ url_for('plan.plan_page') }}">Unlock everything</a>{% endif %}</p>
   {% endif %}
 
   {% if up_next %}
@@ -93,7 +96,7 @@
       {% for card in unit.cards %}{% set ns.n = ns.n + 1 %}{{ world_card(card, lid, ns.n) }}{% endfor %}
     </ol>
   {% endfor %}
-  <h2 class="ac-h2">The Owner's Challenge</h2>
+  <h2 class="ac-h2">{{ "The Owner's Challenge" if track.rule_quests else 'The Class Challenge' }}</h2>
   <ol class="ac-worlds">{{ world_card(final, lid) }}</ol>
 
   {% if mine %}
@@ -102,11 +105,13 @@
     <ol class="ac-worlds">{% for card in mine %}{{ world_card(card, lid) }}{% endfor %}</ol>
   {% endif %}
 
+  {% if explore %}
   <details class="ac-card ac-explore">
     <summary><span class="ac-h3">Explore other industries</span> <span class="muted">· {{ explore|length }} Rule Quests</span></summary>
     <p class="muted">See how other kinds of companies stay safe.{% if explore and not explore[0].open %} These open after stage 1 of {{ unlock_world.title }}.{% endif %}</p>
     <ol class="ac-worlds">{% for card in explore %}{{ world_card(card, lid) }}{% endfor %}</ol>
   </details>
+  {% endif %}
 
   <details class="ac-card ac-explore" id="my-armo">
     <summary><span class="ac-h3">Your Armo: {{ buddy.name }}</span> <span class="muted">· {{ buddy.tagline }}</span></summary>
@@ -140,10 +145,14 @@
     </form>
   {% else %}
     <section class="ac-card ac-grownups" id="grown-ups">
-      <h2 class="ac-h3">For grown-ups</h2>
+      <h2 class="ac-h3">{{ 'For the teacher' if summary.learner.class_id else 'For grown-ups' }}</h2>
       <p class="hint">Lessons, quiz scores and certificates on every track: <a href="{{ url_for('academy.progress_report', learner_id=lid) }}">{{ summary.learner.nickname }}'s progress report</a>.</p>
       <h3 class="ac-h3 mt-s">{{ summary.learner.nickname }}'s own device</h3>
+      {% if summary.learner.class_id %}
+      <p class="hint">Students join on a school device with their code: <a href="{{ url_for('classes.join_codes', class_id=summary.learner.class_id) }}">print the class's join codes</a>, or make one for {{ summary.learner.nickname }} here. They type it at <strong>{{ url_for('kids.join', _external=True) }}</strong>. That device gets the Academy only: no email or password.</p>
+      {% else %}
       <p class="hint">Make a join code, then open <strong>{{ url_for('kids.join', _external=True) }}</strong> on {{ summary.learner.nickname }}'s phone, tablet or computer and type it in. That device gets the Academy only: no business pages, no email or password.</p>
+      {% endif %}
       {% if join %}
         <p class="ac-code" aria-label="Join code">{{ join.code }}</p>
         <p class="hint">Works once, until {{ join.expires_at|local_date }}.</p>

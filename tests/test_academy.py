@@ -468,7 +468,9 @@ class TestAcademyPlan(AppTestCase):
     def test_plan_page_without_stripe(self):
         page = self.client.get("/app/plan").data.decode()
         self.assertIn("Your free trial is on", page)
-        self.assertIn("Online sign-up is coming soon. Contact us to start Plus.", page)
+        self.assertIn("Online sign-up is coming soon.", page)
+        # "Contact us" is a real link, to the help address when SUPPORT_EMAIL isn't set.
+        self.assertIn('href="mailto:help@mtrxhorizyn.com?subject=Start%20Plus">Contact us</a>', page)
         response = self.post("/app/plan/checkout", {"plan": "plus"})
         self.assertEqual(response.status_code, 302)
 

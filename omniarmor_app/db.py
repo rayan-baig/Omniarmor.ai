@@ -468,6 +468,22 @@ MIGRATIONS = [
     CREATE INDEX notifications_user ON notifications (user_id, created_at);
     CREATE INDEX notifications_status ON notifications (status, created_at);
     """),
+    # 1.9.0. orgs.kind: 'business' or 'school'. A school workspace (a
+    # teacher's, from the teacher sign-up) runs the Academy for classes: its
+    # menus, plan page and lessons are made for a classroom (classrooms.py).
+    # Workspaces already here that use the classroom plans, the pilot or
+    # classes, and track no checklist but the school ones (SchoolArmor 8 and
+    # SchoolSafetyArmor 51), are schools. And students already in a class
+    # move to the Classroom track, made for a class (academy.py); what they
+    # finished before still counts in the class view and the pilot report.
+    (25, """
+    ALTER TABLE orgs ADD COLUMN kind TEXT NOT NULL DEFAULT 'business';
+    UPDATE orgs SET kind = 'school' WHERE (plan IN ('classroom', 'school') OR pilot_started_at IS NOT NULL
+        OR EXISTS (SELECT 1 FROM classes WHERE classes.org_id = orgs.id))
+        AND NOT EXISTS (SELECT 1 FROM org_industries WHERE org_industries.org_id = orgs.id
+                        AND org_industries.industry_id NOT IN (8, 51));
+    UPDATE learners SET track = 'classroom', track_chosen = 1 WHERE class_id IS NOT NULL;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

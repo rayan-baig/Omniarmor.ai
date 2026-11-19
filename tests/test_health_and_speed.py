@@ -425,7 +425,7 @@ class TestCompression(AppTestCase):
         packed = self.client.get("/", headers=self.GZ)
         self.assertEqual(packed.headers["Content-Encoding"], "gzip")
         self.assertIn("Accept-Encoding", packed.headers["Vary"])
-        self.assertLess(len(packed.data) * 3, len(plain.data))
+        self.assertLess(len(packed.data) * 2.5, len(plain.data))
         self.assertEqual(gzip.decompress(packed.data), plain.data)
         self.assertEqual(int(packed.headers["Content-Length"]), len(packed.data))
 

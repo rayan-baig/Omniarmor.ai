@@ -599,7 +599,7 @@ def register_cli(app):
         for kid in facts["learners"]:
             cert = f", certificate: {kid['certificate']}" if kid["certificate"] else ""
             click.echo(f"  Academy: {kid['nickname']}, {kid['levels']} levels passed{cert}")
-        click.echo(f"  Reminder digests kept in Radar (not sent): {facts['digests']}")
+        click.echo(f"  Reminder digests kept in Reminders (not sent): {facts['digests']}")
         click.echo(f"  Autopilot: {facts['autopilot']}")
         click.echo("")
         click.echo(f"Sign in at {cfg['BASE_URL']}/login")

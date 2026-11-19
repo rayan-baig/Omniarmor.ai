@@ -232,4 +232,15 @@
   }
   idleTick();
   setInterval(poll, 60000);
+
+  // On a phone, Armo tucks himself to the edge while the page scrolls, and
+  // comes back a moment after it stops, unless his bubble is open.
+  var narrow = window.matchMedia && window.matchMedia("(max-width: 560px)");
+  var tuckTimer = null;
+  window.addEventListener("scroll", function () {
+    if (!narrow || !narrow.matches || !bubble.hidden) return;
+    root.classList.add("tucked");
+    clearTimeout(tuckTimer);
+    tuckTimer = setTimeout(function () { root.classList.remove("tucked"); }, 1500);
+  }, { passive: true });
 })();

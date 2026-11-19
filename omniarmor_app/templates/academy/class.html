@@ -2,7 +2,6 @@
 {% from "academy/_art.html" import avatar %}
 {% block title %}{{ cls.name }}{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
@@ -44,19 +43,28 @@
       <tfoot><tr><th scope="row">Class total</th><td data-class-total>{{ view.lessons }}</td><td class="ac-wide-only">{{ view.students|sum(attribute='stars') }}</td><td class="ac-wide-only"></td><td>{{ view.certificates }}</td></tr></tfoot>
     </table>
     </div>
-    <p class="hint">A lesson is one level passed with at least one star. A certificate comes with passing stage 1 of the Owner's Challenge, after the first lesson of every world.</p>
+    <p class="hint">A lesson is one level passed with at least one star. A certificate comes with passing the Class Challenge, after the first lesson of every world.</p>
   {% else %}
     {% from "_empty.html" import empty %}
     {% if room %}{{ empty('students', 'Each student will show here with their lessons done, stars and certificate. Add your students by first name or nickname.', '#add-students', 'Add students') }}
     {% else %}{{ empty('students', 'Each student will show here with their lessons done, stars and certificate. Choose a classroom plan to add students.', url_for('classes.index') ~ '#plans', 'See the classroom plans') }}{% endif %}
   {% endif %}
 
+  {% if rejected %}
+  <section class="ac-card mt no-print" data-not-added>
+    <h2 class="ac-h3">Not added yet</h2>
+    <ul class="list">
+      {% for typed, why in rejected %}<li data-rejected>{{ typed[:60] }}{% if why %}: {{ why }}{% endif %}</li>{% endfor %}
+    </ul>
+    {% if room %}<p class="hint">They're back in the box below. Fix them and press Add students again.</p>{% endif %}
+  </section>
+  {% endif %}
   {% if room %}
   <form class="ac-card ac-add mt no-print" id="add-students" method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h2 class="ac-h3">Add students</h2>
     <label class="field"><span>First names or nicknames, one on each line</span>
-      <textarea name="names" rows="6" required autocomplete="off" placeholder="Sam&#10;Priya&#10;Jo B"></textarea></label>
+      <textarea name="names" rows="6" required autocomplete="off" placeholder="Sam&#10;Priya&#10;Jo B">{{ names_back }}</textarea></label>
     <p class="hint">First name or nickname only, up to {{ max_name }} characters. No email, last name, birthdate or photo: OmniArmor doesn't ask for them, and each student gets a drawn picture. Room for {{ room }} more.</p>
     <button class="btn ac-btn" type="submit">Add students</button>
   </form>

@@ -35,9 +35,7 @@
   <meta name="twitter:image" content="{{ share_image }}">
   <meta name="twitter:image:alt" content="OmniArmor.ai: {{ SLOGAN }}">
   {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/ibm-plex-sans-400.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   {% block head %}{% endblock %}
 </head>
@@ -45,7 +43,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap">
-    <a class="lockup" href="{{ url_for('app.overview') if g.user else (url_for('academy.level_map', learner_id=g.kid.id) if g.kid else url_for('public.home')) }}" aria-label="OmniArmor.ai home">
+    <a class="lockup" href="{{ home_url() if g.user else (url_for('academy.level_map', learner_id=g.kid.id) if g.kid else url_for('public.home')) }}" aria-label="OmniArmor.ai home">
       <svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
         <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>
         <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
@@ -56,9 +54,14 @@
     <nav class="nav" aria-label="Main">
       {% if g.user %}
         {% set ep = request.endpoint or '' %}
+        {% if class_workspace %}
+          {# A school's workspace is named after the school, not a checklist's brand. #}
+          <a href="{{ url_for('classes.index') }}" {% if ep.startswith('classes.') %}aria-current="page"{% endif %} data-school-name>{{ g.org.name }}</a>
+        {% else %}
         {% for ind in nav_industries or [] %}
           <a href="{{ url_for('app.industry', industry_id=ind.id) }}" {% if ep == 'app.industry' and request.view_args.industry_id == ind.id %}aria-current="page"{% endif %}>{{ ind.brand }}</a>
         {% endfor %}
+        {% endif %}
         <form method="post" action="{{ url_for('demo.leave') if g.demo else url_for('auth.logout') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit">{{ 'Leave the demo' if g.demo else 'Sign out' }}</button>
@@ -70,7 +73,8 @@
           <button type="submit">Leave</button>
         </form>
       {% else %}
-        <a href="{{ url_for('public.industries') }}">Industries</a>
+        <a href="{{ url_for('public.industries') }}">Businesses</a>
+        <a href="{{ url_for('public.academy_schools') }}"{% if request.endpoint in ('public.academy_schools', 'public.class_guide') %} aria-current="page"{% endif %}>Schools</a>
         <a href="{{ url_for('kids.join') }}">Kids</a>
         <a href="{{ url_for('auth.login') }}">Sign in</a>
         <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
@@ -93,6 +97,12 @@
           {% endif %}
           {% if g.role == 'owner' %}<a href="{{ url_for('plan.plan_page') }}">Start again now</a>{% endif %}</p>
         </div>
+      {% elif pa.read_only and class_workspace %}
+        {% if not (request.endpoint or '').startswith(('academy.', 'classes.', 'plan.')) %}
+        <div class="plan-banner readonly no-print" data-readonly-banner>
+          <p><strong>Read-only.</strong> The school safety checklist comes with Whole school. Your classes keep working, and everything here can be seen, printed and downloaded. <a href="{{ url_for('plan.plan_page') }}">See the classroom plans</a></p>
+        </div>
+        {% endif %}
       {% elif pa.read_only and pa.reason == 'academy_only' %}
         {% if not (request.endpoint or '').startswith(('academy.', 'classes.')) %}
         <div class="plan-banner readonly no-print" data-readonly-banner>
@@ -165,13 +175,23 @@
 {% if g.user %}
 {% set ep = request.endpoint or '' %}
 <nav class="tabbar no-print" aria-label="Sections">
-  {% for endpoint, label, meaning, icon, active in [
-      ('app.overview', 'HQ', 'Overview', 'home', ep in ('app.overview', 'app.industry')),
-      ('app.report', 'Intel', 'Compliance report', 'report', ep == 'app.report'),
-      ('app.audit', 'Vault', 'Audit trail', 'audit', ep == 'app.audit'),
-      ('app.notifications', 'Radar', 'Reminders and deadlines', 'bell', ep == 'app.notifications'),
-      ('academy.home', 'Academy', 'Future Owner Academy', 'academy', ep.startswith('academy.')),
-      ('app.settings', 'Armory', 'Settings', 'settings', ep == 'app.settings')] %}
+  {% if class_workspace %}
+  {% set tabs = [
+      ('classes.index', 'Home', 'Your classes', 'academy', ep.startswith(('classes.', 'academy.'))),
+      ('app.overview', 'Checklist', 'The school safety checklist', 'report', ep in ('app.overview', 'app.industry', 'app.report')),
+      ('app.notifications', 'Reminders', 'Reminder emails and deadlines', 'bell', ep == 'app.notifications'),
+      ('app.audit', 'History', 'Every change, with who and when', 'audit', ep == 'app.audit'),
+      ('app.settings', 'Settings', 'Settings and plans', 'settings', ep in ('app.settings', 'plan.plan_page'))] %}
+  {% else %}
+  {% set tabs = [
+      ('app.overview', 'Home', 'What needs attention', 'home', ep in ('app.overview', 'app.industry')),
+      ('app.report', 'Report', 'Compliance report', 'report', ep == 'app.report'),
+      ('app.audit', 'History', 'Every change, with who and when', 'audit', ep == 'app.audit'),
+      ('app.notifications', 'Reminders', 'Reminder emails and deadlines', 'bell', ep == 'app.notifications'),
+      ('academy.home', 'Academy', 'Future Owner Academy', 'academy', ep.startswith(('academy.', 'classes.'))),
+      ('app.settings', 'Settings', 'Settings and plans', 'settings', ep in ('app.settings', 'plan.plan_page'))] %}
+  {% endif %}
+  {% for endpoint, label, meaning, icon, active in tabs %}
     <a class="tab" href="{{ url_for(endpoint) }}" title="{{ meaning }}" {% if active %}aria-current="page"{% endif %}>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       {% if icon == 'home' %}<path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/>

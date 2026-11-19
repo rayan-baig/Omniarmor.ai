@@ -185,7 +185,11 @@ class TestBusinessDemo(DemoCase):
 
     def test_links_from_the_landing_trade_and_classroom_pages(self):
         self.assertIn('href="/demo/business"', self.client.get("/").data.decode())
-        self.assertIn('href="/demo/business"', self.client.get("/for/schools").data.decode())
+        # A school's pages lead to the classroom demo, never the pretend restaurant.
+        schools = self.client.get("/for/schools").data.decode()
+        self.assertIn('href="/demo/classroom"', schools)
+        self.assertNotIn('href="/demo/business"', schools)
+        self.assertIn('href="/demo/business"', self.client.get("/for/salons-and-barbershops").data.decode())
         self.assertIn('href="/demo/classroom"', self.client.get("/classrooms").data.decode())
         robots = self.client.get("/robots.txt").data.decode()
         self.assertIn("Disallow: /demo", robots)
@@ -216,21 +220,22 @@ class TestClassroomDemo(DemoCase):
         self.assertIn("KID-DEMO0001", codes)
         progress = text(self.client.get(f"/app/academy/{facts['showcase']}/progress"))
         self.assertIn(f"{demo_mode.SHOWCASE_STUDENT}'s progress", progress)
-        first = academy.TRACKS[academy.DEFAULT_TRACK].topic_worlds[0].number
+        first = academy.CLASSROOM.topic_worlds[0].number
         lesson = self.client.get(f"/app/academy/{facts['sample']}/world/{first}/stage/1")
         self.assertEqual(lesson.status_code, 200)
         self.assertIn("Step 5 of 5: A sample lesson.", text(lesson))
-        self.assertIn('href="/signup?industry=51&amp;then=classes" data-demo-signup>Start your free trial',
+        self.assertIn(academy.CLASS_BUSINESS, text(lesson))
+        self.assertIn('href="/signup?then=classes" data-demo-signup>Start your free pilot',
                       lesson.data.decode())
 
     def test_the_sample_lesson_can_be_played_and_nothing_is_kept(self):
         self.open_demo("classroom")
         facts = self.facts("classroom")
-        first = academy.TRACKS[academy.DEFAULT_TRACK].topic_worlds[0].number
+        t = academy.CLASSROOM
+        first = t.topic_worlds[0].number
         url = f"/app/academy/{facts['sample']}/world/{first}/stage/1"
         self.client.get(url)
-        t = academy.TRACKS[academy.DEFAULT_TRACK]
-        questions = academy.quiz(t, first, 1, demo_mode.SCHOOL, [demo_mode.SCHOOL_INDUSTRY],
+        questions = academy.quiz(t, first, 1, academy.CLASS_BUSINESS, [],
                                  academy.attempt_seed(facts["sample"], t.key, first, 1, 1))
         data = {"attempt": "1", **{f"q{i}": str(q.answer) for i, q in enumerate(questions)}}
         r = self.post(url, data)
@@ -316,17 +321,13 @@ class TestTeacherGettingStarted(AppTestCase):
 
     def test_from_the_schools_page_a_teacher_lands_on_classes_and_the_list_ticks_itself(self):
         page = self.client.get("/classrooms").data.decode()
-        self.assertIn("/signup?industry=51&amp;then=classes", page)
+        self.assertIn("/signup?then=classes", page)
         form = self.client.get("/signup?industry=51&then=classes").data.decode()
         self.assertIn('name="then" value="classes"', form)
         r = self.post("/signup", {"name": "Sam", "email": "sam@example.com", "password": PASSWORD,
-                                  "org_name": "Test School", "timezone": "UTC", "industries": "51",
-                                  "then": "classes"})
+                                  "org_name": "Test School", "timezone": "UTC", "then": "classes"})
         self.assertTrue(r.headers["Location"].endswith("/app/academy/classes"))
-        page = self.steps()
-        self.assertIn("Getting started · 0 of 5 done", page)
-        self.assertIn("Start the free pilot : not done yet", page)
-        self.post("/app/academy/classes/pilot")
+        # The teacher sign-up starts the free class pilot: the first step is done.
         self.assertIn("Getting started · 1 of 5 done", self.steps())
         r = self.post("/app/academy/classes", {"name": "Room 4"})
         class_id = int(r.headers["Location"].rsplit("/", 1)[1])
@@ -341,7 +342,7 @@ class TestTeacherGettingStarted(AppTestCase):
         learner = conn.execute("SELECT id FROM learners WHERE class_id = ?", (class_id,)).fetchone()[0]
         conn.execute("INSERT INTO learner_progress (learner_id, level, attempts, best_score, best_stars,"
                      " completed_at) VALUES (?, ?, 1, 5, 2, '2026-11-17T10:00:00+00:00')",
-                     (learner, academy.level_id(academy.TRACKS[academy.DEFAULT_TRACK], 1, 1)))
+                     (learner, academy.level_id(academy.CLASSROOM, academy.CLASSROOM.topics[0], 1)))
         conn.commit()
         conn.close()
         self.assertNotIn("Getting started", self.steps())

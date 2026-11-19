@@ -1,5 +1,9 @@
 /* Future Owner Academy: the same dark theme, made playful for kids with a
    rounded display face, big touch targets, bright accents and gentle motion. */
+/* The Academy's rounded face, served from this site like the others (app.css). */
+@font-face{font-family:'Baloo 2';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/baloo-2-600.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Baloo 2';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/baloo-2-700.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Baloo 2';font-style:normal;font-weight:800;font-display:swap;src:url(fonts/baloo-2-800.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 .ac{--kid:'Baloo 2','Trebuchet MS',system-ui,sans-serif;--sun:#FFC24B;--mint:#4FD1A5;
   --card:#1A1816;--card-2:#221F1C;font-size:17px}
 .ac-title{font-family:var(--kid);font-weight:800;font-size:clamp(30px,5vw,44px);line-height:1.02;letter-spacing:0;text-transform:none;margin:4px 0 8px}

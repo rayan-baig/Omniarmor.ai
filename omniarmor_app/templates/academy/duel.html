@@ -2,7 +2,6 @@
 {% from "academy/_art.html" import armo, avatar, level_icon %}
 {% block title %}Duel: {{ learner.nickname }} vs {{ view.other.nickname }}{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ academy_font }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% if view.me is none and not locked %}<script src="{{ url_for('static', filename='academy.js') }}" defer></script>{% endif %}
 {% endblock %}

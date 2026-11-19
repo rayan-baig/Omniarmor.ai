@@ -730,6 +730,11 @@ def _bulk_step(rule, action, day):
     if action in ("yes", "no"):
         if rule.kind not in ("required", "forbidden"):
             raise ValidationError(f"\"{rule.title}\" isn't a yes-or-no question.")
+        if action == "yes" and rule.kind == "forbidden":
+            # Yes is the bad answer here ("Is a sick employee working?"): never
+            # given to several checks at once by mistake. Answer it on its own.
+            raise ValidationError(f"\"{rule.title}\": Yes would mean a problem, so it isn't answered with the"
+                                  " others. Untick it, or answer it on its own.")
         return "save", {"answer": action}
     if action == "date":
         if not mode:

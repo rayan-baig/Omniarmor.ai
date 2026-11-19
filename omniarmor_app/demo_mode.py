@@ -94,17 +94,17 @@ READINGS = {
     },
 }
 
-# The class: pretend first names, and the stages each one has passed in each
-# world of the first track (world number: stages). One student hasn't
+# The class: pretend first names, and the lessons each one has passed in each
+# world of the Classroom track (world number: lessons). One student hasn't
 # started, so the sample lesson is a real first lesson.
 STUDENTS = [
-    ("Ava", "rocket", {1: 6, 2: 4, 3: 3, 4: 2, 5: 2, 6: 1}, 5),
-    ("Ben", "star", {1: 4, 2: 2, 3: 1}, 3),
-    ("Chloe", "bolt", {1: 5, 2: 3, 3: 2, 4: 1}, 4),
-    ("Dev", "crown", {1: 2, 2: 1}, 1),
-    ("Ella", "gem", {1: 3, 2: 2, 3: 1}, 2),
-    ("Finn", "shield", {1: 1}, 1),
-    ("Grace", "paw", {1: 4, 2: 3, 3: 2, 4: 1, 5: 1}, 3),
+    ("Ava", "rocket", {60: 4, 2: 4, 61: 3, 62: 2, 7: 2, 63: 1}, 5),
+    ("Ben", "star", {60: 4, 2: 2, 61: 1}, 3),
+    ("Chloe", "bolt", {60: 4, 2: 3, 61: 2, 62: 1}, 4),
+    ("Dev", "crown", {60: 2, 2: 1}, 1),
+    ("Ella", "gem", {60: 3, 2: 2, 61: 1}, 2),
+    ("Finn", "shield", {60: 1}, 1),
+    ("Grace", "paw", {60: 4, 2: 3, 61: 2, 62: 1, 7: 1}, 3),
     ("Hugo", "leaf", {}, 0),
 ]
 SAMPLE_STUDENT = "Hugo"
@@ -186,6 +186,7 @@ def _fill_classroom(conn, cfg, now, rng):
     created = _at(opened, 15, 10)
     teacher = _user(conn, TEACHER, created, "sweet")
     org = _org(conn, SCHOOL, created, iso(now + timedelta(days=2)))
+    conn.execute("UPDATE orgs SET kind = 'school' WHERE id = ?", (org,))
     conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
                  (teacher, org, created))
     conn.execute("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)", (org, SCHOOL_INDUSTRY))
@@ -206,12 +207,12 @@ def _fill_classroom(conn, cfg, now, rng):
         if stages:
             spec = {"nickname": name, "avatar": picture, "armo": armo.DEFAULT_KID, "certificate": False,
                     "streak": streak, "stages": stages}
-            learner = demo._learner(conn, org, teacher, spec, today, rng)["id"]
+            learner = demo._learner(conn, org, teacher, spec, today, rng, academy.CLASSROOM)["id"]
         else:
             learner = conn.execute(
                 "INSERT INTO learners (org_id, nickname, avatar, armo, track, track_chosen, created_by, created_at,"
                 " device_epoch) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)",
-                (org, name, picture, armo.DEFAULT_KID, academy.DEFAULT_TRACK, teacher, _at(opened, 15, 30),
+                (org, name, picture, armo.DEFAULT_KID, academy.CLASSROOM.key, teacher, _at(opened, 15, 30),
                  new_device_epoch())).lastrowid
         conn.execute("UPDATE learners SET class_id = ? WHERE id = ?", (class_id, learner))
         # Join codes that can't work anywhere: real ones never hold an O or a 0.
@@ -350,7 +351,7 @@ def tour(kind):
             ("app.report", url_for("app.report"), "Report",
              "Every check's status in one report, to print or download for an inspector."),
         ]
-    first = academy.TRACKS[academy.DEFAULT_TRACK].topic_worlds[0].number
+    first = academy.CLASSROOM.topic_worlds[0].number
     return [
         ("classes.index", url_for("classes.index"), "Classes",
          "Your classes and the free classroom pilot."),
@@ -367,7 +368,7 @@ def tour(kind):
 
 def signup_url(kind):
     if kind == "classroom":
-        return url_for("auth.signup", industry=SCHOOL_INDUSTRY, then="classes")
+        return url_for("auth.signup", then="classes")
     return url_for("auth.signup", industry=RESTAURANT)
 
 

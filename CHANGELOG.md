@@ -3,6 +3,62 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.9.0 (19 November 2026)
+
+Fixes from an honest product review: OmniArmor for a classroom feels made
+for a classroom, and a small business finds its own trade first.
+
+- **Lessons made for a class.** Students in a class learn on a new
+  Classroom track, through a pretend class business, a lemonade stand
+  called Sunny Cup Lemonade. They are never asked about "your family's
+  company", a school is never a wrong answer, and nothing is about the app
+  itself or a school's profit. The track leaves out the family worlds, the
+  app's lights and reminders, hiring and firing, taxes, loans and the
+  industry Rule Quests. Each world is a fixed set of questions in lessons of
+  five, so no question comes back in a later lesson: 16 worlds and 107
+  lessons, counted honestly. Families keep their own tracks as they were.
+  Students already in a class move to the Classroom track; what they
+  finished still counts in the class view and the pilot report.
+- **A teacher guide** at /classrooms/guide, to read or print: what each
+  world teaches, how long it takes, and questions to talk about.
+- **A teacher's own sign-up.** Name, school email, password and school
+  name: no list of industries. It says "30-day free pilot" and starts the
+  pilot straight away, so there is one countdown.
+- **A school's own workspace.** The top bar shows the school's name, not
+  "SchoolSafetyArmor". The plan page shows only Classroom and Whole school
+  with the pilot's days left, never Pro, Plus or the Kitchen Safety Bundle.
+  Signing in lands on the classes page.
+- **Two audiences kept apart.** "Schools" in the top menu leads to the
+  Academy for schools, and the schools page leads to the classroom demo,
+  with the school's own prices. The Kitchen Safety Bundle shows only on the
+  restaurant pages and for workspaces CyberLogix can help. The landing
+  page shows two prices instead of four.
+- **Small businesses first.** The industries page and the sign-up start
+  with restaurants, bars, salons, child care, dental offices, construction
+  and shops; every other industry is still there, under "More industries
+  (starter lists)".
+- **No dead end without online payment.** "Contact us" is now an email
+  link, to SUPPORT_EMAIL or help@mtrxhorizyn.com when it isn't set, and
+  Help and Settings always give an address.
+- **Adding students keeps what you typed.** The names that can be added
+  are added; the others are listed with the reason and put back in the box.
+  A name typed twice no longer says it is "already in this class".
+- **Plain menu names:** Home, Report, History, Reminders, Academy and
+  Settings (they were HQ, Intel, Vault, Radar and Armory).
+- **Smaller fixes.** "Why it matters" appeared twice on a check: the
+  second is now "Rule and source". Money shows its cents ($15.50, not
+  $15.5). After "Done today" on a 7-day check, the message no longer
+  promises a 30-day reminder. "Answer Yes" for several checks at once no
+  longer gives Yes to a check where Yes is a problem (a sick employee
+  working, signs of pests). The join page speaks to teachers too. The
+  result screen no longer shows "0 of 5 right" while counting up. On a
+  phone, Armo is smaller and slides out of the way while you scroll.
+- **Students' privacy: fonts from our own server.** The pages no longer
+  load fonts from Google, so no outside company sees a student's or anyone
+  else's visit. Ten small font files (196 KB in all, only the weights the
+  pages use; a browser loads only what a page needs), and the security
+  policy now allows fonts from this site only.
+
 ## 1.8.0 (19 November 2026)
 
 Fast and solid: lighter pages, and the app says quickly when something

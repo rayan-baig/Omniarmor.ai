@@ -191,8 +191,9 @@ class TestSettingsBasics(AppTestCase):
         self.assertIn("Only the workspace owner can change the plan", self.page(self.member))
         self.assertNotIn("Only the workspace owner can change the plan", self.page(self.client))
 
-    def test_support_email_only_when_set(self):
-        self.assertNotIn("mailto:", self.page(self.client))
+    def test_support_email_falls_back_to_the_help_address(self):
+        self.assertIn('write to <a href="mailto:help@mtrxhorizyn.com">help@mtrxhorizyn.com</a>',
+                      self.page(self.client))
         self.app.config["SUPPORT_EMAIL"] = "help@omniarmor.test"
         page = self.page(self.member)
         self.assertIn('write to <a href="mailto:help@omniarmor.test">help@omniarmor.test</a>', page)

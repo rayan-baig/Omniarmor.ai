@@ -237,6 +237,9 @@ const ICONS = {
 
 /* Mirrors omni_armor_rules.rule.evaluate so the page and the engine agree. */
 function fmt(value, unit) {
+  if (unit === "$" && !Number.isInteger(value)) {
+    return "$" + value.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
   const number = value.toLocaleString("en-US", {maximumFractionDigits: 2});
   if (!unit) return number;
   if (unit.startsWith("°") || unit === "%") return number + unit;

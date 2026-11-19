@@ -9,6 +9,7 @@
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup', industry=info.id) }}">Start free with {{ info.brand }}</a>
   </div>
+  {% set show_bundle = bundle_industry %}
   {% include "_plan_summary.html" %}
 </section>
 <h2>Start with these {{ top|length }}</h2>

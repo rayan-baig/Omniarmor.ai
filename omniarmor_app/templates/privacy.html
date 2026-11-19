@@ -24,7 +24,7 @@
 <p><strong>When you sign up:</strong> your name, email, password, company name, time zone and the industries you pick. We store your password scrambled (hashed), so nobody can read it, not even us.</p>
 <p><strong>When you use the tracker:</strong> the dates (and, for checks that count hours or minutes, the times), numbers and yes-or-no answers you enter, any limits you change, and who changed what and when. That last part is the audit trail.</p>
 <p><strong>When you connect CyberLogix</strong> (the Kitchen Safety Bundle): once a day it sends a temperature summary for your fridges and freezers: how many stayed in range, the warmest reading, and any breaches with their unit names, times, temperatures and the role (like "on-call staff") of who acknowledged them, never anyone's name. We keep the summaries and their notes in your workspace. We store only a scrambled copy (a hash) of the connection key, and note the IP address each report comes from to limit wrong guesses. CyberLogix signs the reports of workspaces on the bundle; we keep the time of the last signed report, to know whether the bundle covers your plan, and each signature for {{ facts.signature_minutes }} minutes, so the same signed report can't count twice.</p>
-<p><strong>Emails we send:</strong> we keep a copy of each email (reminders, time-limit alerts and password reset emails), so you can see it in Radar. Reminders go out once a day, as one digest. Checks that count hours or minutes also send an alert when they get close to their limit and when they pass it; we look for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
+<p><strong>Emails we send:</strong> we keep a copy of each email (reminders, time-limit alerts and password reset emails), so you can see it under Reminders. Reminders go out once a day, as one digest. Checks that count hours or minutes also send an alert when they get close to their limit and when they pass it; we look for those every {{ 'minute' if facts.alert_minutes == 1 else facts.alert_minutes ~ ' minutes' }}.</p>
 <p><strong>When a kid uses the Academy:</strong> a nickname, a picture, their Armo helper, their track, their levels and stars, the days they played, the questions they got wrong (for practice), their friends and their duels. We never ask a kid for a real name, email, birthday or password. Please pick a nickname, not a real name.</p>
 <p><strong>When a teacher runs the Academy for a class:</strong> the class name and each student's first name or nickname, typed by the teacher, and the same Academy progress as above. We never ask for a student's email, last name, birthdate or photo.</p>
 <p><strong>When you visit:</strong></p>
@@ -67,10 +67,9 @@
 <ul>
   <li><strong>Our hosting company</strong> runs the server. It stores the database, the backups and the server logs.</li>
   <li><strong>Our email service</strong> delivers our emails, so it sees your email address and the message.</li>
-  <li><strong>Google Fonts.</strong> Our pages load their fonts from Google. That means Google sees your IP address and browser each time you open a page.</li>
   <li><strong>Stripe</strong> handles payments for Pro and Plus. When you pay, Stripe gets your email, your card details, your workspace number and which plan you chose.</li>
 </ul>
-<p>That's the full list. We don't sell your data or share it for ads.</p>
+<p>That's the full list. We don't sell your data or share it for ads. Our pages, fonts and pictures all come from our own server, so no other company sees when you or a student opens a page.</p>
 
 <h2 id="keep">How long we keep it</h2>
 <ul>

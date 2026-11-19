@@ -32,17 +32,18 @@ class TestLandingPage(AppTestCase):
         top = hero(self.client.get("/"))
         checks = sum(len(rules_for(i)) for i in INDUSTRIES)
         self.assertIn(f"{len(INDUSTRIES)} industries · {checks} checks", top)
-        self.assertIn(f"For businesses in {len(INDUSTRIES)} regulated industries", top)
-        for i in (2, 1, 29, 45, 5, 28):
-            self.assertIn(INDUSTRIES[i]["sector"].lower(), top)
+        # Small businesses first, the rest as starter lists.
+        self.assertIn("For small businesses like restaurants, bars, salons, child care, dental offices,"
+                      f" construction and shops, with starter lists for {len(INDUSTRIES)} industries in all", top)
         self.assertIn(f"{self.app.config['ACADEMY_TRIAL_DAYS']}-day free trial of everything in {plans.PLUS.name}", top)
         self.assertIn(f"The first {len(FREE_WORLDS)} Launchpad worlds are free for everyone", top)
-        # The prices are the code's, and only those.
+        # The prices are the code's, and only those: Pro and Plus. The Kitchen Safety
+        # Bundle is on the restaurant page, and the classroom plans on the schools page.
         self.assertIn(f"{plans.PRO.name} · compliance tracker {plans.PRO.price}", top)
         self.assertIn(f"{plans.PLUS.name} · tracker and Academy {plans.PLUS.price}", top)
-        self.assertEqual(set(re.findall(r"\$\d+", top)),
-                         {f"${d}" for d in (plans.PRO.dollars, plans.PLUS.dollars, plans.BUNDLE_DOLLARS,
-                                            plans.bundle_upgrade_dollars())})
+        self.assertEqual(set(re.findall(r"\$\d+", top)), {f"${d}" for d in (plans.PRO.dollars, plans.PLUS.dollars)})
+        self.assertNotIn(plans.BUNDLE_NAME, top)
+        self.assertIn('href="/classrooms"', self.client.get("/").data.decode())
 
     def test_the_numbers_follow_the_settings(self):
         tmp = tempfile.TemporaryDirectory()
@@ -65,7 +66,7 @@ class TestLandingPage(AppTestCase):
         self.assertIn("Without a plan, the compliance tracker is read-only", terms)
 
     def test_academy_level_counts_come_from_the_tracks(self):
-        page = text(self.client.get("/"))
+        page = text(self.client.get("/help"))
         low, high = min(t.total for t in TRACK_LIST), max(t.total for t in TRACK_LIST)
         self.assertIn(f"{len(TRACK_LIST)} tracks, from {low:,} to {high:,} levels", page)
 

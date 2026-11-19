@@ -164,7 +164,7 @@ class AutopilotTest(unittest.TestCase):
         with mock.patch("omniarmor_app.views.render_template", side_effect=RuntimeError("template exploded")):
             with self.assertRaises(bugfinder.SelfTestFailure) as caught:
                 bugfinder.self_test()
-        self.assertEqual(caught.exception.step, "HQ overview")
+        self.assertEqual(caught.exception.step, "Home overview")
         self.assertIn("crashed with RuntimeError: template exploded", caught.exception.detail)
 
     def test_daily_run_reports_a_failed_self_test(self):

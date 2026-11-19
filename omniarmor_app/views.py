@@ -11,9 +11,10 @@ from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, 
 from . import connections, nudges, plans, usage
 from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
+from .config import support_email
 from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
 from .db import get_db, now_iso, record_audit
-from .security import clean_text, flash_error, login_required, owner_required
+from .security import clean_text, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, LEVEL_LABEL, ValidationError, apply_bulk, apply_change, local_date,
                        org_industry_ids, org_now, org_today, states_for_org, tally)
 
@@ -33,9 +34,12 @@ def _industry_or_404(industry_id):
 def nav_context():
     if g.get("org") is None:
         return {}
+    from .classrooms import is_class_workspace
     ids = org_industry_ids(get_db(), g.org["id"])
     # What the workspace's plan allows: base.html's read-only and grace banners, and the industry pages.
-    return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": plans.access(g.org)}
+    # class_workspace: a school's, whose menus are a classroom's (base.html).
+    return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": plans.access(g.org),
+            "class_workspace": is_class_workspace(g.org)}
 
 
 @bp.route("")
@@ -196,6 +200,11 @@ def read_only_message(access):
                            " first location)",
            "academy_only": "Your Classroom plan covers the Academy for your class, not the school checklist"
            }.get(access["reason"], "Your free trial has ended")
+    from .classrooms import is_class_workspace
+    if is_class_workspace(g.org):
+        return ("The school safety checklist comes with Whole school, so it is read-only. Nothing was saved. Your"
+                " records are safe: you can still see, print and download them. See the classroom plans on the"
+                " Plans page.")
     return (f"{why}, so the compliance tracker is read-only. Nothing was saved. Your records are safe: you can"
             " still see, print and download them. Choose Pro or Plus to save new checks.")
 
@@ -244,10 +253,16 @@ def reminder_line(industry_id, rule_key):
         return ""
     if not g.user["email_reminders"]:
         return "Your daily reminder emails are off; turn them on in Settings to get one before it's due."
-    days = ", ".join(str(d) for d in REMINDER_DAYS[:-1]) + f" and {REMINDER_DAYS[-1]}"
     if state.overdue:
         return "It's overdue, so the team's reminder email lists it each week until it's done."
-    return (f"Reminder set: the team gets an email {days} day{'s' if REMINDER_DAYS[-1] != 1 else ''} before it's due"
+    if state.days_left == 0:
+        return "It's due today, so today's reminder email lists it."
+    # Only the reminders still ahead: a 7-day clock started today gets no "30 days before".
+    ahead = [d for d in REMINDER_DAYS if d <= state.days_left]
+    if not ahead:
+        return f"Reminder set: the team gets an email on the day it's due, {state.due_label}."
+    days = ", ".join(str(d) for d in ahead[:-1]) + (" and " if len(ahead) > 1 else "") + str(ahead[-1])
+    return (f"Reminder set: the team gets an email {days} day{'s' if ahead[-1] != 1 else ''} before it's due"
             f" on {state.due_label}, and on the day.")
 
 
@@ -415,9 +430,9 @@ def _settings_page(new_key=None):
                            switch_yearly=switch_offer(current_app.config, g.org, access, plans.YEAR),
                            can_add_location=sum(1 for l in locations if l["role"] == "owner") < MAX_LOCATIONS, picked=set(org_industry_ids(conn, g.org["id"])),
                            industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
-                           access=access, operator=operator,
+                           access=access, operator=operator, class_limits=plans.class_limits(g.org),
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
-                           support_email=current_app.config.get("SUPPORT_EMAIL", ""),
+                           support_email=support_email(current_app.config),
                            connection=connections.status(conn, g.org), new_key=new_key,
                            all_temperature_checks=[(INDUSTRIES[i], find_rule(i, key))
                                                    for i, key in connections.TEMPERATURE_CHECKS])
@@ -548,7 +563,7 @@ def switch_location(org_id):
         abort(404)
     session["org_id"] = org_id
     flash(f"You're working in {row['name']} now.", "ok")
-    return redirect(url_for("app.overview"))
+    return redirect(home_url())
 
 
 @bp.route("/settings/invite", methods=["POST"])
@@ -613,7 +628,7 @@ def delete_workspace():
     if other is not None:
         session["org_id"] = other["id"]
         flash(f"{name} and its data were deleted. You're working in {other['name']} now.", "ok")
-        return redirect(url_for("app.overview"))
+        return redirect(home_url())
     session.clear()
     flash("Your workspace and its data were deleted.", "ok")
     return redirect(url_for("public.home"))
