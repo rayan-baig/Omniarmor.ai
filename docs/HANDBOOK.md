@@ -1099,6 +1099,7 @@ To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: cop
 ### 9.5 Monitoring
 
 - `GET /healthz` returns `{"status": "ok"}` with HTTP 200 when the app and database are working (and the schema is current), with the schema version and the release number (`omniarmor_app/version.py`, also shown in Settings under About) and nothing else. Point an uptime monitor at it.
+- `GET /readyz` checks everything behind the pages (the database, the settings production needs, the two background timers' "last ran at", the last daily job, the newest backup and the disk) and answers 200 or 503 with only "ok", "fail" or "off" per check. `flask --app wsgi ready` on the server explains each failure. Point a second monitor at it. What each alert means: docs/OPERATIONS.md, section 5, "If the app is down".
 - Set `OPERATOR_EMAIL` so Autopilot can email problems, and optionally `ERRORS_EMAIL` for a short report of each server error (section 6.6). To see the usage counts and the weekly report's box, sign up with that address and run `flask --app wsgi make-operator` with it on the server (section 6.8).
 - The server log records each daily run, each Autopilot fix, and any failure.
 
@@ -6241,6 +6242,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/favicon.ico` | Favicon |
 | GET, POST | `/forgot` | Ask for a password reset link |
 | GET | `/healthz` | Health check for uptime monitors |
+| GET | `/readyz` | Readiness check for uptime monitors: database, settings, timers, daily job, backup, disk |
 | GET | `/help` | Help: 15 questions and answers |
 | GET | `/industries` | List of all 51 industries |
 | GET | `/industries/<slug>` | Public page for one industry |

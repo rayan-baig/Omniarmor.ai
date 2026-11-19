@@ -13,6 +13,19 @@ def _flag(name, default):
     return value.strip().lower() in ("1", "true", "yes", "on")
 
 
+class SettingsError(RuntimeError):
+    """A setting is missing or wrong. The message says which and what to do,
+    in plain words: it is what the server log shows when the app won't start."""
+
+
+def _whole(env, name, default):
+    value = env.get(name, default)
+    try:
+        return int(str(value).strip())
+    except ValueError:
+        raise SettingsError(f"{name} must be a whole number, like {default}. It is set to {value!r}.") from None
+
+
 def load_config(**overrides):
     env = os.environ
     instance = os.path.join(os.getcwd(), "instance")
@@ -23,15 +36,15 @@ def load_config(**overrides):
         "SECRET_KEY": env.get("SECRET_KEY", ""),
         "DATABASE": database,
         "BACKUP_DIR": env.get("BACKUP_DIR", os.path.join(os.path.dirname(os.path.abspath(database)), "backups")),
-        "BACKUP_KEEP": int(env.get("BACKUP_KEEP", "14")),
+        "BACKUP_KEEP": _whole(env, "BACKUP_KEEP", "14"),
         "BASE_URL": env.get("BASE_URL", "http://localhost:8000").rstrip("/"),
         "SMTP_HOST": env.get("SMTP_HOST", ""),
-        "SMTP_PORT": int(env.get("SMTP_PORT", "587")),
+        "SMTP_PORT": _whole(env, "SMTP_PORT", "587"),
         "SMTP_USER": env.get("SMTP_USER", ""),
         "SMTP_PASSWORD": env.get("SMTP_PASSWORD", ""),
         "SMTP_STARTTLS": _flag("SMTP_STARTTLS", True),
         "MAIL_FROM": env.get("MAIL_FROM", "OmniArmor <no-reply@localhost>"),
-        "DAILY_JOB_HOUR_UTC": int(env.get("DAILY_JOB_HOUR_UTC", "11")),
+        "DAILY_JOB_HOUR_UTC": _whole(env, "DAILY_JOB_HOUR_UTC", "11"),
         "SCHEDULER_ENABLED": _flag("SCHEDULER_ENABLED", True),
         # Autopilot fixes small problems itself and emails big ones here.
         "AUTOPILOT_ENABLED": _flag("AUTOPILOT_ENABLED", True),
@@ -53,7 +66,7 @@ def load_config(**overrides):
         "SUPPORT_EMAIL": env.get("SUPPORT_EMAIL", "").strip(),
         # Plans (plans.py, where the prices live). The free trial's length, for
         # the whole app (it began as the Academy's trial, hence the name).
-        "ACADEMY_TRIAL_DAYS": int(env.get("ACADEMY_TRIAL_DAYS", "14")),
+        "ACADEMY_TRIAL_DAYS": _whole(env, "ACADEMY_TRIAL_DAYS", "14"),
         # Stripe's price ids: Pro, Plus, and Plus for a Kitchen Safety Bundle
         # workspace (the difference between them), each monthly and yearly.
         # Each is a per-location price in Stripe; checkout sends the location
@@ -70,7 +83,7 @@ def load_config(**overrides):
         "CLASSROOM_YEARLY_STRIPE_PRICE": env.get("CLASSROOM_YEARLY_STRIPE_PRICE", "").strip(),
         "SCHOOL_YEARLY_STRIPE_PRICE": env.get("SCHOOL_YEARLY_STRIPE_PRICE", "").strip(),
         # The free classroom pilot's length, in days (once per workspace, no card).
-        "CLASSROOM_PILOT_DAYS": int(env.get("CLASSROOM_PILOT_DAYS", "30")),
+        "CLASSROOM_PILOT_DAYS": _whole(env, "CLASSROOM_PILOT_DAYS", "30"),
         # Where a school writes to pay by invoice. Unset, SUPPORT_EMAIL, and
         # without that MTRX Horizyn's help address.
         "SCHOOL_INVOICE_EMAIL": env.get("SCHOOL_INVOICE_EMAIL", "").strip(),
@@ -81,8 +94,8 @@ def load_config(**overrides):
         # it once, ever. No coupon set: no save offer (pausing and cancelling
         # still work).
         "SAVE_OFFER_STRIPE_COUPON": env.get("SAVE_OFFER_STRIPE_COUPON", "").strip(),
-        "SAVE_OFFER_PERCENT": int(env.get("SAVE_OFFER_PERCENT", "25")),
-        "SAVE_OFFER_MONTHS": int(env.get("SAVE_OFFER_MONTHS", "2")),
+        "SAVE_OFFER_PERCENT": _whole(env, "SAVE_OFFER_PERCENT", "25"),
+        "SAVE_OFFER_MONTHS": _whole(env, "SAVE_OFFER_MONTHS", "2"),
         "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
         "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
         # The secret CyberLogix signs its daily reports with (the same value
@@ -91,7 +104,7 @@ def load_config(**overrides):
         # none counts (connections.py).
         "KITCHEN_BUNDLE_SECRET": env.get("KITCHEN_BUNDLE_SECRET", "").strip(),
         # Number of reverse proxies in front of the app (Render, nginx, Caddy add one each).
-        "TRUSTED_PROXIES": int(env.get("TRUSTED_PROXIES", "1" if production else "0")),
+        "TRUSTED_PROXIES": _whole(env, "TRUSTED_PROXIES", "1" if production else "0"),
         "TESTING": False,
         "SESSION_COOKIE_SECURE": _flag("SESSION_COOKIE_SECURE", production),
         "SESSION_COOKIE_HTTPONLY": True,
@@ -107,15 +120,45 @@ def load_config(**overrides):
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),
         "MAX_CONTENT_LENGTH": 1024 * 1024,
     }
+    base_url_given = "BASE_URL" in env or "BASE_URL" in overrides
     cfg.update(overrides)
+    if cfg["ENV_NAME"] == "production" and not cfg.get("TESTING"):
+        _production_checks(cfg, base_url_given)
     if not cfg["SECRET_KEY"]:
         if cfg["ENV_NAME"] == "production":
-            raise RuntimeError("SECRET_KEY must be set when OMNIARMOR_ENV=production")
+            raise SettingsError("SECRET_KEY must be set when OMNIARMOR_ENV=production")
         cfg["SECRET_KEY"] = secrets.token_hex(32)  # development only: sessions reset on restart
     if not 0 <= cfg["DAILY_JOB_HOUR_UTC"] <= 23:
-        raise RuntimeError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
+        raise SettingsError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
     if not 1 <= cfg["SAVE_OFFER_PERCENT"] <= 100 or not 1 <= cfg["SAVE_OFFER_MONTHS"] <= 12:
-        raise RuntimeError("SAVE_OFFER_PERCENT must be 1 to 100 and SAVE_OFFER_MONTHS 1 to 12")
+        raise SettingsError("SAVE_OFFER_PERCENT must be 1 to 100 and SAVE_OFFER_MONTHS 1 to 12")
     if not 1 <= cfg["CLASSROOM_PILOT_DAYS"] <= 365:
-        raise RuntimeError("CLASSROOM_PILOT_DAYS must be between 1 and 365")
+        raise SettingsError("CLASSROOM_PILOT_DAYS must be between 1 and 365")
     return cfg
+
+
+def _production_checks(cfg, base_url_given):
+    """Settings that, missing or half set in production, would leave the app
+    half working: it refuses to start instead, and says what to set. Email
+    left out altogether is allowed (reminders are kept on the Reminders
+    page; Autopilot and /readyz say so); half of it is not."""
+    problems = []
+    if not cfg["SECRET_KEY"]:
+        problems.append("SECRET_KEY is not set. Set it to a long random value:"
+                        " python3 -c \"import secrets; print(secrets.token_hex(32))\" (Render makes one itself).")
+    if not base_url_given:
+        problems.append("BASE_URL is not set. Set it to the site's address, like"
+                        " https://omniarmor.mtrxhorizyn.com (no slash at the end): every link in an email uses it.")
+    elif not cfg["BASE_URL"].startswith(("https://", "http://")):
+        problems.append(f"BASE_URL must be a full address starting with https://. It is set to {cfg['BASE_URL']!r}.")
+    if cfg.get("SMTP_HOST") and "@localhost" in cfg.get("MAIL_FROM", ""):
+        problems.append("SMTP_HOST is set but MAIL_FROM is not. Set MAIL_FROM to the address emails come from,"
+                        " like OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>.")
+    if cfg.get("SMTP_HOST") and cfg.get("SMTP_USER") and not cfg.get("SMTP_PASSWORD"):
+        problems.append("SMTP_USER is set but SMTP_PASSWORD is empty. Set the password your email provider gave.")
+    if cfg.get("STRIPE_SECRET_KEY") and not cfg.get("STRIPE_WEBHOOK_SECRET"):
+        problems.append("STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is not: people could pay and never get"
+                        " their plan. Set it to the webhook's signing secret from Stripe (docs/OPERATIONS.md, section 8).")
+    if problems:
+        raise SettingsError("OmniArmor can't start in production until these settings are fixed:\n- "
+                            + "\n- ".join(problems))

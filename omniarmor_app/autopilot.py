@@ -25,7 +25,7 @@ import shutil
 from dataclasses import dataclass
 from datetime import timedelta
 
-from . import bugfinder
+from . import bugfinder, health
 from .errormail import scrub
 from .redact import redact
 from .db import connect, iso, migrate, now_iso, utcnow
@@ -164,6 +164,16 @@ def find_problems(conn, cfg, deep=False):
                              f"Last finished {last}. Reminders and backups may not be going out.",
                              "Check the server log for 'daily job had failures', then run: "
                              "flask --app wsgi run-daily --force"))
+
+    # The every-minute timer, watched from the 10-minute one (this pass);
+    # the minute timer watches this one back (watch_daily_timer).
+    beat = conn.execute("SELECT beat_at FROM job_heartbeats WHERE name = 'alerts'").fetchone()
+    if beat and health.timer_state(conn, cfg, "alerts", now, grace=False) == "fail":
+        found.append(Finding("timer-alerts", "The every-minute timer has stopped",
+                             f"Time-limit alerts last ran at {beat[0]}. Hour and minute clocks (such as a"
+                             " 1-hour report deadline) can run out with no alert email.",
+                             "Restart the app. If it stops again, look in the server log for"
+                             " 'time-limit alerts failed'."))
 
     stuck = conn.execute("SELECT COUNT(*), MAX(error) FROM notifications WHERE status = 'failed' AND attempts > ?"
                          " AND created_at >= ?", (len(EMAIL_RETRY_AFTER), iso(now - timedelta(days=1)))).fetchone()
@@ -451,6 +461,45 @@ def _safely(name, step, *args):
     except Exception:
         log.exception("autopilot step %r failed", name)
         return None
+
+
+def watch_daily_timer(cfg, now=None):
+    """Run by the every-minute timer. Autopilot runs inside the 10-minute
+    timer, so if that timer stops, Autopilot stops with it and nothing would
+    say so. This emails the operator once (and once a day while it lasts);
+    the "Fixed" email comes from Autopilot's first pass once it runs again.
+    Returns whether it found the timer stopped."""
+    if not cfg.get("AUTOPILOT_ENABLED", True) or cfg["DATABASE"] == ":memory:":
+        return False
+    now = now or utcnow()
+    key = "timer-daily"
+    conn = connect(cfg["DATABASE"])
+    try:
+        beat = conn.execute("SELECT beat_at FROM job_heartbeats WHERE name = 'daily'").fetchone()
+        if beat is None or health.timer_state(conn, cfg, "daily", now, grace=False) != "fail":
+            return False
+        from .jobs import job_lock
+        with job_lock(cfg, "watchdog") as mine:
+            if mine:   # one process tells the operator, however many run the timers
+                _watchdog_alert(conn, cfg, key, beat[0], now)
+        return True
+    finally:
+        conn.close()
+
+
+def _watchdog_alert(conn, cfg, key, beat_at, now):
+    """Emails the stopped 10-minute timer once, then once a day while it lasts."""
+    last = conn.execute("SELECT level, at FROM autopilot_events WHERE check_key = ? AND level IN"
+                        " ('alert', 'resolved') ORDER BY id DESC LIMIT 1", (key,)).fetchone()
+    f = Finding(key, "The every-10-minutes timer has stopped",
+                f"The daily job and Autopilot last ran at {beat_at}. Reminder digests, backups and"
+                " Autopilot's own checks are not running.",
+                "Restart the app. If it stops again, look in the server log for 'daily job' or 'autopilot'.")
+    if last is None or last["level"] == "resolved":
+        record(conn, key, "alert", f.title, _alert_body(f), _tell(conn, cfg, f.title, _alert_body(f)))
+    elif _parse(last["at"]) < now - REMIND_AFTER:
+        record(conn, key, "alert", f.title, _alert_body(f),
+               _tell(conn, cfg, "Still open: " + f.title, _alert_body(f)))
 
 
 def record_error(cfg, path, exc):

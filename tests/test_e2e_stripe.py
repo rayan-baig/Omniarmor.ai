@@ -58,6 +58,7 @@ class FakeStripe:
         self.deliver_to = deliver          # posts one webhook to the app, returns the response
         self.sessions, self.customers, self.subscriptions = {}, {}, {}
         self.requests = []                 # (method, path, form fields, Authorization header)
+        self.idempotency_keys = []         # each request's Idempotency-Key header (None on a GET)
         self.events = []
         self.down = False                  # answer every API call with a 500
         self.counter = 0
@@ -99,6 +100,7 @@ class FakeStripe:
         fields = dict(parse_qsl(request.rfile.read(length).decode())) if length else {}
         path = urlsplit(request.path).path
         self.requests.append((method, path, fields, request.headers.get("Authorization")))
+        self.idempotency_keys.append(request.headers.get("Idempotency-Key"))
         if self.down:
             return self.reply(request, 500, {"error": {"message": "Stripe is having trouble."}})
         if request.headers.get("Authorization") != f"Bearer {SECRET_KEY}":
@@ -601,7 +603,12 @@ class TestPlansAgainstFakeStripe(AppTestCase):
             response = self.client.post(form.action, data=form.values(), follow_redirects=True)
         self.assertIn("We couldn&#39;t open checkout just now. Please try again in a minute.",
                       flashes(response.get_data(as_text=True)))
-        self.assertEqual(len(self.stripe.requests), 1)
+        # A 500 is tried once more, with the same Idempotency-Key, so Stripe
+        # would make one checkout however many of the two arrived.
+        self.assertEqual(len(self.stripe.requests), 2)
+        first, again = self.stripe.idempotency_keys
+        self.assertTrue(first)
+        self.assertEqual(first, again)
         self.assertEqual(self.org()["academy_status"], "none")
         self.assertFalse(self.paid_world_opens())
 

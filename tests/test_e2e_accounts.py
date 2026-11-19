@@ -28,7 +28,7 @@ from omniarmor_app.auth import RESET_HOURS  # noqa: E402
 from omniarmor_app.catalog import rules_for  # noqa: E402
 from omniarmor_app.db import iso, utcnow  # noqa: E402
 from omniarmor_app.reminders import run_reminders  # noqa: E402
-from omniarmor_app.security import FAILURE_WINDOW, MAX_FAILURES  # noqa: E402
+from omniarmor_app.security import FAILURE_WINDOW, MAX_FAILURES, _unmask  # noqa: E402
 
 BASIC = academy.TRACKS["launchpad"]
 
@@ -478,7 +478,9 @@ class TestCsrfEverywhere(AppTestCase):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, path)
             for form in post_forms(response.data.decode()):
-                self.assertEqual((form.field("csrf_token") or {}).get("value"), token, (path, form.action))
+                # Masked differently on each page (security.csrf_token): it must unmask to the session's token.
+                self.assertEqual(_unmask((form.field("csrf_token") or {}).get("value", "")), token.encode(),
+                                 (path, form.action))
                 found += 1
         anon = self.app.test_client()
         for path in ["/login", "/signup", "/forgot", "/kids"]:
@@ -488,7 +490,8 @@ class TestCsrfEverywhere(AppTestCase):
             forms = post_forms(page)
             self.assertTrue(forms, path)
             for form in forms:
-                self.assertEqual((form.field("csrf_token") or {}).get("value"), anon_token, (path, form.action))
+                self.assertEqual(_unmask((form.field("csrf_token") or {}).get("value", "")), anon_token.encode(),
+                                 (path, form.action))
                 found += 1
         self.assertGreater(found, 30)
         # Every POST route has a form somewhere, or is driven by script with the token.

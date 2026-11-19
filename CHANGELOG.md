@@ -3,6 +3,42 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.8.0 (19 November 2026)
+
+Fast and solid: lighter pages, and the app says quickly when something
+stops working.
+
+- **Smaller pages.** Pages, stylesheets and scripts are sent compressed:
+  the landing page's first visit goes from 60 KB to 15 KB and the Academy
+  map from 227 KB to 36 KB (4.5 seconds to 0.7 on a slow phone
+  connection; docs/PERFORMANCE.md). The forms' hidden token now changes on
+  every page, so compressed pages give nothing away.
+- **Faster as it grows.** Three new indexes for queries that read whole
+  tables: Radar (35 ms to 0.2 ms on a year of emails), Autopilot's check of
+  failed emails and a workspace's team.
+- **A readiness check, `/readyz`.** Besides `/healthz` (the site is up),
+  it checks the database, the settings production needs, the two
+  background timers, the last daily job, the newest backup and the disk,
+  and answers 200 or 503 with only "ok" or "fail" per check.
+  `flask --app wsgi ready` on the server says what's wrong and what to do.
+- **Watchdogs for the timers.** Each timer writes "last ran at" every
+  round. Autopilot emails the owner if the every-minute timer stops, and
+  the every-minute timer emails if the 10-minute one (which runs
+  Autopilot) stops.
+- **Fail soft.** When the database can't be reached, pages say "That's
+  unavailable for a moment" (a 503 that asks to retry in a minute) instead
+  of "something went wrong". A connection to Stripe cut off half way now
+  says "try again in a minute" instead of showing the error page, and a
+  Stripe call that fails before Stripe answers is tried once more, safely
+  (each one carries an idempotency key). Stripe and email each wait at most
+  20 seconds.
+- **Start-up checks.** In production the app refuses to start with
+  `SECRET_KEY` or `BASE_URL` missing, or email or Stripe half set up, and
+  the log lists each setting with what to put in it. A setting that should
+  be a number, or a database that can't be opened, is said plainly too.
+- **"If the app is down"** in docs/OPERATIONS.md: the two addresses to give
+  a free uptime monitor, and what each alert means, step by step.
+
 ## 1.7.0 (17 November 2026)
 
 The first five minutes, for a small business owner and for a teacher.

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Sign-in, form protection, login rate limits and security headers."""
 
+import base64
 import hashlib
 import hmac
 import re
@@ -55,10 +56,34 @@ def password_problem(password):
 
 # --- Forms ---------------------------------------------------------------
 
-def csrf_token():
+def _session_csrf():
     if "_csrf" not in session:
         session["_csrf"] = secrets.token_urlsafe(32)
     return session["_csrf"]
+
+
+def csrf_token():
+    """The form token, masked differently on every page: random bytes, then
+    the session's token XORed with them. Pages are sent compressed
+    (compress.py), and a secret that stays the same on every page could be
+    guessed from compressed sizes (the BREACH attack); this one never repeats."""
+    raw = _session_csrf().encode()
+    pad = secrets.token_bytes(len(raw))
+    return base64.urlsafe_b64encode(pad + bytes(a ^ b for a, b in zip(pad, raw))).decode()
+
+
+def _unmask(sent):
+    """The session token inside a masked one, as bytes, or None if `sent`
+    isn't one (a page drawn before masking, or a test, posts the session's
+    token itself)."""
+    try:
+        packed = base64.urlsafe_b64decode(sent.encode("ascii"))
+    except (ValueError, UnicodeEncodeError):
+        return None
+    if not packed or len(packed) % 2:
+        return None
+    half = len(packed) // 2
+    return bytes(a ^ b for a, b in zip(packed[:half], packed[half:]))
 
 
 # Signed by Stripe instead; and CyberLogix's daily report, which carries the
@@ -72,7 +97,9 @@ def check_csrf():
         return
     sent = request.form.get("csrf_token", "")
     expected = session.get("_csrf", "")
-    if not expected or not hmac.compare_digest(sent, expected):
+    unmasked = _unmask(sent)
+    if not expected or not (hmac.compare_digest(sent.encode("utf-8", "replace"), expected.encode())
+                            or (unmasked is not None and hmac.compare_digest(unmasked, expected.encode()))):
         abort(400, description="This form expired. Go back, reload the page and try again.")
 
 
@@ -91,7 +118,7 @@ def start_session(user):
     session["user_id"] = user["id"]
     session["epoch"] = user["session_epoch"]
     session["ukey"] = _user_key(user)
-    csrf_token()
+    _session_csrf()
 
 
 def load_user():
@@ -172,7 +199,7 @@ def start_kid_session(learner):
     session["kid"] = learner["id"]
     session["kid_org"] = learner["org_id"]
     session["kid_epoch"] = learner["device_epoch"]
-    csrf_token()
+    _session_csrf()
 
 
 def login_required(view):

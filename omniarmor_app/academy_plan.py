@@ -16,6 +16,7 @@ everyone; the rest of the Academy needs Plus.
 
 import hashlib
 import hmac
+import http.client
 import json
 import logging
 import re
@@ -23,6 +24,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from .db import iso, record_audit, utcnow
@@ -175,23 +177,48 @@ def kind_for(cfg, obj):
     return plan_for(cfg, obj)[0]
 
 
+# Each call to Stripe waits this long at most for any step (connecting,
+# sending, each read): a page that calls Stripe never hangs on it.
+STRIPE_TIMEOUT = 20
+# A call that fails before Stripe answers (connection refused or reset) or
+# with a 5xx/429 is tried once more after this pause. A POST carries an
+# Idempotency-Key, so Stripe does it once however many times it arrives; a
+# call that timed out is not tried again (the page has waited long enough).
+STRIPE_RETRY_PAUSE = 0.5
+
+
 def _stripe(cfg, path, fields, method="POST"):
     data = urllib.parse.urlencode(fields).encode() if method == "POST" else None
     request = urllib.request.Request(f"{STRIPE_API}/{path}", data=data, method=method)
     request.add_header("Authorization", "Bearer " + cfg["STRIPE_SECRET_KEY"])
     if data is not None:
         request.add_header("Content-Type", "application/x-www-form-urlencoded")
-    try:
-        with urllib.request.urlopen(request, timeout=20) as response:
-            return json.loads(response.read().decode())
-    except urllib.error.HTTPError as exc:
+        request.add_header("Idempotency-Key", uuid.uuid4().hex)
+    for attempt in (1, 2):
         try:
-            message = json.loads(exc.read().decode())["error"]["message"]
-        except Exception:
-            message = f"HTTP {exc.code}"
-        raise StripeError(message) from exc
-    except (urllib.error.URLError, TimeoutError, ValueError) as exc:
-        raise StripeError(str(exc)) from exc
+            with urllib.request.urlopen(request, timeout=STRIPE_TIMEOUT) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as exc:
+            if attempt == 1 and (exc.code >= 500 or exc.code == 429):
+                time.sleep(STRIPE_RETRY_PAUSE)
+                continue
+            try:
+                message = json.loads(exc.read().decode())["error"]["message"]
+            except Exception:
+                message = f"HTTP {exc.code}"
+            raise StripeError(message) from exc
+        except (OSError, http.client.HTTPException, ValueError) as exc:
+            # Every way the network can fail: refused, reset, cut off half
+            # way, TLS, DNS, a timeout. Only HTTPError and URLError were
+            # caught before, and a connection reset while reading the answer
+            # showed the 500 page instead of "Stripe couldn't be reached".
+            timed_out = isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError)
+            if attempt == 1 and not timed_out and not isinstance(exc, ValueError):
+                time.sleep(STRIPE_RETRY_PAUSE)
+                continue
+            if timed_out:
+                raise StripeError(f"Stripe didn't answer within {STRIPE_TIMEOUT} seconds.") from exc
+            raise StripeError(str(exc) or type(exc).__name__) from exc
 
 
 # Stripe Checkout takes a subscription's trial_end only at least 48 hours ahead; an hour more for clocks.

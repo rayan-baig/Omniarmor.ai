@@ -5,6 +5,8 @@ services:
     name: omniarmor
     runtime: docker
     plan: starter
+    # /healthz: the server answers. Give /readyz (everything behind the pages)
+    # to a free uptime monitor instead (docs/OPERATIONS.md, "If the app is down").
     healthCheckPath: /healthz
     disk:
       name: omniarmor-data

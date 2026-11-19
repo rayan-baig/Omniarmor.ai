@@ -349,6 +349,7 @@ def start_scheduler(cfg):
     """Starts the timer: the time-limit alerts every minute in one thread, the
     daily job and Autopilot every 10 minutes in another."""
     from . import autopilot
+    from .health import beat
     first_alerts = threading.Event()
 
     def alerts_loop():
@@ -357,6 +358,13 @@ def start_scheduler(cfg):
                 run_alerts(cfg)
             except Exception:
                 log.exception("time-limit alerts failed")
+            # "Last ran at", for /readyz and Autopilot (health.py): a loop
+            # that stops beating has stopped, whatever the reason.
+            beat(cfg, "alerts")
+            try:
+                autopilot.watch_daily_timer(cfg)
+            except Exception:
+                log.exception("the daily timer's watchdog failed")
             first_alerts.set()
             time.sleep(ALERTS_EVERY_SECONDS)
 
@@ -365,6 +373,7 @@ def start_scheduler(cfg):
         # alerted about before today's digest is put together.
         first_alerts.wait(ALERTS_EVERY_SECONDS)
         while True:
+            beat(cfg, "daily")
             try:
                 run_daily(cfg)
             except Exception:  # keep the timer alive; the failure is logged above
@@ -374,6 +383,7 @@ def start_scheduler(cfg):
                     autopilot.run(cfg)
                 except Exception:
                     log.exception("autopilot pass failed")
+            beat(cfg, "daily")
             time.sleep(CHECK_EVERY_SECONDS)
 
     threads = [threading.Thread(target=alerts_loop, name="omniarmor-alerts", daemon=True),
@@ -519,6 +529,25 @@ def register_cli(app):
             click.echo("All clear. Nothing to fix and nothing needs you.")
         if result["problems"] and not cfg.get("OPERATOR_EMAIL"):
             click.echo("Tip: set OPERATOR_EMAIL so Autopilot can email you about these.")
+
+    @app.cli.command("ready")
+    def ready_command():
+        """Say what /readyz checks, each with what's wrong and what to do (exit code 1 if something failed)."""
+        from . import health
+        cfg = dict(app.config)
+        found = health.checks(cfg, grace=False)
+        for name, state in found.items():
+            click.echo(f"{state.upper():<5} {name}")
+            if state == "fail":
+                problem, action = health.EXPLAIN[name]
+                click.echo(f"      {problem}")
+                for line in (health.settings_problems(cfg) if name == "settings" else []):
+                    click.echo(f"      - {line}")
+                click.echo(f"      What to do: {action}")
+        failed = [n for n, s in found.items() if s == "fail"]
+        click.echo("All clear." if not failed else f"{len(failed)} check(s) need you.")
+        if failed:
+            raise SystemExit(1)
 
     @app.cli.command("backup")
     def backup_command():

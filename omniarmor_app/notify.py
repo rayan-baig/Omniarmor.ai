@@ -151,6 +151,13 @@ def _footer_line(line):
     return linkify(line, FOOTER_LINK_STYLE + "word-break:break-all;")
 
 
+# Each step of a send (connecting, TLS, signing in, sending) waits this long
+# at most, so a stuck email provider never holds up a page or the timers. A
+# send that fails is kept as failed and Autopilot tries it again later
+# (after 10 minutes, 1 hour, 6 hours).
+SMTP_TIMEOUT = 20
+
+
 def send_email(cfg, to, subject, body, kind=None):
     """Returns (status, error) where status is 'sent', 'logged' or 'failed'."""
     if not cfg.get("SMTP_HOST"):
@@ -170,7 +177,7 @@ def send_email(cfg, to, subject, body, kind=None):
         msg.set_content(text)
         if html is not None:
             msg.add_alternative(html, subtype="html")
-        with smtplib.SMTP(cfg["SMTP_HOST"], cfg["SMTP_PORT"], timeout=20) as smtp:
+        with smtplib.SMTP(cfg["SMTP_HOST"], cfg["SMTP_PORT"], timeout=SMTP_TIMEOUT) as smtp:
             if cfg.get("SMTP_STARTTLS", True):
                 smtp.starttls(context=ssl.create_default_context())
             if cfg.get("SMTP_USER"):

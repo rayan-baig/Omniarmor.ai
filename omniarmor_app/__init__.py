@@ -7,6 +7,7 @@ create_app() builds the app; wsgi.py runs it in production.
 import hmac
 import logging
 import os
+import sqlite3
 import time
 from datetime import timedelta
 
@@ -14,12 +15,13 @@ import click
 from flask import (Blueprint, Flask, Response, abort, current_app, g, jsonify, redirect, render_template, request,
                    send_from_directory, url_for)
 from markupsafe import escape
+from werkzeug.exceptions import InternalServerError, ServiceUnavailable
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import (academy_views, armo_views, autopilot, auth, classroom_views, connections, demo_mode, errormail,
-               plan_views, usage, views)
+from . import (academy_views, armo_views, autopilot, auth, classroom_views, compress, connections, demo_mode,
+               errormail, health, plan_views, usage, views)
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
-from .config import load_config
+from .config import SettingsError, load_config
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
 from .redact import RedactingFilter, redact
@@ -201,7 +203,7 @@ NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "pub
 # toward its limit) and the addresses only programs use.
 # ("/app$" and "/app/", not "/app", which would also close /apple-touch-icon.png.)
 ROBOTS_DISALLOW = ("/app$", "/app/", "/reset/", "/signup?invite=", "/forgot", "/kids", "/logout", "/billing/", "/api/",
-                   "/healthz", "/demo")
+                   "/healthz", "/readyz", "/demo")
 
 
 def public_page():
@@ -307,6 +309,17 @@ def healthz():
     return jsonify(status="ok" if ok else "error", schema=version, version=__version__), (200 if ok else 503)
 
 
+@public.route("/readyz")
+def readyz():
+    """Everything behind the pages, for an uptime monitor (health.py): 200
+    when all is well, 503 when something needs a person. Only "ok", "fail"
+    or "off" per check; `flask --app wsgi ready` on the server says more."""
+    answer, status = health.readiness(current_app.config)
+    response = jsonify(answer)
+    response.headers["Cache-Control"] = "no-store"
+    return response, status
+
+
 # What each error page says: a title, and what to do about it.
 ERROR_PAGES = {
     400: ("That request didn't work", "Go back, reload the page and try again."),
@@ -333,6 +346,11 @@ PLAIN_ERROR_PAGE = """<!doctype html>
 <p class="cta"><a class="btn" href="/">Go to the home page</a></p>
 </div></div></main></body></html>
 """
+
+
+# What SQLite says when the database itself is out of reach, not when a query is wrong.
+DATABASE_DOWN = ("unable to open", "database is locked", "disk i/o error", "database or disk is full",
+                 "readonly database", "file is not a database", "malformed")
 
 
 class OmniArmorFlask(Flask):
@@ -373,9 +391,17 @@ def create_app(**overrides):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
     _set_up_logging()
 
-    conn = connect(app.config["DATABASE"])
-    migrate(conn, app.config["ACADEMY_TRIAL_DAYS"])
-    conn.close()
+    try:
+        conn = connect(app.config["DATABASE"])
+        try:
+            migrate(conn, app.config["ACADEMY_TRIAL_DAYS"])
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError) as exc:
+        # Said plainly in the server log, rather than a traceback ending in
+        # "unable to open database file".
+        raise SettingsError(f"OmniArmor can't open its database at {app.config['DATABASE']} (DATABASE_PATH):"
+                            f" {exc}. Check that the disk is attached, writable and not full.") from exc
 
     app.teardown_appcontext(close_db)
     app.before_request(load_user)
@@ -384,6 +410,7 @@ def create_app(**overrides):
     app.after_request(security_headers)
     app.after_request(robots_header)
     app.after_request(connections.api_headers)
+    app.after_request(compress.gzip_response)
     app.jinja_env.globals.update(csrf_token=csrf_token, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config))
@@ -451,6 +478,23 @@ def create_app(**overrides):
             app.logger.exception("couldn't show the error page for %s", code)
             return Response(PLAIN_ERROR_PAGE.format(code=code, title=escape(title), description=escape(description)),
                             status=code, mimetype="text/html"), code
+
+    @app.errorhandler(sqlite3.DatabaseError)
+    def database_unavailable(err):
+        """The database can't be reached right now (the disk gone, full or
+        read-only, or locked past the 30-second wait): "try again in a
+        minute", with a 503 a monitor understands, rather than "something
+        went wrong". Any other database error is a bug: the 500 page."""
+        if not any(sign in str(err).lower() for sign in DATABASE_DOWN):
+            app.log_exception((type(err), err, err.__traceback__))   # as Flask does for any other bug
+            return error_page(InternalServerError(original_exception=err))
+        app.logger.error("database unavailable on %s [%s]: %s", redact(request.path), request.method, err)
+        if "locked" in str(err).lower():
+            # The database is there, only busy: Autopilot counts these.
+            autopilot.record_error(app.config, request.path, err)
+        response = app.make_response(error_page(ServiceUnavailable()))
+        response.headers["Retry-After"] = "60"
+        return response
 
     if app.config["TESTING"]:
         # A page that always fails, so tests can see the 500 page as a visitor

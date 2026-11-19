@@ -452,6 +452,22 @@ MIGRATIONS = [
     ALTER TABLE users ADD COLUMN reminders_chosen_at TEXT;
     UPDATE users SET reminders_chosen_at = created_at;
     """),
+    # 1.8.0. job_heartbeats: the background timers' "last ran at" (health.py),
+    # one row per timer, read by /readyz and Autopilot to notice a timer that
+    # stopped. started_at is when the timer first ran on this database.
+    # Indexes for queries that read whole tables as they grew: a workspace's
+    # team (memberships by workspace), Radar's emails sent to one person, and
+    # Autopilot's failed emails, every 10 minutes.
+    (24, """
+    CREATE TABLE job_heartbeats (
+        name TEXT PRIMARY KEY,
+        beat_at TEXT NOT NULL,
+        started_at TEXT NOT NULL
+    );
+    CREATE INDEX memberships_org ON memberships (org_id, role);
+    CREATE INDEX notifications_user ON notifications (user_id, created_at);
+    CREATE INDEX notifications_status ON notifications (status, created_at);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

@@ -146,7 +146,9 @@ with Docker Compose, the Shell tab on Render, or a shell on any other host.
    setting); on Render, under Environment, then save (it redeploys). Leave
    `BACKUP_DIR` as it is. The app upgrades an older backup's schema by
    itself as it starts.
-5. **Check it works (3 min).** `/healthz` answers `"status": "ok"`. Sign in
+5. **Check it works (3 min).** `/healthz` answers `"status": "ok"`, and
+   `/readyz` too within a few minutes (`flask --app wsgi ready` says why if
+   not). Sign in
    (passwords and sessions are as they were at the backup). Open an industry
    page and see its readings, the Vault (the audit trail ends at the backup's
    time), and the Academy with each learner's progress.
@@ -249,11 +251,113 @@ operator's account (above; nobody else sees them), and in
 `/api/stats` under `usage`. Totals older than 400 days are deleted by the
 daily job.
 
-`GET /healthz` returns `{"status": "ok", "schema": ..., "version": "..."}`
-with HTTP 200 when the app and database are working: the schema version and
-the release (from `omniarmor_app/version.py`), and nothing else. Point an uptime monitor (UptimeRobot, Better Stack) at
-it so you get a text or email if the site goes down. The server log records
-each daily run and any failure.
+### Health checks
+
+Two addresses tell a machine whether OmniArmor is working. Both answer
+anyone, so they say "ok" or "fail" and nothing else: no settings, no
+passwords, no names, no file paths.
+
+| Address | What it checks | Answers |
+|---|---|---|
+| `/healthz` | The server is up and its database opens (one small query). | 200 `{"status": "ok", "schema": ..., "version": "..."}`, or 503 |
+| `/readyz` | Everything behind the pages (below). | 200 `{"status": "ok", "checks": {...}}`, or 503 `{"status": "fail", ...}` |
+
+`/readyz` checks, each `ok`, `fail` or `off`:
+
+| Check | Fails when |
+|---|---|
+| `database` | The database can't be read, or its schema isn't this version's. |
+| `settings` | In production: email isn't set up (`SMTP_HOST` empty), or `BASE_URL` points at the server itself. |
+| `alerts_timer` | The every-minute timer (time-limit alerts) hasn't run in 5 minutes. |
+| `daily_timer` | The every-10-minutes timer (the daily job and Autopilot) hasn't run in 30 minutes. A long daily run still counts as running. |
+| `daily_job` | The daily job (reminders, cleanup, backup) hasn't finished in over 2 days. |
+| `backup` | The newest backup is over 2 days old. |
+| `disk` | Under 1 GB (or 5%) of disk is free. |
+
+Each timer writes "last ran at" in the database every round, so any server
+process can answer for all of them. A server that has just started gets 3
+minutes before a timer that hasn't run yet counts as stopped; with
+`SCHEDULER_ENABLED=0` and no other process running the timers, they say
+`off` and don't fail. The answer is kept for 10 seconds, so a monitor
+asking every minute (or anyone asking far more) costs almost nothing.
+
+**On the server, the details:** `flask --app wsgi ready` runs the same
+checks and says, for each one that failed, what's wrong and what to do
+(and which setting is missing). It exits with 1 when something failed.
+
+**The watchdogs.** Autopilot (in the 10-minute timer) emails you if the
+every-minute timer stops; the every-minute timer emails you if the
+10-minute timer stops (Autopilot runs inside it, so it can't report its own
+timer). Each once, a reminder a day while it lasts, and "Fixed" when it
+runs again. An outside uptime monitor (below) catches the rest: the whole
+server down, or email itself broken.
+
+The server log records each daily run and any failure. Its lines carry no
+passwords or reset, invite and payment links, and email addresses are
+shortened.
+
+### If the app is down
+
+**Set up once (10 minutes, free).** Make a free account at an uptime
+monitor: UptimeRobot (free plan: checks every 5 minutes) or Better Stack
+(free plan: every 3 minutes). Cloudflare health checks work too if the
+domain is on Cloudflare. Add two monitors, type HTTP(s), alert by email and
+by text if the plan allows:
+
+1. **"OmniArmor site"**: `https://omniarmor.mtrxhorizyn.com/healthz`.
+   Alert when it doesn't answer 200.
+2. **"OmniArmor inside"**: `https://omniarmor.mtrxhorizyn.com/readyz`.
+   Alert when it doesn't answer 200. If the monitor can look for a keyword,
+   use `"status":"ok"`.
+
+Render also checks `/healthz` itself (`render.yaml`, `healthCheckPath`):
+a new deploy that doesn't answer it never replaces the running one. The
+Docker image marks itself unhealthy the same way (`HEALTHCHECK`, shown by
+`docker compose ps`).
+
+**What each alert means, and what to do:**
+
+- **"OmniArmor site" is down** (and "inside" too): nobody can open the
+  site.
+  1. Open `https://omniarmor.mtrxhorizyn.com` on your phone. If it opens,
+     the monitor had a hiccup: wait for the next check.
+  2. Look at the host. Render: the service's **Events** and **Logs**
+     tabs (a failed deploy, or the app crashing at start). Your own server:
+     `docker compose ps` and `docker compose logs --tail 100 app`.
+  3. If the log says **"can't start in production until these settings
+     are fixed"**, it lists each setting with what to put in it: set them
+     (Render: Environment; your own server: `.env`, then
+     `docker compose up -d`).
+  4. If the log says **"can't open its database"**, the disk is missing,
+     full or read-only: check the disk on the host (Render: the service's
+     Disks tab; your own server: `df -h`).
+  5. If the last deploy broke it: Render, **Rollback** to the previous
+     deploy; your own server, check out the previous version and
+     `docker compose up -d --build`.
+  6. Still down after that: restart it (Render: Manual Deploy, "Restart
+     service"; your own server: `docker compose restart app`).
+- **Only "OmniArmor inside" is down**: the site opens, but something behind
+  it needs you (reminders, backups, the timers, or a setting). Run
+  `flask --app wsgi ready` on the server (Render: the Shell tab; Docker:
+  `docker compose exec app flask --app wsgi ready`). It names the check and
+  what to do. Most often:
+  - `settings`: email isn't set up yet (section 2).
+  - `alerts_timer` or `daily_timer`: restart the app. If it happens again,
+    look in the log for "time-limit alerts failed", "daily job" or
+    "autopilot".
+  - `daily_job`: `flask --app wsgi run-daily --force` and read what it says.
+  - `backup` or `disk`: `flask --app wsgi backup`; make the disk bigger or
+    lower `BACKUP_KEEP`.
+- **Pages say "That's unavailable for a moment"** (error 503): the app
+  can't reach its database right now (the disk gone, full or read-only).
+  Both monitors fail too. Fix the disk as in step 4 above; the pages come
+  back by themselves, with nothing lost.
+- **Payments or email are down** at Stripe or your email provider: the app
+  keeps working. A Stripe call waits at most 20 seconds, then the page says
+  "Please try again in a minute"; an email waits at most 20 seconds, is
+  kept as failed and Autopilot sends it again (after 10 minutes, 1 hour,
+  6 hours). Nothing to do unless Autopilot emails you that they keep
+  failing.
 
 ## 6. A demo workspace
 
@@ -524,6 +628,21 @@ added in Settings starts without a free trial (one per owner), at most 100
 classes fit in a workspace, and `plan` refuses over a running Stripe
 subscription unless `--force`.
 
+**Upgrading to 1.8.0 (fast and solid):** schema version 24 runs by itself
+on start: it adds the timers' "last ran at" table and three indexes (a
+second or two on a big database). Then:
+
+1. **Production now refuses to start with a setting missing or half set**,
+   and the log says which one and what to put in it: `SECRET_KEY`,
+   `BASE_URL`, `MAIL_FROM` when `SMTP_HOST` is set, `SMTP_PASSWORD` when
+   `SMTP_USER` is set, `STRIPE_WEBHOOK_SECRET` when `STRIPE_SECRET_KEY` is
+   set. Before deploying, check those are set on the live service (Render:
+   Environment). Leaving email out altogether is still allowed.
+2. **Set up the two uptime monitors** (section 5, "If the app is down").
+3. Nothing else: pages are now sent gzipped (smaller on slow phones, see
+   [PERFORMANCE.md](PERFORMANCE.md)); a proxy that compresses too (Caddy)
+   leaves them as they are.
+
 **Upgrading to 1.7.0:** schema version 23 runs by itself on start: it adds
 `users.reminders_chosen_at` (the last step of HQ's getting-started list),
 filled in for the accounts already there. The demos (`/demo/business` and
@@ -562,3 +681,6 @@ opened", and they never send email. Nothing else to do.
   as on CyberLogix.
 - Add the `omniarmor` subdomain on MTRX Horizyn's domain and point it at the
   app (section 1). OmniArmor has no domain of its own.
+- Set up two free uptime monitors, on `/healthz` and `/readyz` (section 5,
+  "If the app is down"), so you hear within minutes when the site, or
+  something behind it, stops working.
