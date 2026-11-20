@@ -23,7 +23,7 @@ from e2e_helpers import csv_rows, flashes, forms, post_forms, table_rows  # noqa
 from test_webapp import PASSWORD, AppTestCase  # noqa: E402
 
 from omniarmor_app.catalog import (INDUSTRIES, counts_first_day, counts_time, date_mode, date_unit,  # noqa: E402
-                                   rules_for)
+                                   multi_check, rules_for)
 
 TZ = "America/New_York"
 LABEL = {"BLOCKED": "Blocked", "WARNING": "Warning", "CLEARED": "Cleared"}
@@ -137,6 +137,36 @@ class TestEveryIndustryEndToEnd(AppTestCase):
         self.assertEqual(len(found), 1, rule.key)
         return found[0]
 
+    def entry_forms(self, page, rule):
+        """A check with one entry per item (1.11.0): its "Add" form, and the first entry's form."""
+        section = [f for f in post_forms(page) if f.section == f"rule-{rule.key}"]
+        add = [f for f in section if f.field("label") is not None]
+        first = [f for f in section if f.field("entry_id") is not None and f.field("entry_id").get("value") == "main"]
+        self.assertEqual(len(add), 1, rule.key)
+        return add[0], (first[0] if first else None)
+
+    def run_entry_check(self, industry_id, rule, kind, fields, level):
+        """Saves a check with one entry per item through its "Add" form: the first entry."""
+        page = self.client.get(f"/app/industry/{industry_id}").data.decode()
+        add, _ = self.entry_forms(page, rule)
+        box = add.field("date") if "date" in fields else add.field("value")
+        self.assertIsNotNone(box, kind)
+        data = add.values()
+        data.update(fields, label="First one", action="add")
+        response = self.client.post(add.action, data=data)
+        self.assertEqual(response.status_code, 302)
+        page = self.client.get(response.headers["Location"].split("#")[0]).data.decode()
+        self.assertIn("First one added.", flashes(page), (kind, flashes(page)))
+        shown = re.search(rf'<li class="rule" id="rule-{re.escape(rule.key)}" data-level="(\w+)"', page)
+        self.assertEqual(shown.group(1), level, (kind, rule.key))
+        _, first = self.entry_forms(page, rule)
+        again = first.values()
+        if "date" in fields:
+            self.assertEqual(again.get("date"), fields["date"])
+        else:
+            self.assertEqual(float(again.get("value")), float(fields["value"]))
+        return page
+
     def run_industry(self, industry_id):
         info = INDUSTRIES[industry_id]
         self.sign_up_from_the_brand_page(info)
@@ -148,6 +178,11 @@ class TestEveryIndustryEndToEnd(AppTestCase):
         saved = []
         for kind, rule in one_of_each_kind(industry_id).items():
             with self.subTest(industry=info["brand"], kind=kind, rule=rule.key):
+                if multi_check(industry_id, rule.key):
+                    fields, level, due = plan(rule, kind, today, now)
+                    page = self.run_entry_check(industry_id, rule, kind, fields, level)
+                    saved.append((rule, kind, level, due))
+                    continue
                 form = self.rule_form(page, rule)
                 # The page offers the right box for this kind of check.
                 if kind == "yes/no":

@@ -55,7 +55,7 @@ class TestProgressReport(ProgressCase):
         page = self.page()
         self.assertIn("Sam's progress", page)
         self.assertIn("No lessons played yet", page)
-        self.assertIn("0 of 1,360", page)
+        self.assertIn(f"0 of {BASIC.total:,}", page)
         self.assertIn("Not yet: pass stage 1 of the Owner's Challenge", page)
 
     def test_lessons_scores_and_tries(self):
@@ -68,7 +68,7 @@ class TestProgressReport(ProgressCase):
         self.assertIn("5 of 5", page)
         self.assertIn("4 of 5", page)       # the best try, not the last or the first
         self.assertNotIn("1 of 5", page)
-        self.assertIn("2 of 1,360", page)
+        self.assertIn(f"2 of {BASIC.total:,}", page)
         self.assertIn("2 lessons passed", words(page))
         self.assertIn("90%", page)          # (5/5 + 4/5) / 2
         rows = [r for r in page.split("<tr>") if "Meet Your Company, stage 2" in r]

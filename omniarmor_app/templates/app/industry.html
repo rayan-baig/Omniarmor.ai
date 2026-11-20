@@ -81,7 +81,13 @@
         </details>
       {% endif %}
     </div>
-    {% if read_only %}
+    {% set m = multi_check(info.id, r.key) %}
+    {% if m %}
+    <div>
+      {% include "app/_entries.html" %}
+      {% if read_only %}<p class="read-only-note" data-read-only>Read-only: saved entries stay, and are in the report and its download.</p>{% endif %}
+    </div>
+    {% elif read_only %}
     <div>
       <p class="q">{{ r.input }}</p>
       <p class="read-only-note" data-read-only>Read-only: saved readings stay, and are in the report and its download. {% if plan_access.pause_open %}Your plan is paused, with no end date; saving comes back when it starts again.{% elif plan_access.paused %}Your plan is paused until {{ plan_access.resumes_at|local_date }}; saving comes back then.{% elif class_workspace %}<a href="{{ url_for('plan.plan_page') }}">Whole school</a> includes the school checklist.{% else %}<a href="{{ url_for('plan.plan_page') }}">Choose Pro or Plus</a> to save a new one.{% endif %}</p>
@@ -97,6 +103,7 @@
           <input type="radio" name="answer" id="{{ fid }}-n" value="no" {% if s.value is sameas false %}checked{% endif %}><label for="{{ fid }}-n">No</label>
         </div>
         <div class="inline"><button class="btn quiet" type="submit" name="action" value="save">Save</button></div>
+        {% if r.kind == 'forbidden' %}<p class="hint yes-bad">Yes means a problem here.</p>{% endif %}
       {% else %}
         <label class="q" for="{{ fid }}-v">{{ r.input }}</label>
         <div class="inline">
@@ -124,6 +131,7 @@
       {% endif %}
     </form>
     {% endif %}
+    {% if r.key in logs %}{% set log = logs[r.key] %}<div class="rule-log">{% include "app/_illness_log.html" %}</div>{% endif %}
   </li>
 {% else %}
   {% if counts.NONE == total %}

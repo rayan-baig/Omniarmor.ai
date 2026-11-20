@@ -628,6 +628,33 @@ added in Settings starts without a free trial (one per owner), at most 100
 classes fit in a workspace, and `plan` refuses over a running Stripe
 subscription unless `--force`.
 
+**Upgrading to 1.11.0 (honest lessons, deeper checklists):** back up first,
+then deploy; schema version 26 runs by itself on start. It keeps every value
+already saved:
+
+- It adds `items.label` and names the value already saved on the
+  restaurant checks that now hold one entry per item (cold holding, hot
+  holding and the 7-day date marking) "Fridge 1", "Hot-holding unit 1" or
+  "Food batch 1": that value is the check's first entry, in the same row, so
+  nothing is moved and CyberLogix keeps writing to it. Other entries go in
+  the new `check_entries` table.
+- It adds the `illness_log` table (first names or initials only; deleting a
+  workspace deletes it with everything else).
+- No data step for the Academy: worlds now have their real number of lessons
+  (at most 10 each), and a learner's stages past that stay in
+  `learner_progress` but no longer count toward levels done. A learner who
+  had passed, say, stage 40 of a world sees that world's lessons as they are
+  now; ranks and certificates are worked out from the lessons that exist.
+- Classes made from now on start with the leaderboard off; existing classes
+  keep their setting.
+- Three new industries (52 SalonArmor, 53 InkArmor, 54 GymArmor) appear in
+  sign-up and the industry list; nobody is moved onto them.
+
+To roll back to 1.10.1, restore the backup taken before the upgrade (1.10.1
+doesn't know schema 26). Rolling back without it works for the tracker (the
+old columns are untouched), but entries after the first and the illness log
+are not shown.
+
 **Upgrading to 1.9.0 (made for a classroom):** schema version 25 runs by
 itself on start. It adds `orgs.kind` and marks as schools the workspaces
 that use the classroom plans, the pilot or classes and track only the school

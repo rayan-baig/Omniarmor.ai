@@ -107,7 +107,7 @@
 {% if access.bundle.state == 'covered' %}<p class="row" data-bundle-line><span><strong>{{ pf.bundle.includes.name }} included with your {{ pf.bundle.name }}</strong></span></p>{% endif %}
 {% if class_workspace %}
 {% set cl = class_limits %}
-<p class="row"><span data-plan-line>{% if access.paid and access.kind in ('classroom', 'school') %}{{ access.plan_name }}, paid yearly.{% elif cl.source == 'pilot' %}Free class pilot: {{ cl.pilot.days_left }} day{{ 's' if cl.pilot.days_left != 1 }} left, until {{ cl.pilot.ends.isoformat()|local_date }}.{% elif cl.pilot.state == 'ended' %}Your free class pilot has ended. Your classes and their progress are kept.{% else %}No classroom plan yet.{% endif %}</span>
+<p class="row"><span data-plan-line>{% if access.paid and access.kind in ('classroom', 'school') %}{{ access.plan_name }}, paid yearly.{% elif cl.source == 'pilot' %}Free trial: {{ cl.pilot.days_left }} day{{ 's' if cl.pilot.days_left != 1 }} left, until {{ cl.pilot.ends.isoformat()|local_date }}.{% elif cl.pilot.state == 'ended' %}Your free trial has ended. Your classes and their progress are kept.{% else %}No classroom plan yet.{% endif %}</span>
   <a href="{{ url_for('plan.plan_page') }}">See the classroom plans</a></p>
 {% else %}
 <p class="row"><span data-plan-line>{{ status_line(access, pf) }}</span>

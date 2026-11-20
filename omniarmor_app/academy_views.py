@@ -108,7 +108,9 @@ def _progress(learner_id, t):
     low = t.index * 1_000_000
     rows = get_db().execute("SELECT * FROM learner_progress WHERE learner_id = ? AND level >= ? AND level < ?",
                             (learner_id, low, low + 1_000_000))
-    return {r["level"]: r for r in rows}
+    # Stages a world no longer has (before 1.11.0 worlds had 50 to 300) stay
+    # stored but don't count.
+    return {r["level"]: r for r in rows if academy.level_exists(t, r["level"])}
 
 
 def _passed(progress):
@@ -476,7 +478,7 @@ def world_page(learner_id, world_number):
     for s in range(1, total + 1):
         row = progress.get(academy.level_id(t, w.number, s))
         stages.append({"stage": s, "stars": row["best_stars"] if row else 0,
-                       "open": academy.unlocked(t, w, s, passed), "boss": academy.is_boss(w, s)})
+                       "open": academy.unlocked(t, w, s, passed), "boss": academy.is_boss(t, w, s)})
     current = next((st for st in stages if st["open"] and st["stars"] == 0), None)
     chapters = [stages[i:i + 50] for i in range(0, total, 50)]
     chapter = request.args.get("chapter", type=int)
@@ -565,7 +567,7 @@ def play(learner_id, world_number, stage):
         usage.count(get_db(), "lessons_started")
         return render_template("academy/level.html", learner=learner, world=w, stage=stage, attempt=attempt,
                                cards=academy.story(t, world_number, stage, company, industry_ids), track=t,
-                               stage_count=t.stages(w), boss=academy.is_boss(w, stage),
+                               stage_count=t.stages(w), boss=academy.is_boss(t, w, stage),
                                questions=questions, needed=needed, avatars=academy.AVATARS)
 
     if request.form.get("attempt", type=int) != attempt:
@@ -693,7 +695,8 @@ def certificate(learner_id):
     progress = _progress(learner_id, t)
     summary = _summary(learner, progress)
     if not summary["certificate"]:
-        flash_error("Pass stage 1 of the Owner's Challenge to earn the certificate.")
+        flash_error(f"Pass stage 1 of the {academy.world_for(t, academy.FINAL_WORLD.number).title} to earn the"
+                    " certificate.")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
     first = progress[academy.level_id(t, academy.FINAL_WORLD.number, 1)]["completed_at"]
     cls = None
@@ -713,9 +716,9 @@ def _level_parts(level):
     """A stored level id back into (track, world, stage), or None if it no longer exists."""
     index, rest = divmod(level, 1_000_000)
     t = next((t for t in academy.ALL_TRACKS if t.index == index), None)
-    w = academy.world(rest // 1000)
-    if t is None or w is None or not t.has(w) or not 1 <= rest % 1000 <= t.stages(w):
+    if t is None or not academy.level_exists(t, level):
         return None
+    w = academy.world_for(t, rest // 1000)
     return t, w, rest % 1000
 
 
@@ -730,7 +733,7 @@ def progress_report(learner_id):
                             " ORDER BY completed_at IS NULL, completed_at DESC, level DESC", (learner_id,)).fetchall()
     tracks, lessons = [], []
     for t in academy.ALL_TRACKS:
-        progress = {r["level"]: r for r in rows if r["level"] // 1_000_000 == t.index}
+        progress = {r["level"]: r for r in rows if academy.level_exists(t, r["level"])}
         if not progress and t.key != learner["track"]:
             continue
         passed = _passed(progress)

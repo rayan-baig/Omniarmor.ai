@@ -17,7 +17,7 @@
   <section class="card">
     <p class="eyebrow">For a teacher</p>
     <h2>A class in the Academy</h2>
-    <p>A sample class with pretend first names, the class progress view, join codes and a sample lesson.</p>
+    <p>A sample class with pretend first names, the class progress view, join codes and a sample lesson. The lessons are written for <span data-grades>{{ class_grades }}</span>.</p>
     {% if not limited %}<a class="btn" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">Open the classroom demo</a>{% endif %}
   </section>
 </div>

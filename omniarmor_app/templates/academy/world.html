@@ -52,6 +52,6 @@
       </li>
     {% endfor %}
   </ol>
-  <p class="hint mt">{% if world.kind == 'topic' %}Every 10th stage is a boss round with extra review questions. {% endif %}Stages get harder as you go: more questions, tougher questions and a higher pass mark.</p>
+  <p class="hint mt">No question comes back in a later stage of this world. {% if world.kind == 'topic' and stages|length >= 3 and track.key != 'classroom' %}The last stage is a boss round. {% endif %}The pass mark rises as you go.</p>
 </div>
 {% endblock %}

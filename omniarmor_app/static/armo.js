@@ -79,6 +79,7 @@
     next.textContent = options.next || "";
     next.hidden = !options.next;
     bubble.hidden = false;
+    talking(true);
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // restart the pop animation
     bubble.classList.add("pop");
@@ -88,7 +89,16 @@
 
   function hide() {
     bubble.hidden = true;
+    talking(false);
     clearTimeout(hideTimer);
+  }
+
+  // While Armo's bubble (an alert, a "Fix it", a tip) is showing, the body
+  // has the class armo-talking, and app.css tucks Pilot's robot away, so only
+  // one helper speaks at a time. (A later Pilot core does this itself.)
+  function talking(on) {
+    document.body.classList.toggle("armo-talking", on);
+    if (on) root.classList.remove("tucked");   // a tucked Armo would hide his bubble
   }
 
   function jump() {

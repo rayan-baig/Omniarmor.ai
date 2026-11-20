@@ -1,0 +1,59 @@
+{# A check with one entry per item (catalog.MULTI_CHECKS): each entry with its own value, deadline and light, and a form
+   to add one. The check's status, above, is its worst entry's. Needs s, r, info, m (what an entry is, an example),
+   read_only, only, today, now. #}
+{% set thing = m[0]|lower %}
+{% set eurl = url_for('app.entry_change', industry_id=info.id, rule_key=r.key) %}
+<div class="entries" data-entries="{{ s.entries|length }}">
+  <p class="q">{{ r.input }}</p>
+  <p class="hint">One entry per {{ thing }}, each with its own {{ 'date and deadline' if s.mode else 'reading' }}. The check shows the worst one.</p>
+  {% if s.entries %}
+  <ul class="entry-list">
+    {% for e in s.entries %}
+      {% set es = e.state %}
+      <li class="entry" data-entry="{{ e.id }}" data-level="{{ es.level }}">
+        <div class="entry-top"><span class="entry-name">{{ e.label }}</span><span class="tag {{ es.level }}">{{ es.label }}</span></div>
+        <p class="entry-meta mono">{{ es.shown_value if not es.mode else ('Last done ' ~ es.value_date.isoformat() if es.mode == 'since' and es.value_date else es.shown_value) }}{% if es.due_date %} · {{ es.due_text }} · {{ es.due_label }}{% endif %}</p>
+        {% if not read_only %}
+        <form class="entry-form" method="post" action="{{ eurl }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="entry_id" value="{{ e.id }}">
+          {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
+          {% set eid = 'e-' ~ r.key ~ '-' ~ e.id %}
+          {% if s.mode %}
+            <label class="sr" for="{{ eid }}">New date for {{ e.label }}</label>
+            <input type="date" id="{{ eid }}" name="date" value="{{ es.value_date.isoformat() if es.value_date else '' }}"{% if s.mode == 'since' %} max="{{ today.isoformat() }}"{% endif %}>
+          {% else %}
+            <label class="sr" for="{{ eid }}">New reading for {{ e.label }}</label>
+            <input type="number" step="any" inputmode="decimal" id="{{ eid }}" name="value" value="{{ es.value if es.value is not none else '' }}"><span class="faint">{{ r.unit }}</span>
+          {% endif %}
+          <button class="btn quiet" type="submit" name="action" value="save">Save</button>
+          {% if s.mode == 'since' %}<button class="btn" type="submit" name="action" value="done_today">Done today</button>{% endif %}
+          <button class="linkbtn" type="submit" name="action" value="remove">Remove</button>
+        </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if not read_only %}
+  <details class="entry-add"{% if not s.entries %} open{% endif %}>
+    <summary>Add a {{ thing }}</summary>
+    <form method="post" action="{{ eurl }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if only %}<input type="hidden" name="only" value="problems">{% endif %}
+      {% set aid = 'a-' ~ r.key %}
+      <label class="hint" for="{{ aid }}-n">Name</label>
+      <input type="text" id="{{ aid }}-n" name="label" maxlength="60" placeholder="{{ m[1] }}" required>
+      {% if s.mode %}
+        <label class="hint" for="{{ aid }}-d">{{ 'The date it was made, opened or last done' if s.mode == 'since' else 'The due or expiry date' }}</label>
+        <input type="date" id="{{ aid }}-d" name="date"{% if s.mode == 'since' %} max="{{ today.isoformat() }}" value="{{ today.isoformat() }}"{% endif %} required>
+      {% else %}
+        <label class="hint" for="{{ aid }}-v">Reading ({{ r.unit }})</label>
+        <input type="number" step="any" inputmode="decimal" id="{{ aid }}-v" name="value" required>
+      {% endif %}
+      <button class="btn quiet" type="submit" name="action" value="add">Add</button>
+    </form>
+  </details>
+  {% endif %}
+  <span class="limits">{% if r.kind == 'max' %}Limit {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns from {{ s.effective.warn|qty(r.unit) }}{% endif %}{% else %}Minimum {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns at {{ s.effective.warn|qty(r.unit) }} or less{% endif %}{% endif %}{% if s.overridden %} · your setting{% endif %}</span>
+</div>

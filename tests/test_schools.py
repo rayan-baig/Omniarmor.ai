@@ -1,7 +1,7 @@
 """OmniArmor for schools: the SchoolSafetyArmor checklist and the /for/schools page,
 and the Future Owner Academy for classrooms (classes added by a teacher with
 first names or nicknames only, the class progress view, certificates, the
-leaderboard, the free pilot and its report, and the classroom plans)."""
+leaderboard, the free trial and its report, and the classroom plans)."""
 
 import html
 import os
@@ -194,7 +194,7 @@ class TestTeacherAddsStudents(ClassCase):
     def test_a_class_needs_the_pilot_or_a_plan(self):
         response, class_id = self.add_class()
         self.assertIsNone(class_id)
-        self.assertIn("Start the free pilot", self.flashes(response))
+        self.assertIn("Start the free trial", self.flashes(response))
 
     def test_students_are_added_by_first_name_only(self):
         self.start_pilot()
@@ -320,7 +320,7 @@ class TestPilot(ClassCase):
         self.start_pilot()
         first = self.org()["pilot_ends_at"]
         response = self.start_pilot()
-        self.assertIn("had its free pilot already", self.flashes(response))
+        self.assertIn("had its free trial already", self.flashes(response))
         self.assertEqual(self.org()["pilot_ends_at"], first)
 
     def test_only_the_owner_starts_it_and_any_teacher_runs_a_class(self):
@@ -348,7 +348,7 @@ class TestPilot(ClassCase):
         self.assertFalse(plans.access(org)["academy"])
         self.assertFalse(plans.class_limits(org)["active"])
         response = self.add_students(class_id, ["Priya"])
-        self.assertIn("Start the free pilot or choose a classroom plan", self.flashes(response))
+        self.assertIn("Start the free trial or choose a classroom plan", self.flashes(response))
         self.assertEqual(list(self.students(class_id)), ["Sam"])
         self.assertEqual(self.client.get(f"/app/academy/classes/{class_id}").status_code, 200)
         self.assertEqual(self.client.get(f"/app/academy/classes/{class_id}/report").status_code, 200)
@@ -376,7 +376,7 @@ class TestPilot(ClassCase):
         self.assertEqual([(t["world"].title, t["lessons"]) for t in report["topics"]],
                          [("Meet Your Company", 2), ("Business Words", 1), ("Money Smarts", 1)])
         page = self.client.get(f"/app/academy/classes/{class_id}/report").data.decode()
-        self.assertIn("Pilot report", page)
+        self.assertIn("Trial report", page)
         self.assertRegex(page, r'data-report="students">3<')
         self.assertRegex(page, r'data-report="lessons">4<')
         self.assertIn("Meet Your Company", page)
@@ -531,10 +531,25 @@ class TestStudentsSeeOnlyTheirClass(ClassCase):
         self.add_students(self.b, ["Zed", "Yara"])
         self.kids_a, self.kids_b = self.students(self.a), self.students(self.b)
         self.pass_levels(self.kids_a["Priya"], [1, 2])
+        # A new class starts with the leaderboard off; Room A's teacher turns it on.
+        self.post(f"/app/academy/classes/{self.a}/leaderboard", {"leaderboard": "on"})
 
     def set_school(self):
         result = self.app.test_cli_runner().invoke(args=["plan", "1", "school"])
         self.assertEqual(result.exit_code, 0, result.output)
+
+    def test_a_new_class_starts_with_the_leaderboard_off_and_old_ones_keep_theirs(self):
+        with self.db() as conn:
+            boards = dict(conn.execute("SELECT name, leaderboard FROM classes").fetchall())
+            self.assertEqual(boards, {"Room A": 1, "Room B": 0})
+            # A class made before 1.11.0 kept the old default (on), and keeps it.
+            conn.execute("INSERT INTO classes (org_id, name, created_at) VALUES (1, 'Old room', '2026-01-01')")
+            conn.commit()
+            self.assertEqual(conn.execute("SELECT leaderboard FROM classes WHERE name = 'Old room'").fetchone()[0], 1)
+        kid = self.kid_client(self.kids_b["Zed"])
+        page = kid.get(f"/app/academy/{self.kids_b['Zed']}/class").data.decode()
+        self.assertIn("data-board-off", page)
+        self.assertNotIn("Yara", re.findall(r'class="ac-board-name">([^<(]+)', page))
 
     def test_a_student_sees_their_class_board_only(self):
         kid = self.kid_client(self.kids_a["Sam"])

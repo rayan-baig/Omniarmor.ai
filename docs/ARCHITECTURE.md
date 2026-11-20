@@ -10,7 +10,7 @@ omniarmor_app (Flask)
    ├── views.py      overview, industry checks, report, audit trail, settings
    ├── tracking.py   turns stored readings into today's status ─┐
    │                                                            │ uses
-   ├── catalog.py    the 51 industries and 510 rules ───────────┤
+   ├── catalog.py    the 54 industries and 540 rules ───────────┤
    │                                                            ▼
    │                               omni_armor_rules (rule.py: one evaluate() for every rule)
    ├── reminders.py  daily digests per company
@@ -54,7 +54,7 @@ CyberLogix as who made the change. The contract is
 | `users` | People: email, name, password hash, reminder settings (and when they last saved them), a session counter that signs out old devices |
 | `orgs` | Companies: name and timezone |
 | `memberships` | Who belongs to which company, as owner or member |
-| `org_industries` | Which of the 51 industries each company tracks |
+| `org_industries` | Which of the 54 industries each company tracks |
 | `items` | One row per company and rule: the number, yes/no or date, plus any policy-limit override |
 | `audit` | Every change, with person, time, before and after |
 | `notifications` | Every email sent or saved, with status and error: the outbox, which Autopilot retries from (error reports to `ERRORS_EMAIL` included) |
@@ -102,21 +102,23 @@ banks for the 25 newer worlds (questions graded easy to hard, true-or-false
 facts and lesson cards), checked entry by entry by `tests/test_academy_bank.py`.
 Nothing about a level is stored: each quiz is generated from a seed (learner,
 track, world, stage and attempt), so the server can rebuild the exact
-questions when grading, and a new attempt gets new questions.
+questions when grading, and a new attempt asks the same lesson in a new order.
 
 Four tracks share the worlds but keep separate progress, stored as
 `track index * 1,000,000 + world * 1000 + stage`:
 
-| Track | Worlds x stages | Owner's Challenge | Rule Quests | Levels |
-|---|---|---|---|---|
-| Launchpad (Basic) | 16 x 50 | 50 | 51 x 10 | 1,360 |
-| Trailblazer (Intermediate) | 43 x 50 | 50 | 51 x 10 | 2,710 |
-| Summit (Advanced) | 43 x 100 | 100 | 51 x 20 | 5,420 |
-| Titan Mastery | 43 x 300 | 300 | 51 x 50 | 15,750 |
+| Track | World lessons | Lesson size | Owner's Challenge | Rule Quests | Levels |
+|---|---|---|---|---|---|
+| Launchpad (Basic) | 16 worlds, 87 | 5 | 3 | 54 x 10 | 630 |
+| Trailblazer (Intermediate) | 43 worlds, 345 | 5 | 5 | 54 x 10 | 890 |
+| Summit (Advanced) | 43 worlds, 291 | 6 | 5 | 54 x 10 | 836 |
+| Titan Mastery | 43 worlds, 219 | 8 | 5 | 54 x 10 | 764 |
 
-Deeper stages ask more questions, draw harder ones from the banks, raise the
-pass mark and mix in review from earlier worlds; every tenth stage is a boss
-round. Missed questions go into `learner_mistakes` for spaced practice (they
+Each world is a fixed list of questions per track and company
+(`academy.family_pool`), cut into lessons, so no question repeats within a
+world and the level count is the real number of lessons. Summit and Titan
+put the hard questions first and raise the pass mark; a world's last lesson
+is its boss round. Missed questions go into `learner_mistakes` for spaced practice (they
 come back after 1, 3 and 7 days until mastered), `learner_days` drives the
 daily streak and goal, and ranks (scaled to the track's size) level up the
 learner's picture.

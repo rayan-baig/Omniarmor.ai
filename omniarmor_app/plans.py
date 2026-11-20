@@ -80,10 +80,10 @@ twice (academy_plan.card_after_invoice).
 once, in whichever of the owner's locations (users.pilot_used_at, kept when
 that location is deleted).
 
-**The classroom pilot.** Once per owner, a free pilot of PILOT_DAYS
+**The classroom pilot.** Once per owner, a free trial of PILOT_DAYS
 (the CLASSROOM_PILOT_DAYS setting): one class of up to CLASS_SIZE students and
 the whole Academy, no card. It ends by itself; the classes, their progress
-and the pilot report are kept.
+and the trial report are kept.
 
 **The save offer.** Once per workspace, ever, a monthly payer about to cancel
 can take SAVE_OFFER_PERCENT off the next SAVE_OFFER_MONTHS months, through the
@@ -385,7 +385,7 @@ def class_limits(org, now=None):
                 "active": True, "pilot": pilot_status(org, now)}
     pilot = pilot_status(org, now)
     if pilot["state"] == "active" and not a["paused"]:
-        return {"source": "pilot", "name": "Free classroom pilot", "max_classes": PILOT_CLASSES,
+        return {"source": "pilot", "name": "Free classroom trial", "max_classes": PILOT_CLASSES,
                 "class_size": CLASS_SIZE, "active": True, "pilot": pilot}
     return {"source": None, "name": None, "max_classes": 0, "class_size": CLASS_SIZE, "active": False,
             "pilot": pilot}
@@ -475,7 +475,7 @@ def access(org, now=None, trial_days=None):
         "resumes_at": resumes if paused and not pause_open else None,
         "pause_open": paused and pause_open,   # paused in Stripe with no end date
         "paused_at": _get(org, "paused_at") if paused else None,
-        "pilot": in_pilot,             # the free classroom pilot gives the whole Academy
+        "pilot": in_pilot,             # the free classroom trial gives the whole Academy
         "pilot_ends": pilot["ends"],
         "pilot_days": pilot["days_left"] if in_pilot else 0,
         "classroom": kind in CLASSROOM_PLANS and paid and not paused,

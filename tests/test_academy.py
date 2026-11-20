@@ -20,9 +20,13 @@ BASIC = academy.TRACKS["launchpad"]
 
 class TestCourseContent(unittest.TestCase):
     def test_track_sizes(self):
-        self.assertEqual({t.key: t.total for t in academy.TRACK_LIST},
-                         {"launchpad": 1360, "trailblazer": 2710, "summit": 5420, "titan": 15750})
-        self.assertEqual(academy.TOTAL_LEVELS, 1360)
+        # Honest counts: each world's real lessons, the Owner's Challenge's and one per rule (1.11.0;
+        # they used to say 1,360 to 15,750, with the same few questions over and over).
+        rules = sum(len(academy.CATALOG[w.industry_id]) for w in academy.INDUSTRY_WORLDS)
+        for t in academy.TRACK_LIST:
+            self.assertEqual(t.total, t.topic_lessons + t.final_stages + rules, t.key)
+            self.assertLess(t.total, 2000, t.key)
+        self.assertEqual(academy.TOTAL_LEVELS, BASIC.total)
         self.assertEqual(len(academy.TOPIC_WORLDS), 43)
         for t in academy.TRACK_LIST:
             ids = {academy.level_id(t, w.number, s) for w in t.worlds for s in range(1, t.stages(w) + 1)}
@@ -59,7 +63,7 @@ class TestCourseContent(unittest.TestCase):
         for t in (academy.TRACKS["summit"], academy.TRACKS["titan"]):
             for w in t.worlds:
                 n = t.stages(w)
-                for stage in {1, 10, n // 2, n} | {rng.randint(1, n) for _ in range(3)}:
+                for stage in {1, min(10, n), n // 2 or 1, n} | {rng.randint(1, n) for _ in range(3)}:
                     self.check_level(t, w, stage, [7])
 
     def test_same_seed_same_quiz(self):
@@ -70,27 +74,28 @@ class TestCourseContent(unittest.TestCase):
 
     def test_harder_stages_and_bigger_tracks(self):
         w = academy.world(9)
+        last = BASIC.stages(w)
         self.assertEqual(academy.question_count(BASIC, w, 1), 5)
-        self.assertEqual(academy.question_count(BASIC, w, 49), 8)
-        self.assertEqual(academy.question_count(BASIC, w, 50), 10)  # boss round
-        self.assertLess(academy.pass_rate(BASIC, w, 1), academy.pass_rate(BASIC, w, 50))
+        self.assertEqual(academy.question_count(BASIC, w, last), 5)
+        self.assertTrue(academy.is_boss(BASIC, w, last))   # the world's last lesson
+        self.assertFalse(academy.is_boss(BASIC, w, 1))
+        self.assertLess(academy.pass_rate(BASIC, w, 1), academy.pass_rate(BASIC, w, last))
         titan = academy.TRACKS["titan"]
-        self.assertGreater(academy.question_count(titan, w, 299), academy.question_count(BASIC, w, 49))
-        self.assertGreater(academy.pass_rate(titan, w, 300), academy.pass_rate(BASIC, w, 50))
+        self.assertGreater(academy.question_count(titan, w, 1), academy.question_count(BASIC, w, 1))
+        self.assertGreater(academy.pass_rate(titan, w, titan.stages(w)), academy.pass_rate(BASIC, w, last))
 
     def test_question_banks_get_harder(self):
-        t = academy.TRACKS["trailblazer"]
         bank = academy.BANK_WORLDS[0]
         levels = {q[0]: q[5] for q in academy._BANK[bank.key]["questions"]}
 
-        def average(stage):
-            found = []
-            for seed in range(30):
-                for q in academy.quiz(t, bank.number, stage, "Acme", [1], f"s{seed}"):
-                    if q.prompt in levels:
-                        found.append(levels[q.prompt])
+        def average(t, stage):
+            found = [levels[q.prompt] for q in academy.quiz(t, bank.number, stage, "Acme", [1], "s")
+                     if q.prompt in levels]
             return sum(found) / len(found)
-        self.assertLess(average(1), average(49))
+        trail, summit = academy.TRACKS["trailblazer"], academy.TRACKS["summit"]
+        self.assertLess(average(trail, 1), average(trail, trail.stages(bank)))
+        # Summit and Titan start with the hard questions.
+        self.assertGreater(average(summit, 1), average(trail, 1))
 
     def test_stars(self):
         self.assertEqual(academy.stars_for(5, 5), 3)
@@ -126,13 +131,13 @@ class TestCourseContent(unittest.TestCase):
         self.assertEqual(academy.rank_tier(0), 0)
         self.assertEqual(academy.rank_tier(1000), 7)
         titan = academy.TRACKS["titan"]
-        self.assertEqual(academy.rank_for(1000, titan), "Manager")  # bigger tracks need more levels
+        self.assertLess(academy.rank_tier(BASIC.total, titan), 7)  # bigger tracks need more levels
         self.assertEqual(academy.next_rank(0), (5, "Apprentice"))
-        self.assertIsNone(academy.certificate_for(1349, False))
+        self.assertIsNone(academy.certificate_for(BASIC.total - 1, False))
         self.assertEqual(academy.certificate_for(1, True), "Future Owner")
         self.assertEqual(academy.certificate_for(120, True), "Silver Future Owner")
-        self.assertEqual(academy.certificate_for(1360, True), "Platinum Business Legend")
-        self.assertEqual(academy.certificate_for(15750, True, titan), "Titan Mastery Platinum Business Legend")
+        self.assertEqual(academy.certificate_for(BASIC.total, True), "Platinum Business Legend")
+        self.assertEqual(academy.certificate_for(titan.total, True, titan), "Titan Mastery Platinum Business Legend")
 
     def test_money_math_is_exact(self):
         for seed in range(300):
@@ -172,9 +177,9 @@ class TestCourseContent(unittest.TestCase):
     def test_money_world_never_leaves_negative_profit(self):
         # "If the profit was $1,500 and the company paid a $2,000 fine, how
         # much profit is left?" had "$-500" as its right answer.
-        for seed in range(2000):
-            for stage in (1, 9, 25, 50):
-                for q in academy._money_questions(random.Random(seed), "Acme", [2], stage):
+        for seed in range(300):
+            for t in academy.TRACK_LIST:
+                for q in academy.family_pool(t, 6, f"Acme {seed}", [2]):
                     for option in q.options:
                         self.assertNotIn("$-", option, (q.prompt, q.options))
 
@@ -230,7 +235,7 @@ class TestAcademyPages(AppTestCase):
     def test_home_and_add_learner(self):
         page = self.client.get("/app/academy")
         self.assertEqual(page.status_code, 200)
-        self.assertIn(b"15,750", page.data)
+        self.assertIn(f"{max(t.total for t in academy.TRACK_LIST):,}".encode(), page.data)
         for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery"):
             self.assertIn(f'name="track" value="{name.split()[0].lower()}"', page.data.decode())
         response = self.add(track=None)
@@ -239,7 +244,8 @@ class TestAcademyPages(AppTestCase):
         self.assertTrue(response.headers["Location"].endswith(f"/app/academy/{lid}/world/1/stage/1"))
         self.assertEqual(self.client.get(f"/app/academy/{lid}").status_code, 200)
         picker = self.client.get(f"/app/academy/{lid}/track").data.decode()
-        for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery", "1,360", "2,710", "5,420", "15,750"):
+        for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery") + tuple(
+                f"{t.total:,} levels" for t in academy.TRACK_LIST):
             self.assertIn(name, picker)
         self.post(f"/app/academy/{lid}/track", {"track": "summit"})
         page = self.client.get(f"/app/academy/{lid}").data.decode()
@@ -298,17 +304,32 @@ class TestAcademyPages(AppTestCase):
         # New worlds aren't on the basic track.
         self.assertEqual(self.client.get(f"/app/academy/{lid}/world/{academy.BANK_WORLDS[0].number}").status_code, 404)
 
-    def test_mastery_track_has_chapters(self):
+    def test_mastery_track_world_page(self):
         self.add(track="titan")
         lid = self.learner_id()
         titan = academy.TRACKS["titan"]
+        last = titan.stages(academy.world(1))
         page = self.client.get(f"/app/academy/{lid}/world/1").data.decode()
-        self.assertIn("251-300", page)
-        self.assertEqual(self.client.get(f"/app/academy/{lid}/world/1/stage/300").status_code, 302)  # locked
+        self.assertIn("No question comes back", page)
+        self.assertEqual(self.client.get(f"/app/academy/{lid}/world/1/stage/{last}").status_code, 302)  # locked
+        self.assertEqual(self.client.get(f"/app/academy/{lid}/world/1/stage/{last + 1}").status_code, 404)
         self.assertIn("Stage 2 unlocked", self.answer(lid, 1, 1, track=titan).data.decode())
         with self.db() as conn:
             level = conn.execute("SELECT level FROM learner_progress").fetchone()[0]
         self.assertEqual(level, academy.level_id(titan, 1, 1))
+
+    def test_stages_from_before_honest_counts_stay_stored_but_dont_count(self):
+        """Before 1.11.0 a world had 50 to 300 stages. A stage it no longer
+        has stays in the database and doesn't count toward the level total."""
+        self.add()
+        lid = self.learner_id()
+        self.mark_passed(lid, (1, 1), (1, 40), (2, 300))
+        page = self.client.get(f"/app/academy/{lid}/progress").data.decode()
+        self.assertIn(f"1 of {BASIC.total:,}", page)
+        with self.db() as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM learner_progress").fetchone()[0], 3)
+        self.assertFalse(academy.level_exists(BASIC, academy.level_id(BASIC, 1, 40)))
+        self.assertTrue(academy.level_exists(BASIC, academy.level_id(BASIC, 1, 1)))
 
     def test_switching_tracks_keeps_progress_separate(self):
         self.add()

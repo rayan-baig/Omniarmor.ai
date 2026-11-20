@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Pages for trades (/for/<slug>): salons and barbershops, tattoo and piercing
-studios, gyms and fitness studios, and shops, which don't have an industry of
-their own in the catalog, and schools, which have two (SchoolSafetyArmor for
-a school's safety routines and SchoolArmor for its legal duties): the page
+studios, and gyms and fitness studios, which have a starter list of their
+own (1.11.0: SalonArmor, InkArmor and GymArmor) beside the staff-pay and
+card-payment checks they share with other shops; shops, which don't have an
+industry of their own; and schools, which have two (SchoolSafetyArmor for a
+school's safety routines and SchoolArmor for its legal duties): the page
 brings them together, with the Academy for classrooms beside it.
 
 Each page is honest about what OmniArmor does for that trade today: which of
@@ -48,55 +50,72 @@ TRADES = (
         name="Salons and barbershops",
         one="a salon or barbershop",
         title="Salon and barbershop checklists and reminders",
-        description=("Checklists and reminders for salons and barbershops: paying your team right, new-hire"
-                     " forms and safe card payments, with an email before anything is due."),
-        intro=("Behind every chair there's paperwork: paying your team right, new-hire forms, and keeping card"
-               " payments safe. OmniArmor keeps those checklists in one place and emails you before something"
-               " is due, so it doesn't slip in a busy week."),
+        description=("Checklists and reminders for salons and barbershops: licenses, disinfecting tools and"
+                     " pedicure tubs, single-use items, chemical safety, paying your team right and safe card"
+                     " payments."),
+        intro=("Behind every chair there's a checklist: the shop and stylist licenses, tools disinfected between"
+               " clients, fresh disinfectant every day, pedicure tubs cleaned and logged, and the safety sheets"
+               " for color and acrylics. OmniArmor keeps them in one place, one entry per jar or tub where it"
+               " helps, and emails you before something is due."),
         groups=(
+            (52, ("shop_license_renewal", "operator_licenses_current", "tool_disinfection", "disinfectant_changed",
+                  "foot_spa_cleaning", "single_use_items", "safety_data_sheets", "nail_ventilation",
+                  "blood_spill_kit", "fire_extinguisher_monthly"),
+             "SalonArmor, made for salons and barbershops. Your state board sets the details, and they differ"
+             " from state to state: check your local rules and set each limit to match."),
             (30, ("i9_section_2", "overtime_pay", "minimum_wage", "hours_records"),
              "For a shop with employees. Some checks in this checklist are for bigger employers (health plans,"
              " family leave); leave those blank if they don't apply to you."),
             (32, ("no_sad_storage", "pan_unreadable", "annual_pci_validation"), ""),
         ),
-        outside=("Shop and stylist licenses, and the cleaning and disinfecting rules for your tools, come from"
-                 " your state board. OmniArmor doesn't have a checklist for those yet, so keep them on your"
-                 " own list."),
+        outside=("Your state board's own rule book, booth-rental agreements and continuing-education hours for"
+                 " each license aren't in these checklists, so keep them on your own list."),
+        own=(52,),
     ),
     Trade(
         slug="tattoo-and-piercing-studios",
         name="Tattoo and piercing studios",
         one="a tattoo or piercing studio",
         title="Tattoo and piercing studio checklists and reminders",
-        description=("Checklists and reminders for tattoo and piercing studios: sterilizer tests, the exposure"
-                     " control plan review, hepatitis B vaccine offers and card payments, with reminder emails."),
+        description=("Checklists and reminders for tattoo and piercing studios: the studio permit, sterilizer"
+                     " spore tests, sharps, single-use needles, the exposure control plan, hepatitis B vaccine"
+                     " offers and client records."),
         intro=("Clean needles and a working sterilizer are the job. So is the paperwork that proves it: the"
-               " sterilizer's spore tests, a yearly look at your plan for blood exposure, and the vaccine offer"
-               " for new artists. OmniArmor counts the days for you and emails before each one is due."),
+               " permit, each sterilizer's spore tests, sharps handled right, a yearly look at your plan for blood"
+               " exposure and the vaccine offer for new artists. OmniArmor counts the days for you, one entry per"
+               " sterilizer, and emails before each one is due."),
         groups=(
-            (27, ("sterilizer_spore_test", "exposure_control_plan", "hepb_vaccine_offer", "hazard_communication"),
-             "These come from the Dental & Medical Practices checklist and are for studios with employees. The"
-             " sterilizer test's limit is a policy you can change to match your health department. That"
-             " checklist also has billing and patient-record checks a studio can leave blank."),
+            (53, ("studio_permit_renewal", "artist_registration", "spore_test", "single_use_needles",
+                  "sharps_disposal", "exposure_control_plan", "hepb_vaccine_offer", "client_records",
+                  "minors_rules", "surfaces_disinfected"),
+             "InkArmor, made for tattoo and piercing studios. Body art rules are set by your city, county or"
+             " state and differ a lot: check your local rules and set each limit to match. The OSHA checks are"
+             " for studios with employees."),
             (30, ("i9_section_2", "overtime_pay", "hours_records"), "For a studio with employees."),
             (32, ("no_sad_storage", "annual_pci_validation"), ""),
         ),
-        outside=("Studio and artist permits, and your health department's own rules, differ from city to city"
-                 " and state to state. OmniArmor doesn't have a checklist for those yet, so keep them on your"
-                 " own list."),
+        outside=("Your health department's own inspection form, aftercare sheets and the rules for the inks and"
+                 " jewelry you buy aren't in these checklists, so keep them on your own list."),
+        own=(53,),
     ),
     Trade(
         slug="gyms-and-fitness-studios",
         name="Gyms and fitness studios",
         one="a gym or fitness studio",
         title="Gym and fitness studio checklists and reminders",
-        description=("Checklists and reminders for gyms and fitness studios: staff pay, card payments,"
-                     " memberships sold online with an easy way to cancel, and marketing emails and texts."),
-        intro=("Memberships renew every month, and so does the paperwork: paying trainers and front-desk staff"
-               " right, keeping card payments safe, and selling memberships online with clear terms and an easy"
-               " way to cancel. OmniArmor keeps those checklists in one place and reminds you before something"
-               " is due."),
+        description=("Checklists and reminders for gyms and fitness studios: AEDs and CPR, equipment checks,"
+                     " cleaning logs, pool chlorine, chemical safety, membership contracts, staff pay and card"
+                     " payments."),
+        intro=("Memberships renew every month, and so do the checks: the AED, the equipment, the cleaning log, the"
+               " pool, and contracts with the cancel rights your state requires. OmniArmor keeps those checklists"
+               " in one place, one entry per AED or pool, and reminds you before something is due."),
         groups=(
+            (54, ("aed_check", "staff_cpr", "equipment_inspection", "cleaning_log", "pool_chlorine",
+                  "safety_data_sheets", "membership_contracts", "fire_extinguisher_monthly", "first_aid_kit",
+                  "member_agreements"),
+             "GymArmor, made for gyms and fitness studios. Health club, AED and pool rules differ from state to"
+             " state: check your local rules and set each limit to match. Leave the pool check blank if you have"
+             " no pool."),
             (30, ("i9_section_2", "overtime_pay", "minimum_wage", "hours_records", "hospitalization_report_24h"),
              "For a gym with employees. Leave blank the checks for bigger employers that don't apply to you."),
             (32, ("no_sad_storage", "pan_unreadable", "annual_pci_validation"), ""),
@@ -104,9 +123,9 @@ TRADES = (
              "For memberships sold online and for marketing emails and texts. The rest of the E-commerce"
              " checklist is about products, so a gym can leave it blank."),
         ),
-        outside=("Pools and hot tubs, first-aid equipment and your own state's membership contract rules are set"
-                 " where you are. OmniArmor doesn't have a checklist for those yet, so keep them on your own"
-                 " list."),
+        outside=("Personal trainers' certifications, music licensing for classes and your building's own"
+                 " permits aren't in these checklists, so keep them on your own list."),
+        own=(54,),
     ),
     Trade(
         slug="shops-and-retail-stores",
@@ -192,7 +211,10 @@ SIGNUP_LEAD = (
     (45, "Child care and daycares"),
     (27, "Dental and medical offices"),
     (29, "Construction"),
-    (30, "Salons, shops and other small employers: staff pay and hiring"),
+    (52, "Salons and barbershops"),
+    (53, "Tattoo and piercing studios"),
+    (54, "Gyms and fitness studios"),
+    (30, "Shops and other small employers: staff pay and hiring"),
     (32, "Shops and retail: card payments"),
     (50, "Online shops"),
 )

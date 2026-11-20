@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
-  <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 51 regulated industries.{% endblock %}">
+  <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 54 regulated industries.{% endblock %}">
   {% set listed = public_page() and not noindex %}
   {% if not listed %}<meta name="robots" content="noindex, nofollow">{% endif %}
   <meta name="theme-color" content="#0F0E0D">
@@ -182,6 +182,8 @@
       ('app.notifications', 'Reminders', 'Reminder emails and deadlines', 'bell', ep == 'app.notifications'),
       ('app.audit', 'History', 'Every change, with who and when', 'audit', ep == 'app.audit'),
       ('app.settings', 'Settings', 'Settings and plans', 'settings', ep in ('app.settings', 'plan.plan_page'))] %}
+  {# The checklist comes with Whole school: without it a teacher's menu leaves it out. #}
+  {% if not school_checklist %}{% set tabs = tabs|rejectattr('1', 'equalto', 'Checklist')|list %}{% endif %}
   {% else %}
   {% set tabs = [
       ('app.overview', 'Home', 'What needs attention', 'home', ep in ('app.overview', 'app.industry')),

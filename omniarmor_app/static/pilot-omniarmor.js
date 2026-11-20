@@ -69,7 +69,7 @@
         C("What's a check?", "What is a check, and what does “Rule and source” show?"),
         C("Is this legal advice?", "Is OmniArmor legal advice?")];
     }
-    if (path === "/classrooms") return [C("How does the pilot work?", "How does the free classroom pilot work?"),
+    if (path === "/classrooms") return [C("How does the free trial work?", "How does the free classroom trial work?"),
       C("Is it safe for students?", "What does OmniArmor keep about my students?"),
       C("Classroom or Whole school?", "What's the difference between Classroom and Whole school?")];
     if (path === "/classrooms/guide") return [C("Plan a week", "Help me plan one world a week for my class."),

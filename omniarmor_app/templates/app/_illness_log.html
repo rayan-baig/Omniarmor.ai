@@ -1,0 +1,44 @@
+{# The illness log beside "Sick employees kept off work" (tracking.add_illness): who reported what and when, by first
+   name or initials only. Needs r, info, log, read_only, today, illness_reported, illness_actions. #}
+<details class="illness-log" data-illness-log="{{ log|length }}"{% if log %} open{% endif %}>
+  <summary>Illness log{% if log %} ({{ log|length }}){% endif %}</summary>
+  <p class="hint">Write down each time a worker tells you they're sick, and what you did. <strong>First name or initials only</strong>, like Sam or S.L.: no last names, and no health details beyond the list. Vomiting, diarrhea, jaundice or a diagnosed illness means sending them home (FDA Food Code 2-201.12); check your local health department's rules too. The answer above stays the check: Yes means a sick worker is working.</p>
+  {% if log %}
+  <div class="table-wrap">
+  <table class="log-table">
+    <thead><tr><th>Date</th><th>Who</th><th>Reported</th><th>What was done</th>{% if not read_only %}<th><span class="sr">Remove</span></th>{% endif %}</tr></thead>
+    <tbody>
+      {% for row in log %}
+        <tr data-illness="{{ row.id }}">
+          <td class="mono">{{ row.reported_on }}</td>
+          <td data-pilot-private>{{ row.person }}</td>
+          <td>{{ illness_reported.get(row.reported, row.reported) }}</td>
+          <td>{{ illness_actions.get(row.action, row.action) }}</td>
+          {% if not read_only %}<td>
+            <form method="post" action="{{ url_for('app.illness_change', industry_id=info.id, rule_key=r.key) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="entry_id" value="{{ row.id }}">
+              <button class="linkbtn" type="submit" name="action" value="remove">Remove</button>
+            </form>
+          </td>{% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if not read_only %}
+  <form class="log-form" method="post" action="{{ url_for('app.illness_change', industry_id=info.id, rule_key=r.key) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="field" for="ill-day"><span class="hint">Date reported</span>
+      <input type="date" id="ill-day" name="reported_on" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" required></label>
+    <label class="field" for="ill-who"><span class="hint">First name or initials</span>
+      <input type="text" id="ill-who" name="person" maxlength="20" autocomplete="off" placeholder="Sam or S.L." pattern="[^\s\d]{1,20}" required></label>
+    <label class="field" for="ill-what"><span class="hint">What they reported</span>
+      <select id="ill-what" name="reported" required>{% for key, label in illness_reported.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <label class="field" for="ill-did"><span class="hint">What you did</span>
+      <select id="ill-did" name="did" required>{% for key, label in illness_actions.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <button class="btn quiet" type="submit">Add to the log</button>
+  </form>
+  {% endif %}
+</details>

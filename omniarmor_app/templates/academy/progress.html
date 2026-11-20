@@ -35,7 +35,7 @@
           <td>{{ "{:,}".format(row.done) }} of {{ "{:,}".format(row.track.total) }}</td>
           <td class="ac-wide-only">{{ row.stars }}</td>
           <td class="ac-wide-only">{{ row.rank }}</td>
-          <td>{% if row.certificate %}{% if row.current %}<a href="{{ url_for('academy.certificate', learner_id=learner.id) }}">{{ row.certificate }}</a>{% else %}{{ row.certificate }}{% endif %}{% else %}<span class="muted">Not yet: pass stage 1 of the Owner's Challenge</span>{% endif %}</td>
+          <td>{% if row.certificate %}{% if row.current %}<a href="{{ url_for('academy.certificate', learner_id=learner.id) }}">{{ row.certificate }}</a>{% else %}{{ row.certificate }}{% endif %}{% else %}<span class="muted">Not yet: pass stage 1 of the {{ "Owner's Challenge" if row.track.rule_quests else 'Class Challenge' }}</span>{% endif %}</td>
         </tr>
       {% endfor %}
     </tbody>

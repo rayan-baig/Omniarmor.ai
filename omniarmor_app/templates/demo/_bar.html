@@ -8,7 +8,7 @@
   {% if d.here %}<p class="demo-here" data-demo-step="{{ d.here.number }}"><strong>Step {{ d.here.number }} of {{ d.total }}: {{ d.here.title }}.</strong> {{ d.here.text }}</p>{% endif %}
   <div class="demo-actions">
     {% if d.next %}<a class="btn" href="{{ d.next.url }}" data-demo-next>Next: {{ d.next.title }}</a>{% endif %}
-    <a class="btn{{ ' ghost' if d.next }}" href="{{ d.signup }}" data-demo-signup>{{ 'Start your free pilot' if d.kind == 'classroom' else 'Start your free trial' }}</a>
+    <a class="btn{{ ' ghost' if d.next }}" href="{{ d.signup }}" data-demo-signup>{{ 'Start your free trial' if d.kind == 'classroom' else 'Start your free trial' }}</a>
     <form method="post" action="{{ url_for('demo.leave') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="linkbtn" type="submit">Leave the demo</button>

@@ -49,7 +49,7 @@ class TestPlanPage(AppTestCase):
             f"All {sum(len(rules_for(i)) for i in INDUSTRIES)} checks across {len(INDUSTRIES)} industries",
             f"{free_track.name} track: its first {len(free_worlds)} worlds, "
             + ", ".join(w.title for w in free_worlds)
-            + f", with all {'{:,}'.format(len(free_worlds) * free_track.topic_stages)} of their levels",
+            + f", with all {'{:,}'.format(sum(free_track.stages(w) for w in free_worlds))} of their levels",
             f"Up to {academy.MAX_FRIENDS} friends each",
             f"All {len(academy.TOPIC_WORLDS)} business worlds",
             f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests",

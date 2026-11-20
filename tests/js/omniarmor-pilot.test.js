@@ -95,7 +95,7 @@ test("the knowledge pack is written from the real app, with prices only from the
   const pack = loadPack("business");
   for (const fact of ["Rule and source", "Done today", "Blocked (red)", "Warning (orange)", "Cleared", "No reading", "30, 7 or 1 day",
     "Update several at once", "Pro", "Plus", "Classroom", "Whole school", "first name or nickname", "join code", "teacher guide",
-    "pilot report", "decision support, not legal advice", "Kitchen Safety Bundle", "Your reminder emails"]) {
+    "trial report", "decision support, not legal advice", "Kitchen Safety Bundle", "Your reminder emails"]) {
     assert.ok(pack.knowledge.toLowerCase().includes(fact.toLowerCase()), fact);
   }
   assert.doesNotMatch(pack.knowledge, /\$\s?\d/, "no price is typed into the pack");
@@ -304,4 +304,41 @@ test("add students: first names or nicknames only, through the class's own form,
   assert.deepEqual(Object.keys(result).sort(), ["done", "not_added", "omniarmor_said"]);
   assert.deepEqual(pack._test.cleanNames(["Zoë", "Mary-Kate", "O'Neil", "José M", "Ana Maria Lopez", "x".repeat(31)]),
     { good: ["Zoë", "Mary-Kate", "O'Neil", "José M"], bad: ["Ana Maria Lopez", "x".repeat(30)] });
+});
+
+// ---------------------------------------------------------------- students: where the names go
+
+test("before the Allow card for adding students, a line says the names go to the teacher's own AI provider", async () => {
+  const pack = loadPack("teacher");
+  const made = [];
+  const node = (tag) => {
+    const n = { tag, kids: [], attrs: {}, listeners: {}, textContent: "", className: "",
+      append(...xs) { for (const x of xs) { this.kids.push(x); this.textContent += typeof x === "string" ? x : x.textContent; } },
+      setAttribute(k, v) { this.attrs[k] = v; }, hasAttribute(k) { return k in this.attrs; },
+      addEventListener(k, fn) { this.listeners[k] = fn; } };
+    made.push(n);
+    return n;
+  };
+  let cancelled = false;
+  const cancel = { textContent: "Cancel", click() { cancelled = true; } };
+  const card = { textContent: "Pilot wants to: add 1 student to Room 12: Maya", previousElementSibling: null,
+    isConnected: true, parentNode: {}, querySelectorAll: () => [{ textContent: "Allow" }, cancel],
+    before(n) { this.previousElementSibling = n; } };
+  globalThis.document = { querySelectorAll: () => [card], createElement: node };
+  globalThis.MutationObserver = class { observe() {} disconnect() {} };
+  try {
+    pack._test.namesNote({ id: 7, name: "Room 12" });
+    await new Promise((r) => setTimeout(r, 20));
+    const note = card.previousElementSibling;
+    assert.ok(note && note.hasAttribute("data-names-note"));
+    assert.match(note.textContent, /sent to your own AI provider/);
+    const link = note.kids.find((k) => typeof k !== "string");
+    assert.equal(link.textContent, "Type them myself instead");
+    assert.equal(link.href, "/app/academy/classes/7#add-students");
+    link.listeners.click();
+    assert.ok(cancelled, "typing them myself cancels the card");
+  } finally {
+    delete globalThis.document;
+    delete globalThis.MutationObserver;
+  }
 });

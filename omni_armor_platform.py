@@ -92,6 +92,10 @@ class MoonstoneThemeColors:
         50: {"name": "ShopArmor (E-commerce)", "color": "Cart Magenta", "hex": "#D63384"},
         # Industry 51 (1.6.0): a K-12 school's safety routines, beside SchoolArmor's legal duties. Rule catalog only.
         51: {"name": "SchoolSafetyArmor (School Safety & Operations)", "color": "Chalkboard Green", "hex": "#3A7D5C"},
+        # Industries 52-54 (1.11.0): starter lists for trades that had only borrowed checks. Rule catalog only.
+        52: {"name": "SalonArmor (Salons & Barbershops)", "color": "Salon Rose", "hex": "#B5487A"},
+        53: {"name": "InkArmor (Tattoo & Piercing Studios)", "color": "Ink Indigo", "hex": "#3D3A8C"},
+        54: {"name": "GymArmor (Gyms & Fitness Studios)", "color": "Track Orange", "hex": "#D9622B"},
     }
 
 

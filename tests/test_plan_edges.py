@@ -214,13 +214,13 @@ class TestOnePerOwner(ClassCase):
         self.post("/app/settings/delete", {"confirm": "Second Campus"})
         third = self.add_location("Third Campus")
         response = self.start_pilot()
-        self.assertIn("had its free pilot already", self.flashes(response))
+        self.assertIn("had its free trial already", self.flashes(response))
         self.assertEqual(plans.pilot_status(self.org_row(third))["state"], "none")
         self.post("/app/settings/locations/1/switch")
         self.start_pilot()
         self.assertEqual(plans.pilot_status(self.org_row(1))["state"], "none")
         page = words(self.client.get("/app/academy/classes").data.decode())
-        self.assertNotIn("Start the free pilot", page)
+        self.assertNotIn("Start the free trial", page)
 
 
 # --- Plans set by hand -----------------------------------------------------------------------

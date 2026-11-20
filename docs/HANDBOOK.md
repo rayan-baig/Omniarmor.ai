@@ -22,7 +22,7 @@ This handbook explains OmniArmor from top to bottom in plain language: what it i
 10. Design and writing style
 11. How it was built: the history
 12. Where things stand, what's next, and how to keep working
-- Appendix A: All 51 industries and 510 checks
+- Appendix A: All 54 industries and 540 checks
 - Appendix B: Every Academy world, with its lesson cards
 - Appendix C: Armo's 14 personalities
 - Appendix D: Every web address the app answers
@@ -37,12 +37,12 @@ This handbook explains OmniArmor from top to bottom in plain language: what it i
 
 OmniArmor.ai is a self-running compliance service for businesses in regulated industries. A company signs up, picks the industries it works in, and enters each date or reading once. From then on, OmniArmor counts the days by itself, warns the team by email before anything is due, shows what is blocked or close to a limit, and keeps a record of every change that an inspector, auditor or insurer can be shown.
 
-It covers 51 industries; the newest, SchoolSafetyArmor, holds a K-12 school's safety routines. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 510 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
+It covers 54 industries; the newest three, SalonArmor, InkArmor and GymArmor, are starter lists for salons and barbershops, tattoo and piercing studios, and gyms. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 510 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
 
 Two extra parts sit on top of the compliance service:
 
 - **Armo** is the app's mascot and helper: a small, friendly shield character who sits above the tab bar, keeps himself busy while things are calm, and jumps up the moment something needs attention. He has 14 personalities to choose from.
-- **The Future Owner Academy** is a game-like course for the children of family businesses, the people who may run the company one day. It has four tracks of up to 15,750 levels across 43 worlds of business lessons, plus quizzes built from the family company's own rules.
+- **The Future Owner Academy** is a game-like course for the children of family businesses, the people who may run the company one day. It has four tracks of 630 to 890 levels (each a different lesson) across 43 worlds of business lessons, plus quizzes built from the family company's own rules.
 
 Behind all of it, **Autopilot** keeps the service itself healthy. It fixes small problems on its own and emails the operator about big ones, including new bugs, which it finds by fingerprinting every crash and by running a full self-test every day.
 
@@ -150,7 +150,7 @@ Every check is a small piece of data with these parts:
 - **Policy flag**: true when the limit is an industry standard or a common policy rather than a number fixed by law. Only these can be changed by a company (section 2.6).
 - **Sample**: a realistic example reading, used in demos.
 
-Across all 510 checks there are 216 maximums, 33 minimums, 202 required controls and 59 forbidden conditions.
+Across all 540 checks there are 227 maximums, 36 minimums, 215 required controls and 62 forbidden conditions.
 
 ### 2.3 Dates that count themselves
 
@@ -202,6 +202,10 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Several at once.** Each check also has a **Select** box. Tick several, then choose one change in "Update several at once" at the top of the page: **Mark done today** (duties that repeat), **Answer Yes** or **Answer No** (yes-or-no checks) or **Set the date** (date-counted checks; hour clocks still need their start time on their own). Each check goes through the same code as a single update, so it gets the same checks and its own audit row. It is all or nothing: if one ticked check can't take the change, or its date is refused, nothing is saved and the page says which check and why. Anyone on the team can use it, as with single updates; a kid's Academy device cannot.
 
+**Checks with one entry per item** (1.11.0, `catalog.MULTI_CHECKS`). A few checks are about several things at once: the 7-day date marking (one entry per food batch or container), cold and hot holding (one reading per fridge or unit), a salon's disinfectant jars and pedicure tubs, a studio's sterilizers, a gym's AEDs and pools. Each entry has a name ("Walk-in cooler"), its own value or date and its own deadline and light; the check's status is the worst of its entries, and the report and its download list each entry under the check. **Add a …** adds one; each entry has **Save**, **Done today** (for duties that repeat) and **Remove**. The first entry is the check's own saved value (`items`, named by `items.label`), so a value saved before 1.11.0, or sent by CyberLogix, is the first entry; the others are in `check_entries`. Every change has its own line in the audit trail. "Update several at once" leaves these checks alone: update each entry on its own.
+
+**The illness log** (1.11.0). "Sick employees kept off work" (RestoArmor) is still answered Yes or No, and Yes is still the bad answer (a bulk update never answers it Yes). Beside it, the **Illness log** keeps who reported being sick, what and what was done: the date, the worker's **first name or initials only** (one word, like Sam or S.L.: a full name is refused, and the page says so), one of six listed symptoms from the FDA Food Code (no free text), and "Sent home", "Kept away from food" or "Back at work". Vomiting, diarrhea, jaundice or a diagnosed illness can't be marked "kept away from food": those mean sending the worker home (Food Code 2-201.12). The audit trail notes that a report was added or removed and its date, never who or what.
+
 ### 2.6 A company's own limits
 
 47 checks use a limit that comes from an industry standard or a common policy, not from law. On those, an owner can set the company's own limit and warning point. The app makes sure the warning point makes sense: for a maximum it must be at or below the limit, and for a minimum at or above it. "Reset" brings the default back. Every change of limit is written to the audit trail. A limit with a part in it, such as 365.5 days or 10.3 years, gives a due date that is the last day still within it and a first Warning day that has really reached the warning point. Limits set by law cannot be changed; the app answers "This limit comes from the rule itself and cannot be changed."
@@ -239,7 +243,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 Visitors who aren't signed in see:
 
 - a landing page with the slogan, who it's for and, in the first screen, the plans (section 2.12): the free trial (`ACADEMY_TRIAL_DAYS`), Pro and Plus with their prices per location, the free Academy worlds and the Kitchen Safety Bundle. Every number on it is read from the code and settings (`_plan_summary.html`, which the industry pages show too);
-- a list of all 51 industries, and of trades;
+- a list of all 54 industries, and of trades;
 - one page per trade (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops, which have no industry of their own, and schools (`/for/schools`), which have two, SchoolSafetyArmor's safety routines and SchoolArmor's legal duties, brought together with a note that CyberLogix can watch the nurse's office and cafeteria fridges 24/7 and a link to the Academy for schools. Each names the OmniArmor checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what OmniArmor doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
 - one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
 - the Academy for schools and teachers (`/classrooms`, section 5.13): classes, the class view, certificates, the leaderboard, the free pilot and the classroom prices;
@@ -248,7 +252,7 @@ Visitors who aren't signed in see:
 - a Help page (`/help`) with 15 questions and answers: the free trial, prices, a card at sign-up, what a check is, the three lights, Done today, updating several checks, when reminder emails go out and how to choose them, the Autopilot, the Academy, a kid's progress report, downloading and deleting data, and getting help. Every number on it is read from the code and settings, like the plan page's, and `SUPPORT_EMAIL`, when set, adds an address to write to. It is linked from every page's footer, the landing page and Settings;
 - the Terms (`/terms`) and Privacy (`/privacy`) pages, linked from every page's footer. They are written in plain words, and each line matches what the code does. The numbers they quote (trial length, how long links, codes, error reports and backups last) are read from the code and settings, so they stay true when those change. If you change what the app stores, who it shares with or how long it keeps things, update these pages and the date at the top (`RULES_UPDATED` in `omniarmor_app/__init__.py`).
 
-The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 51 industry pages, the trade pages, the Academy for schools page, sign up, sign in, Help, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
+The site also serves a `sitemap.xml` listing the public pages (home, the industry list and the 54 industry pages, the trade pages, the Academy for schools page, sign up, sign in, Help, Terms and Privacy), and a `robots.txt` that keeps search engines out of the signed-in app (with the Academy and Settings), password reset and invite links, the kids' join page and the addresses only programs use. Every page that isn't public is also marked `noindex`, in the page and in an `X-Robots-Tag` header (which covers the CSV exports too); the list of public pages is `PUBLIC_PAGES` in `omniarmor_app/__init__.py`. The public pages carry share previews (Open Graph and Twitter card tags with a 1200 x 630 picture) and a canonical address. Icons: `favicon.ico` and `favicon.svg`, a 180 x 180 Apple touch icon, and 192 and 512 icons in the web app manifest. Missing pages and server errors get friendly pages in the site's look with a way home; a server error never shows what went wrong inside.
 
 ### 2.9 Team, invites and roles
 
@@ -444,6 +448,8 @@ Armo is OmniArmor's mascot: a round, friendly shield with big sparkly eyes, a wa
   - pointers to the Academy, the report and History.
 - **Has his own page** (`/app/armo`) that lists everything he found, each with "What to do" and a Fix it button, plus the personality picker.
 
+**Armo and Pilot keep apart** (1.11.0). Armo lives in the bottom-left corner and Pilot's robot in the bottom-right, and the page keeps room at the bottom so neither covers its last lines or a status tag. While Armo's bubble is showing (an alert, a Fix it, a tip), `armo.js` puts `armo-talking` on the page's body and `app.css` tucks Pilot's robot away (an open Pilot window stays), so only one helper shows at a time. A later Pilot core (1.1.0, with its `avoid` and `yieldTo` settings) can do this itself; until that core is copied in, this stays.
+
 ### 4.3 Personalities
 
 There are 14 personalities. Each one changes only Armo's words and outfit, never the facts. Each has 61 lines of its own across idle chatter, alerts, all-clear, fixed, poke replies, Academy greetings, cheers, streak shouts, wins and retries. Grown-ups pick one on the Armo page, or turn him off ("Hide Armo"). The default for grown-ups is **Chief** ("Calm and professional"), and for kids it's **Sweetie** ("Sweet and kind"). Each Academy learner picks their own Armo, which changes quiz cheers, streak messages and result lines. The full list is in Appendix C.
@@ -464,28 +470,27 @@ A grown-up in the workspace adds a **learner** from the Academy home page. A lea
 
 ### 5.3 The four tracks
 
-Each track keeps its own progress, and a learner can switch at any time.
+Each track keeps its own progress, and a learner can switch at any time. Since 1.11.0 every world is a fixed set of questions cut into lessons, the way the Classroom track works: no question comes back in a later lesson of the same world, a retry asks the same lesson's questions with the answers shuffled, and a world has only as many lessons as it has questions for (at most 10). So each track's level count is the real number of different lessons. The last lesson of a world with three or more is its boss round, with the world's highest pass mark.
 
-- **Launchpad (Basic), 1,360 levels.** "Blast off with the basics."
-  - The 16 core worlds, 50 stages each.
-  - The Owner's Challenge, 50 stages.
-  - 51 Rule Quests (one per industry), 10 stages each.
-  - 5 to 8 questions per level, passing at 60% to 80%.
-- **Trailblazer (Intermediate), 2,710 levels.** "Every world of business."
-  - All 43 worlds, 50 stages each.
-  - The Owner's Challenge, 50 stages.
-  - Rule Quests at 10 stages each.
-  - Same question counts and pass marks as Launchpad.
-- **Summit (Advanced), 5,420 levels.** "Twice the stages, tougher questions."
-  - 43 worlds, 100 stages each.
-  - The Owner's Challenge, 100 stages.
-  - Rule Quests at 20 stages each.
-  - 6 to 10 questions per level, passing at 70% to 85%.
-- **Titan Mastery, 15,750 levels.** "The ultimate mastery program."
-  - 43 worlds, 300 stages each.
-  - The Owner's Challenge, 300 stages.
-  - Rule Quests at 50 stages each.
-  - 8 to 12 questions per level, passing at 75% to 90%.
+- **Launchpad (Basic), 630 levels.** "Blast off with the basics."
+  - The 16 core worlds, 87 lessons in all, easy questions first.
+  - The Owner's Challenge, 3 lessons of 10 questions, none repeated.
+  - 54 Rule Quests (one per industry), one lesson per real rule.
+  - 5 questions per lesson, passing at 60% to 80%.
+- **Trailblazer (Intermediate), 890 levels.** "Every world of business."
+  - All 43 worlds, 345 lessons in all.
+  - The Owner's Challenge, 5 lessons; the Rule Quests as on Launchpad.
+  - Same lesson size and pass marks as Launchpad.
+- **Summit (Advanced), 836 levels.** "Bigger lessons, hard questions first."
+  - All 43 worlds, 291 lessons of 6 questions, the hard questions first.
+  - The Owner's Challenge, 5 lessons of 12; Rule Quests up to 6 questions a lesson.
+  - Passing at 70% to 85%.
+- **Titan Mastery, 764 levels.** "Long lessons and the highest pass marks."
+  - All 43 worlds, 219 lessons of 8 questions, the hard questions first.
+  - The Owner's Challenge, 5 lessons of 15; Rule Quests up to 8 questions a lesson.
+  - Passing at 75% to 90%.
+
+Bigger lessons mean fewer of them: Summit and Titan have fewer levels than Trailblazer, with the same questions asked in harder lessons. Before 1.11.0 the tracks claimed 1,360 to 15,750 levels, made of the same few questions over and over; stages a world no longer has stay in the database and don't count. A test (`tests/test_quiz_fairness.py`) checks that no world repeats a question, that the counts are the real lessons for every company, and that guessing by answer length does no better than chance.
 
 ### 5.4 Worlds and units
 
@@ -552,7 +557,7 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
   - a streak counter rises, with a flame and a shimmering bar from 3 in a row;
   - a right answer throws a burst of sparks;
   - the first answer counts.
-- **Grading happens on the server.** Each quiz is generated from a seed made of the learner, track, world, stage and attempt number. The server rebuilds the exact same questions to grade them. A new attempt gets a new seed and new questions. Nothing about a level is stored except the learner's best score and stars, which is why even 15,750 levels add almost nothing to the database.
+- **Grading happens on the server.** Each quiz is generated from a seed made of the learner, track, world, stage and attempt number. The server rebuilds the exact same questions to grade them. A new attempt gets a new seed: the same lesson's questions, with the questions and their answers in a new order. Nothing about a level is stored except the learner's best score and stars, which is why the levels add almost nothing to the database.
 - **The results page** shows:
   - the score counting up, and stars popping in;
   - a slow sunburst and confetti on a win;
@@ -659,7 +664,7 @@ All Academy content is written, not generated on the fly, and checked by tests:
 - **1,333** written questions and true-or-false facts in the question banks for the 27 newer worlds, each graded easy (1), medium (2) or hard (3), with lesson cards for each world.
 - **255** leadership scenarios across nine pools: speaking like a pro, owning it, never giving up, respect, hiring, tough calls, customers, competition and pro moves.
 - **201** words in the Word Bank.
-- Questions built from the company's own name, industries and checks, and from the 510-rule catalog for Rule Quests. A Rule Quest's wrong answers never come from the same duty in another industry under another title (the DEA's biennial inventory is a check for drug makers and for pharmacies), and never read almost like the right answer, so each question has exactly one right answer.
+- Questions built from the company's own name, industries and checks, and from the 540-rule catalog for Rule Quests. A Rule Quest's wrong answers never come from the same duty in another industry under another title (the DEA's biennial inventory is a check for drug makers and for pharmacies), and never read almost like the right answer, so each question has exactly one right answer.
 
 The test rules for the question banks:
 
@@ -698,6 +703,16 @@ Version 1.9.0, after an honest product review.
 - **The Classroom track** (`academy.CLASSROOM`). Every student in a class learns on it (students already in a class moved to it in the upgrade; what they finished before still counts in the class view and the pilot report). The class runs a pretend lemonade stand, Sunny Cup Lemonade, and the first worlds use it: Meet the Class Stand, Rules at the Stand, Money at the Stand and Work as a Team, then worlds about running any business that suit a class. Left out: the family company, the app's own lights and reminders, hiring and letting people go, taxes, loans and the industry Rule Quests; a question that mentions a family's own shop or the app is never asked. Each world is a fixed list of questions cut into lessons of five, so no question comes back in a later lesson of the same world, and a world has only as many lessons as it has questions for (at most 8): the level count is what a student plays. It ends with the Class Challenge (10 questions) and the certificate.
 - **The teacher guide** (`/classrooms/guide`, to read or print): what each world teaches, its lessons and about how long they take (3 minutes a lesson), and two questions to talk about.
 - **Adding students** keeps what was typed: every name that can be added is; the others are listed with the reason (too long, looks like an email address, already in the class, typed twice, or no room left) and put back in the box.
+
+### 5.15 Version 1.11.0 for classrooms
+
+- **Grades 4–6** (ages 9 to 12, `academy.CLASS_GRADES`): who the Classroom track is written for (small-number money, simple percents in the pricing and budget worlds, reading at about a fourth-grade level). It is on `/classrooms`, the teacher guide and the classroom demo.
+- **Believable wrong answers.** The class stand's wrong answers were rewritten to be things a student might believe, and the right answer is the longest, or the shortest, only as often as chance (`tests/test_quiz_fairness.py`).
+- **The checklist comes with Whole school.** Without it, a teacher's tab bar has no Checklist, and `/app` (the checklist's overview and its first steps, the cafeteria check among them) sends them to the classes page. The checklist pages stay readable.
+- **"Pilot" is only the robot.** The classroom offer is the **free trial** everywhere (sign-up, plan page, classes page, demo), and its one-page report is the **Trial report**. The code keeps its old names (`pilot_started_at` and so on).
+- **"Class Challenge"** for a class's students everywhere, the progress report and the certificate message too.
+- **The class leaderboard starts off** for a new class; the teacher turns it on on the class page. Classes made before keep their setting.
+- **Pilot and student names.** Before the Allow card for adding students, Pilot shows a line that the names are sent to the teacher's own AI provider, with **Type them myself instead**, which cancels the card and opens the class page's add-students form.
 
 ## 6. Autopilot and the bug finder
 
@@ -899,7 +914,7 @@ omniarmor_app (Flask)
    ├── auth.py         sign up, sign in, password reset, invites
    ├── views.py        Home, industry checks, report, audit trail, Reminders, settings
    ├── tracking.py     turns stored readings into today's status
-   ├── catalog.py      the 51 industries and 510 rules, as the app uses them
+   ├── catalog.py      the 54 industries and 540 rules, as the app uses them
    ├── reminders.py    daily digests per company, and time-limit alerts for the hour clocks
    ├── jobs.py         the timer: time-limit alerts each minute; reminders, cleanup, backup each day; sweep locks; CLI commands
    ├── notify.py       email, or the saved log when email isn't set up
@@ -930,9 +945,9 @@ SQLite database (one file on a persistent disk) + daily backups
     - `academy.js`, the lesson stepper, instant feedback, sparks and count-up;
     - `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` and `manifest.webmanifest`, the icons;
     - `og-image.png`, the picture shown when a public page is shared.
-- `omni_armor_rules/`: the 510 rules in eleven files (`group_1.py` to `group_10.py`, five industries each, and `group_11.py` with SchoolArmor), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
-- `omni_armor_platform.py`: the original engine. It holds the theme table of 51 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
-- `dashboard/`: a standalone demo page of all 510 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
+- `omni_armor_rules/`: the 540 rules in twelve files (`group_1.py` to `group_10.py`, five industries each, `group_11.py` with SchoolSafetyArmor and `group_12.py` with SalonArmor, InkArmor and GymArmor), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
+- `omni_armor_platform.py`: the original engine. It holds the theme table of 54 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
+- `dashboard/`: a standalone demo page of all 540 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
 - `tests/`: 723 tests in 40 files.
   - End to end, through the real pages and forms: `test_e2e_industries.py` (52: for every industry, sign up from its public page, save one check of each kind of input, see the right state and find it in the report and CSV; the cases come from the catalog), `test_e2e_accounts.py` (29: Stripe events sent again or late, a failed payment, deleting a workspace, removing a member, CSRF on every POST route and form, sign-in limits, reset links) and `test_e2e_academy.py` (18: one right answer per question across many seeds, practice, certificates, what a kid's device can reach, join codes) and `test_e2e_stripe.py` (3: the Academy plan's whole life against a fake Stripe server on this machine, which answers the app's Stripe calls over HTTP and sends signed webhooks: free trial, trial over, paid, a failed payment, cancelled and paid again, checking the plan, Settings, the plan page and the worlds at each step; Stripe down; a wrong key). `e2e_helpers.py` reads pages the way a browser does.
   - Launch polish: `test_launch.py` (19: the version and changelog, the 404 and 500 pages, every icon and manifest link, share previews, robots.txt, the sitemap and noindex), `test_emails.py` (4: every email the app sends, captured at a fake mail server, at 600 pixels with a text part and the footer) and `test_reminder_choices.py` (10: each person's reminder email choices, and the senders following them).
@@ -992,7 +1007,7 @@ The database is one SQLite file in WAL mode with foreign keys on. The schema upg
   - `bundle_report_at`: when the last validly signed CyberLogix report arrived (the Kitchen Safety Bundle's cover);
   - `pilot_started_at` and `pilot_ends_at`: the workspace's one free classroom pilot (section 5.13; schema version 21).
 - `memberships`: who belongs to which company, as owner or member.
-- `org_industries`: which of the 51 industries each company tracks.
+- `org_industries`: which of the 54 industries each company tracks.
 - `items`: one row per company and rule, holding the number, yes/no or date, any company limit and warning point, and who updated it when (the name is kept too).
 - `audit`: every change, with person, time, action, industry, rule, before and after, and a summary. The person's name is stored on the row, so a removed team member's changes still show who made them.
 - `notifications`: every email sent or saved, with status, error and number of attempts. It is the outbox: Autopilot sends failed ones again from here, error reports (section 6.6) included.
@@ -1293,8 +1308,8 @@ These are the habits the project was built with. Keep them:
 
 ---
 
-## Appendix A: All 51 industries and 510 checks
-Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 135 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
+## Appendix A: All 54 industries and 540 checks
+Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 148 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
 
 ### 1. FleetArmor (Logistics)
 
@@ -5480,6 +5495,252 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Start the renewal now so it's back before it lapses, and keep staff without a current check away from students.
 - Example reading used in demos: 52 days
 
+### 52. SalonArmor (Salons & Barbershops)
+
+**1. Shop license renewed on time** (Minimum 0 days, warns from 30 days; policy, a company can set its own limit; counts days until a date)
+
+- Asks: Days until the salon's or barbershop's establishment license expires
+- Rule: Your state board of cosmetology or barbering (license terms vary by state)
+- What a miss costs: Working with an expired shop license can bring state board fines and an order to stop work until it is renewed.
+- What to do when it's broken: Renew the shop license with your state board now and post the new one where the board says.
+- Example reading used in demos: 75 days
+
+**2. Every stylist licensed and current** (Must be in place, answered Yes or No; policy)
+
+- Asks: Is everyone working on clients today licensed, with the license current and displayed as your state board requires?
+- Rule: State cosmetology and barbering board rules (they vary by state)
+- What a miss costs: An unlicensed or lapsed stylist, barber or nail tech is one of the most common state board fines, for the shop and the worker.
+- What to do when it's broken: Take anyone without a current license off clients until it is renewed, and post each license.
+- Example reading used in demos: Yes
+
+**3. Tools cleaned and disinfected** (Must be in place, answered Yes or No; policy)
+
+- Asks: Are combs, brushes, clippers and other reusable tools cleaned, then disinfected with an EPA-registered disinfectant for the label's full contact time, between clients?
+- Rule: State board sanitation rules (they vary by state); the disinfectant's label directions (EPA-registered products)
+- What a miss costs: Tools not disinfected between clients spread infections and are a top state board inspection finding.
+- What to do when it's broken: Pull the tools that weren't disinfected, clean and disinfect them by the label, and keep enough sets to rotate.
+- Example reading used in demos: Yes
+
+**4. Disinfectant solution changed** (Maximum 1 days, warns from 1 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since each disinfectant jar or tub was last mixed fresh
+- Rule: State board sanitation rules (most say every day, or sooner if it's dirty); the disinfectant's label directions
+- What a miss costs: Old or dirty disinfectant stops killing germs, and a cloudy jar is easy for an inspector to spot.
+- What to do when it's broken: Empty, clean and refill the jar with fresh disinfectant mixed by the label, then note the date.
+- Example reading used in demos: 0 days
+
+**5. Pedicure tubs cleaned and logged** (Maximum 1 days, warns from 1 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since each pedicure tub or foot spa was last given its end-of-day cleaning and disinfecting, with the log filled in
+- Rule: State board pedicure equipment rules (many states require a cleaning log); the maker's instructions
+- What a miss costs: Foot spas that aren't cleaned and disinfected can cause serious skin infections, and many states fine a missing cleaning log.
+- What to do when it's broken: Clean and disinfect the tub (screens and jets too) by your state's steps, then fill in the log.
+- Example reading used in demos: 0 days
+
+**6. Single-use items thrown away** (Must never happen, answered Yes or No; policy)
+
+- Asks: Was any single-use item (nail file, buffer, pumice, wax stick, neck strip or razor blade) used on more than one client?
+- Rule: State board sanitation rules (they vary by state)
+- What a miss costs: Reusing a nail file, buffer, wax stick or razor blade on another client spreads infection and brings state board fines.
+- What to do when it's broken: Throw the item away, give the client a new one, and keep enough single-use supplies at each station.
+- Example reading used in demos: No
+
+**7. Safety data sheets and training** (Must be in place, answered Yes or No)
+
+- Asks: Is there a safety data sheet for every hazardous product (color, relaxer, acrylics, disinfectant), and have staff been trained on them?
+- Rule: OSHA Hazard Communication, 29 CFR 1910.1200 (for a shop with employees)
+- What a miss costs: Hair dye, relaxers, acrylics and other products can burn skin and lungs; missing safety data sheets or training is a common OSHA citation.
+- What to do when it's broken: Get the missing safety data sheets from the maker or supplier, keep them where staff can reach them, and go over them with the team.
+- Example reading used in demos: Yes
+
+**8. Ventilation where nails are done** (Must be in place, answered Yes or No; policy)
+
+- Asks: Is the ventilation working where acrylics, gels and polish are applied (fans or vented tables, as your state requires)?
+- Rule: State board rules (they vary by state); OSHA's guide for nail salon workers (good practice)
+- What a miss costs: Fumes from acrylics, gels and polish cause headaches and breathing problems, and poor ventilation can bring state board or OSHA findings.
+- What to do when it's broken: Fix the fan or vented table before the next acrylic or gel service, and keep product lids closed.
+- Example reading used in demos: Yes
+
+**9. Blood spill kit stocked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the blood spill kit (gloves, disinfectant, bandages, a bag for waste) was last checked and restocked
+- Rule: State board rules for cuts and blood exposure (they vary by state); good practice
+- What a miss costs: Without gloves and disinfectant at hand, a nick or cut can expose staff and clients to blood, and many state boards require a kit.
+- What to do when it's broken: Restock the kit, put it where every station can reach it, and note the date.
+- Example reading used in demos: 10 days
+
+**10. Fire extinguishers checked monthly** (Maximum 31 days, warns from 25 days; counts days since a date)
+
+- Asks: Days since every fire extinguisher was last given its monthly visual check
+- Rule: OSHA 29 CFR 1910.157(e)(2) (where extinguishers are provided for employees); your local fire code
+- What a miss costs: An extinguisher that is empty or blocked can fail in a fire, and a missed monthly check is a common fire and OSHA inspection finding.
+- What to do when it's broken: Check each extinguisher's gauge, pin and seal and that nothing blocks it, then write down the date.
+- Example reading used in demos: 12 days
+
+### 53. InkArmor (Tattoo & Piercing Studios)
+
+**1. Studio permit renewed on time** (Minimum 0 days, warns from 30 days; policy, a company can set its own limit; counts days until a date)
+
+- Asks: Days until the studio's body art permit expires
+- Rule: Your city, county or state health department's body art permit (terms vary)
+- What a miss costs: Working without a current body art permit can bring fines and a closed studio until it is renewed.
+- What to do when it's broken: Renew the permit with your health department now and post it where clients can see it.
+- Example reading used in demos: 90 days
+
+**2. Artists registered and trained** (Must be in place, answered Yes or No; policy)
+
+- Asks: Is every artist and piercer working today registered or licensed as your health department requires, with bloodborne pathogens training done in the last year?
+- Rule: State and local body art rules (they vary); OSHA Bloodborne Pathogens, 29 CFR 1910.1030(g)(2) (yearly training for employees)
+- What a miss costs: An unregistered artist or lapsed bloodborne pathogens training can bring health department fines and OSHA citations.
+- What to do when it's broken: Keep anyone not registered or trained off clients until they are, and file the certificates.
+- Example reading used in demos: Yes
+
+**3. Sterilizer spore test passed** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since each autoclave last passed a spore (biological indicator) test
+- Rule: State and local body art rules (many require a monthly spore test); the sterilizer maker's instructions
+- What a miss costs: An autoclave that isn't tested may not sterilize, which can spread hepatitis and other infections; many health departments require monthly tests.
+- What to do when it's broken: Run a spore test now; if it fails, stop using that sterilizer, have it serviced and resterilize what it processed.
+- Example reading used in demos: 18 days
+
+**4. Needles and ink cups single-use** (Must never happen, answered Yes or No; policy)
+
+- Asks: Was any needle, tube, ink cup or other item meant for one client used on another client?
+- Rule: State and local body art rules (they vary)
+- What a miss costs: Reusing a needle, tube or ink cup on another client can spread hepatitis and HIV, and can close a studio.
+- What to do when it's broken: Stop, throw the items away, tell the client, and talk to your health department about next steps.
+- Example reading used in demos: No
+
+**5. Sharps containers handled right** (Must be in place, answered Yes or No)
+
+- Asks: Do used needles go straight into a closable, puncture-resistant sharps container, and are full containers disposed of under your state's medical waste rules?
+- Rule: OSHA Bloodborne Pathogens, 29 CFR 1910.1030(d)(4)(iii); your state's medical waste rules
+- What a miss costs: Loose needles cause needlestick injuries, and wrong disposal can bring OSHA citations and medical waste fines.
+- What to do when it's broken: Put a sharps container at every station, close and replace full ones, and use a licensed medical waste service.
+- Example reading used in demos: Yes
+
+**6. Exposure control plan reviewed** (Maximum 365 days, warns from 335 days; counts days since a date)
+
+- Asks: Days since the written exposure control plan was last reviewed and updated
+- Rule: OSHA Bloodborne Pathogens, 29 CFR 1910.1030(c)(1)(iv) (for a studio with employees)
+- What a miss costs: An out-of-date written plan for blood exposure is one of the most cited OSHA rules for studios with employees.
+- What to do when it's broken: Review the plan with your artists, update it for new equipment and safer needles, and date it.
+- Example reading used in demos: 200 days
+
+**7. Hep B vaccine offered to artists** (Must be in place, answered Yes or No)
+
+- Asks: Has every artist and piercer who can be exposed to blood been offered the hepatitis B vaccine, free, within 10 working days of starting?
+- Rule: OSHA Bloodborne Pathogens, 29 CFR 1910.1030(f)(2)(i) (for a studio with employees)
+- What a miss costs: Not offering the free hepatitis B vaccine to artists who can be exposed to blood is an OSHA citation and puts them at risk.
+- What to do when it's broken: Offer the vaccine now at no cost, and keep a signed form from anyone who says no.
+- Example reading used in demos: Yes
+
+**8. Client consent and records kept** (Must be in place, answered Yes or No; policy)
+
+- Asks: Is there a signed consent form and record for every client (date, artist, what was done, ink or jewelry), kept as long as your health department requires?
+- Rule: State and local body art rules (how long to keep records varies)
+- What a miss costs: Missing consent forms and records are a common health department finding and leave the studio exposed if a client has a problem.
+- What to do when it's broken: Fill in any missing records today and keep them filed for the time your rules require.
+- Example reading used in demos: Yes
+
+**9. Age rules for minors followed** (Must never happen, answered Yes or No; policy)
+
+- Asks: Was anyone under 18 tattooed or pierced against your state's age rules (ID checked, and a parent's consent where it is allowed)?
+- Rule: State laws on tattooing and piercing minors (they vary; some ban tattooing minors)
+- What a miss costs: Tattooing or piercing a minor against state law can bring fines, a lost permit and criminal charges in some states.
+- What to do when it's broken: Stop, check ID for every client who may be under 18, and ask your health department what to do next.
+- Example reading used in demos: No
+
+**10. Work surfaces disinfected** (Must be in place, answered Yes or No)
+
+- Asks: Are the chair, tray and work surfaces cleaned and disinfected between clients, with barrier film changed each time?
+- Rule: OSHA Bloodborne Pathogens, 29 CFR 1910.1030(d)(4)(ii); state and local body art rules
+- What a miss costs: Blood left on a chair or tray can infect the next client, and dirty surfaces are a top inspection finding.
+- What to do when it's broken: Clean and disinfect the station before the next client and change every barrier.
+- Example reading used in demos: Yes
+
+### 54. GymArmor (Gyms & Fitness Studios)
+
+**1. AED ready and checked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since each AED was last checked (ready light, pads and battery dates)
+- Rule: The AED maker's instructions; state AED and health club laws (some require one)
+- What a miss costs: An AED with a dead battery or expired pads can cost a life, and some states require health clubs to keep a working one.
+- What to do when it's broken: Check the ready light and the pad and battery dates, replace what's expired, and note the date.
+- Example reading used in demos: 9 days
+
+**2. CPR-trained staff on duty** (Must be in place, answered Yes or No; policy)
+
+- Asks: Is someone with current CPR and AED training on duty whenever the gym is open to members?
+- Rule: State health club laws in some states; good practice (CPR and AED courses usually last two years)
+- What a miss costs: A collapse with nobody trained nearby can cost a life, and some states require trained staff at health clubs.
+- What to do when it's broken: Schedule a trained person for every open hour, and book a course for staff whose cards have run out.
+- Example reading used in demos: Yes
+
+**3. Equipment inspected** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the equipment (cables, pulleys, benches, treadmill belts and stop buttons) was last inspected and written down
+- Rule: Equipment makers' maintenance instructions (good practice); your insurer's terms
+- What a miss costs: Frayed cables, loose bolts and treadmills without a working stop cause injuries and costly claims.
+- What to do when it's broken: Inspect each machine, tag and close off anything unsafe until it's fixed, and note the date.
+- Example reading used in demos: 14 days
+
+**4. Equipment and locker rooms cleaned** (Maximum 1 days, warns from 1 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the shared equipment, mats and locker rooms were last cleaned and disinfected and the cleaning log filled in
+- Rule: Local health department rules for locker rooms and showers (they vary); good practice
+- What a miss costs: Shared mats, benches and showers spread skin infections when they aren't cleaned, and members notice first.
+- What to do when it's broken: Clean and disinfect the equipment, mats and locker rooms, restock wipes, and fill in the log.
+- Example reading used in demos: 0 days
+
+**5. Pool chlorine in range** (Minimum 1 ppm, warns from 1.5 ppm; policy, a company can set its own limit)
+
+- Asks: Free chlorine in each pool, in parts per million (leave it blank if you have no pool; set your own minimum for a hot tub)
+- Rule: Your state and local pool code (limits vary); the CDC Model Aquatic Health Code (hot tubs need more chlorine than pools)
+- What a miss costs: Too little chlorine lets germs spread in the water, and a failed reading can close the pool.
+- What to do when it's broken: Close the pool, adjust the chlorine, and test again before members swim.
+- Example reading used in demos: 2 ppm
+
+**6. Safety data sheets and training** (Must be in place, answered Yes or No)
+
+- Asks: Is there a safety data sheet for every hazardous product (pool chemicals, cleaners, disinfectants), and have staff been trained on them?
+- Rule: OSHA Hazard Communication, 29 CFR 1910.1200 (for a gym with employees)
+- What a miss costs: Pool and cleaning chemicals can burn skin and lungs; missing safety data sheets or training is a common OSHA citation.
+- What to do when it's broken: Get the missing safety data sheets from the maker or supplier, keep them where staff can reach them, and go over them with the team.
+- Example reading used in demos: Yes
+
+**7. Membership contracts follow state law** (Must be in place, answered Yes or No; policy)
+
+- Asks: Do membership contracts give the cancel rights, cooling-off period and terms your state's health club law requires?
+- Rule: State health club services laws (cancel periods and terms vary by state)
+- What a miss costs: Contracts without the cancel rights your state requires can be voided, with refunds and state attorney general penalties.
+- What to do when it's broken: Have the contract checked against your state's law and update it before selling more memberships.
+- Example reading used in demos: Yes
+
+**8. Fire extinguishers checked monthly** (Maximum 31 days, warns from 25 days; counts days since a date)
+
+- Asks: Days since every fire extinguisher was last given its monthly visual check
+- Rule: OSHA 29 CFR 1910.157(e)(2) (where extinguishers are provided for employees); your local fire code
+- What a miss costs: An extinguisher that is empty or blocked can fail in a fire, and a missed monthly check is a common fire and OSHA inspection finding.
+- What to do when it's broken: Check each extinguisher's gauge, pin and seal and that nothing blocks it, then write down the date.
+- Example reading used in demos: 12 days
+
+**9. First-aid kit stocked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
+
+- Asks: Days since the first-aid kit was last checked and restocked
+- Rule: OSHA 29 CFR 1910.151(b) (for a gym with employees); good practice
+- What a miss costs: An empty first-aid kit slows help for sprains and cuts, and first-aid supplies are required for employers.
+- What to do when it's broken: Restock the kit (bandages, cold packs, gloves) and note the date.
+- Example reading used in demos: 20 days
+
+**10. Member agreements on file** (Must be in place, answered Yes or No; policy)
+
+- Asks: Does every member have a signed membership agreement on file (and the health questionnaire, if you use one)?
+- Rule: Your insurer's requirements; state contract law (good practice)
+- What a miss costs: Without a signed agreement on file, an injury claim is harder to answer and your insurer may object.
+- What to do when it's broken: Collect the missing agreements at the front desk before those members' next visit.
+- Example reading used in demos: Yes
+
 ## Appendix B: Every Academy world, with its lesson cards
 Stage 1 of every world opens with these lesson cards. The cards of the first worlds use the family company's own name and industries; they are shown here for a sample company, Acme Logistics, that tracks FleetArmor and HRArmor.
 
@@ -5840,7 +6101,7 @@ The boss world. It mixes questions from every world on the learner's track (10 q
 
 ### Rule Quests
 
-One for each of the 51 industries in Appendix A. Each turns that industry's ten checks into questions about the rule, its limit and what to do. A family's own industries are listed first, and the rest can be explored. Each Rule Quest has 10 stages on Launchpad and Trailblazer, 20 on Summit and 50 on Titan Mastery.
+One for each of the 54 industries in Appendix A. Each turns that industry's ten checks into questions about the rule, its limit and what to do. A family's own industries are listed first, and the rest can be explored. Each Rule Quest has 10 stages on Launchpad and Trailblazer, 20 on Summit and 50 on Titan Mastery.
 
 ### The Word Bank (201 words)
 
@@ -6229,6 +6490,8 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/app/industry/<int:industry_id>` | One industry's ten checks |
 | POST | `/app/industry/<int:industry_id>/bulk` | Update several checks at once: done today, Yes, No or one date |
 | POST | `/app/industry/<int:industry_id>/rule/<rule_key>` | Save, clear, Done today or change a limit on one check |
+| POST | `/app/industry/<int:industry_id>/rule/<rule_key>/entries` | Add, save, Done today or remove one entry of a check with one entry per item |
+| POST | `/app/industry/<int:industry_id>/rule/<rule_key>/illness` | Add a report to the illness log, or remove one |
 | GET | `/app/notifications` | Reminders, every reminder email |
 | GET | `/app/plan` | The plan page: Pro, Plus, the free Academy and the Kitchen Safety Bundle |
 | POST | `/app/plan/checkout` | Start Stripe Checkout for Pro or Plus (`plan`), billed per location |
@@ -6256,7 +6519,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/healthz` | Health check for uptime monitors |
 | GET | `/readyz` | Readiness check for uptime monitors: database, settings, timers, daily job, backup, disk |
 | GET | `/help` | Help: 15 questions and answers |
-| GET | `/industries` | List of all 51 industries |
+| GET | `/industries` | List of all 54 industries |
 | GET | `/industries/<slug>` | Public page for one industry |
 | GET | `/for/<slug>` | Trade pages: salons, tattoo studios, gyms, shops and schools |
 | GET, POST | `/kids` | A kid enters a join code |
@@ -6321,7 +6584,7 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 
 ## Appendix F: Glossary
 
-- **Check**: one of the 510 compliance rules a company tracks, for example "Annual vehicle inspection".
+- **Check**: one of the 540 compliance rules a company tracks, for example "Annual vehicle inspection".
 - **Reading**: what a company enters for a check: a number, Yes or No, or a date.
 - **Cleared / Warning / Blocked**: the three answers a check gives. "No reading" means nothing has been entered.
 - **Policy check**: a check whose limit comes from an industry standard or common policy rather than law; a company can set its own limit.

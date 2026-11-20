@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The 51 industries and 510 rules, as the web app uses them."""
+"""The 54 industries and 540 rules, as the web app uses them."""
 
 import re
 from dataclasses import replace
@@ -91,6 +91,38 @@ def find_rule(industry_id, rule_key):
         return get_rule(industry_id, rule_key)
     except KeyError:
         return None
+
+
+# Checks that hold one entry per item (1.11.0): a reading per fridge, a date
+# per food batch, a spore test per sterilizer. Each entry has its own value
+# and deadline, and the check's status is the worst of its entries. The
+# check's own saved value is its first entry (items.label names it), so a
+# value saved before 1.11.0, or sent by a connected app, is the first entry.
+# (industry id, rule key) -> (what one entry is, an example name).
+MULTI_CHECKS = {
+    (2, "date_marking"): ("Food batch or container", "Chicken salad, opened Monday"),
+    (2, "cold_holding"): ("Fridge or cooler", "Walk-in cooler"),
+    (2, "hot_holding"): ("Hot-holding unit", "Soup well"),
+    (52, "disinfectant_changed"): ("Jar or tub", "Station 1 jar"),
+    (52, "foot_spa_cleaning"): ("Pedicure tub", "Tub 1"),
+    (53, "spore_test"): ("Sterilizer", "Autoclave 1"),
+    (54, "aed_check"): ("AED", "Front desk AED"),
+    (54, "pool_chlorine"): ("Pool or hot tub", "Main pool"),
+}
+# What the first entry is called when it has no name of its own (a value
+# saved before 1.11.0 is named this by the migration in db.py).
+FIRST_ENTRY = {key: f"{thing.split(' or ')[0]} 1" for key, (thing, _) in MULTI_CHECKS.items()}
+
+
+def multi_check(industry_id, rule_key):
+    """(what one entry is, an example name) for a check with one entry per
+    item, None for the others."""
+    return MULTI_CHECKS.get((industry_id, rule_key))
+
+
+# Checks that keep a dated log beside their yes-or-no answer (1.11.0): who
+# reported being sick, what, when and what was done (tracking.add_illness).
+ILLNESS_LOG_CHECKS = {(2, "sick_employee_excluded")}
 
 
 def can_override(rule):

@@ -3,6 +3,64 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.11.0 (20 November 2026)
+
+Fixes from a strict second review: honest Academy lessons, harder quizzes,
+deeper business checklists, three new trade starter lists, and a tidier
+teacher side.
+
+- **Every Academy world asks each question once.** The family tracks now work
+  like the Classroom track: each world is a fixed set of questions cut into
+  lessons, and no question comes back in a later lesson of that world. A
+  retry asks the same lesson's questions with the answers in a new order.
+  Fourteen lessons used to ask 16 different questions between them; now
+  they ask 70.
+- **Honest level counts.** A track's count is its real lessons: Launchpad
+  630, Trailblazer 890, Summit 836 and Titan Mastery 764 (they used to say
+  1,360 to 15,750, with the same few questions over and over). Summit and
+  Titan have longer lessons, the hard questions first and higher pass marks,
+  so they have fewer, bigger lessons. Each Rule Quest has one lesson per real
+  rule, and the last lesson of a world is its boss round. Stages a world no
+  longer has stay in the database but don't count.
+- **New questions where a world was thin.** Meet Your Company, Why Rules
+  Matter, Countdown Calendar, Money Smarts and Lead the Team got about 70 new
+  business-basics questions and facts.
+- **Quizzes that can't be guessed.** The wrong answers in the Classroom and
+  family lessons were rewritten to be believable (no more "Inside a closet
+  nobody opens"), answer lengths were balanced, and a new test checks across
+  every question that the longest (or shortest) answer is right only as often
+  as chance, and that always picking it passes no more lessons than guessing.
+- **A grade band for classrooms.** The Classroom track says who it is written
+  for, Grades 4–6 (ages 9 to 12), on /classrooms, in the teacher guide and in
+  the classroom demo.
+- **Checks with one entry per item.** The 7-day date marking holds one entry
+  per food batch or container, and cold and hot holding one reading per unit,
+  each with its own value and deadline; the check shows the worst one, and
+  the report lists each entry. A value saved before stays, as the first
+  entry ("Fridge 1").
+- **An illness log.** "Sick employees kept off work" keeps its Yes-or-No
+  answer (Yes is still the bad one, and a bulk update never answers Yes) and
+  gains a dated log of who reported what and what was done, by first name or
+  initials only. A report that means going home (vomiting, diarrhea,
+  jaundice or a diagnosis) can't be marked "restricted".
+- **Starter lists for salons, tattoo studios and gyms.** SalonArmor, InkArmor
+  and GymArmor, ten checks each (licenses and permits, disinfecting and
+  sterilizer logs, sharps, chemical safety, AEDs, pool chlorine and more),
+  each citing its source and saying where local rules vary. Their trade
+  pages lead with them. 54 industries and 540 checks in all.
+- **Teacher side.** The Checklist tab and the school checklist's first steps
+  (the cafeteria check among them) show only on Whole school. "Pilot" now
+  means only the robot assistant: the classroom offer is the "free trial"
+  everywhere, and its report the "Trial report". A classroom student's
+  progress says "Class Challenge", never "Owner's Challenge". A new class
+  starts with its leaderboard off; classes already made keep theirs.
+- **Armo and Pilot keep apart.** Armo moved to the bottom-left corner, the
+  page keeps room at the bottom for both helpers, and while Armo is talking
+  Pilot's robot steps aside, so only one helper shows at a time.
+- **Where student names go.** Before the Allow card for adding students,
+  Pilot says the names go to the teacher's own AI provider, with a "Type them
+  myself instead" link to the class page.
+
 ## 1.10.1 (20 November 2026)
 
 - **Pilot core 1.0.1.** The shared core no longer writes the word "null" under Pilot's buttons

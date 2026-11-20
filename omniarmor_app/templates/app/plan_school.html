@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{# The plan page for a school's workspace (plan_views._school_plan_page): the free class pilot and the classroom plans only. Every price comes from plans.py through classrooms.public_facts(). #}
+{# The plan page for a school's workspace (plan_views._school_plan_page): the free trial and the classroom plans only. Every price comes from plans.py through classrooms.public_facts(). #}
 {% block title %}Plans{% endblock %}
 {% block content %}
 {% set a = access %}
@@ -7,27 +7,27 @@
 <div class="page-head">
   <div>
     <p class="eyebrow">{{ g.org.name }} · Classroom plans</p>
-    <h1>{% if a.classroom or (a.paid and a.kind == 'school') %}You're on {{ a.plan_name }}{% elif limits.source == 'pilot' %}Your free class pilot is on{% elif pilot.state == 'ended' %}Your free class pilot has ended{% else %}Choose a classroom plan{% endif %}</h1>
+    <h1>{% if a.classroom or (a.paid and a.kind == 'school') %}You're on {{ a.plan_name }}{% elif limits.source == 'pilot' %}Your free trial is on{% elif pilot.state == 'ended' %}Your free trial has ended{% else %}Choose a classroom plan{% endif %}</h1>
     <p class="sub" data-plan-line>
       {%- if a.paused -%}{{ a.plan_name }} is paused: no charges, and everything is kept.
       {%- elif a.paid and a.kind in ('classroom', 'school') -%}{{ a.plan_name }}, paid yearly{% if a.ends_at %}, ends {{ a.ends_at|local_date }}{% elif a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}.
-      {%- elif limits.source == 'pilot' -%}Free class pilot: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}.
-      {%- elif pilot.state == 'ended' -%}It ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the pilot report are kept.
+      {%- elif limits.source == 'pilot' -%}Free trial: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}.
+      {%- elif pilot.state == 'ended' -%}It ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the trial report are kept.
       {%- else -%}Try the Academy free with your class for {{ facts.pilot_days }} days, no card needed.
       {%- endif -%}
     </p>
   </div>
 </div>
 
-<p class="muted">The free class pilot is {{ facts.pilot_days }} days: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and every lesson of the Classroom track, with no card. When it ends, your classes, their progress and the pilot report are kept, and the first worlds stay open.</p>
+<p class="muted">The free trial is {{ facts.pilot_days }} days: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and every lesson of the Classroom track, with no card. When it ends, your classes, their progress and the trial report are kept, and the first worlds stay open.</p>
 
 {% if pilot.state == 'none' and not limits.active and pilot_available and g.role == 'owner' %}
   <section class="offer-card mt" data-pilot-offer>
-    <h2>Start the free {{ facts.pilot_days }}-day pilot</h2>
+    <h2>Start the free {{ facts.pilot_days }}-day trial</h2>
     <p>One class of up to {{ facts.class_size }} students. No card needed.</p>
     <form method="post" action="{{ url_for('classes.start_pilot') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn" type="submit">Start the free pilot</button>
+      <button class="btn" type="submit">Start the free trial</button>
     </form>
   </section>
 {% endif %}

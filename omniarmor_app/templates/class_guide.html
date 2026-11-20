@@ -6,7 +6,7 @@
 <div class="narrow guide" data-teacher-guide>
   <p class="eyebrow">Future Owner Academy · for teachers</p>
   <h1>Teacher guide</h1>
-  <p class="sub">The Classroom track: {{ facts.class_worlds }} worlds and {{ facts.class_lessons }} lessons in all.</p>
+  <p class="sub">The Classroom track: {{ facts.class_worlds }} worlds and {{ facts.class_lessons }} lessons in all, written for <strong data-grades>{{ facts.grades }}</strong> ({{ facts.ages }}).</p>
 
   <h2>How it works</h2>
   <ul>
@@ -38,7 +38,7 @@
   <h2>Tips</h2>
   <ul>
     <li>One world a week works well: a lesson or two in class, a short talk using the questions above, and the rest as practice.</li>
-    <li>The class leaderboard shows first names and lessons done for your class only. Switch it off on the class page if you prefer.</li>
+    <li>The class leaderboard starts off. Turn it on from the class page if you like: it shows first names and lessons done, for your class only.</li>
     <li>Students only pick answers: nothing they type is shown to anyone.</li>
   </ul>
   <p class="no-print mt"><a class="btn quiet" href="{{ url_for('public.academy_schools') }}">The Academy for schools</a></p>

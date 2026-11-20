@@ -30,6 +30,16 @@
             <td class="mono">{{ s.rule.citation }}</td>
             <td class="num">{{ s.updated_at|local_date if s.updated_at else '—' }}{% if s.updated_by %}<span data-pilot-private> · {{ s.updated_by }}</span>{% endif %}</td>
           </tr>
+          {% if s.entries|length > 1 %}{% for e in s.entries %}
+          <tr class="entry-row" data-entry-row>
+            <td>· {{ e.label }}</td>
+            <td><span class="tag {{ e.state.level }}">{{ e.state.label }}</span></td>
+            <td class="num">{{ e.state.shown_value or '—' }}</td>
+            <td class="num mono">{{ e.state.due_label or '—' }}</td>
+            <td></td>
+            <td class="num">{{ e.state.updated_at|local_date if e.state.updated_at else '—' }}</td>
+          </tr>
+          {% endfor %}{% endif %}
         {% endfor %}
       </tbody>
     </table>

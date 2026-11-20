@@ -72,11 +72,11 @@ The totals at the top of a page and the thin bar under them use the same colours
 
 ## OmniArmor for schools and teachers
 - Schools have two sides: SchoolSafetyArmor (the school's safety routines: drills, AED and first-aid kits, playground and gym, the nurse's medication log, cafeteria, buses, concussion and heat checks, visitors, lab chemicals, background-check renewals) and the Future Owner Academy for a class.
-- Teacher sign-up: name, school email, password and the school's name, with no list of industries. It lands on the Classes page ("Home") and starts the free classroom pilot.
+- Teacher sign-up: name, school email, password and the school's name, with no list of industries. It lands on the Classes page ("Home") and starts the free classroom trial.
 - Adding students: open a class, type each student's first name or nickname, one per line. No email, no last name, no birthdate, no photo. A name that can't be added (it looks like an email, it's too long, or it's already in the class) is listed with the reason and put back in the box.
 - Join codes: print one code per student; each works once, on a school device, and lets that device open the student's Academy and nothing else.
-- The class page shows each student's lessons done and the class total. Certificates print on one page. The class leaderboard (first names and lessons done, this class only) can be switched off.
-- The pilot report: one page with totals only (students, lessons finished, topics covered), no student names, for the school office.
+- The class page shows each student's lessons done and the class total. Certificates print on one page. The class leaderboard (first names and lessons done, this class only) starts off for a new class; the teacher can turn it on.
+- The trial report: one page with totals only (students, lessons finished, topics covered), no student names, for the school office.
 - The Classroom track: the class runs a pretend lemonade stand; each lesson is a few questions and takes a few minutes; the first lesson of each world opens the next world; the Class Challenge at the end earns a certificate. Missed questions come back in "Practice my mistakes" a day, three days and a week later.
 - The teacher guide (/classrooms/guide): what each world teaches, how long it takes, and questions to talk about. One world a week works well.
 - A teacher's tabs: Home (classes), Checklist (the school safety checklist), Reminders, History, Settings.
@@ -107,8 +107,8 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     "Without a plan nothing is deleted: the records stay readable and downloadable, and export and delete always work.",
     "A free trial with no card, and demos you can click around with no sign-up.",
     "No ads, no tracking or analytics, and no other company's fonts, scripts or pictures on its pages.",
-    "For schools: students are added by first name or nickname only (no email, birthdate or photo), join codes work once on a school device, and the pilot report has totals only.",
-    "A free classroom pilot with no card, a printable teacher guide, and an invoice option for schools.",
+    "For schools: students are added by first name or nickname only (no email, birthdate or photo), join codes work once on a school device, and the trial report has totals only.",
+    "A free classroom trial with no card, a printable teacher guide, and an invoice option for schools.",
     "With the Kitchen Safety Bundle, a restaurant's fridge checks fill themselves in from real CyberLogix readings.",
     "Armo points straight at what's blocked, overdue or due soon, with a one-click link to the fix.",
     "Pilot works with the AI provider you already use, on your own key, and asks before it changes anything.",
@@ -122,7 +122,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       + `${f.plus}, ${f.plus_price}${f.plus_yearly ? ` or ${f.plus_yearly} (${f.free_label})` : ""}. The free trial is ${f.trial_days} days of everything in ${f.plus}, no card.`);
     lines.push(`Kitchen Safety Bundle: ${f.bundle_price} through CyberLogix, which includes ${f.pro}; ${f.plus} then costs only the difference, ${f.bundle_upgrade}.`);
     lines.push(`Classroom plans (yearly): ${f.classroom}, ${f.classroom_price}: ${f.classroom_summary} ${f.school}, ${f.school_price}: ${f.school_summary} `
-      + `The free classroom pilot is ${f.pilot_days} days, one class of up to ${f.class_size} students, no card.`);
+      + `The free classroom trial is ${f.pilot_days} days, one class of up to ${f.class_size} students, no card.`);
     lines.push(`The Classroom track: ${f.class_worlds} worlds and ${f.class_lessons} lessons; a lesson is ${f.lesson_questions} questions, about ${f.lesson_minutes} minutes. The class's pretend business is ${f.class_business}.`);
     lines.push(`OmniArmor covers ${f.industries} industries and ${f.checks} checks; start with the top ${f.top_count} of each. Reminder emails go ${(f.reminder_days || []).join(", ")} day(s) before a due date, on the day, and weekly while overdue. A family workspace can add up to ${f.max_learners} Academy learners.`);
     if (f.support) lines.push(`Help: the Help page, or write to ${f.support}.`);
@@ -588,6 +588,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
         const where = cls && cls.class ? cls.class.name : args.class_name || "your class";
         if (cls && cls.class) shown.set(args, cls.class);
         const bad = names.bad.length ? `. Not added (first names or nicknames only): ${names.bad.join(", ")}` : "";
+        namesNote(cls && cls.class);
         return `add ${names.good.length} student${names.good.length === 1 ? "" : "s"} to ${where}: ${names.good.join(", ") || "none"}${bad}`;
       },
       run: async (args) => {
@@ -608,6 +609,41 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       },
     },
   ];
+
+  // Before the Allow card for adding students, a line that says where the
+  // names go (the teacher's own AI provider, never OmniArmor), with a link to
+  // type them on the class page instead, which cancels the card. Put just
+  // above the card once the window has drawn it, and gone with it.
+  function namesNote(cls) {
+    if (typeof document === "undefined") return;
+    const url = cls ? `/app/academy/classes/${cls.id}#add-students` : "/app/academy/classes";
+    let tries = 0;
+    const place = () => {
+      const all = document.querySelectorAll(".pilot-root .pilot-card-confirm, .pilot-root .pilot-card-plan");
+      const card = all[all.length - 1];
+      if (!card || !/student/i.test(card.textContent || "")) return false;
+      const before = card.previousElementSibling;
+      if (before && before.hasAttribute("data-names-note")) return true;
+      const note = document.createElement("p");
+      note.className = "omni-names-note";
+      note.setAttribute("data-names-note", "");
+      note.append("Student names you give Pilot are sent to your own AI provider, the company your key is from. ");
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = "Type them myself instead";
+      link.addEventListener("click", () => {
+        const cancel = Array.from(card.querySelectorAll("button")).find((b) => b.textContent === "Cancel");
+        if (cancel) cancel.click();
+      });
+      note.append(link);
+      card.before(note);
+      const watch = new MutationObserver(() => { if (!card.isConnected) { note.remove(); watch.disconnect(); } });
+      watch.observe(card.parentNode, { childList: true });
+      return true;
+    };
+    const tick = () => { if (!place() && ++tries < 40) setTimeout(tick, 50); };
+    setTimeout(tick, 0);
+  }
 
   // Several checks for answer_checks: which go ahead, which are left out
   // because Yes is the bad answer there, and which couldn't be found or
@@ -685,7 +721,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     tools: () => TOOLS,
     facts: () => liveFacts(),
     // For tests: the plain parts, and a way to give them a fake browser.
-    _test: { io, ROUTES, refuse, post, resolve, splitBulk, cleanNames, checksFrom, pickClass, STATUSES,
+    _test: { io, ROUTES, refuse, post, resolve, splitBulk, cleanNames, checksFrom, pickClass, STATUSES, namesNote,
       setIndex(list) { index = list; indexAt = Date.now(); }, setClasses(list) { classesCache = list; } },
   };
   W.PilotPack = pack;

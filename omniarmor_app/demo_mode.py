@@ -94,6 +94,16 @@ READINGS = {
     },
 }
 
+# The restaurant's checks with one entry per item (catalog.MULTI_CHECKS): the
+# first entry's name, and more entries as (check, name, reading, days ago).
+ENTRY_NAMES = {"cold_holding": "Walk-in cooler", "hot_holding": "Soup well", "date_marking": "Opened ham"}
+MORE_ENTRIES = (
+    ("cold_holding", "Prep fridge", 39, None),
+    ("cold_holding", "Bar fridge", 37, None),
+    ("date_marking", "Chicken salad", None, 2),
+    ("date_marking", "Cut melon", None, 5),
+)
+
 # The class: pretend first names, and the lessons each one has passed in each
 # world of the Classroom track (world number: lessons). One student hasn't
 # started, so the sample lesson is a real first lesson.
@@ -172,6 +182,20 @@ def _fill_business(conn, cfg, now, rng):
             after = _describe(rule, row)
             _audit(conn, org, who, people[who], at, "reading", f"{rule.title}: no reading → {after}", industry_id,
                    key, "no reading", after)
+    # Checks with one entry per item: the first entry's name, and a few more.
+    for key, label in ENTRY_NAMES.items():
+        conn.execute("UPDATE items SET label = ? WHERE org_id = ? AND industry_id = ? AND rule_key = ?",
+                     (label, org, RESTAURANT, key))
+    stamp = _at(today, 8, 15)
+    for key, label, value_num, days_ago in MORE_ENTRIES:
+        value_date = None if days_ago is None else (today - timedelta(days=days_ago)).isoformat()
+        conn.execute("INSERT INTO check_entries (org_id, industry_id, rule_key, label, value_num, value_date,"
+                     " created_at, updated_at, updated_by, updated_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (org, RESTAURANT, key, label, value_num, value_date, stamp, stamp, cook, people[cook]))
+    conn.execute("INSERT INTO illness_log (org_id, industry_id, rule_key, person, reported, action, reported_on,"
+                 " created_at, created_by, created_by_name) VALUES (?, ?, 'sick_employee_excluded', 'J.R.',"
+                 " 'vomiting', 'sent_home', ?, ?, ?, ?)",
+                 (org, RESTAURANT, (today - timedelta(days=3)).isoformat(), stamp, owner, people[owner]))
     conn.commit()
     # This morning's reminder digest, through the real reminder code, kept in
     # Radar and never sent (no mail server, .example addresses).
@@ -199,7 +223,7 @@ def _fill_classroom(conn, cfg, now, rng):
                             " VALUES (?, ?, 1, ?, ?)", (org, CLASS_NAME, teacher, _at(opened, 15, 25))).lastrowid
     _audit(conn, org, teacher, TEACHER[0], created, "workspace", "Workspace created with 1 industries")
     _audit(conn, org, teacher, TEACHER[0], pilot_start, "workspace",
-           f"Free classroom pilot started ({cfg['CLASSROOM_PILOT_DAYS']} days)")
+           f"Free classroom trial started ({cfg['CLASSROOM_PILOT_DAYS']} days)")
     _audit(conn, org, teacher, TEACHER[0], _at(opened, 15, 25), "workspace", f"Class added: {CLASS_NAME}")
     ids = {}
     expires = iso(now + timedelta(days=5))
@@ -354,7 +378,8 @@ def tour(kind):
     first = academy.CLASSROOM.topic_worlds[0].number
     return [
         ("classes.index", url_for("classes.index"), "Classes",
-         "Your classes and the free classroom pilot."),
+         f"Your classes and the free {current_app.config['CLASSROOM_PILOT_DAYS']} days. The lessons are written"
+         f" for {academy.CLASS_GRADES} ({academy.CLASS_AGES})."),
         ("classes.class_page", url_for("classes.class_page", class_id=ids["class"]), "Class progress",
          "Lessons done by each student, and the class total. Students are added by first name or nickname only."),
         ("classes.join_codes", url_for("classes.join_codes", class_id=ids["class"]), "Join codes",
@@ -396,7 +421,7 @@ def demo_context():
 def index():
     if g.get("kid") is not None:
         return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
-    return render_template("demo/index.html", minutes=PASS_MINUTES, limited=False)
+    return render_template("demo/index.html", minutes=PASS_MINUTES, limited=False, class_grades=academy.CLASS_GRADES)
 
 
 @bp.route("/demo/<kind>")
@@ -414,7 +439,8 @@ def start(kind):
     if rate_limited([(key, STARTS_PER_HOUR)], timedelta(hours=1)):
         flash(f"The demo was opened {STARTS_PER_HOUR} times from here in the last hour. Please try again later,"
               " or start your free trial.", "error")
-        return render_template("demo/index.html", minutes=PASS_MINUTES, limited=True), 429
+        return render_template("demo/index.html", minutes=PASS_MINUTES, limited=True,
+                               class_grades=academy.CLASS_GRADES), 429
     record_event([key])
     from .db import get_db
     usage.count(get_db(), "demos_opened")

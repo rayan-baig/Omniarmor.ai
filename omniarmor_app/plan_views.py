@@ -64,7 +64,7 @@ def plan_facts(cfg):
         "rule_quests": len(academy.INDUSTRY_WORLDS),
         "industries": len(INDUSTRIES),
         "checks": sum(len(rules_for(i)) for i in INDUSTRIES),
-        # Classroom plans and the free pilot (plans.py, classrooms.py).
+        # Classroom plans and the free trial (plans.py, classrooms.py).
         "classroom_plans": list(plans.CLASSROOM_PLANS.values()),
         "class_size": plans.CLASS_SIZE,
         "pilot_days": cfg["CLASSROOM_PILOT_DAYS"],
@@ -120,7 +120,7 @@ def plan_page():
 
 
 def _school_plan_page(access, confirming):
-    """The plan page for a school's workspace: the free class pilot, and the
+    """The plan page for a school's workspace: the free trial, and the
     two classroom plans, Classroom and Whole school, and nothing for a
     business (no Pro, Plus or Kitchen Safety Bundle)."""
     from . import classrooms

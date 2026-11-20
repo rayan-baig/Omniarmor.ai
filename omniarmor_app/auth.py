@@ -169,9 +169,9 @@ def signup():
             flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")
             return redirect(home_url())
         if teacher:
-            # A teacher starts with the class; the free pilot is already on.
+            # A teacher starts with the class; the free trial is already on.
             days = current_app.config["CLASSROOM_PILOT_DAYS"]
-            flash(f"Welcome to OmniArmor. Your free {days}-day class pilot is on: add your class, then your"
+            flash(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
                   " students by first name or nickname.", "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
@@ -189,7 +189,7 @@ def signup():
 
 def _school_workspace(conn, user_id, name, tz, now):
     """A teacher's new workspace: a school's (orgs.kind), with the school
-    safety checklist and the free class pilot started, so the teacher sees
+    safety checklist and the free trial started, so the teacher sees
     one countdown, the pilot's. Its free time is the pilot's
     CLASSROOM_PILOT_DAYS, for the checklist too."""
     from . import classrooms
@@ -203,7 +203,7 @@ def _school_workspace(conn, user_id, name, tz, now):
     record_audit(conn, org_id, user_id, "workspace", "School workspace created")
     org = conn.execute("SELECT * FROM orgs WHERE id = ?", (org_id,)).fetchone()
     if classrooms.start_pilot(conn, org, days):
-        record_audit(conn, org_id, user_id, "workspace", f"Free classroom pilot started ({days} days)")
+        record_audit(conn, org_id, user_id, "workspace", f"Free classroom trial started ({days} days)")
     return org_id
 
 

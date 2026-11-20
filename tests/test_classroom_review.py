@@ -93,11 +93,11 @@ class TestClassroomFraming(SchoolCase):
                                      q.prompt)
 
     def test_the_family_version_stays_for_a_business(self):
-        questions = academy.quiz(academy.TRACKS["launchpad"], 1, 1, "Acme Bakery", [2], "family")
+        questions = academy.family_pool(academy.TRACKS["launchpad"], 1, "Acme Bakery", [2])
         prompts = [q.prompt for q in questions]
         self.assertIn("What is the name of your family's company?", prompts)
-        business = next(q for q in questions if q.prompt == "What is a business?")
-        self.assertNotIn("A building where kids go to learn to read and write", business.options)
+        for q in questions:
+            self.assertNotIn("A building where kids go to learn to read and write", q.options)
         cards = academy.story(academy.TRACKS["launchpad"], 1, 1, "Acme Bakery", [2])
         self.assertIn("Someday you might help lead Acme Bakery.", " ".join(text for _, text in cards))
 
@@ -120,7 +120,7 @@ class TestTeacherSignupAndPlans(SchoolCase):
         self.assertNotIn("Your industries", text)
         for label in ("Your name", "School email", "Password", "School name"):
             self.assertIn(label, text)
-        self.assertIn(f"{self.app.config['CLASSROOM_PILOT_DAYS']}-day free pilot", text)
+        self.assertIn(f"{self.app.config['CLASSROOM_PILOT_DAYS']}-day free trial", text)
         self.assertNotIn("Free for 14 days", text)
         self.assertNotIn("days, no card needed. Pick your industries", text)
 
@@ -142,11 +142,11 @@ class TestTeacherSignupAndPlans(SchoolCase):
         self.assertIn(f"{plans.CLASSROOM.name} {plans.CLASSROOM.yearly_price}", text)
         self.assertIn(f"{plans.SCHOOL.name} {plans.SCHOOL.yearly_price}", text)
         days = self.app.config["CLASSROOM_PILOT_DAYS"]
-        self.assertIn(f"Free class pilot: {days} days left", text)
+        self.assertIn(f"Free trial: {days} days left", text)
         for business in (plans.PRO.price, plans.PLUS.price, plans.BUNDLE_NAME, "Pro", "Plus", "14 days"):
             self.assertNotIn(business, text)
         settings = words(self.client.get("/app/settings").data.decode())
-        self.assertIn(f"Free class pilot: {days} days left", settings)
+        self.assertIn(f"Free trial: {days} days left", settings)
         self.assertNotIn("everything in Plus", settings)
 
     def test_without_online_payment_the_school_plan_page_says_who_to_write_to(self):
@@ -189,8 +189,8 @@ class TestIndustryLists(AppTestCase):
         self.assertTrue(6 <= len(names) <= 8)
         for info in INDUSTRIES.values():
             self.assertIn(f'href="/industries/{info["brand"].lower()}"', page)
-        self.assertEqual(len(INDUSTRIES), 51)
-        self.assertEqual(sum(len(rules) for rules in CATALOG.values()), 510)
+        self.assertEqual(len(INDUSTRIES), 54)
+        self.assertEqual(sum(len(rules) for rules in CATALOG.values()), 540)
 
     def test_the_signup_lists_the_lead_trades_first_and_folds_the_rest(self):
         page = self.client.get("/signup").data.decode()
@@ -348,8 +348,19 @@ class TestMenuLabels(SchoolCase):
         self.assertIn(SCHOOL_NAME, top)
         self.assertNotIn("SchoolSafetyArmor", top)
         self.assertNotIn("RestoArmor", top)
-        self.assertEqual(self.tab_labels(page), ["Home", "Checklist", "Reminders", "History", "Settings"])
+        # The school checklist comes with Whole school: until then, no Checklist tab and no first
+        # steps for it (the cafeteria check was one).
+        self.assertEqual(self.tab_labels(page), ["Home", "Reminders", "History", "Settings"])
         self.assertIn('class="tab" href="/app/academy/classes"', page)
+        overview = self.client.get("/app")
+        self.assertTrue(overview.headers["Location"].endswith("/app/academy/classes"))
+        classes = self.client.get("/app/academy/classes").data.decode()
+        self.assertNotIn("Cafeteria", classes)
+        result = self.app.test_cli_runner().invoke(args=["plan", "1", "school"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        page = self.client.get("/app/academy/classes").data.decode()
+        self.assertEqual(self.tab_labels(page), ["Home", "Checklist", "Reminders", "History", "Settings"])
+        self.assertIn("Getting started", self.client.get("/app").data.decode())
         # Signing in lands a teacher on the classes page.
         self.post("/logout")
         response = self.post("/login", {"email": "teacher@example.com", "password": PASSWORD})
@@ -502,11 +513,49 @@ class TestSchoolTrialEndsWithThePilot(SchoolCase):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET pilot_ends_at = ?, academy_trial_ends = ?", (past, past))
             conn.commit()
-        page = words(self.client.get("/app").data.decode())
+        page = words(self.client.get("/app/industry/51").data.decode())
         self.assertIn("The school safety checklist comes with Whole school", page)
         self.assertNotIn("choose Pro or Plus", page)
         plan = words(self.client.get("/app/plan").data.decode())
-        self.assertIn("Your free class pilot has ended", plan)
+        self.assertIn("Your free trial has ended", plan)
+
+
+# --- 1.11.0: a strict re-review ---------------------------------------------------------------------
+
+class TestSecondReviewFixes(SchoolCase):
+    def test_the_grade_band_is_on_the_schools_page_the_guide_and_the_classroom_demo(self):
+        for path in ("/classrooms", "/classrooms/guide", "/demo"):
+            self.assertIn(academy.CLASS_GRADES, html.unescape(self.client.get(path).data.decode()), path)
+        self.client.get("/demo/classroom")
+        page = html.unescape(self.client.get("/app/academy/classes").data.decode())
+        self.assertIn(f"written for {academy.CLASS_GRADES}", page)
+
+    def test_a_class_student_s_progress_says_class_challenge(self):
+        self.teacher_signup()
+        class_id = self.add_class()
+        self.add_students(class_id, ["Maya"])
+        maya = self.students(class_id)["Maya"]
+        page = html.unescape(self.client.get(f"/app/academy/{maya['id']}/progress").data.decode())
+        self.assertIn("pass stage 1 of the Class Challenge", page)
+        self.assertNotIn("Owner's Challenge", page)
+
+    def test_pilot_means_only_the_robot(self):
+        self.teacher_signup()
+        for path in ("/app/academy/classes", "/app/plan", "/classrooms", "/help", "/signup?then=classes"):
+            text = words(self.client.get(path).data.decode())
+            self.assertNotRegex(text, r"(?i)\b(free|class|classroom) pilot\b|\bpilot report\b", path)
+
+    def test_armo_and_pilot_keep_apart_without_touching_pilot_s_core(self):
+        with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn("body.armo-talking .pilot-root .pilot-launcher{", css)
+        self.assertRegex(css, r"\.companion\{position:fixed;left:")
+        with open(os.path.join(STATIC, "armo.js"), encoding="utf-8") as f:
+            self.assertIn('document.body.classList.toggle("armo-talking", on)', f.read())
+        for name in os.listdir(os.path.join(STATIC, "pilot")):
+            if name.endswith(".js"):
+                with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
+                    self.assertTrue(f.readline().startswith("// Pilot core 1.0.1"), name)
 
 
 if __name__ == "__main__":

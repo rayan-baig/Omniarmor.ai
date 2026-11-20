@@ -19,7 +19,7 @@
   </ul>
 
   <p class="ac-callout ac-quick no-print">
-    <a class="btn quiet" href="{{ url_for('classes.report', class_id=cls.id) }}">{{ 'Pilot report' if limits.pilot.state != 'none' else 'Class report' }}</a>
+    <a class="btn quiet" href="{{ url_for('classes.report', class_id=cls.id) }}">{{ 'Trial report' if limits.pilot.state != 'none' else 'Class report' }}</a>
     <a class="btn quiet" href="{{ url_for('classes.certificates', class_id=cls.id) }}">Certificates</a>
     <a class="btn quiet" href="{{ url_for('classes.join_codes', class_id=cls.id) }}">Join codes</a>
   </p>

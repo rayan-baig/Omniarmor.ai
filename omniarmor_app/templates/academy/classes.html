@@ -18,7 +18,7 @@
           <span><span class="title">{{ item.label }}</span><span class="sr">{{ ': done' if item.done else ': not done yet' }}</span>
           {% if not item.done %}
             {% if item.detail %}<br><span class="meta">{{ item.detail }}</span>{% endif %}
-            {% if item.key in ('pilot', 'class') %}<a class="btn quiet go" href="{{ item.anchor }}">{{ ('Start the free pilot' if item.anchor == '#pilot' else 'See the classroom plans') if item.key == 'pilot' else 'Add a class' }}</a>
+            {% if item.key in ('pilot', 'class') %}<a class="btn quiet go" href="{{ item.anchor }}">{{ ('Start the free trial' if item.anchor == '#pilot' else 'See the classroom plans') if item.key == 'pilot' else 'Add a class' }}</a>
             {% elif item.key == 'students' and item.class_page %}<a class="btn quiet go" href="{{ url_for('classes.class_page', class_id=item.class_page.id) }}{{ item.anchor }}">Add students to {{ item.class_page.name }}</a>
             {% elif item.key == 'codes' and item.codes_page %}<a class="btn quiet go" href="{{ url_for('classes.join_codes', class_id=item.codes_page.id) }}">Open the join codes</a>
             {% elif item.key == 'lesson' and item.class_page %}<a class="btn quiet go" href="{{ url_for('classes.class_page', class_id=item.class_page.id) }}">See the class progress</a>{% endif %}
@@ -42,11 +42,11 @@
   </section>
 
   {% if limits.source == 'pilot' %}
-    <p class="ac-banner" data-pilot="active">Free classroom pilot: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}. {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students, the whole Academy, no card.</p>
+    <p class="ac-banner" data-pilot="active">Free classroom trial: {{ pilot.days_left }} day{{ 's' if pilot.days_left != 1 }} left, until {{ pilot.ends.isoformat()|local_date }}. {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students, the whole Academy, no card.</p>
   {% elif limits.source %}
     <p class="ac-banner" data-plan="{{ limits.source }}">You have {{ limits.name }}{% if access.ends_at %} until {{ access.ends_at|local_date }}{% endif %}: {% if limits.max_classes %}{{ limits.max_classes }} class{{ 'es' if limits.max_classes != 1 }}{% else %}as many classes as you like{% endif %}, up to {{ facts.class_size }} students each.</p>
   {% elif pilot.state == 'ended' %}
-    <p class="ac-banner" data-pilot="ended">Your free pilot ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the pilot report are kept. Choose a classroom plan below to add students and open every world again.</p>
+    <p class="ac-banner" data-pilot="ended">Your free trial ended on {{ pilot.ends.isoformat()|local_date }}. Your classes, their progress and the trial report are kept. Choose a classroom plan below to add students and open every world again.</p>
   {% endif %}
 
   <h2 class="ac-h2">Your classes</h2>
@@ -62,7 +62,7 @@
   {% else %}
     {% from "_empty.html" import empty %}
     {% if limits.active %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Start by adding your first class.', '#add-class', 'Add your first class') }}
-    {% elif pilot_available %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Start the free pilot to add your first one.', '#pilot', 'Start with the free pilot') }}
+    {% elif pilot_available %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Start the free trial to add your first one.', '#pilot', 'Start with the free trial') }}
     {% else %}{{ empty('classes', 'Your classes will show here, each with its students and their lessons. Choose a classroom plan to add your first one.', '#plans', 'See the classroom plans') }}{% endif %}
   {% endif %}
 
@@ -79,16 +79,16 @@
   {% endif %}
 
   {% if pilot.state == 'none' and not limits.active and not pilot_available %}
-    <p class="ac-banner" data-pilot="used">The free pilot is one per owner, and it was used in another of your locations. Choose a classroom plan below to add a class here.</p>
+    <p class="ac-banner" data-pilot="used">The free trial is one per owner, and it was used in another of your locations. Choose a classroom plan below to add a class here.</p>
   {% endif %}
   {% if pilot.state == 'none' and not limits.active and pilot_available %}
     <section class="ac-card mt" id="pilot" data-pilot-offer>
       <h2 class="ac-h3">Try it free for {{ facts.pilot_days }} days</h2>
-      <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page pilot report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
+      <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page trial report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
       {% if g.role == 'owner' %}
         <form method="post" action="{{ url_for('classes.start_pilot') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn ac-btn" type="submit">Start the free pilot</button>
+          <button class="btn ac-btn" type="submit">Start the free trial</button>
         </form>
       {% else %}
         <p class="hint">Ask the workspace owner to start the pilot.</p>

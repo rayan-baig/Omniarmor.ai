@@ -484,6 +484,50 @@ MIGRATIONS = [
                         AND org_industries.industry_id NOT IN (8, 51));
     UPDATE learners SET track = 'classroom', track_chosen = 1 WHERE class_id IS NOT NULL;
     """),
+    # 1.11.0. Checks with one entry per item (catalog.MULTI_CHECKS): a
+    # reading per fridge, a date per food batch. The check's own row in
+    # items is its first entry, now with a name (items.label); a value saved
+    # before this version keeps its place as that first entry, named
+    # "Fridge 1" and so on (catalog.FIRST_ENTRY), and nothing is moved or
+    # deleted. check_entries holds the other entries, each with its own
+    # value and date. illness_log is the dated log on "Sick employees kept
+    # off work": the worker's first name or initials only, what they
+    # reported, what was done and when.
+    (26, """
+    ALTER TABLE items ADD COLUMN label TEXT;
+    UPDATE items SET label = CASE rule_key WHEN 'date_marking' THEN 'Food batch 1' WHEN 'cold_holding' THEN 'Fridge 1'
+        ELSE 'Hot-holding unit 1' END
+        WHERE industry_id = 2 AND rule_key IN ('date_marking', 'cold_holding', 'hot_holding')
+        AND (value_num IS NOT NULL OR value_date IS NOT NULL);
+    CREATE TABLE check_entries (
+        id INTEGER PRIMARY KEY,
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        industry_id INTEGER NOT NULL,
+        rule_key TEXT NOT NULL,
+        label TEXT NOT NULL,
+        value_num REAL,
+        value_date TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        updated_by_name TEXT
+    );
+    CREATE INDEX check_entries_rule ON check_entries (org_id, industry_id, rule_key);
+    CREATE TABLE illness_log (
+        id INTEGER PRIMARY KEY,
+        org_id INTEGER NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+        industry_id INTEGER NOT NULL,
+        rule_key TEXT NOT NULL,
+        person TEXT NOT NULL,
+        reported TEXT NOT NULL,
+        action TEXT NOT NULL,
+        reported_on TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_by_name TEXT
+    );
+    CREATE INDEX illness_log_org ON illness_log (org_id, industry_id, rule_key, reported_on);
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

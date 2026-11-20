@@ -12,11 +12,13 @@ from . import connections, nudges, plans, usage
 from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .config import support_email
-from .catalog import INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, top_rank, why_line
+from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, multi_check,
+                      top_rank, why_line)
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, home_url, login_required, owner_required
-from .tracking import (BULK_ACTIONS, LEVEL_LABEL, ValidationError, apply_bulk, apply_change, local_date,
-                       org_industry_ids, org_now, org_today, states_for_org, tally)
+from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, ValidationError, add_illness,
+                       apply_bulk, apply_change, apply_entry, illness_log, local_date, org_industry_ids, org_now,
+                       org_today, remove_illness, states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
@@ -34,17 +36,26 @@ def _industry_or_404(industry_id):
 def nav_context():
     if g.get("org") is None:
         return {}
-    from .classrooms import is_class_workspace
+    from .classrooms import is_class_workspace, on_whole_school
     ids = org_industry_ids(get_db(), g.org["id"])
+    access = plans.access(g.org)
     # What the workspace's plan allows: base.html's read-only and grace banners, and the industry pages.
-    # class_workspace: a school's, whose menus are a classroom's (base.html).
-    return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": plans.access(g.org),
-            "class_workspace": is_class_workspace(g.org)}
+    # class_workspace: a school's, whose menus are a classroom's (base.html); school_checklist: whether
+    # its menus show the school safety checklist, which comes with Whole school.
+    class_workspace = is_class_workspace(g.org)
+    return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": access,
+            "class_workspace": class_workspace,
+            "school_checklist": class_workspace and on_whole_school(g.org, access)}
 
 
 @bp.route("")
 @login_required
 def overview():
+    from .classrooms import is_class_workspace, on_whole_school
+    if is_class_workspace(g.org) and not on_whole_school(g.org):
+        # A teacher without Whole school has no school checklist to start on:
+        # their home is the classes page (the checklist pages stay readable).
+        return redirect(url_for("classes.index"))
     conn = get_db()
     states = states_for_org(conn, g.org)
     today = org_today(g.org)
@@ -94,7 +105,8 @@ def getting_started(conn, states, ids):
     """A new workspace's first steps: pick the checklists, complete the first
     check, set the first reminder, then invite a teammate or choose your
     reminder emails. Each is ticked from what is saved, not from what was
-    clicked, and the list is None once every step is done, so it disappears."""
+    clicked, and the list is None once every step is done, so it disappears.
+    (A school's workspace sees it only with Whole school: see overview.)"""
     read = [s for s in states if s.level != "NONE"]
     dated = [s for s in states if s.mode and s.due_date is not None]
     owner = g.role == "owner"
@@ -131,10 +143,12 @@ def industry(industry_id):
     states = sorted(states_for_org(get_db(), g.org, industry_ids=[industry_id], now=now), key=page_order)
     only = request.args.get("only") == "problems"
     shown = [s for s in states if s.problem] if only else states
+    logs = {key: illness_log(get_db(), g.org["id"], i, key) for i, key in ILLNESS_LOG_CHECKS if i == industry_id}
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
                            can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
                            top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS,
-                           bundle=_bundle(industry_id))
+                           bundle=_bundle(industry_id), multi_check=multi_check, logs=logs,
+                           illness_reported=ILLNESS_REPORTED, illness_actions=ILLNESS_ACTIONS)
 
 
 def _bundle(industry_id):
@@ -242,6 +256,53 @@ def change(industry_id, rule_key):
         flash_error(str(exc))
     target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
     return redirect(f"{target}#rule-{rule_key}")
+
+
+@bp.route("/industry/<int:industry_id>/rule/<rule_key>/entries", methods=["POST"])
+@login_required
+def entry_change(industry_id, rule_key):
+    """One entry of a check with one entry per item: add, save, done today or
+    remove. The same sign-in, workspace, plan and CSRF checks as a check."""
+    _industry_or_404(industry_id)
+    if multi_check(industry_id, rule_key) is None:
+        abort(404)
+    refused = _refuse_if_read_only(industry_id, f"rule-{rule_key}")
+    if refused:
+        return refused
+    action = request.form.get("action", "save")
+    try:
+        flash(apply_entry(get_db(), g.org, g.user["id"], industry_id, rule_key, action, request.form), "ok")
+        usage.count(get_db(), "checks_updated")
+        if action in ("add", "save", "done_today"):
+            line = reminder_line(industry_id, rule_key)
+            if line:
+                flash(line, "ok")
+    except ValidationError as exc:
+        flash_error(str(exc))
+    target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
+    return redirect(f"{target}#rule-{rule_key}")
+
+
+@bp.route("/industry/<int:industry_id>/rule/<rule_key>/illness", methods=["POST"])
+@login_required
+def illness_change(industry_id, rule_key):
+    """Adds a report to the illness log, or removes one."""
+    _industry_or_404(industry_id)
+    if (industry_id, rule_key) not in ILLNESS_LOG_CHECKS:
+        abort(404)
+    refused = _refuse_if_read_only(industry_id, f"rule-{rule_key}")
+    if refused:
+        return refused
+    try:
+        if request.form.get("action") == "remove":
+            message = remove_illness(get_db(), g.org, g.user["id"], industry_id, rule_key,
+                                     request.form.get("entry_id", type=int))
+        else:
+            message = add_illness(get_db(), g.org, g.user["id"], industry_id, rule_key, request.form)
+        flash(message, "ok")
+    except ValidationError as exc:
+        flash_error(str(exc))
+    return redirect(url_for("app.industry", industry_id=industry_id) + f"#rule-{rule_key}")
 
 
 def reminder_line(industry_id, rule_key):
@@ -379,9 +440,20 @@ def report_csv():
     states = sorted(states_for_org(get_db(), g.org), key=lambda s: (s.industry_id, s.sort_key))
     return _csv_response("omniarmor-compliance-report.csv",
                          ["Industry", "Check", "Status", "Reading", "Due date", "Rule", "Last updated (UTC)", "Updated by"],
-                         [[s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.shown_value,
-                           s.due_label, s.rule.citation,
-                           s.updated_at or "", s.updated_by or ""] for s in states])
+                         _report_rows(states))
+
+
+def _report_rows(states):
+    """The report's rows: one per check, then, for a check with several
+    entries, one per entry ("Cold holding · Walk-in cooler")."""
+    for s in states:
+        yield [s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.shown_value, s.due_label,
+               s.rule.citation, s.updated_at or "", s.updated_by or ""]
+        if len(s.entries) > 1:
+            for e in s.entries:
+                es = e["state"]
+                yield [s.industry["brand"], f"{s.rule.title} · {e['label']}", LEVEL_LABEL[es.level], es.shown_value,
+                       es.due_label, s.rule.citation, es.updated_at or "", es.updated_by or ""]
 
 
 @bp.route("/notifications")

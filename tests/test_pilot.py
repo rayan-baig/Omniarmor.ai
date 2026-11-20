@@ -36,7 +36,8 @@ LAZY = ("pilot-panel.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.
 PUBLIC = ("/", "/industries", "/industries/restoarmor", "/for/salons-and-barbershops", "/for/schools", "/classrooms",
           "/classrooms/guide", "/demo")
 BUSINESS = ("/app", "/app/industry/1", "/app/report", "/app/audit", "/app/notifications", "/app/settings", "/app/plan")
-TEACHER = ("/app/academy/classes", "/app", "/app/industry/51", "/app/report", "/app/notifications", "/app/audit",
+# ("/app" sends a teacher without Whole school to the classes page: 1.11.0.)
+TEACHER = ("/app/academy/classes", "/app/industry/51", "/app/report", "/app/notifications", "/app/audit",
            "/app/settings", "/app/plan")
 MODEL_NAMES = re.compile(r"claude-|gpt-?\d|gemini-\d|\bo[1-9]-|sonnet|opus|haiku|llama|dall-?e|\bsora\b|whisper|imagen|\bveo\b",
                          re.IGNORECASE)

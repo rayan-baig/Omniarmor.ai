@@ -211,7 +211,7 @@ class TestClassroomDemo(DemoCase):
         page = text(self.client.get("/app/academy/classes"))
         self.assertIn("Step 1 of 5: Classes.", page)
         self.assertIn(demo_mode.CLASS_NAME, page)
-        self.assertIn("Free classroom pilot", page)
+        self.assertIn("Free classroom trial", page)
         facts = self.facts("classroom")
         cls = text(self.client.get(f"/app/academy/classes/{facts['class']}"))
         for name, *_ in demo_mode.STUDENTS:
@@ -225,7 +225,7 @@ class TestClassroomDemo(DemoCase):
         self.assertEqual(lesson.status_code, 200)
         self.assertIn("Step 5 of 5: A sample lesson.", text(lesson))
         self.assertIn(academy.CLASS_BUSINESS, text(lesson))
-        self.assertIn('href="/signup?then=classes" data-demo-signup>Start your free pilot',
+        self.assertIn('href="/signup?then=classes" data-demo-signup>Start your free trial',
                       lesson.data.decode())
 
     def test_the_sample_lesson_can_be_played_and_nothing_is_kept(self):

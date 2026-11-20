@@ -13,8 +13,8 @@ Safe by design for kids' privacy:
   their own class's leaderboard (first names or nicknames and lessons done).
   Never another class. Academy friends and duels, which can reach other
   families, are off for students in a class.
-- The teacher's class view and the pilot report are for the workspace's
-  grown-ups only. The pilot report shows totals only, no student names, so
+- The teacher's class view and the trial report are for the workspace's
+  grown-ups only. The trial report shows totals only, no student names, so
   it can go to the school office.
 
 Plans, limits and the pilot are in plans.py (class_limits, pilot_status).
@@ -48,6 +48,14 @@ def is_class_workspace(org):
         return False
 
 
+def on_whole_school(org, access=None):
+    """Whether a school's workspace pays for Whole school, the plan that
+    includes the school safety checklist. Without it a teacher's menus leave
+    the checklist out (base.html) and its first steps aren't offered."""
+    access = access or plans.access(org)
+    return access["paid"] and access["kind"] == plans.SCHOOL.key and not access["paused"]
+
+
 def invoice_email(cfg):
     """Where a school writes to pay by invoice."""
     from .config import support_email
@@ -77,6 +85,8 @@ def public_facts(cfg):
         "lesson_questions": academy.LESSON_QUESTIONS,
         "lesson_minutes": academy.LESSON_MINUTES,
         "class_business": academy.CLASS_BUSINESS,
+        "grades": academy.CLASS_GRADES,
+        "ages": academy.CLASS_AGES,
         "first_lessons": len(academy.CLASSROOM.topics),
         "school_industry": SCHOOL_INDUSTRY,
     }
@@ -171,7 +181,7 @@ def getting_started(conn, org, limits, class_rows):
     first = class_rows[0] if class_rows else None
     can_pilot = pilot_available(conn, org)
     items = [
-        {"key": "pilot", "label": ("Start the free pilot" if can_pilot or limits["pilot"]["state"] != "none"
+        {"key": "pilot", "label": ("Start the free trial" if can_pilot or limits["pilot"]["state"] != "none"
                                    else "Choose a classroom plan"),
          "done": bool(limits["active"] or limits["pilot"]["state"] != "none"),
          "anchor": "#pilot" if can_pilot else "#plans"},
@@ -258,7 +268,7 @@ def leaderboard(conn, class_row):
 
 
 def report(conn, org, class_row, now=None):
-    """The pilot report for one class: totals only, never a student's name.
+    """The trial report for one class: totals only, never a student's name.
     During or after the workspace's pilot it counts the lessons finished in
     the pilot's dates; without a pilot, every lesson so far."""
     now = now or utcnow()
@@ -302,7 +312,7 @@ def can_add_class(conn, org, now=None):
     (False, why) in plain words."""
     limits = plans.class_limits(org, now)
     if not limits["active"]:
-        return False, "Start the free pilot or choose a classroom plan to add a class."
+        return False, "Start the free trial or choose a classroom plan to add a class."
     count = conn.execute("SELECT COUNT(*) FROM classes WHERE org_id = ?", (org["id"],)).fetchone()[0]
     if count >= MAX_CLASSES:
         return False, (f"A workspace can have up to {MAX_CLASSES} classes. Delete a class you no longer use,"
@@ -329,7 +339,7 @@ def _owner_ids(conn, org_id):
 
 
 def pilot_available(conn, org):
-    """Whether this workspace can still start the free pilot. It is one per
+    """Whether this workspace can still start the free trial. It is one per
     owner, whichever of their locations it was in (users.pilot_used_at, kept
     when that location is deleted), and one per workspace."""
     if org["pilot_started_at"]:
@@ -343,7 +353,7 @@ def pilot_available(conn, org):
 
 
 def start_pilot(conn, org, days, now=None):
-    """Starts the free classroom pilot, one per owner (pilot_available).
+    """Starts the free classroom trial, one per owner (pilot_available).
     Returns False when the workspace or its owner has had one already. The
     owner is claimed first, in the same transaction, so two locations
     started at once can't both get one."""

@@ -47,7 +47,7 @@ services that sleep or lose their disk aren't suitable.
   Caddy also compresses every response.
 - **No image files.** Logos, the Academy mascot, icons and avatars are inline
   SVG.
-- **Generated, not stored, lessons.** All 15,750 Academy levels are generated
+- **Generated, not stored, lessons.** All of the Academy's levels are generated
   from code and question banks on demand, in a few milliseconds each. Only each
   learner's progress is saved, so even the Mastery track adds almost nothing to
   the database.

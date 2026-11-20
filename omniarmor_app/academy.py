@@ -2,20 +2,27 @@
 """Future Owner Academy: a game-like course for the kids who may one day run
 the family company.
 
-Four tracks, each with its own progress:
-    Launchpad (Basic)          1,360 levels: 16 core worlds x 50 stages, the
-                               Owner's Challenge (50) and 51 industry Rule Quests x 10.
-    Trailblazer (Intermediate) 2,710 levels: all 43 worlds x 50, plus the same.
-    Summit (Advanced)          5,420 levels: 43 x 100, Challenge 100, Rule Quests x 20.
-    Titan Mastery              15,750 levels: 43 x 300, Challenge 300, Rule Quests x 50.
+Four family tracks, each with its own progress (Track.total gives the real
+level counts, which the pages show):
+    Launchpad (Basic)          the 16 core worlds, lessons of 5 questions,
+                               easy questions first.
+    Trailblazer (Intermediate) all 43 worlds, lessons of 5.
+    Summit (Advanced)          all 43 worlds, lessons of 6, hard questions
+                               first and a higher pass mark.
+    Titan Mastery              all 43 worlds, lessons of 8, hard questions
+                               first and the highest pass mark.
+Each also has the Owner's Challenge and 51-plus industry Rule Quests (one
+lesson per real rule).
 
-Stage 1 of a world teaches the lesson; later stages add questions, harder
-questions, a higher pass mark and review from other worlds, and every tenth
-stage is a boss round. Lessons are built from the company's own name,
-industries and compliance rules, so a child learns about the business they
-may inherit. The newer worlds draw on the question banks in academy_bank.
-Quizzes are generated from a seed, so the same attempt always shows the same
-questions and can be checked on the server without storing the answers.
+Every world is a fixed list of questions cut into lessons, so no question
+comes back in a later lesson of the same world, and a world has only as many
+lessons as it has questions for: the level count is what a learner really
+plays. A retry asks the same lesson's questions, the options in a new order.
+Lessons are built from the company's own name, industries and compliance
+rules, so a child learns about the business they may inherit. The newer
+worlds draw on the question banks in academy_bank. Quizzes are generated from
+a seed, so the same attempt always shows the same questions and can be
+checked on the server without storing the answers.
 
 Children don't get accounts: a family member adds a learner profile with only
 a nickname and a picture, so no child's personal information is collected. A
@@ -35,6 +42,7 @@ from dataclasses import dataclass
 from omni_armor_rules import CATALOG, evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
+from .academy_bank import basics as _basics
 from .academy_bank import load_expansions, load_worlds
 from .catalog import INDUSTRIES, counts_first_day, date_mode, date_unit
 
@@ -503,6 +511,10 @@ class Track:
         return [WORLDS[n] for n in self.topics]
 
     @property
+    def topic_lessons(self):
+        return sum(self.stages(w) for w in self.topic_worlds)
+
+    @property
     def rule_quests(self):
         """Whether the track has the industry Rule Quests (the Classroom track has none)."""
         return self.industry_stages > 0
@@ -531,17 +543,19 @@ class Track:
 
 _ALL_TOPICS = tuple(w.number for w in TOPIC_WORLDS)
 _EASY_MIX = ((0.3, {1: 3, 2: 2, 3: 0}), (0.7, {1: 1, 2: 2, 3: 1}), (1.01, {1: 0, 2: 2, 3: 2}))
+_HARD_MIX = ((0.25, {1: 2, 2: 2, 3: 1}), (0.6, {1: 0, 2: 2, 3: 2}), (1.01, {1: 0, 2: 1, 3: 3}))
+FAMILY_MAX_LESSONS = 10   # lessons a family world has at most (topic_stages); fewer when it has fewer questions
+# A family track's stage_plan (each world's real lesson count) is filled in
+# once the question pools are defined, at the end of this module.
 TRACK_LIST = [
     Track("launchpad", 0, "Launchpad", "Basic", "Blast off with the basics", "rocket",
-          tuple(w.number for w in ORIGINAL_WORLDS), 50, 50, 10, 5, 8, 0.6, 0.8, 10, 5, _EASY_MIX),
+          tuple(w.number for w in ORIGINAL_WORLDS), FAMILY_MAX_LESSONS, 3, 10, 5, 5, 0.6, 0.8, 10, 5, _EASY_MIX),
     Track("trailblazer", 1, "Trailblazer", "Intermediate", "Every world of business", "flame",
-          _ALL_TOPICS, 50, 50, 10, 5, 8, 0.6, 0.8, 10, 5, _EASY_MIX),
-    Track("summit", 2, "Summit", "Advanced", "Twice the stages, tougher questions", "peak",
-          _ALL_TOPICS, 100, 100, 20, 6, 10, 0.7, 0.85, 12, 6,
-          ((0.25, {1: 2, 2: 2, 3: 1}), (0.6, {1: 0, 2: 2, 3: 2}), (1.01, {1: 0, 2: 1, 3: 3}))),
-    Track("titan", 3, "Titan Mastery", "Mastery", "The ultimate mastery program", "titan",
-          _ALL_TOPICS, 300, 300, 50, 8, 12, 0.75, 0.9, 15, 8,
-          ((0.1, {1: 1, 2: 2, 3: 2}), (1.01, {1: 0, 2: 1, 3: 3}))),
+          _ALL_TOPICS, FAMILY_MAX_LESSONS, 5, 10, 5, 5, 0.6, 0.8, 10, 5, _EASY_MIX),
+    Track("summit", 2, "Summit", "Advanced", "Bigger lessons, hard questions first", "peak",
+          _ALL_TOPICS, FAMILY_MAX_LESSONS, 5, 10, 6, 6, 0.7, 0.85, 12, 6, _HARD_MIX),
+    Track("titan", 3, "Titan Mastery", "Mastery", "Long lessons and the highest pass marks", "titan",
+          _ALL_TOPICS, FAMILY_MAX_LESSONS, 5, 10, 8, 8, 0.75, 0.9, 15, 8, _HARD_MIX),
 ]
 TRACKS = {t.key: t for t in TRACK_LIST}
 DEFAULT_TRACK = "launchpad"
@@ -565,18 +579,20 @@ def level_id(t, world_number, stage):
     return t.index * 1_000_000 + world_number * 1000 + stage
 
 
-def is_boss(w, stage):
-    return w.kind == "topic" and stage % 10 == 0
+def is_boss(t, w, stage):
+    """A family world's last lesson is its boss round, with the world's
+    highest pass mark, when the world has three lessons or more."""
+    return (w.kind == "topic" and t.key != CLASSROOM_KEY and t.stages(w) >= 3 and stage == t.stages(w))
 
 
 def question_count(t, w, stage):
+    """How many questions the lesson has: a Rule Quest's lesson is its rule's
+    questions, which can be fewer than the track asks for."""
     if w.kind == "final":
         return t.final_questions
     if w.kind == "industry":
-        return t.industry_questions
-    steps = t.max_questions - t.min_questions
-    count = t.min_questions + min(steps, (stage - 1) * 5 // t.topic_stages)
-    return count + (2 if is_boss(w, stage) else 0)
+        return len(_industry_lesson(t, w.industry_id, stage))
+    return t.min_questions
 
 
 def pass_rate(t, w, stage):
@@ -791,32 +807,6 @@ TEAM_FACTS = [
 
 # --- Level 1 ------------------------------------------------------------
 
-def _company_questions(rng, company, industry_ids, stage=1):
-    sectors = _sectors(industry_ids)
-    mine = set(industry_ids)
-    for group in KINDRED:
-        if mine & group:
-            mine |= group
-    others = [INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in mine]
-    if len(others) < 2:
-        others = ["Space travel", "Ice cream trucks", "Toy making"]
-    decoy_names = ["Sunny Side Snacks", "Rocket Repair Co.", "Blue Lake Toys", "Maple Street Bakery"]
-    return [
-        _choice(rng, "What is the name of your family's company?", company,
-                rng.sample([n for n in decoy_names if n != company], 2),
-                f"Your family's company is {company}."),
-        _choice(rng, f"What kind of work does {company} do?", rng.choice(sectors), rng.sample(others, 2),
-                f"{company} works in {', '.join(s.lower() for s in sectors)}."),
-        _choice(rng, "What is a business?",
-                "People who make or do something that others pay for",
-                ["A park where anyone can play for free", "A club where friends meet only to play games"],
-                "A business makes products or does work that customers pay for."),
-        _choice(rng, "Who does a business serve?", "Its customers", ["Only its owner", "Nobody at all"],
-                "Businesses exist to help their customers. Happy customers come back."),
-        _truefalse(*rng.choice(COMPANY_FACTS)),
-    ]
-
-
 def _company_story(company, industry_ids):
     sectors = ", ".join(s.lower() for s in _sectors(industry_ids))
     return [
@@ -829,16 +819,6 @@ def _company_story(company, industry_ids):
 
 # --- Level 2 ------------------------------------------------------------
 
-def _words_questions(rng, company, industry_ids, stage=1):
-    picked = rng.sample(GLOSSARY, 5)
-    questions = []
-    for word, meaning in picked:
-        others = [m for w, m in GLOSSARY if w != word]
-        questions.append(_choice(rng, f"What does \"{word}\" mean?", meaning, rng.sample(others, 2),
-                                 f"{word}: {meaning}"))
-    return questions
-
-
 def _words_story(company, industry_ids):
     sample = GLOSSARY[:6]
     return [
@@ -849,25 +829,6 @@ def _words_story(company, industry_ids):
 
 
 # --- Level 3 ------------------------------------------------------------
-
-def _rules_questions(rng, company, industry_ids, stage=1):
-    rule = rng.choice(_company_rules(industry_ids))
-    return [
-        _choice(rng, "What is a fine?", "Money paid for breaking a rule",
-                ["A prize given for doing a good job", "A bonus paid to workers each year"],
-                "A fine is a penalty. It costs the company money that could have gone to growing the business."),
-        _choice(rng, "Whose job is it to check that a business follows the rules?", "Inspectors",
-                ["The customers' pets", "Nobody: no one ever checks"],
-                "Inspectors visit businesses to make sure rules are followed."),
-        _choice(rng, f"Here's a real rule for {company}: \"{rule.title}.\" Why do rules like this exist?",
-                "To keep people safe and be fair", ["To make every job slow and boring", "So the owner never has to pay"],
-                "Rules are written after people learn what keeps others safe."),
-        _choice(rng, f"What could happen if {company} ignored an important rule?",
-                "It could be fined or have to close", ["Nothing, because rules are only tips", "It would win a prize for being bold"],
-                "Breaking rules can cost money, customers and even the right to stay open."),
-        _truefalse(*rng.choice(RULE_FACTS)),
-    ]
-
 
 def _rules_story(company, industry_ids):
     rule = _company_rules(industry_ids)[0]
@@ -881,31 +842,6 @@ def _rules_story(company, industry_ids):
 
 # --- Level 4 ------------------------------------------------------------
 
-def _lights_questions(rng, company, industry_ids, stage=1):
-    pool = _light_rules(_company_rules(industry_ids))
-    if len(pool) < 3:
-        pool = _light_rules(_all_rules())
-    by_level = {"CLEARED": [], "WARNING": [], "BLOCKED": []}
-    for rule in pool:
-        for found, value in _light_cases(rule).items():
-            by_level[found].append((rule, value, found))
-    chosen = []
-    for found in ("CLEARED", "WARNING", "BLOCKED"):
-        if by_level[found]:
-            chosen.append(rng.choice(by_level[found]))
-    rest = [case for cases in by_level.values() for case in cases if case not in chosen]
-    rng.shuffle(rest)
-    used_rules = {c[0].key for c in chosen}
-    for case in rest:
-        if len(chosen) >= 5:
-            break
-        if case[0].key not in used_rules:
-            chosen.append(case)
-            used_rules.add(case[0].key)
-    rng.shuffle(chosen)
-    return [_light_question(rule, value, found) for rule, value, found in chosen[:5]]
-
-
 def _lights_story(company, industry_ids):
     return [
         ("Three lights", "OmniArmor checks every rule and shows a light, just like a traffic light."),
@@ -916,41 +852,6 @@ def _lights_story(company, industry_ids):
 
 
 # --- Level 5 ------------------------------------------------------------
-
-def _calendar_questions(rng, company, industry_ids, stage=1):
-    pool = _since_rules(_company_rules(industry_ids)) or _since_rules(_all_rules())
-    rule = rng.choice(pool)
-    limit = int(rule.limit)
-    done = rng.randint(1, limit - 1)
-    left = limit - done
-    wrong = [w for w in {limit + done, done, abs(left - 7) or left + 3, left + 10} if w != left and w >= 0]
-    late_rule = rng.choice(pool)
-    late_limit = int(late_rule.limit)
-    is_late = rng.random() < 0.5
-    ago = late_limit + rng.randint(1, 20) if is_late else rng.randint(1, late_limit - 1)
-    start = rng.randrange(7)
-    ahead = rng.randint(2, 5 + min(stage, 50) // 5)
-    due_day = WEEKDAYS[(start + ahead) % 7]
-    return [
-        _choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done {done} days ago. "
-                     "How many days are left?", str(left), [str(w) for w in sorted(wrong)[:2]],
-                f"{limit} − {done} = {left} days left."),
-        _choice(rng, f"\"{late_rule.title}\" must be done every {late_limit} days. It was last done {ago} days ago. Is it late?",
-                "Yes, it's overdue" if is_late else "No, there's still time",
-                ["No, there's still time" if is_late else "Yes, it's overdue"],
-                f"{ago} days is {'more' if is_late else 'less'} than {late_limit} days."),
-        _choice(rng, "When does OmniArmor send the first reminder before a deadline?", "30 days before",
-                ["The day after it's late", "Never"],
-                "Reminders go out 30, 7 and 1 day before, on the day, and every week if it's late."),
-        _choice(rng, "After a job is finished, someone presses \"Done today.\" What happens?",
-                "The countdown starts over for next time", ["The rule is deleted and never comes back",
-                                                            "Nothing changes until an inspector visits"],
-                "Most jobs repeat, like a yearly checkup. Done today starts the next countdown."),
-        _choice(rng, f"Today is {WEEKDAYS[start]}. A job is due in {ahead} days. Which day is that?", due_day,
-                rng.sample([d for d in WEEKDAYS if d != due_day], 2),
-                f"Count forward {ahead} days from {WEEKDAYS[start]} and you land on {due_day}."),
-    ]
-
 
 def _calendar_story(company, industry_ids):
     pool = _since_rules(_company_rules(industry_ids)) or _since_rules(_all_rules())
@@ -965,34 +866,6 @@ def _calendar_story(company, industry_ids):
 
 # --- Level 6 ------------------------------------------------------------
 
-def _money_questions(rng, company, industry_ids, stage=1):
-    scale = 1 + min(stage, 50) // 10
-    revenue = rng.randrange(8000 * scale, 20000 * scale + 1, 500 * scale)
-    costs = rng.randrange(3000 * scale, revenue - 1000 * scale, 500 * scale)
-    profit = revenue - costs
-    # A fine smaller than the profit: "how much profit is left" had "$-500" for an answer.
-    fine = rng.choice([f for f in (500, 1000, 1500, 2000) if f < profit])
-    fix = rng.choice([100, 200, 300])
-    penalty = rng.choice([1000, 2500, 5000])
-    return [
-        _choice(rng, f"Pretend {company} earned {money(revenue)} this month and spent {money(costs)}. What is the profit?",
-                money(profit), [money(revenue + costs), money(costs)],
-                f"Profit = revenue − costs: {money(revenue)} − {money(costs)} = {money(profit)}."),
-        _choice(rng, f"If the profit was {money(profit)} and the company paid a {money(fine)} fine, how much profit is left?",
-                money(profit - fine), [money(profit + fine), money(profit)],
-                f"A fine is a surprise cost: {money(profit)} − {money(fine)} = {money(profit - fine)}."),
-        _choice(rng, "Which costs less?", f"Fixing a problem early for {money(fix)}",
-                [f"Paying a fine of {money(penalty)} later"],
-                "Preventing problems is almost always cheaper than paying for them later."),
-        _choice(rng, "What is a cost?", "Money the business spends",
-                ["Money that customers pay it", "How long a job takes to finish"],
-                "Costs are what the business pays for, like pay for workers, supplies and rent."),
-        _choice(rng, "What can a business do with its profit?", "Save it, grow and reward its team",
-                ["Nothing: profit must be given back", "Only spend it on the owner's toys"],
-                "Profit helps a company grow, get through hard times, and take care of its team."),
-    ]
-
-
 def _money_story(company, industry_ids):
     return [
         ("Revenue", "Revenue is all the money customers pay the business."),
@@ -1003,13 +876,6 @@ def _money_story(company, industry_ids):
 
 
 # --- Level 7 ------------------------------------------------------------
-
-def _talk_questions(rng, company, industry_ids, stage=1):
-    questions = []
-    for situation, best, bad1, bad2, why in rng.sample(PRO_TALK, 5):
-        questions.append(_choice(rng, situation, best.format(company=company), [bad1, bad2], why))
-    return questions
-
 
 def _talk_story(company, industry_ids):
     return [
@@ -1023,24 +889,6 @@ def _talk_story(company, industry_ids):
 
 
 # --- Level 8 ------------------------------------------------------------
-
-def _team_questions(rng, company, industry_ids, stage=1):
-    return [
-        _choice(rng, f"Why does {company} keep a record of every change?",
-                "To show who did what, and when", ["To get people in trouble for slips", "Because typing is fun for the team"],
-                "Records help the team stay honest and show inspectors that the company did its job."),
-        _choice(rng, "A worker tells you about a safety problem. What should a good leader do?",
-                "Thank them and get it fixed", ["Ignore it unless someone is hurt", "Tell them to stop complaining"],
-                "Leaders want to hear about problems early, so people stay safe."),
-        _choice(rng, "Who is the best one to ask when a rule is confusing?", "An expert, like a lawyer",
-                ["A stranger in an online video", "Nobody: just guess and hope"],
-                "Smart owners ask experts. Nobody knows everything."),
-        _choice(rng, "What's the best way to treat customers?", "Honestly and fairly",
-                ["Only nicely when they're watching", "However you feel that day"],
-                "Trust is a company's most valuable treasure."),
-        _truefalse(*rng.choice(TEAM_FACTS)),
-    ]
-
 
 def _team_story(company, industry_ids):
     return [
@@ -1062,13 +910,6 @@ if _more is not None:
 
 
 # --- Levels 9 to 16: leadership --------------------------------------------
-
-def _scenarios(pool):
-    def make(rng, company, industry_ids, stage=1):
-        return [_choice(rng, situation.format(company=company), best.format(company=company), [bad1, bad2], why)
-                for situation, best, bad1, bad2, why in rng.sample(pool, 5)]
-    return make
-
 
 def _cards(*pairs):
     def make(company, industry_ids):
@@ -1179,7 +1020,10 @@ def _alike(a, b):
 
 def _wrong_answers(rng, right, texts, count=2):
     """`count` wrong answers from texts, none of which reads like the right
-    answer or like each other: two near-copies would be two right answers."""
+    answer or like each other: two near-copies would be two right answers.
+    They are picked from the texts nearest the right answer in length, so
+    the longest option is the right one only by chance."""
+    texts = sorted(texts, key=lambda t: (abs(len(t) - len(right)), t))[:max(count * 8, 16)]
     picked = rng.sample(texts, count)
     for n, text in enumerate(picked):
         if _alike(text, right) or any(_alike(text, p) for p in picked[:n]):
@@ -1224,10 +1068,8 @@ def _rule_questions(rng, industry_id, index):
                              [str(limit + done), str(left + 10)], f"{limit} − {done} = {left} days left."))
     rng.shuffle(lights)
     rng.shuffle(facts)
-    questions = lights[:2] + facts
-    questions = questions[:5]
-    rng.shuffle(questions)
-    return questions
+    # Two light questions first, so a short lesson still has one of each kind.
+    return lights[:2] + facts + lights[2:]
 
 
 def _rule_story(industry_id, index):
@@ -1242,43 +1084,6 @@ def _rule_story(industry_id, index):
 
 
 # --- Question-bank worlds ------------------------------------------------------
-
-def _weights_for(t, progress):
-    for limit, weights in t.mix:
-        if progress <= limit:
-            return weights
-    return t.mix[-1][1]
-
-
-def _bank_questions(rng, key, count, progress, t):
-    """count questions from a world's bank, harder as the learner goes deeper.
-    About one in four is a quick true-or-false fact."""
-    bank = _BANK[key]
-    weights = _weights_for(t, progress)
-    pool = [q for q in bank["questions"] if weights.get(q[5], 0) > 0] or list(bank["questions"])
-    facts = list(bank["facts"])
-    rng.shuffle(facts)
-    picked = []
-    while len(picked) < count and pool:
-        if facts and rng.random() < 0.25:
-            # True or false at even odds, whatever the bank's mix, so "False"
-            # isn't a safe guess. facts is shuffled: the first of the wanted kind.
-            want = rng.random() < 0.5
-            statement, truth, why = facts.pop(next((n for n, f in enumerate(facts) if f[1] == want), 0))
-            picked.append(_truefalse(statement, truth, why))
-            continue
-        total = sum(weights.get(q[5], 1) for q in pool)
-        roll = rng.uniform(0, total)
-        for i, q in enumerate(pool):
-            roll -= weights.get(q[5], 1)
-            if roll <= 0:
-                break
-        prompt, best, wrong1, wrong2, why, _level = pool.pop(i)
-        picked.append(_choice(rng, prompt, best, [wrong1, wrong2], why))
-    if key in _MATH_WORLDS and picked:
-        picked[rng.randrange(len(picked))] = _money_math(rng, progress)
-    return picked
-
 
 def _bank_story(key):
     return list(_BANK[key]["cards"])
@@ -1367,32 +1172,350 @@ def _money_problem(rng, progress):
                    f"${cost} / ${per} = {answer} items. After that, the machine is making you money.")
 
 
-# --- Owner's Challenge -------------------------------------------------------
+# --- The family tracks' fixed question pools ------------------------------------
+# Each world of a family track is a fixed list of questions (family_pool),
+# built from a seed per track, world and company, cut into lessons of the
+# track's lesson size. No question comes back in a later lesson of the same
+# world, and the level count is the real number of lessons. A world built
+# from the company's own rules (Meet Your Company, Why Rules Matter, the
+# lights and the calendar) has the same number of questions for every
+# company, so every family sees the same level counts.
 
-def _topic_questions(t, w, rng, company, industry_ids, stage, count, progress):
-    if w.key in _BANK:
-        return _bank_questions(rng, w.key, count, progress, t)
-    return _CONTENT[w.key][1](rng, company, industry_ids, stage)[:count]
+def _row_choice(rng, row, company):
+    """A written (question, best, wrong, wrong, why[, level]) row as a question."""
+    prompt, best, wrong1, wrong2, why = (str(part).format(company=company) for part in row[:5])
+    return _choice(rng, prompt, best, [wrong1, wrong2], why)
 
 
-def _final_questions(t, rng, company, industry_ids, stage):
-    """One question each from a random set of the track's topic worlds."""
-    progress = (stage - 1) / max(1, t.final_stages - 1)
-    questions, prompts = [], set()
-    worlds = t.topic_worlds
-    tries = 0
-    while len(questions) < t.final_questions and tries < 200:
-        tries += 1
-        w = rng.choice(worlds)
-        sub = random.Random(rng.random())
-        options = _topic_questions(t, w, sub, company, industry_ids, max(1, int(progress * t.topic_stages)), 3, progress)
-        fresh = [q for q in options if q.prompt not in prompts]
-        if fresh:
-            q = sub.choice(fresh)
+def _rows(rng, rows, company, level=1):
+    return [(_row_choice(rng, row, company), row[5] if len(row) > 5 else level) for row in rows]
+
+
+_DECOY_NAMES = ["Riverside Services", "Maple Street Group", "Blue Lake Company", "Summit Supply Co."]
+
+
+def _unrelated_rules(industry_ids):
+    """Rules from industries the company isn't in (nor of the same kind)."""
+    mine = set(industry_ids)
+    for group in KINDRED:
+        if mine & group:
+            mine |= group
+    return [r for i, rules in CATALOG.items() if i not in mine for r in rules
+            if not any(_same_requirement(r, own) for own in _company_rules(industry_ids))]
+
+
+def _company_items(rng, company, ids):
+    sectors = _sectors(ids) or ["Business"]
+    mine = set(ids)
+    for group in KINDRED:
+        if mine & group:
+            mine |= group
+    others = [INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in mine]
+    if len(others) < 2:  # a company in every industry
+        others = ["Toy making", "Travel booking", "Car washing"]
+    own = _company_rules(ids) or _all_rules()
+    picked = rng.sample(own, 2)
+    strangers = [r.title for r in _unrelated_rules(ids)]
+    if len(strangers) < 4:
+        strangers = ["Front door repainted every year", "Shop sign changed each season",
+                     "Staff photos updated monthly", "Lobby music changed weekly"]
+    items = [
+        (_choice(rng, "What is the name of your family's company?", company,
+                 rng.sample([n for n in _DECOY_NAMES if n != company], 2), f"Your family's company is {company}."), 1),
+        (_choice(rng, f"What kind of work does {company} do?", sectors[0], rng.sample(others, 2),
+                 f"{company} works in {', '.join(s.lower() for s in sectors)}."), 1),
+        (_choice(rng, f"Which of these is a rule {company} really follows?", picked[0].title,
+                 rng.sample(strangers, 2),
+                 f"\"{picked[0].title}\" is one of {company}'s rules. The others are for other kinds of business."), 2),
+        (_choice(rng, f"Which of these checks is on {company}'s own checklist?", picked[1].title,
+                 rng.sample(strangers, 2),
+                 f"\"{picked[1].title}\" is on {company}'s checklist. The others are for other kinds of business."), 2),
+    ]
+    return items + _rows(rng, _basics.COMPANY, company), COMPANY_FACTS + _basics.COMPANY_FACTS
+
+
+def _rules_items(rng, company, ids):
+    rule = rng.choice(_company_rules(ids) or _all_rules())
+    others = [r.cost for r in _unrelated_rules(ids)] or [r.cost for r in _all_rules() if r.cost != rule.cost]
+    items = [
+        (_choice(rng, "What is a fine?", "Money paid as a penalty for breaking a rule",
+                 ["Money paid to renew a permit each year", "Money paid to workers for extra hours"],
+                 "A fine is a penalty. It costs the company money that could have gone to growing the business."), 1),
+        (_choice(rng, f"Here's a real rule for {company}: \"{rule.title}.\" Why does it matter?", rule.cost,
+                 _wrong_answers(rng, rule.cost, others),
+                 "Every rule protects something: people, money or the company's good name."), 3),
+    ]
+    return items + _rows(rng, _basics.RULES, company), RULE_FACTS + _basics.RULE_FACTS
+
+
+LIGHT_QUESTIONS = 7   # light questions per light, green, yellow and red, in the lights world
+YES_NO_LIGHTS = 3
+
+
+def _lights_items(rng, company, ids):
+    own = _company_rules(ids)
+    chosen, used = [], set()
+    for found in ("CLEARED", "WARNING", "BLOCKED"):
+        for pool in (_light_rules(own), _light_rules(_all_rules())):
+            cases = [(r, _light_cases(r)[found]) for r in pool if found in _light_cases(r)]
+            rng.shuffle(cases)
+            for rule, value in cases:
+                if sum(1 for c in chosen if c[2] == found) >= LIGHT_QUESTIONS:
+                    break
+                if (rule.title, found) not in used:
+                    used.add((rule.title, found))
+                    chosen.append((rule, value, found))
+    items = [(_light_question(rule, value, found), 2) for rule, value, found in chosen]
+    yes_no = [r for r in own if r.kind in ("required", "forbidden")]
+    yes_no += [r for r in _all_rules() if r.kind in ("required", "forbidden") and r not in yes_no]
+    for n, rule in enumerate(yes_no[:YES_NO_LIGHTS]):
+        items.append((_yes_no_light(rule, n % 2 == 0), 2))
+    return items, []
+
+
+DAYS_LEFT_QUESTIONS = 6
+LATE_QUESTIONS = 4
+WEEKDAY_QUESTIONS = 4
+
+
+def _calendar_items(rng, company, ids):
+    pool = _since_rules(_company_rules(ids))
+    pool = pool + [r for r in _since_rules(_all_rules()) if r not in pool]
+    items, prompts = [], set()
+
+    def add(q, level=2):
+        if q.prompt not in prompts:
             prompts.add(q.prompt)
-            questions.append(q)
-    return questions
+            items.append((q, level))
 
+    n = 0
+    while sum(1 for q, _ in items if "How many days are left" in q.prompt) < DAYS_LEFT_QUESTIONS:
+        rule = pool[n % len(pool)]
+        n += 1
+        limit = int(rule.limit)
+        done = rng.randint(1, limit - 1)
+        left = limit - done
+        wrong = [w for w in {limit + done, done, abs(left - 7) or left + 3, left + 10} if w != left and w >= 0]
+        add(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done {done} days"
+                         " ago. How many days are left?", str(left), [str(w) for w in sorted(wrong)[:2]],
+                    f"{limit} − {done} = {left} days left."))
+    for k in range(LATE_QUESTIONS):
+        rule = pool[(n + k) % len(pool)]
+        limit = int(rule.limit)
+        late = k % 2 == 0
+        ago = limit + rng.randint(1, 20) if late else rng.randint(1, limit - 1)
+        add(_choice(rng, f"\"{rule.title}\" must be done every {limit} days. It was last done {ago} days ago."
+                         " Is it late?", "Yes, it's overdue" if late else "No, there's still time",
+                    ["No, there's still time" if late else "Yes, it's overdue"],
+                    f"{ago} days is {'more' if late else 'less'} than {limit} days."))
+    starts = rng.sample(range(7), WEEKDAY_QUESTIONS)
+    for k, start in enumerate(starts):
+        ahead = 2 + k + rng.randint(0, 3)
+        due_day = WEEKDAYS[(start + ahead) % 7]
+        add(_choice(rng, f"Today is {WEEKDAYS[start]}. A job is due in {ahead} days. Which day is that?", due_day,
+                    rng.sample([d for d in WEEKDAYS if d != due_day], 2),
+                    f"Count forward {ahead} days from {WEEKDAYS[start]} and you land on {due_day}."), 1)
+    add(_choice(rng, "When does OmniArmor send the first reminder before a deadline?", "30 days before",
+                ["7 days before", "On the day it's due"],
+                "Reminders go out 30, 7 and 1 day before, on the day, and every week if it's late."), 1)
+    add(_choice(rng, "After a job is finished, someone presses \"Done today.\" What happens?",
+                "The countdown starts over for next time",
+                ["The check is removed from the list", "The reminder emails stop for good"],
+                "Most jobs repeat, like a yearly checkup. Done today starts the next countdown."), 1)
+    return items + _rows(rng, _basics.CALENDAR, company), _basics.CALENDAR_FACTS
+
+
+PROFIT_QUESTIONS = 4
+FINE_QUESTIONS = 3
+
+
+def _money_items(rng, company, ids):
+    items = []
+    for k in range(PROFIT_QUESTIONS):
+        scale = 1 + k  # each one a size bigger, so no two are the same
+        revenue = rng.randrange(8000 * scale, 20000 * scale + 1, 500 * scale)
+        costs = rng.randrange(3000 * scale, revenue - 1000 * scale, 500 * scale)
+        profit = revenue - costs
+        items.append((_choice(rng, f"Pretend {company} earned {money(revenue)} one month and spent {money(costs)}."
+                                   " What is the profit?", money(profit), [money(revenue + costs), money(costs)],
+                              f"Profit = revenue − costs: {money(revenue)} − {money(costs)} = {money(profit)}."),
+                      1 + k // 2))
+    for k in range(FINE_QUESTIONS):
+        # A different fine each time, so no two questions are the same.
+        fine = (500, 1000, 1500, 2000)[(k + rng.randrange(4)) % 4] * (1 + k) + 100 * k
+        profit = rng.randrange(3000, 12001, 500) * (1 + k)
+        items.append((_choice(rng, f"{company} made a profit of {money(profit)}, then paid a {money(fine)} fine."
+                                   " How much profit is left?", money(profit - fine),
+                              [money(profit + fine), money(fine)],
+                              f"A fine is a surprise cost: {money(profit)} − {money(fine)} = {money(profit - fine)}."),
+                      2))
+    fix, penalty = rng.choice([100, 200, 300]), rng.choice([1000, 2500, 5000])
+    items.append((_choice(rng, "Which costs less?", f"Fixing a problem early for {money(fix)}",
+                          [f"Paying a fine of {money(penalty)} later"],
+                          "Preventing problems is almost always cheaper than paying for them later."), 1))
+    return items + _rows(rng, _basics.MONEY, company), _basics.MONEY_FACTS
+
+
+_TEAM_ROWS = [
+    ("Why does {company} keep a record of every change?", "To show who did what, and when",
+     "To catch people who make small slips", "Because inspectors type it in for you",
+     "Records help the team stay honest and show inspectors that the company did its job.", 1),
+    ("A worker tells you about a safety problem. What should a good leader do?", "Thank them and get it fixed",
+     "Wait to see whether anyone gets hurt", "Ask them to keep it quiet for now",
+     "Leaders want to hear about problems early, so people stay safe.", 1),
+    ("Who is the best one to ask when a rule is confusing?", "An expert, like a lawyer",
+     "A friend who once worked in the business", "Whoever on the team makes the best guess",
+     "Smart owners ask experts. Nobody knows everything.", 2),
+    ("What's the best way to treat customers?", "Honestly and fairly", "Extra nicely when they spend a lot",
+     "The same way rival shops treat theirs", "Trust is a company's most valuable treasure.", 1),
+]
+
+
+def _team_items(rng, company, ids):
+    return _rows(rng, _TEAM_ROWS + _basics.TEAM, company), TEAM_FACTS + _basics.TEAM_FACTS
+
+
+def _words_items(rng, company, ids):
+    words = list(GLOSSARY)
+    rest = words[16:]
+    rng.shuffle(rest)
+    meanings = [m for _, m in words]
+    items = []
+    for n, (word, meaning) in enumerate(words[:16] + rest):
+        wrong = rng.sample([m for m in meanings if m != meaning], 2)
+        items.append((_choice(rng, f"What does \"{word}\" mean?", meaning, wrong, f"{word}: {meaning}"),
+                      1 if n < 16 else 2))
+    return items, []
+
+
+_SCENARIO_POOLS = {"talk": PRO_TALK, "ownit": OWN_IT, "grit": GRIT, "respect": RESPECT, "hiring": HIRING,
+                   "toughcalls": TOUGH_CALLS, "customers": CUSTOMERS, "compete": COMPETE, "moves": MOVES}
+MATH_QUESTIONS = 3   # generated money problems in each math world
+
+
+def _bank_items(rng, key, company):
+    bank = _BANK[key]
+    items = _rows(rng, bank["questions"], company)
+    if key in _MATH_WORLDS:
+        prompts = {q.prompt for q, _ in items}
+        progress = 0.0
+        while sum(1 for q, _ in items if q.prompt not in prompts) < MATH_QUESTIONS:
+            q = _money_math(rng, progress)
+            progress = min(1.0, progress + 0.3)
+            if q.prompt not in prompts and all(q.prompt != p.prompt for p, _ in items):
+                items.append((q, 2))
+    return items, list(bank["facts"])
+
+
+_WORLD_ITEMS = {"company": _company_items, "rules": _rules_items, "lights": _lights_items,
+                "calendar": _calendar_items, "money": _money_items, "team": _team_items, "words": _words_items}
+
+
+def _world_items(w, rng, company, ids):
+    """A world's questions, each with its level (1 easy to 3 hard), and its
+    true-or-false facts."""
+    if w.key in _BANK:
+        return _bank_items(rng, w.key, company)
+    if w.key in _WORLD_ITEMS:
+        return _WORLD_ITEMS[w.key](rng, company, list(ids))
+    return [(_row_choice(rng, row, company), 1) for row in _SCENARIO_POOLS[w.key]], []
+
+
+def _lessons(choices, facts, size, lesson):
+    """Up to size items in lessons of `lesson`: one true-or-false fact in
+    each lesson while there are facts, the rest multiple choice, in order.
+    Whole lessons only."""
+    items, choices, facts = [], list(choices), list(facts)
+    while len(items) < size and (choices or facts):
+        take = lesson - 1 if facts else lesson
+        part = choices[:take]
+        del choices[:take]
+        if facts:
+            part.append(facts.pop(0))
+        items.extend(part)
+    items = items[:size]
+    return items[:len(items) // lesson * lesson]
+
+
+@functools.lru_cache(maxsize=4096)
+def _family_pool(track_key, world_number, company, ids):
+    t = TRACKS[track_key]
+    w = WORLDS[world_number]
+    rng = random.Random(f"family:{track_key}:{w.key}:{company}:{','.join(map(str, ids))}")
+    items, facts = _world_items(w, rng, company, ids)
+    rng.shuffle(items)
+    # Easy questions first; Summit and Titan put the hard ones first.
+    hard_first = t.mix is _HARD_MIX
+    items.sort(key=lambda item: -item[1] if hard_first else item[1])
+    facts = list(facts)
+    rng.shuffle(facts)
+    tf = [_truefalse(*f) for f in _balanced(facts)]
+    lesson = t.min_questions
+    return tuple(_lessons([q for q, _ in items], tf, FAMILY_MAX_LESSONS * lesson, lesson))
+
+
+def family_pool(t, world_number, company, industry_ids):
+    """A family world's fixed list of questions, in lesson order: lesson n is
+    items (n-1)*size to n*size, size being the track's lesson size."""
+    return _family_pool(t.key, world_number, company, tuple(industry_ids))
+
+
+# The company used to count each world's lessons: every company gets the same
+# number (tests/test_quiz_fairness.py checks it for every industry).
+_SAMPLE_COMPANY = ("Sample Company", (1,))
+
+
+def family_stages(t, world_number):
+    return len(family_pool(t, world_number, *_SAMPLE_COMPANY)) // t.min_questions
+
+
+@functools.lru_cache(maxsize=1024)
+def _final_pool(track_key, company, ids):
+    """The Owner's Challenge's questions: final_stages lessons of
+    final_questions, drawn from the track's worlds without a repeat."""
+    t = TRACKS[track_key]
+    rng = random.Random(f"final:{track_key}:{company}:{','.join(map(str, ids))}")
+    by_world = [list(family_pool(t, n, company, ids)) for n in t.topics]
+    for questions in by_world:
+        rng.shuffle(questions)
+    picked, prompts = [], set()
+    wanted = t.final_stages * t.final_questions
+    while len(picked) < wanted and any(by_world):
+        for questions in by_world:
+            while questions:
+                q = questions.pop()
+                if q.prompt not in prompts:
+                    prompts.add(q.prompt)
+                    picked.append(q)
+                    break
+    # World by world, so each lesson mixes worlds; then shuffled within the whole.
+    rng.shuffle(picked)
+    return tuple(picked[:wanted])
+
+
+@functools.lru_cache(maxsize=None)
+def _industry_pool(industry_id):
+    """Each rule's questions in a Rule Quest, in rule order."""
+    return tuple(tuple(_rule_questions(random.Random(f"rule:{industry_id}:{index}"), industry_id, index))
+                 for index in range(1, len(CATALOG[industry_id]) + 1))
+
+
+def _industry_lesson(t, industry_id, stage):
+    return _industry_pool(industry_id)[_rule_index(industry_id, stage) - 1][:t.industry_questions]
+
+
+def level_exists(t, level):
+    """Whether a stored level id is a lesson the track has now. Levels from
+    before 1.11.0, when worlds had 50 to 300 repeating stages, stay in the
+    database but don't count."""
+    if level // 1_000_000 != t.index:
+        return False
+    w = world_for(t, level % 1_000_000 // 1000)
+    stage = level % 1000
+    return w is not None and t.has(w) and 1 <= stage <= t.stages(w)
+
+
+# --- Owner's Challenge -------------------------------------------------------
 
 def _final_story(t, company):
     if t.key == CLASSROOM_KEY:
@@ -1406,23 +1529,14 @@ def _final_story(t, company):
     ]
 
 
+# The lesson cards of the first worlds (the question-bank worlds have theirs
+# in academy_bank).
 _CONTENT = {
-    "company": (_company_story, _company_questions),
-    "words": (_words_story, _words_questions),
-    "rules": (_rules_story, _rules_questions),
-    "lights": (_lights_story, _lights_questions),
-    "calendar": (_calendar_story, _calendar_questions),
-    "money": (_money_story, _money_questions),
-    "talk": (_talk_story, _talk_questions),
-    "team": (_team_story, _team_questions),
-    "ownit": (_ownit_story, _scenarios(OWN_IT)),
-    "grit": (_grit_story, _scenarios(GRIT)),
-    "respect": (_respect_story, _scenarios(RESPECT)),
-    "hiring": (_hiring_story, _scenarios(HIRING)),
-    "toughcalls": (_toughcalls_story, _scenarios(TOUGH_CALLS)),
-    "customers": (_customers_story, _scenarios(CUSTOMERS)),
-    "compete": (_compete_story, _scenarios(COMPETE)),
-    "moves": (_moves_story, _scenarios(MOVES)),
+    "company": _company_story, "words": _words_story, "rules": _rules_story, "lights": _lights_story,
+    "calendar": _calendar_story, "money": _money_story, "talk": _talk_story, "team": _team_story,
+    "ownit": _ownit_story, "grit": _grit_story, "respect": _respect_story, "hiring": _hiring_story,
+    "toughcalls": _toughcalls_story, "customers": _customers_story, "compete": _compete_story,
+    "moves": _moves_story,
 }
 
 
@@ -1435,10 +1549,6 @@ def story(t, world_number, stage, company, industry_ids):
     reminder card so kids get straight to the challenge."""
     w = WORLDS[world_number]
     if w.kind == "industry":
-        if stage > len(CATALOG[w.industry_id]):
-            brand = INDUSTRIES[w.industry_id]["brand"]
-            return [(f"{brand} review", "This stage mixes questions from several of the industry's rules. "
-                                        "Remember the lights, the costs and the fixes!")]
         return _rule_story(w.industry_id, _rule_index(w.industry_id, stage))
     if t.key == CLASSROOM_KEY:
         company = CLASS_BUSINESS
@@ -1447,87 +1557,35 @@ def story(t, world_number, stage, company, industry_ids):
     elif w.key in _BANK:
         cards = _bank_story(w.key)
     else:
-        cards = _CONTENT[w.key][0](company, list(industry_ids))
+        cards = _CONTENT[w.key](company, list(industry_ids))
     if stage == 1:
         return cards
-    if is_boss(w, stage):
-        return [(f"Stage {stage}: boss round!", "More questions than usual, mixed from this world and the ones before. "
+    if is_boss(t, w, stage):
+        return [(f"Stage {stage}: boss round!", "The last lesson of this world, with its highest pass mark. "
                                                 "Take your time and read carefully.")]
     reminder = cards[(stage - 2) % len(cards)]
     return [(f"Stage {stage}: remember", f"{reminder[0]}: {reminder[1]}")]
 
 
-def _industry_quiz(t, rng, w, stage):
-    rules = len(CATALOG[w.industry_id])
-    wanted = t.industry_questions
-    if stage <= rules:
-        questions = _rule_questions(rng, w.industry_id, stage)[:wanted]
-        order = [i for i in range(1, rules + 1) if i != stage]
-    else:
-        # Review stages: questions from several of the industry's rules.
-        questions = []
-        order = list(range(1, rules + 1))
-    rng.shuffle(order)
-    prompts = {q.prompt for q in questions}
-    for index in order * 2:
-        if len(questions) >= wanted:
-            break
-        options = [q for q in _rule_questions(random.Random(rng.random()), w.industry_id, index)
-                   if q.prompt not in prompts]
-        if options:
-            q = rng.choice(options)
-            q.review = stage <= rules
-            prompts.add(q.prompt)
-            questions.append(q)
-    rng.shuffle(questions)
-    return questions
-
-
-def _fill(questions, prompts, wanted, source, tries=60):
-    """Adds questions from source() until there are enough, skipping repeats."""
-    while len(questions) < wanted and tries > 0:
-        tries -= 1
-        for q in source():
-            if len(questions) >= wanted:
-                break
-            if q.prompt not in prompts:
-                prompts.add(q.prompt)
-                questions.append(q)
-
-
 def quiz(t, world_number, stage, company, industry_ids, seed):
-    """The questions for one attempt. The same seed always gives the same quiz.
-    Deeper stages ask more and harder questions and mix in review from earlier
-    worlds; every tenth stage is a boss round with extra review."""
+    """The questions for one attempt: the lesson's fixed questions, in an
+    order and with options in an order from the seed, so the same seed always
+    gives the same quiz and a retry asks the same questions shuffled."""
     w = WORLDS[world_number]
     rng = random.Random(seed)
-    ids = list(industry_ids)
     if t.key == CLASSROOM_KEY:
         return _classroom_quiz(w, stage, rng)
+    ids = tuple(industry_ids)
     if w.kind == "industry":
-        return _industry_quiz(t, rng, w, stage)
-    if w.kind == "final":
-        return _final_questions(t, rng, company, ids, stage)
-    wanted = question_count(t, w, stage)
-    progress = (stage - 1) / max(1, t.topic_stages - 1)
-    reviews = 3 if is_boss(w, stage) else (1 if wanted > 5 else 0)
-    questions, prompts = [], set()
-    _fill(questions, prompts, wanted - reviews,
-          lambda: _topic_questions(t, w, random.Random(rng.random()), company, ids, stage, 5, progress))
-    position = t.topics.index(w.number)
-    earlier = [WORLDS[n] for n in t.topics[:position]]
-    review_from = earlier if len(earlier) >= 3 else [WORLDS[n] for n in t.topics if n != w.number]
-    start = len(questions)
-
-    def review():
-        source = rng.choice(review_from)
-        return _topic_questions(t, source, random.Random(rng.random()), company, ids, stage, 2, progress)
-    _fill(questions, prompts, wanted, review)
-    for q in questions[start:]:
-        q.review = True
-    # A world with few distinct questions tops up from its own pool again.
-    _fill(questions, prompts, wanted,
-          lambda: _topic_questions(t, w, random.Random(rng.random()), company, ids, stage, 5, progress))
+        lesson = _industry_lesson(t, w.industry_id, stage)
+    elif w.kind == "final":
+        size = t.final_questions
+        lesson = _final_pool(t.key, company, ids)[(stage - 1) * size:stage * size]
+    else:
+        size = t.min_questions
+        lesson = family_pool(t, w.number, company, ids)[(stage - 1) * size:stage * size]
+    questions = [_fresh(q, rng) for q in lesson]
+    rng.shuffle(questions)
     return questions
 
 
@@ -1571,10 +1629,11 @@ def clean_friend_code(text):
 
 
 def duel_quiz(world_number, stage, seed):
-    w = WORLDS[world_number]
+    """Five questions from a world about running any business, the same for
+    both players (a shared seed)."""
     rng = random.Random(seed)
-    progress = (stage - 1) / 49
-    return _topic_questions(TRACKS["trailblazer"], w, rng, DUEL_COMPANY, [], stage, DUEL_QUESTIONS, progress)
+    pool = family_pool(TRACKS["trailblazer"], world_number, DUEL_COMPANY, ())
+    return [_fresh(q, rng) for q in rng.sample(pool, min(DUEL_QUESTIONS, len(pool)))]
 
 
 # --- Join codes: a kid's own device ----------------------------------------------
@@ -1608,59 +1667,69 @@ CLASS_BUSINESS = "Sunny Cup Lemonade"
 LESSON_QUESTIONS = 5
 CLASS_MAX_STAGES = 8
 LESSON_MINUTES = 3        # about how long one lesson takes, for the teacher guide
+# Who the Classroom track is written for: small-number money (making change,
+# profit as revenue minus costs), simple percents in the pricing and budget
+# worlds, and reading at about a fourth-grade level.
+CLASS_GRADES = "Grades 4–6"
+CLASS_AGES = "ages 9 to 12"
 
 # (prompt, best answer, wrong answer, wrong answer, why)
 _STAND_QUESTIONS = [
-    ("What is the name of your class's pretend business?", CLASS_BUSINESS, "Rocket Repair Co.", "Blue Lake Toys",
+    ("What is the name of your class's pretend business?", CLASS_BUSINESS, "Sunny Day Snacks", "Lemon Lane Drinks",
      f"Your class runs a pretend lemonade stand called {CLASS_BUSINESS}."),
-    (f"What does {CLASS_BUSINESS} sell?", "Cups of lemonade", "Bike repairs", "Haircuts",
+    (f"What does {CLASS_BUSINESS} sell?", "Cups of lemonade", "Fresh-baked cookies", "Bottles of iced tea",
      f"{CLASS_BUSINESS} is a lemonade stand: it sells cups of lemonade."),
-    ("What is a business?", "People who make or do something that others pay for",
-     "A park where anyone can play for free", "A club where friends meet only to play games",
-     "A business makes products or does work that customers pay for."),
-    (f"Who are {CLASS_BUSINESS}'s customers?", "People who buy a cup of lemonade", "The lemons in the basket",
-     "Only the people who work at the stand", "Customers are the people who buy from a business."),
-    ("What is a product?", "Something a business makes or sells, like a cup of lemonade",
-     "The line of people waiting", "The sign on the front of the stand",
-     "A product is a thing customers can buy."),
-    ("What is a service?", "Work a business does for someone, like washing a car", "A box of lemons",
-     "A jar of coins", "A service is work done for a customer, not a thing to take home."),
-    ("Which of these is a service, not a product?", "Walking a neighbor's dog", "A cup of lemonade", "A cookie",
-     "Walking a dog is work done for someone. Lemonade and cookies are products."),
+    ("What is a business?", "People who make or do something others pay for",
+     "A group that gives things away to help people", "Any place where people go to work",
+     "A business makes products or does work that customers pay for. Many groups help people for free, and"
+     " those are usually charities."),
+    (f"Who are {CLASS_BUSINESS}'s customers?", "People who buy a cup", "The students who run the stand",
+     "The store that sells the stand its lemons", "Customers are the people who buy from a business."),
+    ("What is a product?", "Something a business sells, like lemonade", "Work done for someone, like a car wash",
+     "The money left after paying for supplies",
+     "A product is a thing customers can buy. Work done for someone is a service."),
+    ("What is a service?", "Work a business does for someone", "Something a customer takes home",
+     "A list of the prices a business charges",
+     "A service is work done for a customer, like washing a car, not a thing to take home."),
+    ("Which of these is a service, not a product?", "Walking a neighbor's dog", "A box of homemade cookies",
+     "A cup of fresh lemonade", "Walking a dog is work done for someone. Lemonade and cookies are products."),
     ("Why do customers come back to a business?", "They liked what they got and how they were treated",
-     "The stand has the biggest sign on the street", "Someone told them they have to come back",
+     "The stand is the closest one to their house", "The stand has the brightest, biggest sign",
      "Good products and kind service make customers want to return."),
-    ("Who makes the big decisions for a business?", "The owner or owners", "Whoever walks by first",
-     "The newest customer of the day", "Owners decide what the business does and how it does it."),
-    ("In a class business, who are the owners?", "The whole class, working together", "Only the tallest student",
-     "Nobody: a business has no owners", "In a class business, everyone shares the work and the decisions."),
-    ("What do workers at a business do?", "The jobs that keep it running, like pouring and selling",
-     "Only watch the others work", "Buy everything the business sells",
-     "Workers do the jobs that make the business run."),
-    ("Before opening the stand, what should the class decide first?",
-     "What to sell, the price, and who does each job", "What color everyone's socks should be",
-     "Nothing: just open and see what happens", "A little planning makes opening day go smoothly."),
-    ("A customer says the lemonade is too sour. What's the best thing to do?",
-     "Thank them and try a little more sugar in the next batch", "Tell them they're wrong about their own taste",
-     "Ignore it and hope nobody else says so", "Listening to customers helps a business get better."),
+    ("Who makes the big decisions for a business?", "The owners", "The customers who buy the most",
+     "Whoever has worked there the longest", "Owners decide what the business does and how it does it."),
+    ("In a class business, who are the owners?", "The whole class, working together", "Only the student who is in charge",
+     "The teacher, since it's the teacher's class",
+     "In a class business, everyone shares the work and the decisions, with the teacher's help."),
+    ("What do workers at a business do?", "The jobs that keep it running", "Buy most of what the business sells",
+     "Decide every price and every rule alone",
+     "Workers do the jobs that make the business run, like pouring and selling."),
+    ("Before opening the stand, what should the class decide first?", "What to sell, the price and who does each job",
+     "Which songs to play while the stand is open", "How to spend the money it will make",
+     "A little planning makes opening day go smoothly. Spending comes after you know what you made."),
+    ("A customer says the lemonade is too sour. What's the best thing to do?", "Thank them and adjust the next batch",
+     "Explain that the recipe is already right", "Give them a free cup and change nothing",
+     "Listening to customers helps a business get better."),
     ("Why does a business need customers?", "Their money pays for supplies and keeps it going",
-     "Customers do all the work for free", "It doesn't: a business works fine with none",
+     "They help the business decide on its name", "They tell workers which jobs to do",
      "Without customers paying, a business can't buy supplies or keep going."),
-    ("What is a supplier?", "A business that sells you what you need, like lemons and cups",
-     "A customer who buys a lot", "The person who counts the money",
-     "Suppliers sell a business the things it needs to make its products."),
-    ("Which is a supply the stand needs?", "Paper cups", "A swimming pool", "A fire truck",
-     "A lemonade stand needs cups, lemons, sugar, water and ice."),
-    ("What does it mean to \"open for business\"?", "Start selling to customers", "Unlock the classroom door",
-     "Hand out free samples forever", "Opening for business means starting to sell."),
+    ("What is a supplier?", "A business that sells you what you need", "A customer who buys a lot every week",
+     "The person who counts the money at the end",
+     "Suppliers sell a business the things it needs, like lemons and cups."),
+    ("Which is a supply the stand needs?", "Paper cups", "A cash register with a scanner", "A big menu board with lights",
+     "A lemonade stand needs cups, lemons, sugar, water and ice. Fancy equipment can wait."),
+    ("What does it mean to \"open for business\"?", "Start selling to customers", "Set up the table and the sign",
+     "Buy the supplies you'll need",
+     "Setting up and buying supplies come first. Opening for business means starting to sell."),
     ("Where is a good spot for a lemonade stand?", "Where lots of people walk by on a warm day",
-     "Inside a closet nobody opens", "Far from anyone, late at night",
+     "On a quiet street with very little traffic", "In the shade behind a quiet building",
      "A busy, sunny spot brings more thirsty customers."),
-    (f"What could make {CLASS_BUSINESS} different from another stand?",
-     "Something special, like fresh lemons or a friendly smile", "Nothing: every stand is exactly the same",
-     "Hiding the price from customers", "Being special at something gives customers a reason to choose you."),
-    ("Which is a good goal for the stand?", "Sell 50 cups on Saturday", "Never talk to customers",
-     "Spend all the money on stickers", "A good goal is clear, so you know when you've reached it."),
+    (f"What could make {CLASS_BUSINESS} different from another stand?", "Something special, like fresh lemons",
+     "Charging the same price as every other stand", "Using the same sign and cups as the others",
+     "Being special at something gives customers a reason to choose you."),
+    ("Which is a good goal for the stand?", "Sell 50 cups on Saturday", "Sell a lot of lemonade someday",
+     "Be the best lemonade stand in the whole world",
+     "A good goal is clear and can be measured, so you know when you've reached it."),
 ]
 # (statement, is it true, why)
 _STAND_FACTS = [
@@ -1678,59 +1747,64 @@ _STAND_FACTS = [
 
 _STAND_RULES = [
     ("Why do businesses have rules to follow?", "To keep people safe and treat everyone fairly",
-     "To make every job slow and boring", "So owners never have to work",
+     "To make sure every business sells the same things", "So the town can collect more money",
      "Rules are written after people learn what keeps others safe."),
-    ("Before pouring lemonade, what should every worker do?", "Wash their hands with soap", "Lick their fingers",
-     "Wipe their hands on their shirt", "Clean hands keep germs out of the lemonade."),
+    ("Before pouring lemonade, what should every worker do?", "Wash their hands with soap",
+     "Rinse their hands with water only", "Wipe their hands on a napkin",
+     "Soap and water wash germs away. Water alone or a napkin doesn't."),
     ("Why should the lemonade stay in a cooler with ice?", "Germs grow faster in warm drinks",
-     "Warm lemonade floats away", "Ice makes the cups heavier to carry",
+     "Cold lemonade tastes a bit sweeter", "Ice makes each pitcher last longer",
      "Cold drinks stay safe longer. Warm ones let germs grow."),
     ("A cup fell on the ground. What should you do with it?", "Throw it away and use a clean one",
-     "Brush it off and serve it", "Give it to the next customer anyway",
-     "A dropped cup isn't clean anymore. Use a new one."),
+     "Wipe it off with a napkin and use it", "Rinse it in the cooler's ice water",
+     "A dropped cup isn't clean anymore, and the cooler water would spread the germs. Use a new one."),
     ("A customer asks if the cookies have nuts. What's the right move?", "Check the label and tell them honestly",
-     "Say no so they buy one", "Guess: it's probably fine",
+     "Say they probably don't, since most don't", "Tell them to pick a different snack",
      "Nuts can make some people very sick. Always check and tell the truth."),
-    ("What is a food allergy?", "When someone's body reacts badly to a food, like nuts", "A favorite food",
-     "A kind of lemonade", "An allergy can be serious, so food sellers say what's in their food."),
-    ("Who checks that real food businesses follow safety rules?", "Inspectors", "The customers' dogs",
-     "Nobody ever checks", "Inspectors visit food businesses to make sure the rules are followed."),
-    ("What is a fine?", "Money a business pays as a penalty for breaking a rule", "A prize for doing well",
-     "A tip from a happy customer", "A fine costs money that could have gone to growing the business."),
-    ("Why do some real stands need a permit?", "It's permission from the town to sell there",
-     "It's a coupon for free lemons", "It's a list of the stand's jokes",
+    ("What is a food allergy?", "When someone's body reacts badly to a food",
+     "When someone doesn't like the taste of a food", "When a food has gone bad from sitting out",
+     "An allergy can be serious, so food sellers say what's in their food."),
+    ("Who checks that real food businesses follow safety rules?", "Inspectors", "The town's mayor",
+     "The business's own customers", "Inspectors visit food businesses to make sure the rules are followed."),
+    ("What is a fine?", "Money paid as a penalty for breaking a rule", "Money paid to the town for a permit",
+     "Money a customer adds as a thank-you",
+     "A fine costs money that could have gone to growing the business. A thank-you is a tip."),
+    ("Why do some real stands need a permit?", "It's the town's permission to sell there",
+     "It's a receipt for the supplies", "It's a sign that the lemonade tastes good",
      "A permit says the town has agreed the stand can sell in that spot."),
     ("You notice a loose tablecloth that someone could trip on. What should you do?",
-     "Fix it or tell a grown-up right away", "Leave it until tomorrow", "Hide it under a box",
-     "Fixing a small problem early stops someone getting hurt."),
+     "Fix it or tell a grown-up right away", "Warn customers to watch their step",
+     "Wait until the stand closes, then fix it", "Fixing a small problem early stops someone getting hurt."),
     ("Why write down when the cooler was last cleaned?", "So everyone knows it was done, and when",
-     "Because writing is a punishment", "To fill up the notebook",
-     "A written record shows the work was done."),
-    ("What should you do if you're not sure about a rule?", "Ask a grown-up or someone who knows",
-     "Make up your own rule", "Just guess and hope", "Asking is the smart way to get it right."),
+     "So the teacher can grade the cleaning", "So nobody has to clean it again",
+     "A written record shows the work was done and when it's due again."),
+    ("What should you do if you're not sure about a rule?", "Ask a grown-up who knows",
+     "Do what the last group did", "Choose the quickest way",
+     "Asking is the smart way to get it right."),
     ("The ice ran out and the lemonade is getting warm. What's the safest choice?",
-     "Stop selling until there's more ice", "Keep selling and don't mention it", "Add warm water to stretch it",
-     "Safety comes before sales. Wait until the drinks are cold again."),
+     "Stop selling until there's more ice", "Sell the warm lemonade at a lower price",
+     "Sell it quickly before it gets warmer", "Safety comes before sales. Wait until the drinks are cold again."),
     ("Why should the stand always give the right change?", "It's honest and keeps customers' trust",
-     "Customers never count it", "A little short doesn't matter",
+     "The teacher checks the cash box later", "It makes the line move faster",
      "Honest change shows customers they can trust you."),
     ("The sign says \"Fresh-squeezed\", but the lemonade is made from a powder. Is that OK?",
-     "No: signs should tell the truth", "Yes, nobody can taste the difference", "Yes, if the cups are pretty",
+     "No: signs should tell the truth", "Yes, if it tastes just as good", "Yes, if the price is low",
      "Signs and ads must be honest about what you sell."),
-    ("Rules for a business are a bit like...", "The rules of a game, which keep it fair and safe",
-     "Secrets only the owner knows", "Tips you can skip when you're busy",
-     "Like game rules, business rules work because everyone follows them."),
-    ("When should safety rules be followed?", "Every day, even on busy days", "Only when an inspector is watching",
-     "Only on the first day", "Accidents can happen any day, so rules count every day."),
+    ("Rules for a business are a bit like...", "The rules of a game", "A list of tips you can skip",
+     "Suggestions from friends",
+     "Like game rules, business rules keep things fair and safe, and they work because everyone follows them."),
+    ("When should safety rules be followed?", "Every day, even busy ones", "Mostly when an inspector visits",
+     "On the first day, until everyone knows them",
+     "Accidents can happen any day, so rules count every day."),
     ("Why keep raw eggs away from snacks that are ready to eat?", "Germs from raw food can spread to other food",
-     "Eggs and snacks don't get along", "It only makes the table look tidier",
+     "The eggs might crack if they're too close", "Raw eggs make snacks taste different",
      "Keeping raw food apart stops germs from spreading."),
-    ("What's a good way to keep the stand's area safe?", "Keep the walkway clear so nobody trips",
-     "Stack boxes in the walkway", "Run around with full pitchers",
-     "A clear, tidy space keeps customers and workers safe."),
-    ("If someone gets hurt at the stand, what should you do first?", "Get a grown-up to help right away",
-     "Keep selling and hope it's fine", "Laugh it off",
-     "When someone is hurt, getting help comes first."),
+    ("What's a good way to keep the stand's area safe?", "Keep the walkway clear",
+     "Stack spare boxes beside the table", "Put the cooler where customers walk",
+     "A clear, tidy walkway keeps customers and workers from tripping."),
+    ("If someone gets hurt at the stand, what should you do first?", "Get a grown-up right away",
+     "Find a bandage and fix it yourself", "Finish serving the customer first",
+     "When someone is hurt, getting a grown-up's help comes first."),
 ]
 _STAND_RULE_FACTS = [
     ("Washing hands with soap helps stop germs from spreading.", True,
@@ -1748,14 +1822,14 @@ _STAND_RULE_FACTS = [
 _STAND_MONEY = [
     (f"{CLASS_BUSINESS} sold 10 cups at $1 each. How much money came in?", "$10", "$1", "$11",
      "10 cups × $1 = $10. That's the stand's revenue: all the money customers paid."),
-    ("What is revenue?", "All the money customers pay the business", "Money the business spends",
-     "The number of lemons left", "Revenue is the money that comes in from sales."),
-    ("What is a cost?", "Money the business spends, like on lemons and cups", "Money customers pay it",
-     "How long the line is", "Costs are what a business pays for so it can sell."),
+    ("What is revenue?", "All the money customers pay", "The money left after paying for supplies",
+     "The money spent on lemons and cups", "Revenue is all the money that comes in from sales."),
+    ("What is a cost?", "Money the business spends", "Money customers pay the business",
+     "Money saved for next week", "Costs are what a business pays for, like lemons and cups, so it can sell."),
     ("The stand took in $20 and spent $8 on lemons, sugar and cups. What was the profit?", "$12", "$28", "$8",
      "Profit = revenue − costs: $20 − $8 = $12."),
-    ("What is profit?", "The money left over after paying all the costs", "All the money that came in",
-     "The price of one cup", "Profit is what's left once the costs are paid."),
+    ("What is profit?", "The money left after paying the costs", "All the money that came in",
+     "The price of one cup of lemonade", "Profit is what's left once the costs are paid."),
     ("Lemons cost more this week, and the price per cup stays the same. What happens to the profit?",
      "It goes down", "It goes up", "It stays exactly the same",
      "Higher costs with the same price leave less money over."),
@@ -1764,35 +1838,35 @@ _STAND_MONEY = [
     ("A customer pays with $5 for 2 cups at $1 each. How much change do they get?", "$3", "$2", "$4",
      "2 cups cost $2. $5 − $2 = $3 in change."),
     ("Why might the stand lower its price on a chilly day?", "Fewer people want cold drinks, so a deal can help",
-     "Lemons are free on chilly days", "Prices always drop at noon",
+     "Lemons always cost less on chilly days", "Customers expect lower prices in the morning",
      "When fewer people are buying, a lower price can bring more customers."),
-    ("What could the class do with the stand's profit?", "Save some, buy supplies, or give to a good cause",
-     "Nothing: profit must be thrown away", "Spend it before counting it",
-     "Profit can be saved, used to grow, or shared."),
-    ("What is a budget?", "A plan for how much to spend on each thing", "A list of customers' names",
-     "A kind of cash box", "A budget is a spending plan made before you buy."),
+    ("What could the class do with the stand's profit?", "Save some, buy supplies or give to a good cause",
+     "Spend it all on the first day", "Split it before paying for supplies",
+     "Profit can be saved, used to grow, or shared, once the costs are paid."),
+    ("What is a budget?", "A plan for spending money", "A list of customers' names",
+     "A record of yesterday's sales", "A budget is a spending plan made before you buy."),
     ("The stand has $15 to spend. Lemons cost $6 and cups cost $4. How much is left for sugar and ice?", "$5",
      "$10", "$25", "$6 + $4 = $10 spent. $15 − $10 = $5 left."),
     ("Why keep a record of every sale?", "To know how much came in and what sold best",
-     "To make the notebook heavier", "Because sales can't be counted",
+     "So the sign can show the day's total", "Because the bank asks for one every day",
      "A record shows what's working and catches mistakes."),
     ("A big bag of lemons costs $3 and makes 12 cups. A small bag costs $1 and makes 3 cups. Which is the better"
      " deal for each cup?", "The big bag", "The small bag", "They cost the same for each cup",
      "The big bag is 25¢ a cup ($3 ÷ 12). The small bag is about 33¢ a cup ($1 ÷ 3)."),
-    ("Which is a smart way to set a price?", "Cover the costs and stay fair to customers",
-     "Pick the biggest number you can think of", "Change it for every customer",
-     "A good price pays for the costs and feels fair to customers."),
-    ("What does it mean to save money?", "Keep some for later instead of spending it now", "Spend it all today",
-     "Give it to anyone who asks", "Saving means putting money aside for later."),
+    ("Which is a smart way to set a price?", "Cover the costs and stay fair", "Charge what the stand next door does",
+     "Pick a round number that feels right",
+     "A good price pays for the costs and feels fair to customers. Other stands' prices are only a guide."),
+    ("What does it mean to save money?", "Keep some for later", "Spend it on supplies right away",
+     "Lend it to a friend", "Saving means putting money aside for later."),
     ("The stand sold 30 cups on Saturday and 20 on Sunday. How many cups in all?", "50", "10", "40",
      "30 + 20 = 50 cups."),
     ("Each cup costs 20¢ to make. What do 10 cups cost to make?", "$2", "20¢", "$10",
      "10 × 20¢ = 200¢, which is $2."),
     ("Why is a surprise cost, like a spilled pitcher, a problem?", "It uses up money that would have been profit",
-     "It makes the stand richer", "It doesn't matter at all",
+     "It means the price has to go up for good", "It makes the stand sell fewer cups",
      "Surprise costs come straight out of what would have been left over."),
-    ("Who decides how a class business spends its money?", "The class, together, with the teacher",
-     "Whoever grabs the cash box first", "The first customer of the day",
+    ("Who decides how a class business spends its money?", "The class, with the teacher",
+     "The student who holds the cash box", "The student who sold the most cups",
      "In a class business, money decisions are made together."),
 ]
 _STAND_MONEY_FACTS = [
@@ -1808,59 +1882,61 @@ _STAND_MONEY_FACTS = [
 ]
 
 _STAND_TEAM = [
-    ("Why give each person a job at the stand?", "So the work gets done and nobody does everything alone",
-     "So some people can do nothing", "Because jobs are a punishment",
+    ("Why give each person a job at the stand?", "So the work gets done and it's shared",
+     "So each person can stay at one job all day", "So the teacher can see who works hardest",
      "Sharing the jobs gets everything done and keeps it fair."),
-    ("Which job list is fair?", "Everyone takes turns at the fun jobs and the boring ones",
-     "The same person always cleans up", "Only friends get the fun jobs",
-     "Taking turns shares the good and the hard parts."),
+    ("Which job list is fair?", "Everyone takes turns at every job", "Each person keeps the job they're best at",
+     "The first to arrive picks their job",
+     "Taking turns shares the fun jobs and the hard ones, and everyone learns them all."),
     ("Two teammates want the same job. What's a fair way to decide?", "Take turns, or flip a coin",
-     "Whoever shouts loudest wins", "Nobody does the job", "A fair way to decide keeps the team happy."),
+     "Give it to whoever asked first", "Let the older one have it",
+     "A fair way to decide keeps the team happy."),
     ("A teammate has a new idea for the sign. What should a good teammate do?", "Listen and talk about it",
-     "Laugh at the idea", "Ignore them and keep the old sign",
+     "Keep the old sign, since it already works", "Say it's a good idea, then change nothing",
      "Listening to ideas helps the team find the best ones."),
-    ("You finished your job early. What's a helpful thing to do?", "Ask if anyone needs help",
-     "Leave without telling anyone", "Tell the others to hurry up", "Helping out makes the whole team stronger."),
+    ("You finished your job early. What's a helpful thing to do?", "Ask your teammates if anyone needs help",
+     "Start a new job you like better", "Take a break until the end",
+     "Helping out makes the whole team stronger."),
     ("You made a mistake counting the change. What should you say?", "\"I made a mistake. Let's fix it.\"",
-     "\"Someone else must have done it.\"", "Nothing, and hope nobody notices",
+     "\"The cash box was a mess already.\"", "\"It's only a little, so it's fine.\"",
      "Owning a mistake and fixing it builds trust."),
-    ("What does a good leader do?", "Helps the team do its best work", "Does all the work alone",
-     "Only gives orders and never helps", "Good leaders help everyone do well."),
-    ("A teammate looks upset. What's a kind first step?", "Ask if they're okay",
-     "Tell them to cheer up and get back to work", "Pretend not to notice",
+    ("What does a good leader do?", "Helps the team do its best work", "Does the hardest jobs alone",
+     "Makes every decision for the team", "Good leaders help everyone do well."),
+    ("A teammate looks upset. What's a kind first step?", "Ask them quietly if they're okay",
+     "Give them an easier job without asking", "Let them be until they feel better",
      "Checking in shows you care about your teammates."),
     ("Why should the team agree on a plan before opening?", "So everyone knows what to do",
-     "So the plan can be kept secret", "Plans are only for grown-ups", "A shared plan keeps everyone on track."),
-    ("How should the team treat every customer?", "Kindly and fairly, the same for everyone",
-     "Better if they're a friend", "Nicely only when someone is watching",
-     "Every customer deserves the same kind, fair service."),
-    ("A teammate keeps breaking a team rule. What's a good first step?",
-     "Talk with them kindly, and ask the teacher if it keeps happening", "Yell at them in front of customers",
-     "Break the rules too", "Talking calmly first is fair. A grown-up can help if it doesn't stop."),
+     "So the plan can't change later", "So the leader doesn't have to explain",
+     "A shared plan keeps everyone on track."),
+    ("How should the team treat every customer?", "Kindly and fairly, the same for all", "Extra nicely if they're a friend",
+     "Quickly, so the line keeps moving", "Every customer deserves the same kind, fair service."),
+    ("A teammate keeps breaking a team rule. What's a good first step?", "Talk with them kindly",
+     "Tell the whole class about it", "Do their part of the work for them",
+     "Talking calmly first is fair. Ask the teacher for help if it keeps happening."),
     ("What's the best way to share an idea in a team meeting?", "Wait your turn and speak clearly",
-     "Interrupt so you're heard first", "Whisper it so nobody hears",
+     "Say it first, before others start", "Write it down and keep it for later",
      "Taking turns lets everyone be heard."),
-    ("The team disagrees about the price. What helps most?", "Share reasons, listen, then decide together",
-     "Stop talking to each other", "Let one person decide without asking anyone",
+    ("The team disagrees about the price. What helps most?", "Share reasons, listen, then decide",
+     "Let the leader choose without a vote", "Use last week's price to avoid arguing",
      "Hearing every reason helps the team make a good choice."),
-    ("Why say thank you to teammates?", "It shows you notice their work, so they want to keep helping",
-     "It's only for grown-ups", "It makes the line move faster",
-     "Thanks shows people their work matters."),
-    ("What does it mean to be reliable?", "People can count on you to do what you said",
-     "You always arrive late", "You only work when you feel like it",
-     "Reliable people keep their promises."),
+    ("Why say thank you to teammates?", "It shows you notice their work", "It's what the teacher expects",
+     "It makes the day go by faster", "Thanks shows people their work matters, so they want to keep helping."),
+    ("What does it mean to be reliable?", "People can count on you to do what you said", "You're the fastest worker",
+     "You always have the best ideas", "Reliable people do what they said they'd do."),
     ("Your job is pouring, but the cash box is busy. What's a team player move?",
-     "Offer to help, if the cashier wants it", "Take over without asking", "Complain that it's not your job",
+     "Offer to help, if the cashier wants it", "Take over the cash box yourself", "Keep pouring, since that's your job",
      "Offering help, and asking first, is how good teams work."),
     ("Why is it important to listen to quieter teammates?", "They may have great ideas too",
-     "They never have ideas", "Listening wastes time", "Good ideas can come from anyone on the team."),
-    ("At the end of the day, what should the whole team do?", "Clean up together",
-     "Leave the mess for one person", "Go home and leave it for tomorrow",
+     "The teacher asks everyone to talk", "It keeps the meeting short",
+     "Good ideas can come from anyone on the team."),
+    ("At the end of the day, what should the whole team do?", "Clean up the stand together",
+     "Let the cleanup team do it", "Leave it for the next group",
      "Cleaning up together is fair and quick."),
     ("A customer is rude to a teammate. What's the best response?", "Stay calm and get the teacher if needed",
-     "Be rude back", "Refuse to serve anyone else", "Staying calm and getting help keeps things safe."),
-    ("What makes a team strong?", "Trust, fairness and helping each other", "One person who does everything",
-     "Keeping secrets from each other", "Strong teams trust and help each other."),
+     "Tell the customer they're being rude", "Ask them to leave the line",
+     "Staying calm and getting a grown-up keeps things safe."),
+    ("What makes a team strong?", "Trust, fairness and helping each other", "One leader who decides everything",
+     "Everyone working on their own jobs alone", "Strong teams trust and help each other."),
 ]
 _STAND_TEAM_FACTS = [
     ("A good leader listens to people who disagree.", True, "Different views help a team find the best idea."),
@@ -2057,8 +2133,9 @@ def classroom_stages(world_number):
 
 def _fresh(q, rng):
     """A copy of a pool question with its options in a new order (a true or
-    false question keeps True first)."""
-    if q.kind == "truefalse":
+    false question keeps True first, and a light question keeps green,
+    yellow, red: the order of a traffic light)."""
+    if q.kind in ("truefalse", "light"):
         return Question(q.prompt, list(q.options), q.answer, q.explain, q.kind)
     right = q.options[q.answer]
     options = list(q.options)
@@ -2081,20 +2158,18 @@ def _stand_story(key):
     return lambda company, industry_ids: list(_STAND_CARDS[key])
 
 
-def _stand_questions(key):
-    def make(rng, company, industry_ids, stage=1):
-        pool = list(classroom_pool(WORLDS_BY_KEY[key].number))
-        return [_fresh(q, rng) for q in rng.sample(pool, min(LESSON_QUESTIONS, len(pool)))]
-    return make
-
-
 WORLDS_BY_KEY = {w.key: w for w in ALL_WORLDS}
-_CONTENT.update({key: (_stand_story(key), _stand_questions(key)) for key in _STAND_CARDS})
+_CONTENT.update({key: _stand_story(key) for key in _STAND_CARDS})
 
 CLASSROOM = Track(CLASSROOM_KEY, 4, "Classroom", "Class", "Run a pretend class business, one short lesson at a time",
                   "rocket", CLASSROOM_TOPICS, CLASS_MAX_STAGES, 1, 0, LESSON_QUESTIONS, LESSON_QUESTIONS, 0.6, 0.6,
                   10, 0, _EASY_MIX, stage_plan=tuple((n, classroom_stages(n)) for n in CLASSROOM_TOPICS))
 TRACKS[CLASSROOM.key] = CLASSROOM
+# Each family world's real lesson count, now that the pools exist.
+TRACK_LIST = [dataclasses.replace(t, stage_plan=tuple((n, family_stages(t, n)) for n in t.topics))
+              for t in TRACK_LIST]
+TRACKS.update({t.key: t for t in TRACK_LIST})
+TOTAL_LEVELS = TRACKS[DEFAULT_TRACK].total
 # Every track, the Classroom one too: for what is stored per track (progress,
 # certificates). The track picker offers TRACK_LIST, the families' tracks.
 ALL_TRACKS = TRACK_LIST + [CLASSROOM]

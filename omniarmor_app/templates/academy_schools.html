@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}The Academy for schools and teachers{% endblock %}
-{% block description %}Run the Future Owner Academy for a whole class or entrepreneurship club: students added by first name or nickname only, a class progress view, printable certificates and a free {{ facts.pilot_days }}-day pilot.{% endblock %}
+{% block description %}Run the Future Owner Academy for a whole class or entrepreneurship club: students added by first name or nickname only, a class progress view, printable certificates and a free {{ facts.pilot_days }}-day trial.{% endblock %}
 {% block content %}
 <section class="hero">
   <p class="eyebrow">For schools and teachers</p>
+  <p class="eyebrow" data-grades>{{ facts.grades }} · {{ facts.ages }}</p>
   <h1><span class="blend-text">How a business runs,</span> one short lesson at a time.</h1>
   <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety. Your class learns by running a pretend lemonade stand, {{ facts.class_business }}. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
   <div class="cta">
-    <a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free pilot</a>
+    <a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free trial</a>
     <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow" data-demo-link>See the classroom demo</a>
     <a class="btn quiet" href="#price">See the prices</a>
   </div>
@@ -34,22 +35,22 @@
   </div>
   <div>
     <h3>A leaderboard you control</h3>
-    <p>Students can see their own class's leaderboard: first names and lessons done, nothing else, and never another class. Switch it off anytime.</p>
+    <p>It starts off. Turn it on for a class and its students see their own class's leaderboard: first names and lessons done, nothing else, and never another class. Turn it off again anytime.</p>
   </div>
   <div>
     <h3>Join codes on paper</h3>
     <p>Print one code per student. Each one works once, on a school device. Students don't need an email or a password.</p>
   </div>
   <div>
-    <h3>A pilot report for the office</h3>
-    <p>At the end of the pilot, print one page with the totals: how many students, how many lessons finished, and the topics covered. No student names.</p>
+    <h3>A trial report for the office</h3>
+    <p>At the end of the free trial, print one page with the totals: how many students, how many lessons finished, and the topics covered. No student names.</p>
   </div>
 </section>
 
 <h2 id="price">Prices</h2>
 <div class="plans" data-classroom-plans>
   <div data-plan="pilot">
-    <p class="eyebrow">Free pilot</p>
+    <p class="eyebrow">Free trial</p>
     <p><b>{{ facts.pilot_days }} days free</b>: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and the whole Academy. No card needed. One pilot per account.</p>
   </div>
   {% for p in facts.plans %}
@@ -69,11 +70,11 @@
 <h2>How to start</h2>
 <ol class="school-steps">
   <li>Sign up for free with your school's name. You land on the Classes page.</li>
-  <li>Start the {{ facts.pilot_days }}-day pilot there.</li>
+  <li>Start the {{ facts.pilot_days }}-day trial there.</li>
   <li>Add your class and type your students' first names or nicknames.</li>
   <li>Print the join codes and hand them out. Students play on school devices.</li>
-  <li>Watch the class progress, print certificates, and take the pilot report to the office.</li>
+  <li>Watch the class progress, print certificates, and take the trial report to the office.</li>
 </ol>
 <p class="hint mt">Questions? Read the <a href="{{ url_for('public.help') }}">help page</a> or the <a href="{{ url_for('public.privacy') }}">privacy page</a>.</p>
-<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free pilot</a></p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free trial</a></p>
 {% endblock %}

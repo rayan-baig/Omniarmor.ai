@@ -11,17 +11,19 @@ Every change is written to the audit trail with who made it and when.
 """
 
 import calendar
+import dataclasses
 import json
 import math
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
-from .catalog import (INDUSTRIES, can_override, counts_first_day, counts_time, date_mode, date_unit, effective_rule,
-                      find_rule, rules_for)
+from .catalog import (FIRST_ENTRY, ILLNESS_LOG_CHECKS, INDUSTRIES, can_override, counts_first_day, counts_time,
+                      date_mode, date_unit, effective_rule, find_rule, multi_check, rules_for)
 from .db import iso, now_iso, record_audit, user_name, utcnow
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
@@ -101,6 +103,10 @@ class ItemState:
     due_at: object = None
     warn_at: object = None
     minutes_left: object = None
+    # A check with one entry per item (catalog.MULTI_CHECKS): its entries,
+    # [{"id": "main" or a check_entries id, "label": ..., "state": ItemState}],
+    # the worst first. The check's own state is its worst entry's.
+    entries: list = field(default_factory=list)
 
     @property
     def key(self):
@@ -463,6 +469,49 @@ def _load_rows(conn, org_id):
     return {(r["industry_id"], r["rule_key"]): r for r in rows}
 
 
+def _entry_row(entry, item):
+    """A check_entries row read like an items row: its own value and date,
+    the check's own limits."""
+    return {"value_num": entry["value_num"], "value_bool": None, "value_date": entry["value_date"],
+            "limit_override": item["limit_override"] if item is not None else None,
+            "warn_override": item["warn_override"] if item is not None else None,
+            "updated_at": entry["updated_at"], "updated_by_name": entry["updated_by_name"]}
+
+
+def _worst_first(state):
+    return (LEVEL_ORDER[state.level], state.days_left if state.days_left is not None else 10 ** 6)
+
+
+def _with_entries(industry_id, rule, item, extra, today, now, tz):
+    """A check with one entry per item: each entry's own state, and the
+    check's state, which is its worst entry's (or no reading, with none)."""
+    main = compute_state(industry_id, rule, item, today, now, tz)
+    entries = []
+    if main.value is not None:
+        entries.append({"id": "main", "label": (item["label"] if item is not None else None)
+                        or FIRST_ENTRY[(industry_id, rule.key)], "state": main})
+    for entry in extra:
+        entries.append({"id": entry["id"], "label": entry["label"],
+                        "state": compute_state(industry_id, rule, _entry_row(entry, item), today, now, tz)})
+    if not entries:
+        return main
+    entries.sort(key=lambda e: _worst_first(e["state"]))
+    worst = entries[0]
+    latest = max(entries, key=lambda e: e["state"].updated_at or "")["state"]
+    message = worst["state"].message
+    if len(entries) > 1:
+        message = f"{worst['label']}: {message}"
+    return dataclasses.replace(worst["state"], entries=entries, message=message, updated_at=latest.updated_at,
+                               updated_by=latest.updated_by)
+
+
+def _load_entries(conn, org_id):
+    found = {}
+    for r in conn.execute("SELECT * FROM check_entries WHERE org_id = ? ORDER BY id", (org_id,)):
+        found.setdefault((r["industry_id"], r["rule_key"]), []).append(r)
+    return found
+
+
 def states_for_org(conn, org, industry_ids=None, today=None, now=None):
     tz = ZoneInfo(org["timezone"])
     if today is None:
@@ -471,7 +520,16 @@ def states_for_org(conn, org, industry_ids=None, today=None, now=None):
     now = now or _moment_on(today, tz)
     ids = org_industry_ids(conn, org["id"]) if industry_ids is None else industry_ids
     rows = _load_rows(conn, org["id"])
-    return [compute_state(i, rule, rows.get((i, rule.key)), today, now, tz) for i in ids for rule in rules_for(i)]
+    entries = _load_entries(conn, org["id"])
+    out = []
+    for i in ids:
+        for rule in rules_for(i):
+            row = rows.get((i, rule.key))
+            if multi_check(i, rule.key):
+                out.append(_with_entries(i, rule, row, entries.get((i, rule.key), []), today, now, tz))
+            else:
+                out.append(compute_state(i, rule, row, today, now, tz))
+    return out
 
 
 def tally(states):
@@ -719,10 +777,14 @@ BULK_ACTIONS = {
 }
 
 
-def _bulk_step(rule, action, day):
+def _bulk_step(rule, action, day, industry_id=None):
     """The single change a bulk action makes to one check, as (action, form),
     or a ValidationError saying why it doesn't fit that check."""
     mode = date_mode(rule)
+    multi = multi_check(industry_id, rule.key)
+    if multi and action in ("done", "date"):
+        raise ValidationError(f"\"{rule.title}\" has one entry per {multi[0].lower()}, each with its own date."
+                              " Update them on its own.")
     if action == "done":
         if mode != "since":
             raise ValidationError(f"\"{rule.title}\" can't be marked done: it isn't a duty that repeats.")
@@ -762,7 +824,7 @@ def apply_bulk(conn, org, user_id, industry_id, rule_keys, action, day):
         if not (day or "").strip():
             raise ValidationError("Pick the date to set.")
         _parse_date(day)
-    steps = [(rule, *_bulk_step(rule, action, day)) for rule in rules]
+    steps = [(rule, *_bulk_step(rule, action, day, industry_id)) for rule in rules]
     try:
         for rule, step, form in steps:
             try:
@@ -788,3 +850,251 @@ def to_json(states):
         "industry": s.industry["brand"], "rule": s.rule.key, "level": s.level,
         "value": s.value, "due_date": s.due_date.isoformat() if s.due_date else None,
     } for s in states])
+
+
+# ---------------------------------------------------------------------------
+# Checks with one entry per item (catalog.MULTI_CHECKS)
+# ---------------------------------------------------------------------------
+
+MAX_ENTRIES = 30        # entries one check can hold, its first one included
+MAX_LABEL = 60
+
+
+def _clean_label(text):
+    label = re.sub(r"\s+", " ", (text or "").strip())
+    if not label:
+        raise ValidationError("Give it a name, like the fridge or the batch it is.")
+    if len(label) > MAX_LABEL or any(ord(c) < 32 for c in label):
+        raise ValidationError(f"Keep the name to {MAX_LABEL} characters.")
+    return label
+
+
+def _entry_value(rule, form, today, tz):
+    """The value an entry form sends: (value_num, value_date) for the entry,
+    with the same checks as a check's own Save."""
+    mode = date_mode(rule)
+    if mode and counts_time(rule):
+        picked = _parse_moment(form.get("date"), tz)
+        if picked is not None:
+            if picked[0] > utcnow():
+                raise ValidationError("That time is in the future. Enter when it started.")
+            return None, iso(picked[0])
+    elif mode:
+        picked = _parse_date(form.get("date"))
+        if picked is not None:
+            if mode == "since" and picked > today:
+                raise ValidationError("That date is in the future. Enter the date it last happened.")
+            return None, picked.isoformat()
+    number = _parse_number(form.get("value"))
+    if number is None:
+        raise ValidationError("Enter a date." if mode else "Enter a reading.")
+    return number, None
+
+
+def _entry_text(rule, value_num, value_date, tz):
+    return _describe(rule, {"value_bool": None, "value_num": value_num, "value_date": value_date}, tz)
+
+
+def _entry_rows(conn, org_id, industry_id, rule_key):
+    return conn.execute("SELECT * FROM check_entries WHERE org_id = ? AND industry_id = ? AND rule_key = ?"
+                        " ORDER BY id", (org_id, industry_id, rule_key)).fetchall()
+
+
+def _touch(conn, org_id, industry_id, rule_key, user_id, label=None):
+    """Marks the check as changed by this person (its first entry's row in
+    items), so the page and connected apps see who changed it last."""
+    row = _get_row(conn, org_id, industry_id, rule_key)
+    _write(conn, org_id, industry_id, rule_key, user_id)
+    if label is not None or row is None:
+        conn.execute("UPDATE items SET label = ? WHERE org_id = ? AND industry_id = ? AND rule_key = ?",
+                     (label if label is not None else (row["label"] if row is not None else None), org_id,
+                      industry_id, rule_key))
+
+
+def apply_entry(conn, org, user_id, industry_id, rule_key, action, form):
+    """One change to one entry of a check with one entry per item: "add" a
+    named entry with its value, "save" a new value (or name), "done_today",
+    or "remove". The first entry (entry "main") is the check's own value,
+    changed through apply_change like any check. Every change has its own
+    audit row. Returns a message; raises ValidationError."""
+    rule = find_rule(industry_id, rule_key)
+    multi = multi_check(industry_id, rule_key)
+    if rule is None or multi is None:
+        raise LookupError(rule_key)
+    org_id, tz, today = org["id"], ZoneInfo(org["timezone"]), org_today(org)
+    item = _get_row(conn, org_id, industry_id, rule_key)
+    extra = _entry_rows(conn, org_id, industry_id, rule_key)
+    main_used = item is not None and (item["value_num"] is not None or item["value_date"] is not None)
+    thing = multi[0].lower()
+    entry_id = (form.get("entry_id") or "").strip()
+
+    if action == "add":
+        label = _clean_label(form.get("label"))
+        if len(extra) + main_used >= MAX_ENTRIES:
+            raise ValidationError(f"A check holds up to {MAX_ENTRIES} entries. Remove one you no longer use first.")
+        value_num, value_date = _entry_value(rule, form, today, tz)
+        after = _entry_text(rule, value_num, value_date, tz)
+        if not main_used:
+            # The first entry is the check's own value.
+            _write(conn, org_id, industry_id, rule_key, user_id, value_num=value_num, value_date=value_date)
+            _touch(conn, org_id, industry_id, rule_key, user_id, label=label)
+        else:
+            now = now_iso()
+            conn.execute("INSERT INTO check_entries (org_id, industry_id, rule_key, label, value_num, value_date,"
+                         " created_at, updated_at, updated_by, updated_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                         (org_id, industry_id, rule_key, label, value_num, value_date, now, now, user_id,
+                          user_name(conn, user_id)))
+            _touch(conn, org_id, industry_id, rule_key, user_id)
+        record_audit(conn, org_id, user_id, "entry", f"{rule.title}: {label} added, {after}", industry_id, rule_key,
+                     None, after)
+        conn.commit()
+        return f"{label} added."
+
+    if entry_id == "main":
+        if not main_used:
+            raise ValidationError("That entry was already removed. Reload the page to see the latest.")
+        label = item["label"] or FIRST_ENTRY[(industry_id, rule_key)]
+        if action == "remove":
+            before = _describe(rule, item, tz)
+            if extra:
+                # The next entry moves up to be the first.
+                nxt = extra[0]
+                _write(conn, org_id, industry_id, rule_key, user_id, value_num=nxt["value_num"],
+                       value_date=nxt["value_date"])
+                _touch(conn, org_id, industry_id, rule_key, user_id, label=nxt["label"])
+                conn.execute("DELETE FROM check_entries WHERE id = ?", (nxt["id"],))
+            else:
+                _write(conn, org_id, industry_id, rule_key, user_id, value_num=None, value_date=None)
+                _touch(conn, org_id, industry_id, rule_key, user_id, label="")
+            record_audit(conn, org_id, user_id, "entry", f"{rule.title}: {label} removed (was {before})",
+                         industry_id, rule_key, before, None)
+            conn.commit()
+            return f"{label} removed."
+        if action not in ("save", "done_today"):
+            raise ValidationError("Unknown action.")
+        if action == "save":
+            value_num, value_date = _entry_value(rule, form, today, tz)
+            change = {"value": "" if value_num is None else str(value_num), "date": value_date or ""}
+            if value_date and counts_time(rule):
+                change["date"] = _stored_moment(value_date, tz).strftime("%Y-%m-%dT%H:%M")
+        else:
+            change = {}
+        apply_change(conn, org, user_id, industry_id, rule_key, action, change, commit=False,
+                     summary=None)
+        conn.commit()
+        return f"{label}: saved." if action == "save" else f"{label}: marked done today."
+
+    try:
+        row = next(r for r in extra if str(r["id"]) == entry_id)
+    except StopIteration:
+        raise ValidationError("That entry was already removed. Reload the page to see the latest.") from None
+    before = _entry_text(rule, row["value_num"], row["value_date"], tz)
+    if action == "remove":
+        conn.execute("DELETE FROM check_entries WHERE id = ?", (row["id"],))
+        after, verb = None, "removed"
+    elif action in ("save", "done_today"):
+        if action == "done_today":
+            if date_mode(rule) != "since":
+                raise ValidationError("This check is not tracked by the date it was last done.")
+            value_num, value_date = None, (iso(utcnow().replace(second=0, microsecond=0)) if counts_time(rule)
+                                           else today.isoformat())
+        else:
+            value_num, value_date = _entry_value(rule, form, today, tz)
+        conn.execute("UPDATE check_entries SET value_num = ?, value_date = ?, updated_at = ?, updated_by = ?,"
+                     " updated_by_name = ? WHERE id = ?",
+                     (value_num, value_date, now_iso(), user_id, user_name(conn, user_id), row["id"]))
+        after = _entry_text(rule, value_num, value_date, tz)
+        verb = "saved" if action == "save" else "marked done today"
+    else:
+        raise ValidationError("Unknown action.")
+    _touch(conn, org_id, industry_id, rule_key, user_id)
+    summary = (f"{rule.title}: {row['label']} removed (was {before})" if after is None
+               else f"{rule.title}: {row['label']}: {before} → {after}")
+    record_audit(conn, org_id, user_id, "entry", summary, industry_id, rule_key, before, after)
+    conn.commit()
+    return f"{row['label']}: {verb}." if after is not None else f"{row['label']} removed from this {thing} list."
+
+
+# ---------------------------------------------------------------------------
+# The illness log (catalog.ILLNESS_LOG_CHECKS)
+# ---------------------------------------------------------------------------
+# Beside "Is any employee with vomiting or diarrhea working?", a dated log of
+# who reported being sick, what and what was done. A worker is written down
+# by first name or initials only, and only the listed symptoms are kept: no
+# free-text health details. The audit trail says a report was added or
+# removed and its date, never who or what.
+
+ILLNESS_REPORTED = {
+    "vomiting": "Vomiting",
+    "diarrhea": "Diarrhea",
+    "jaundice": "Jaundice (yellow skin or eyes)",
+    "sore_throat_fever": "Sore throat with fever",
+    "infected_cut": "Infected cut or burn on the hands or arms",
+    "diagnosed": "Diagnosed with norovirus, hepatitis A, Shigella, E. coli (STEC) or Salmonella",
+}
+ILLNESS_ACTIONS = {
+    "sent_home": "Sent home (excluded)",
+    "restricted": "Kept away from food and clean dishes (restricted)",
+    "returned": "Back at work, cleared to return",
+}
+# Reports that mean the worker is sent home, not just kept away from food
+# (FDA Food Code 2-201.12): saying "restricted" for one is refused, the way a
+# Yes is never given to "Is a sick employee working?" by a bulk update.
+SEND_HOME = {"vomiting", "diarrhea", "jaundice", "diagnosed"}
+_PERSON = re.compile(r"[^\W\d_](?:[^\W\d_]|[.'\-]){0,19}")
+MAX_LOG_ROWS = 100
+
+
+def clean_person(text):
+    """A first name or initials ("Sam", "S.L."), or None: one word of letters
+    (and . ' -), up to 20 characters, never a full name or anything else."""
+    value = (text or "").strip()
+    return value if _PERSON.fullmatch(value) else None
+
+
+def illness_log(conn, org_id, industry_id, rule_key, limit=MAX_LOG_ROWS):
+    return conn.execute("SELECT * FROM illness_log WHERE org_id = ? AND industry_id = ? AND rule_key = ?"
+                        " ORDER BY reported_on DESC, id DESC LIMIT ?",
+                        (org_id, industry_id, rule_key, limit)).fetchall()
+
+
+def add_illness(conn, org, user_id, industry_id, rule_key, form):
+    if (industry_id, rule_key) not in ILLNESS_LOG_CHECKS:
+        raise LookupError(rule_key)
+    rule = find_rule(industry_id, rule_key)
+    person = clean_person(form.get("person"))
+    if person is None:
+        raise ValidationError("Write a first name or initials only, like Sam or S.L.: no last names.")
+    reported, action = form.get("reported"), form.get("did")
+    if reported not in ILLNESS_REPORTED:
+        raise ValidationError("Pick what they reported.")
+    if action not in ILLNESS_ACTIONS:
+        raise ValidationError("Pick what you did.")
+    if reported in SEND_HOME and action == "restricted":
+        raise ValidationError(f"{ILLNESS_REPORTED[reported]} means the worker goes home, not just away from food"
+                              " (FDA Food Code 2-201.12). Pick \"Sent home\", or \"Back at work\" once they're"
+                              " cleared. Check your local health department's rules too.")
+    day = _parse_date(form.get("reported_on")) or org_today(org)
+    if day > org_today(org):
+        raise ValidationError("That date is in the future. Enter the day it was reported.")
+    conn.execute("INSERT INTO illness_log (org_id, industry_id, rule_key, person, reported, action, reported_on,"
+                 " created_at, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 (org["id"], industry_id, rule_key, person, reported, action, day.isoformat(), now_iso(), user_id,
+                  user_name(conn, user_id)))
+    record_audit(conn, org["id"], user_id, "illness_log",
+                 f"{rule.title}: a report dated {day.isoformat()} was added to the illness log", industry_id, rule_key)
+    conn.commit()
+    return "Added to the illness log."
+
+
+def remove_illness(conn, org, user_id, industry_id, rule_key, entry_id):
+    row = conn.execute("SELECT * FROM illness_log WHERE id = ? AND org_id = ? AND industry_id = ? AND rule_key = ?",
+                       (entry_id, org["id"], industry_id, rule_key)).fetchone()
+    if row is None:
+        raise ValidationError("That report was already removed. Reload the page to see the latest.")
+    conn.execute("DELETE FROM illness_log WHERE id = ?", (row["id"],))
+    record_audit(conn, org["id"], user_id, "illness_log",
+                 f"{find_rule(industry_id, rule_key).title}: a report dated {row['reported_on']} was removed from"
+                 " the illness log", industry_id, rule_key)
+    conn.commit()
+    return "Removed from the illness log."

@@ -267,26 +267,44 @@ class AcademyCase(AppTestCase):
 
 class TestPracticeNeverRepeats(AcademyCase):
     """A family in two industries is asked "What kind of work does Acme
-    Logistics do?" with either industry as the right answer. Missed once each
-    way, the question went into the practice deck twice, and practice asked
-    it twice."""
+    Logistics do?". When the family's industries change, the right answer
+    changes too. Missed once each way, the question went into the practice
+    deck twice, and practice asked it twice."""
+
+    WORK = "What kind of work does Acme Logistics do?"
 
     def miss_world_one(self, attempts):
         for _ in range(attempts):
             self.play(1, 1, right=False)
 
+    def work_stage(self):
+        """The lesson of Meet Your Company that asks WORK, with every lesson
+        before it passed so it is open."""
+        size = BASIC.min_questions
+        pool = academy.family_pool(BASIC, 1, "Acme Logistics", self.industries)
+        stage = next(n // size + 1 for n, q in enumerate(pool) if q.prompt == self.WORK)
+        self.mark_passed(*[(1, s) for s in range(1, stage)])
+        return stage
+
+    def change_industries(self):
+        """The family drops its first industry, so WORK has another right answer."""
+        with self.db() as conn:
+            conn.execute("DELETE FROM org_industries WHERE org_id = ? AND industry_id = ?",
+                         (self.org_id, self.industries[0]))
+            conn.commit()
+            self.industries = org_industry_ids(conn, self.org_id)
+
     def test_a_question_missed_with_two_right_answers_is_one_practice_card(self):
-        work = "What kind of work does Acme Logistics do?"
+        self.assertGreater(len(self.industries), 1)
         answers = set()
-        attempt = 0
-        while len(answers) < 2:   # until both industries have been the right answer
-            attempt += 1
-            self.assertLess(attempt, 30)
-            response, questions = self.play(1, 1, right=False)
-            answers |= {q.options[q.answer] for q in questions if q.prompt == work}
+        for _ in range(2):
+            _, questions = self.play(1, self.work_stage(), right=False)
+            answers |= {q.options[q.answer] for q in questions if q.prompt == self.WORK}
+            self.change_industries()
+        self.assertEqual(len(answers), 2)
         page = self.client.get(f"/app/academy/{self.lid}/practice").data.decode()
         prompts = self.practice_prompts(page)
-        self.assertEqual(prompts.count(work), 1, prompts)
+        self.assertEqual(prompts.count(self.WORK), 1, prompts)
         for a, b in zip(prompts, prompts[1:]):
             self.assertNotEqual(a, b)
 
@@ -315,16 +333,13 @@ class TestPracticeNeverRepeats(AcademyCase):
         self.assertNotIn(last, self.practice_prompts(again)[:1])
 
     def test_answering_it_right_with_the_other_answer_counts_as_practice(self):
-        work = "What kind of work does Acme Logistics do?"
-        _, questions = self.play(1, 1, right=False)
+        work = self.WORK
+        _, questions = self.play(1, self.work_stage(), right=False)
         first = next(q.options[q.answer] for q in questions if q.prompt == work)
-        # Everything right, except that question while it still has the same right answer.
-        for _ in range(30):
-            _, questions = self.play(1, 1, right=lambda q: q.prompt != work or q.options[q.answer] != first)
-            if any(q.prompt == work and q.options[q.answer] != first for q in questions):
-                break
-        else:
-            self.fail("the other right answer never came up")
+        self.change_industries()
+        # Everything right, the question too, now with its other right answer.
+        _, questions = self.play(1, self.work_stage(), right=True)
+        self.assertTrue(any(q.prompt == work and q.options[q.answer] != first for q in questions))
         with self.db() as conn:
             rows = conn.execute("SELECT question, streak FROM learner_mistakes").fetchall()
         work_rows = [r["streak"] for r in rows if json.loads(r["question"])["prompt"] == work]

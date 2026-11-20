@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_empty.html" import empty %}
-{% block title %}{{ 'Pilot report' if r.pilot.state != 'none' else 'Class report' }} · {{ r.class.name }}{% endblock %}
+{% block title %}{{ 'Trial report' if r.pilot.state != 'none' else 'Class report' }} · {{ r.class.name }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
@@ -8,8 +8,8 @@
 <div class="ac ac-pilot-report" data-pilot-report>
   <p class="ac-crumb no-print"><a href="{{ url_for('classes.class_page', class_id=r.class.id) }}">← {{ r.class.name }}</a> · Use your browser's Print to print it on one page.</p>
   <p class="ac-kicker">Future Owner Academy · {{ g.org.name }}</p>
-  <h1 class="ac-title">{{ 'Pilot report' if r.pilot.state != 'none' else 'Class report' }}</h1>
-  <p class="ac-report-for"><strong>{{ r.class.name }}</strong>{% if r.since %} · {{ r.since.isoformat()|local_date }} to {{ r.pilot.ends.isoformat()|local_date }}{% endif %}{% if r.pilot.state == 'active' %} · <span data-so-far>so far, the pilot runs until {{ r.pilot.ends.isoformat()|local_date }}</span>{% endif %}</p>
+  <h1 class="ac-title">{{ 'Trial report' if r.pilot.state != 'none' else 'Class report' }}</h1>
+  <p class="ac-report-for"><strong>{{ r.class.name }}</strong>{% if r.since %} · {{ r.since.isoformat()|local_date }} to {{ r.pilot.ends.isoformat()|local_date }}{% endif %}{% if r.pilot.state == 'active' %} · <span data-so-far>so far, the free trial runs until {{ r.pilot.ends.isoformat()|local_date }}</span>{% endif %}</p>
 
   <ul class="ac-stats ac-stats-4" aria-label="Totals">
     <li><span class="ac-stat-num" data-report="students">{{ r.students }}</span><span class="ac-stat-label">student{{ 's' if r.students != 1 }} in the class</span></li>

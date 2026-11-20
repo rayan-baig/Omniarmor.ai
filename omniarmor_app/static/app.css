@@ -173,6 +173,28 @@ summary:where(:not(.pilot-root *)):hover{color:var(--ink)}
 .yn input:focus-visible+label{outline:2px solid var(--accent);outline-offset:-3px}
 .limits{font-family:var(--mono);font-size:13px;color:var(--faint)}
 .limit-form{padding:8px 0 0 14px}
+/* A check with one entry per item, and the illness log (1.11.0) */
+.entries{display:flex;flex-direction:column;gap:10px}
+.entry-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.entry{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.entry[data-level="BLOCKED"]{border-color:var(--block)}
+.entry[data-level="WARNING"]{border-color:var(--warn)}
+.entry-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}
+.entry-name{font-weight:600;overflow-wrap:anywhere}
+.entry-meta{margin:0;font-size:13px;color:var(--muted)}
+.rule form.entry-form{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.entry-form input[type=number]{width:110px}
+.entry-add form,.log-form{padding-top:6px}
+.rule-log{grid-column:1/-1}
+.illness-log .hint{max-width:72ch}
+.log-table td,.log-table th{font-size:14px}
+.rule form.log-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 12px;align-items:end;max-width:760px}
+.yes-bad{margin:0;font-size:13px;color:var(--faint)}
+.log-form .field{display:flex;flex-direction:column;gap:4px}
+.entry-row td{font-size:13.5px;color:var(--muted)}
+/* Pilot: the line above the Allow card for adding students (pilot-omniarmor-pack.js) */
+.pilot-root .omni-names-note{margin:0 0 8px;padding:8px 10px;border-radius:10px;border:1px solid var(--pilot-edge);font-size:13px;line-height:1.45;color:var(--pilot-ink)}
+.pilot-root .omni-names-note a{color:var(--pilot-cyan);text-decoration:underline}
 .limit-form .inline input{width:120px}
 
 /* Tables */
@@ -231,8 +253,15 @@ footer.site .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:
 body.has-tabs{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 
 /* Armo, the companion sitting on the tab bar */
-body.has-tabs:has(> .companion){padding-bottom:calc(160px + env(safe-area-inset-bottom))}
-.companion{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(56px + env(safe-area-inset-bottom));z-index:60;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none}
+/* Armo lives in the bottom-left corner and Pilot's robot in the bottom-right (1.11.0: they used to pile up in the
+   same corner). The page keeps room at the bottom for both, so neither covers the last lines or a status tag. */
+body.has-tabs:has(> .companion),body.has-tabs:has(> .pilot-root){padding-bottom:calc(160px + env(safe-area-inset-bottom))}
+body:not(.has-tabs):has(> .companion) main,body:not(.has-tabs):has(> .pilot-root) main{padding-bottom:120px}
+.companion{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(56px + env(safe-area-inset-bottom));z-index:60;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none}
+/* While Armo talks (armo.js), Pilot's robot steps aside; an open Pilot window stays. */
+.pilot-root .pilot-launcher{transition:transform .25s ease,opacity .25s ease}
+body.armo-talking .pilot-root .pilot-launcher{transform:translateY(160%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.pilot-root .pilot-launcher{transition:none}}
 .companion > *{pointer-events:auto}
 .companion-armo{position:relative;display:block;line-height:0;border-radius:50%;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
 .companion-armo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -241,10 +270,10 @@ body.has-tabs:has(> .companion){padding-bottom:calc(160px + env(safe-area-inset-
 .companion.jump .companion-stage{animation:armo-jump .75s cubic-bezier(.3,1.5,.5,1)}
 .companion-badge{position:absolute;top:10px;right:4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--block);color:#fff;font-size:12.5px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg);line-height:1}
 .companion-badge[hidden]{display:none}
-.companion-bubble{position:relative;width:max-content;max-width:min(300px,calc(100vw - 32px));margin:0 18px 6px 0;padding:12px 36px 12px 14px;border-radius:16px 16px 4px 16px;background:var(--raise);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:14.5px;line-height:1.45;color:var(--ink)}
+.companion-bubble{position:relative;width:max-content;max-width:min(300px,calc(100vw - 32px));margin:0 0 6px 18px;padding:12px 36px 12px 14px;border-radius:16px 16px 16px 4px;background:var(--raise);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:14.5px;line-height:1.45;color:var(--ink)}
 .companion-bubble[hidden]{display:none}
 .companion-bubble.pop{animation:bubble-pop .25s ease-out}
-.companion-bubble::after{content:"";position:absolute;right:22px;bottom:-7px;width:12px;height:12px;background:var(--raise);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+.companion-bubble::after{content:"";position:absolute;left:22px;bottom:-7px;width:12px;height:12px;background:var(--raise);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
 .companion-text{margin:0}
 .companion-detail{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
 .companion-detail[hidden],.companion-next[hidden]{display:none}
@@ -276,7 +305,7 @@ body.has-tabs:has(> .companion){padding-bottom:calc(160px + env(safe-area-inset-
 @keyframes bubble-pop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
 /* On a phone Armo is small and sits at the very edge, so he covers as little of a card as he can, and he
    tucks himself away while the page scrolls (armo.js) so he never sits on what is being read. */
-@media (max-width:560px){.companion{right:2px;transition:transform .25s ease,opacity .25s ease}.companion-armo svg{width:52px;height:52px}.companion-badge{top:2px;right:0}.companion-bubble{margin-right:10px}.companion.tucked{transform:translateX(72%);opacity:.55}.companion.tucked .companion-bubble{display:none}}
+@media (max-width:560px){.companion{left:2px;transition:transform .25s ease,opacity .25s ease}.companion-armo svg{width:52px;height:52px}.companion-badge{top:2px;right:0}.companion-bubble{margin-left:10px}.companion.tucked{transform:translateX(-72%);opacity:.55}.companion.tucked .companion-bubble{display:none}}
 @media (max-width:560px) and (prefers-reduced-motion:reduce){.companion{transition:none}}
 
 /* Armo page */

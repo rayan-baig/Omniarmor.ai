@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Pages for the Academy in classrooms (classrooms.py): the classes page with
-the free pilot and the classroom plans, a class's progress view, adding
+the free trial and the classroom plans, a class's progress view, adding
 students by first name or nickname, join codes for the class, printable
-certificates, the pilot report, and a student's own class page with the
+certificates, the trial report, and a student's own class page with the
 class leaderboard.
 
 Everything but the student's class page is for the workspace's grown-ups
@@ -69,14 +69,14 @@ def start_pilot():
     conn = get_db()
     days = current_app.config["CLASSROOM_PILOT_DAYS"]
     if not classrooms.start_pilot(conn, g.org, days):
-        flash_error("This workspace has had its free pilot already (the pilot is one per owner, in any of your"
+        flash_error("This workspace has had its free trial already (the free trial is one per owner, in any of your"
                     " locations). Choose a classroom plan to keep going.")
         return _back()
-    record_audit(conn, g.org["id"], g.user["id"], "workspace", f"Free classroom pilot started ({days} days)")
+    record_audit(conn, g.org["id"], g.user["id"], "workspace", f"Free classroom trial started ({days} days)")
     conn.commit()
     usage.count(conn, "classroom_pilots")
     org = conn.execute("SELECT * FROM orgs WHERE id = ?", (g.org["id"],)).fetchone()
-    flash(f"Your free {days}-day pilot is on, until {local_date(org['pilot_ends_at'], org)}. Add your class and"
+    flash(f"Your free {days}-day trial is on, until {local_date(org['pilot_ends_at'], org)}. Add your class and"
           " your students next.", "ok")
     return _back()
 
@@ -99,7 +99,9 @@ def add_class():
                     " little and try again.")
         return _back()
     record_event([key])
-    class_id = conn.execute("INSERT INTO classes (org_id, name, created_by, created_at) VALUES (?, ?, ?, ?)",
+    # A new class starts with its leaderboard off (1.11.0); the teacher can turn it on.
+    class_id = conn.execute("INSERT INTO classes (org_id, name, leaderboard, created_by, created_at)"
+                            " VALUES (?, ?, 0, ?, ?)",
                             (g.org["id"], name, g.user["id"], now_iso())).lastrowid
     record_audit(conn, g.org["id"], g.user["id"], "workspace", f"Class added: {name}")
     conn.commit()
@@ -180,7 +182,7 @@ def add_students(class_id):
     if room == 0:
         limits = plans.class_limits(g.org)
         flash_error(f"This class is full ({limits['class_size']} students)." if limits["active"] else
-                    "Start the free pilot or choose a classroom plan to add students.")
+                    "Start the free trial or choose a classroom plan to add students.")
         return _class_view(row, [(typed, None) for _, typed in names], 400)
     taken = {k["nickname"].lower() for k in classrooms.students(conn, class_id)}
     wanted, rejected = classrooms.sort_names(names, taken, room)
@@ -307,7 +309,7 @@ def join_codes(class_id):
                            days=JOIN_CODE_DAYS, join_url=url_for("kids.join", _external=True))
 
 
-# --- Certificates and the pilot report ---------------------------------------------------
+# --- Certificates and the trial report ---------------------------------------------------
 
 @bp.route("/app/academy/classes/<int:class_id>/certificates")
 @grown_ups_only
@@ -335,7 +337,7 @@ def certificates(class_id):
 @bp.route("/app/academy/classes/<int:class_id>/report")
 @grown_ups_only
 def report(class_id):
-    """The pilot report: one page of totals for the school office."""
+    """The trial report: one page of totals for the school office."""
     row = _class_or_404(class_id)
     conn = get_db()
     usage.count(conn, "pilot_reports")
