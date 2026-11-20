@@ -140,26 +140,4 @@
     }
     try { window.sessionStorage.setItem(mark, now); } catch (_) { /* private mode: nothing kept */ }
   }
-
-  // Core 1.0.0 draws its greeting with replaceChildren(), which writes a
-  // missing part as the word "null" once a key is set ("nullnull" under the
-  // pills). Until the core is fixed, take those stray words out of the
-  // greeting, and nothing else.
-  if (mounted && typeof MutationObserver === "function") {
-    const tidy = (root) => new MutationObserver((changes) => {
-      for (const c of changes) {
-        if (!c.target.classList || !c.target.classList.contains("pilot-welcome")) continue;
-        for (const n of Array.from(c.addedNodes)) if (n.nodeType === 3 && n.nodeValue === "null") n.remove();
-      }
-    }).observe(root, { childList: true, subtree: true });
-    const found = document.querySelector(".pilot-root");
-    if (found) tidy(found);
-    else {
-      const wait = new MutationObserver(() => {
-        const root = document.querySelector(".pilot-root");
-        if (root) { wait.disconnect(); tidy(root); }
-      });
-      wait.observe(document.body, { childList: true });
-    }
-  }
 })();

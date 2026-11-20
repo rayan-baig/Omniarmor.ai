@@ -515,3 +515,10 @@ test("the robot is the owner's picture at the size the screen needs; the P mark 
   assert.equal(svg.tag, "svg");
   assert.ok(made.every((n) => !("style" in n.attrs)));
 });
+
+test("the window never writes the word null: every replaceChildren goes through put()", () => {
+  const src = require("node:fs").readFileSync(core("pilot-panel.js"), "utf8");
+  const calls = src.match(/\.replaceChildren\(/g) || [];
+  assert.equal(calls.length, 1, "only put() may call replaceChildren directly");
+  assert.match(src, /function put\(node, \.\.\.kids\) \{\n\s+node\.replaceChildren\(\.\.\.kids\.filter\(/);
+});

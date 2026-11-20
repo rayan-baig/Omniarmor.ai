@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.0.0**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.0.1**) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, and the security rules.
 This page covers only what is OmniArmor's own.

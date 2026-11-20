@@ -3,6 +3,11 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.10.1 (20 November 2026)
+
+- **Pilot core 1.0.1.** The shared core no longer writes the word "null" under Pilot's buttons
+  once a key is set, so OmniArmor's own tidy-up for it is removed.
+
 ## 1.10.0 (20 November 2026)
 
 Pilot, the MTRX Horizyn assistant, comes to OmniArmor. It runs on your own
