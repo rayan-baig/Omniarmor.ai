@@ -1,0 +1,20 @@
+{#- Pilot, the MTRX Horizyn assistant (static/pilot/, pilot.py, docs/PILOT.md).
+    Only on the pages pilot.py lists for grown-ups: never on a page a student
+    uses. A page loads only pilot.js here; once the page has finished loading
+    it fetches the robot, its store and OmniArmor's config, and the chat
+    window and everything it needs come only the first time someone opens
+    it. It talks to the AI provider the person chose, from their browser,
+    with their own key: never through this server. -#}
+{%- set pt = pilot_tag() %}
+{%- if pt %}
+<script src="{{ url_for('static', filename='pilot/pilot.js') }}" defer id="pilot-core"
+  data-store="{{ url_for('static', filename='pilot/pilot-store.js') }}" data-mascot="{{ url_for('static', filename='pilot/pilot-mascot.js') }}"
+  data-app="{{ url_for('static', filename='pilot-omniarmor.js') }}" data-pack="{{ url_for('static', filename='pilot-omniarmor-pack.js') }}"
+  data-css="{{ url_for('static', filename='pilot/pilot.css') }}" data-panel-css="{{ url_for('static', filename='pilot/pilot-panel.css') }}"
+  data-robot="{{ url_for('static', filename='pilot/pilot-robot-128.webp') }}" data-robot2x="{{ url_for('static', filename='pilot/pilot-robot-256.webp') }}"
+  data-render="{{ url_for('static', filename='pilot/pilot-render.js') }}" data-providers="{{ url_for('static', filename='pilot/pilot-providers.js') }}"
+  data-engine="{{ url_for('static', filename='pilot/pilot-engine.js') }}" data-media="{{ url_for('static', filename='pilot/pilot-media.js') }}"
+  data-panel="{{ url_for('static', filename='pilot/pilot-panel.js') }}"
+  data-who="{{ pt.who }}" data-demo="{{ pt.demo }}" data-readonly="{{ pt.readonly }}" data-account="{{ pt.account }}"
+  data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
+{%- endif %}

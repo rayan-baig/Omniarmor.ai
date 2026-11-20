@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from flask import abort, flash, g, redirect, request, session, url_for
 
 from .db import get_db, iso, utcnow
+from .pilot import CONNECT as PILOT_CONNECT
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD = 10
@@ -309,7 +310,12 @@ CSP = (
     "default-src 'self'; style-src 'self';"
     " font-src 'self';"
     " img-src 'self' data:; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';"
-    " object-src 'none'"
+    " object-src 'none';"
+    # Pilot (pilot.py, docs/PILOT.md) calls the AI provider the person chose,
+    # from their browser with their own key: exactly these addresses, and
+    # nothing else. blob: is only for a video Pilot made with their own video
+    # key, shown from memory in their own browser.
+    f" connect-src 'self' {PILOT_CONNECT}; media-src 'self' blob:"
 )
 
 
@@ -318,7 +324,9 @@ def security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "same-origin")
-    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    # The microphone only for this site's own pages: Pilot's optional voice
+    # input, used only when its button is pressed.
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
     if request.is_secure:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     if g.get("user") is not None or g.get("kid") is not None:

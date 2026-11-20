@@ -19,7 +19,7 @@ from werkzeug.exceptions import InternalServerError, ServiceUnavailable
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import (academy_views, armo_views, autopilot, auth, classroom_views, compress, connections, demo_mode,
-               errormail, health, plan_views, usage, views)
+               errormail, health, pilot, plan_views, usage, views)
 from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import SettingsError, load_config, support_email
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
@@ -123,7 +123,7 @@ def class_guide():
 
 
 # The date the Terms and Privacy pages last changed. Update it with them.
-RULES_UPDATED = "19 November 2026"
+RULES_UPDATED = "20 November 2026"
 
 
 def _rules_facts():
@@ -428,7 +428,8 @@ def create_app(**overrides):
     app.after_request(compress.gzip_response)
     app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url,
-                                plan_facts=lambda: plan_views.plan_facts(current_app.config))
+                                plan_facts=lambda: plan_views.plan_facts(current_app.config),
+                                pilot_tag=pilot.pilot_tag)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["pct"] = percent
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))

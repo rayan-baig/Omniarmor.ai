@@ -45,7 +45,7 @@
 {% for s in states %}
   {% set r = s.rule %}
   {% set fid = 'f-' ~ r.key %}
-  <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}">
+  <li class="rule" id="rule-{{ r.key }}" data-level="{{ s.level }}" data-kind="{{ r.kind }}" data-mode="{{ s.mode or '' }}"{% if counts_time(r) %} data-timed{% endif %}{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %}>
     <div class="rule-main">
       <div class="rule-top"><h2>{{ r.title }}</h2><span class="tag {{ s.level }}">{{ s.label }}</span>
         {% if not read_only %}<label class="pick no-print"><input type="checkbox" name="keys" value="{{ r.key }}" form="bulk"> Select</label>{% endif %}</div>
@@ -61,7 +61,7 @@
         <div class="why">
           <p>{{ r.cost }}</p>
           <p class="mono">{{ r.citation }}</p>
-          {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at|local_date }}{{ ' by ' ~ s.updated_by if s.updated_by }}</p>{% endif %}
+          {% if s.updated_at %}<p class="faint">Last updated {{ s.updated_at|local_date }}{% if s.updated_by %}<span data-pilot-private> by {{ s.updated_by }}</span>{% endif %}</p>{% endif %}
         </div>
       </details>
       {% if can_override(r) and not read_only %}

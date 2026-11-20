@@ -37,10 +37,21 @@
 <p><strong>When you pay for a plan (Pro or Plus):</strong> we keep Stripe's customer and subscription numbers, which plan it is, its status, renewal date and, if you cancel, the date it ends. If you pause it, we keep when the pause began and the date it ends; if you take the one-time discount, the date you took it. We never see your card number.</p>
 <p><strong>Offers to change plan:</strong> we note when we last showed you one, so you see at most one a week, and whether you said "No thanks", so it doesn't come back.</p>
 
+<h2 id="pilot">Pilot, the AI assistant</h2>
+<p>Pilot is an optional helper on our public pages and on a business's and a teacher's own pages. It is never on a page a student uses, and never on a kid's device. It runs on <strong>your own AI key</strong>, from an AI company you choose (Anthropic, OpenAI, Gemini, or another service that works the same way, or a model on your own computer). AI keys are for grown-ups: the AI companies require you to be 18 or over.</p>
+<ul>
+  <li><strong>Your key</strong> stays in your browser: for this tab only, unless you tick "Remember my keys on this device". Our server never sees your key, and Pilot goes only to the AI company you chose, straight from your browser. Nothing goes through our server, so we never see the conversation either. "Remove my keys from this browser" deletes them.</li>
+  <li><strong>What Pilot sends, and only when you send a message:</strong> what you typed and the chat so far in that tab; Pilot's rules and its guide to OmniArmor; the name of the screen you're on; and the notes in "What Pilot remembers", if you turned memory on (it is off to start with, and kept only in your browser). With "Analyze &amp; explain" or "Summarise" it also sends an outline of the words on the screen, and shows you exactly what it sent. It never reads boxes you type in, hidden things, people's names in your team list or the audit trail, email addresses or phone numbers.</li>
+  <li><strong>Your records and your students:</strong> Pilot doesn't send your checks, readings or anyone's name by itself. They go to the AI company only when your own message includes them, or when you ask Pilot something that needs them (like "what's due?"), and then only what that answer needs: check names, statuses and dates, never who changed what. A teacher's students' names go only if the teacher types them to add students, and Pilot never reads the class list back.</li>
+  <li><strong>Changes:</strong> Pilot changes something only after you press Allow on a card that says exactly what will happen, through the same forms you use, with your own sign-in. It never pays, deletes anything, changes a plan, invites or removes people, or touches a student's account.</li>
+  <li>The chat is kept in your browser tab and forgotten when you close it, or when someone else signs in or out in that tab. The AI company you chose handles what it receives under its own privacy rules, and bills your key.</li>
+</ul>
+
 <h2 id="cookies">Cookies</h2>
 <ul>
   <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: MTRX Horizyn's other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days }} days from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
   <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
+  <li>Pilot keeps its chat, its settings and your key (if you added one) in your browser: for that tab only, unless you choose to remember them on that device. The corner you drag Pilot's robot to, and its look, are kept on that device. None of it is a cookie, and none of it is sent to us.</li>
   <li>No ad cookies. No tracking cookies.</li>
 </ul>
 
@@ -69,7 +80,7 @@
   <li><strong>Our email service</strong> delivers our emails, so it sees your email address and the message.</li>
   <li><strong>Stripe</strong> handles payments for Pro and Plus. When you pay, Stripe gets your email, your card details, your workspace number and which plan you chose.</li>
 </ul>
-<p>That's the full list. We don't sell your data or share it for ads. Our pages, fonts and pictures all come from our own server, so no other company sees when you or a student opens a page.</p>
+<p>That's the full list. (If you use Pilot, your browser also talks to the AI company you chose, with your own key: see <a href="#pilot">Pilot</a> above.) We don't sell your data or share it for ads. Our pages, fonts and pictures all come from our own server, so no other company sees when you or a student opens a page.</p>
 
 <h2 id="keep">How long we keep it</h2>
 <ul>

@@ -18,7 +18,7 @@
       <li>
         <details class="note">
           <summary><span class="title">{{ n.subject }}</span></summary>
-          <p class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC · to {{ n.recipient }} · {{ {'sent': 'Sent', 'logged': 'Saved (email not set up)', 'failed': 'Failed: ' ~ (n.error or '')}[n.status] }}</p>
+          <p class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC · <span data-pilot-private>to {{ n.recipient }}</span> · {{ {'sent': 'Sent', 'logged': 'Saved (email not set up)', 'failed': 'Failed: ' ~ (n.error or '')}[n.status] }}</p>
           <pre class="mono note-body">{{ n.body }}</pre>
         </details>
       </li>

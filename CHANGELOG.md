@@ -3,6 +3,42 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.10.0 (20 November 2026)
+
+Pilot, the MTRX Horizyn assistant, comes to OmniArmor. It runs on your own
+AI key.
+
+- **Pilot, for grown-ups.** The round robot in the corner opens Pilot's
+  window, the same as on the MTRX Horizyn site: "Your AI copilot. Powered by
+  you." It is on the public pages (the landing page, industries, the trade
+  pages, the Academy for schools, the teacher guide and the demos), on a
+  business's Home, Report, History, Reminders and Settings, and on a
+  teacher's Home, Checklist, Reminders, History and Settings. It is never on
+  a page a student uses: not the lessons, the map, the results or the kids'
+  join page, and never on a kid's device.
+- **Your own key, from your browser.** Add a key from Anthropic, OpenAI,
+  Google Gemini or a compatible service under the gear. It stays in your
+  browser and goes only to that company; OmniArmor never sees it or the
+  chat, and your AI company bills your key. AI keys are for grown-ups.
+- **It knows OmniArmor.** Ask how checks and reminders work, what each
+  status and colour means, what a check's "Rule and source" says, what the
+  plans include (with the app's real prices), or how a teacher signs up, adds
+  students and runs the pilot. It says OmniArmor is decision support, not
+  legal advice, and can say honestly what OmniArmor does well.
+- **It can help, and asks first.** Signed in, it can tell you what's due or
+  overdue, explain a check and its rule, and summarise your report. After you
+  press Allow, it can mark a check done today, update a check, set a reminder
+  date, answer several yes-or-no checks at once (never Yes where Yes means a
+  problem) and, for a teacher, add students by first name. It never changes a
+  plan, deletes anything, invites or removes people, or touches a student's
+  account.
+- **Privacy.** Pilot never reads people's names from your team list or the
+  audit trail, and forgets the chat when someone else signs in or out in the
+  tab. The privacy page and the terms describe Pilot.
+- **Still nothing from other companies.** The fonts stay on OmniArmor's own
+  server. The security policy adds only the AI companies' addresses, for the
+  browser to reach the one you chose.
+
 ## 1.9.0 (19 November 2026)
 
 Fixes from an honest product review: OmniArmor for a classroom feels made

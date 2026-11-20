@@ -432,7 +432,11 @@ class TestSelfHostedFonts(SchoolCase):
             self.assertIn("font-src 'self'", response.headers["Content-Security-Policy"])
         anon = self.app.test_client()
         self.assertNotRegex(anon.get("/").data.decode(), r"googleapis|gstatic")
-        self.assertNotIn("google", CSP)
+        # No Google fonts or pictures: the only Google address in the policy is the Gemini API in connect-src, for
+        # Pilot with a visitor's own key (pilot.py), reached only when they chose Gemini.
+        self.assertNotRegex(CSP, r"fonts\.googleapis|gstatic")
+        self.assertEqual(re.findall(r"[\w.-]*google[\w.-]*", CSP), ["generativelanguage.googleapis.com"])
+        self.assertIn("generativelanguage.googleapis.com", CSP.split("connect-src", 1)[1].split(";", 1)[0])
 
     def test_the_font_files_are_small_woff2_and_each_one_is_used(self):
         with open(os.path.join(STATIC, "app.css")) as f:

@@ -18,7 +18,7 @@
       {% for r in rows %}
         <tr>
           <td class="num mono">{{ r.at[:16].replace('T', ' ') }}</td>
-          <td>{{ r.user_name or 'System' }}</td>
+          <td data-pilot-private>{{ r.user_name or 'System' }}</td>
           <td>{{ r.industry }}</td>
           <td>{{ r.summary }}</td>
         </tr>

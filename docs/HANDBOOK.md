@@ -834,7 +834,7 @@ Every point below is in the code today.
 - **CSRF:** every change carries a form token that must match the session.
 - **Cookies** are HttpOnly and SameSite=Lax, and Secure in production (so production must use HTTPS). Sessions last 14 days.
 - **Security headers on every response:**
-  - a strict Content Security Policy that allows only the site's own scripts and stylesheets, with the fonts served from the app itself (static/fonts, 1.9.0), and no inline script or style at all (1.7.0: progress bars and meters take their widths from classes, `.grow-N` and `.pct-N`, through the `pct` filter);
+  - a strict Content Security Policy that allows only the site's own scripts and stylesheets, with the fonts served from the app itself (static/fonts, 1.9.0), and no inline script or style at all; since 1.10.0 its `connect-src` also lists the AI providers Pilot may call from the person's own browser with their own key, `media-src` allows `blob:` for a video Pilot made, and the Permissions-Policy allows the microphone for this site only (docs/PILOT.md) (1.7.0: progress bars and meters take their widths from classes, `.grow-N` and `.pct-N`, through the `pct` filter);
   - no framing (X-Frame-Options DENY and frame-ancestors none);
   - no MIME sniffing;
   - a same-origin referrer policy;
