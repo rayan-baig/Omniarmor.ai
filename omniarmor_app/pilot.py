@@ -135,8 +135,11 @@ def facts(who):
     if g.get("org") is not None and who in ("business", "teacher"):
         from .catalog import INDUSTRIES
         from .db import get_db
-        from .tracking import org_industry_ids
-        checklists = [{"id": i, "name": INDUSTRIES[i]["brand"]} for i in org_industry_ids(get_db(), g.org["id"])]
+        from .tracking import checklist_ids
+        # A teacher without Whole school has no school checklist (checklist_ids).
+        checklists = [{"id": i, "name": INDUSTRIES[i]["brand"]} for i in checklist_ids(get_db(), g.org)]
+    if who == "teacher":
+        data["school_checklist"] = bool(checklists)
     return {
         "who": who,
         "checklists": checklists,

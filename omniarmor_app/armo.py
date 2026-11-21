@@ -110,14 +110,84 @@ PAGE_HELP = {
                     "and turn email reminders on or off.",
 }
 
+# What Armo says now and then, and when nothing needs doing, on a teacher's
+# pages (a school's workspace): about classes, never about business checks.
+TEACHER_IDLE = [
+    "Tip: add students by first name or nickname. Nothing else is needed.",
+    "Join codes work once, for 7 days. Print new ones any time.",
+    "A lesson is 5 questions and takes about 3 minutes.",
+    "The teacher guide has questions to talk about after each world.",
+    "Students see only their own lessons, and the leaderboard only if you turn it on.",
+    "The Trial report shows class totals, never a student's name.",
+]
+TEACHER_CLEAR = ["All set. Your classes are ready when you are.", "Nothing needs you right now.",
+                 "Everything's in order for your classes."]
 
-def page_help(endpoint):
+# A school's workspace: what each page is for, in a teacher's words.
+TEACHER_PAGE_HELP = {
+    "classes.index": "These are your classes. Add a class, then your students by first name or nickname.",
+    "classes.class_page": "This is your class. Add students, print their join codes and see each student's lessons.",
+    "classes.join_codes": "Print this page and cut it into slips. Each student types their code once on a school device.",
+    "classes.report": "This is the Trial report: class totals only, never a student's name. Print it for your principal.",
+    "classes.certificates": "Certificates show here once a student finishes the first lesson of every world and the "
+                            "Class Challenge.",
+    "app.notifications": "This is Reminders. It lists the emails OmniArmor sent about this workspace.",
+    "app.audit": "This is History. It records every change: what changed, who changed it and when.",
+    "app.settings": "This is Settings. Change the school's name, your timezone and your emails.",
+}
+
+
+def page_help(endpoint, teacher=False):
+    if teacher:
+        return TEACHER_PAGE_HELP.get(endpoint or "", "")
     return PAGE_HELP.get(endpoint or "", "")
+
+
+def teacher_tips(conn, org):
+    """A teacher's tips, from their classes: the next step for a class, the
+    join codes, the guide and the report. Nothing about business checks."""
+    from .classrooms import classes
+    rows = classes(conn, org["id"])
+    found = []
+    if not rows:
+        found.append({"text": "Start by adding your first class. Then add your students by first name or nickname.",
+                      "url": url_for("classes.index", _anchor="add-class")})
+    for c in rows:
+        if not c["students"]:
+            found.append({"text": f"{c['name']} has no students yet. Add them by first name or nickname.",
+                          "url": url_for("classes.class_page", class_id=c["id"], _anchor="add-students")})
+            continue
+        coded = conn.execute("SELECT 1 FROM join_codes JOIN learners ON learners.id = join_codes.learner_id"
+                             " WHERE learners.class_id = ? LIMIT 1", (c["id"],)).fetchone()
+        if not coded:
+            found.append({"text": f"Print the join codes for {c['name']}: each student types theirs once on a "
+                                  "school device.", "url": url_for("classes.join_codes", class_id=c["id"])})
+        else:
+            found.append({"text": f"See how {c['name']} is doing: lessons done and certificates, per student.",
+                          "url": url_for("classes.class_page", class_id=c["id"])})
+    found.append({"text": "The teacher guide says what each world teaches and has questions to talk about.",
+                  "url": url_for("public.class_guide")})
+    if rows:
+        found.append({"text": "The Trial report gives class totals, with no student names, ready to print.",
+                      "url": url_for("classes.report", class_id=rows[0]["id"])})
+    return found[:6]
 
 
 def tips(conn, org, user, state, mail_ready):
     """Short, useful suggestions built from the company's real data, each
-    with a link to where to act. Armo mixes these into his chatter."""
+    with a link to where to act. Armo mixes these into his chatter. A
+    teacher (a school's workspace) gets tips about their classes."""
+    from .classrooms import is_class_workspace, school_checklist_hidden
+    if is_class_workspace(org):
+        found = teacher_tips(conn, org)
+        if school_checklist_hidden(org):
+            return found
+        return [t for t in tips_for_checks(conn, org, user, state, mail_ready) if "Academy" not in t["text"]] + found
+    return tips_for_checks(conn, org, user, state, mail_ready)
+
+
+def tips_for_checks(conn, org, user, state, mail_ready):
+    """The tips about a workspace's checks, team and reminders."""
     found = []
     upcoming = [i for i in state["issues"] if i.get("kind") == "upcoming"]
     if upcoming:
@@ -139,9 +209,9 @@ def tips(conn, org, user, state, mail_ready):
                       "url": url_for("app.notifications")})
     learners = conn.execute("SELECT COUNT(*) FROM learners WHERE org_id = ?", (org["id"],)).fetchone()[0]
     if not learners:
-        from .academy import TOTAL_LEVELS
+        from .academy import TRACKS, DEFAULT_TRACK
         found.append({"text": "Got future owners at home? The Academy teaches kids the business in "
-                              f"{TOTAL_LEVELS:,} game levels.",
+                              f"{TRACKS[DEFAULT_TRACK].lessons:,} short game lessons to start.",
                       "url": url_for("academy.home")})
     found.append({"text": "Need proof for an inspector? The Report prints a full compliance report.",
                   "url": url_for("app.report")})

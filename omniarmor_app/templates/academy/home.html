@@ -13,7 +13,7 @@
     <div>
       <p class="ac-kicker">Future Owner Academy</p>
       <h1 class="ac-title">Learn the family business!</h1>
-      <p class="ac-lead">Up to {{ "{:,}".format(tracks[-1].total) }} levels in {{ world_count }} worlds about {{ g.org.name }} and how to run a great business: money, marketing, sales, leading a team, hiring, tough calls, safety, ethics, taxes, staying calm, a winning mindset and never giving up. Earn stars, level up your picture and win your Future Owner Certificate.</p>
+      <p class="ac-lead">Up to {{ "{:,}".format(tracks|map(attribute='lessons')|max) }} business lessons in {{ world_count }} worlds about {{ g.org.name }} and how to run a great business: money, marketing, sales, leading a team, hiring, tough calls, safety, ethics, taxes, staying calm, a winning mindset and never giving up. Each track also has a Rule Quest for each of {{ g.org.name }}'s own industries, built from its real rules. Earn stars, level up your picture and win your Future Owner Certificate.</p>
     </div>
   </section>
 
@@ -33,7 +33,7 @@
 
   <ul class="ac-tracks-mini" aria-label="Tracks">
     {% for t in tracks %}
-      <li>{{ emblem(t.key, 44) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.total) }} levels</small></span></li>
+      <li>{{ emblem(t.key, 44) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons</small></span></li>
     {% endfor %}
   </ul>
 
@@ -46,7 +46,7 @@
             {{ avatar(s.learner.avatar, avatars, 76, s.tier) }}
             <span class="ac-learner-name">{{ s.learner.nickname }}</span>
             <span class="ac-learner-meta">{{ s.track.name }} · {{ s.rank }}</span>
-            <span class="ac-learner-meta">{{ s.done }}/{{ "{:,}".format(s.total) }} levels · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
+            <span class="ac-learner-meta">{{ s.done }}/{{ "{:,}".format(s.total) }} lessons · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
             {% if s.certificate %}<span class="ac-badge">{{ s.certificate }}</span>{% endif %}
           </a>
         </li>
@@ -90,7 +90,7 @@
         {% for t in tracks %}
           <label class="ac-track-pick">
             <input type="radio" name="track" value="{{ t.key }}" {% if loop.first %}checked{% endif %}>
-            {{ emblem(t.key, 36) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.total) }} levels</small></span>
+            {{ emblem(t.key, 36) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons</small></span>
           </label>
         {% endfor %}
       </div>

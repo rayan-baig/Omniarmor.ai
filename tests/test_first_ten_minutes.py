@@ -67,8 +67,8 @@ class TestLandingPage(AppTestCase):
 
     def test_academy_level_counts_come_from_the_tracks(self):
         page = text(self.client.get("/help"))
-        low, high = min(t.total for t in TRACK_LIST), max(t.total for t in TRACK_LIST)
-        self.assertIn(f"{len(TRACK_LIST)} tracks, from {low:,} to {high:,} levels", page)
+        low, high = min(t.lessons for t in TRACK_LIST), max(t.lessons for t in TRACK_LIST)
+        self.assertIn(f"{len(TRACK_LIST)} tracks, from {low:,} to {high:,} business lessons", page)
 
 
 class TestTopChecks(AppTestCase):

@@ -143,16 +143,23 @@ def _summary(learner, progress=None, t=None):
     final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
     done = len(passed)
     today = org_today(g.org)
+    # Counted: the business lessons and the Rule Quests of the workspace's own
+    # industries (Track.total_for). Another industry's Rule Quest a learner
+    # opened as an extra still earns stars and ranks, but isn't counted here.
+    own = org_industry_ids(get_db(), g.org["id"])
+    counted = {w.number for w in t.topic_worlds} | {academy.FINAL_WORLD.number}
+    if t.rule_quests:
+        counted |= {academy.INDUSTRY_WORLD_BASE + i for i in own}
     return {
         "learner": learner,
         "track": t,
         "stars": sum(r["best_stars"] for r in progress.values()),
-        "done": done,
+        "done": sum(1 for lid in passed if (lid % 1_000_000) // 1000 in counted),
         "rank": academy.rank_for(done, t),
         "tier": academy.rank_tier(done, t),
         "next_rank": academy.next_rank(done, t),
         "certificate": academy.certificate_for(done, final_passed, t),
-        "total": t.total,
+        "total": t.total_for(own),
         "streak": _streak(learner["id"], today),
         "today": _today_levels(learner["id"], today),
     }
@@ -391,7 +398,7 @@ def choose_track(learner_id):
         conn.execute("UPDATE learners SET track = ?, track_chosen = 1 WHERE id = ?", (key, learner_id))
         conn.commit()
         t = academy.TRACKS[key]
-        flash(f"{t.name} it is: {t.total:,} levels to explore. Let's go!", "ok")
+        flash(f"{t.name} it is: {t.lessons:,} business lessons to explore. Let's go!", "ok")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
     done = {t.key: len(_passed(_progress(learner_id, t))) for t in academy.TRACK_LIST}
     return render_template("academy/track.html", learner=learner, tracks=academy.TRACK_LIST, done=done,
@@ -610,7 +617,36 @@ def play(learner_id, world_number, stage):
         new_certificate=after["certificate"] if after["certificate"] != before["certificate"] else None,
         goal_hit=before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
         missed=sum(1 for r in results if not r["right"]),
+        band=result_band(score, len(questions), needed, stars),
+        retry_lines=retry_lines(armo.personality(learner["armo"], armo.DEFAULT_KID), score, needed),
     )
+
+
+def result_band(score, total, needed, stars):
+    """The result's heading, honest about the score and still kind: "So
+    close!" only one short of a pass, never for 0 of 5."""
+    if stars == 3:
+        return "Perfect score!"
+    if stars >= 1:
+        return "Stage complete!"
+    if score >= needed - 1 and score > 0:
+        return "So close! Try again"
+    if score * 2 >= total:
+        return "Good start. Try again"
+    if score > 0:
+        return "Keep going: read the cards, then try again"
+    return "Not this time. Read the cards again, then try"
+
+
+_CLOSE = re.compile(r"\b(so close|close|almost|a second look)\b", re.I)
+
+
+def retry_lines(buddy, score, needed):
+    """Armo's retry lines for this score: "So close!" and "Almost" only when
+    the learner really was one short."""
+    if score >= needed - 1 and score > 0:
+        return buddy.retry
+    return [line for line in buddy.retry if not _CLOSE.search(line)] or ["Every try teaches you something. Again!"]
 
 
 def _lesson_company(t):

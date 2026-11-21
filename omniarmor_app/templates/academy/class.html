@@ -24,6 +24,24 @@
     <a class="btn quiet" href="{{ url_for('classes.join_codes', class_id=cls.id) }}">Join codes</a>
   </p>
 
+  {% if ask %}
+  <form class="ac-card mt no-print" id="confirm-names" data-confirm-names method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="confirmed" value="1">
+    <input type="hidden" name="asked" value="{{ ask|length }}">
+    <h2 class="ac-h3">First name only?</h2>
+    <p>{{ 'These look' if ask|length > 1 else 'This looks' }} like a first and last name. Students need only a first name, or a first name and last initial. Nothing is added until you choose.</p>
+    {% for name, short in ask %}
+    <fieldset class="ac-confirm" data-ask>
+      <legend>{{ name }}</legend>
+      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ short }}" checked> Add as <strong>{{ short }}</strong></label>
+      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ name }}"> Add as {{ name }}: it's all first name (like Mary Jane)</label>
+      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value=""> Don't add</label>
+    </fieldset>
+    {% endfor %}
+    <button class="btn ac-btn" type="submit">Add {{ 'these students' if ask|length > 1 else 'this student' }}</button>
+  </form>
+  {% endif %}
   <h2 class="ac-h2">Students</h2>
   {% if view.students %}
     <div class="table-wrap">
@@ -65,7 +83,7 @@
     <h2 class="ac-h3">Add students</h2>
     <label class="field"><span>First names or nicknames, one on each line</span>
       <textarea name="names" rows="6" required autocomplete="off" placeholder="Sam&#10;Priya&#10;Jo B">{{ names_back }}</textarea></label>
-    <p class="hint">First name or nickname only, up to {{ max_name }} characters. No email, last name, birthdate or photo: OmniArmor doesn't ask for them, and each student gets a drawn picture. Room for {{ room }} more.</p>
+    <p class="hint">First name or nickname only, up to {{ max_name }} characters. No email, last name, birthdate or photo: OmniArmor doesn't ask for them (a name that looks like a first and last name is checked with you first), and each student gets a drawn picture. Room for {{ room }} more.</p>
     <button class="btn ac-btn" type="submit">Add students</button>
   </form>
   {% elif limits.active %}

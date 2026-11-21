@@ -235,7 +235,8 @@ class TestAcademyPages(AppTestCase):
     def test_home_and_add_learner(self):
         page = self.client.get("/app/academy")
         self.assertEqual(page.status_code, 200)
-        self.assertIn(f"{max(t.total for t in academy.TRACK_LIST):,}".encode(), page.data)
+        # 1.12.0: the biggest track's business lessons, not the last track's total.
+        self.assertIn(f"Up to {max(t.lessons for t in academy.TRACK_LIST):,} business lessons".encode(), page.data)
         for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery"):
             self.assertIn(f'name="track" value="{name.split()[0].lower()}"', page.data.decode())
         response = self.add(track=None)
@@ -245,7 +246,7 @@ class TestAcademyPages(AppTestCase):
         self.assertEqual(self.client.get(f"/app/academy/{lid}").status_code, 200)
         picker = self.client.get(f"/app/academy/{lid}/track").data.decode()
         for name in ("Launchpad", "Trailblazer", "Summit", "Titan Mastery") + tuple(
-                f"{t.total:,} levels" for t in academy.TRACK_LIST):
+                f"{t.lessons:,} business lessons" for t in academy.TRACK_LIST):
             self.assertIn(name, picker)
         self.post(f"/app/academy/{lid}/track", {"track": "summit"})
         page = self.client.get(f"/app/academy/{lid}").data.decode()
@@ -368,7 +369,9 @@ class TestAcademyPages(AppTestCase):
         self.add()
         lid = self.learner_id()
         page = self.answer(lid, 1, 1, right=False).data.decode()
-        self.assertIn("So close", page)
+        # 0 right: an honest heading, never "So close" (1.12.0).
+        self.assertIn("Not this time", page)
+        self.assertNotIn("So close", page)
         self.assertEqual(self.client.get(f"/app/academy/{lid}/world/1/stage/2").status_code, 302)
         self.answer(lid, 1, 1, attempt=2)
         self.answer(lid, 1, 1, right=False, attempt=3)

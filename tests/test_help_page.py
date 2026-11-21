@@ -62,9 +62,10 @@ class TestHelpPage(AppTestCase):
             f"for {RESET_HOURS} hour",
             f"about {cfg['BACKUP_KEEP']} days",
             f"{len(academy.TOPIC_WORLDS)} business worlds",
-            f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests",
-            "{:,} to {:,} levels".format(min(t.total for t in academy.TRACK_LIST),
-                                         max(t.total for t in academy.TRACK_LIST)),
+            f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests are optional extras",
+            # 1.12.0: the business lessons lead; the Rule Quests are counted apart.
+            "{:,} to {:,} business lessons".format(min(t.lessons for t in academy.TRACK_LIST),
+                                                   max(t.lessons for t in academy.TRACK_LIST)),
             f"{plans.PRO.name}: {plans.PRO.price}.",
             f"{plans.PLUS.name}: {plans.PLUS.price}.",
             f"Plus costs only the difference, {plans.price_label(plans.bundle_upgrade_dollars())}",

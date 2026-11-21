@@ -259,15 +259,38 @@ function evaluate(rule, value) {
     return ["NONE", "NO READING", "Enter a reading to check this rule."];
   }
   const limit = fmt(rule.limit, rule.unit), shown = fmt(value, rule.unit);
+  // Where the warning starts, when that isn't the limit itself (as rule.py's _warns).
+  const warns = (word) => {
+    const policy = rule.policy ? "policy setting" : "";
+    if (rule.warn === null || rule.warn === rule.limit) return policy ? ` (${policy})` : "";
+    const w = `it warns ${word} ${fmt(rule.warn, rule.unit)}${word === "at" ? " " + (rule.kind === "max" ? "or more" : "or less") : ""}`;
+    return policy ? ` (${w}; ${policy})` : ` (${w})`;
+  };
+  // A minimum of 0 in time units is a countdown: the time left before a deadline.
+  const countdown = rule.kind === "min" && rule.limit === 0 && TIME_UNITS.includes(rule.unit);
   if (rule.kind === "max") {
     if (value > rule.limit) return ["BLOCKED", "OVER LIMIT", `${shown} is over the ${limit} limit${source}. ${rule.action}`];
-    if (rule.warn !== null && value >= rule.warn) return ["WARNING", "NEAR LIMIT", `${shown} is close to the ${limit} limit${source}.`];
+    if (rule.warn !== null && value >= rule.warn) {
+      if (value === rule.limit) return ["WARNING", "NEAR LIMIT", `${shown} is close to the ${limit} limit: it is at the limit now${source}.`];
+      return ["WARNING", "NEAR LIMIT", `${shown} is close to the ${limit} limit${warns("from")}.`];
+    }
     return ["CLEARED", "CLEARED", `${shown} is within the ${limit} limit${source}.`];
   }
+  if (value < rule.limit && countdown) {
+    const late = -value;
+    const unit = late === 1 && rule.unit.endsWith("s") ? rule.unit.slice(0, -1) : rule.unit;
+    return ["BLOCKED", "BELOW MINIMUM", `${fmt(late, unit)} past the deadline${source}. ${rule.action}`];
+  }
   if (value < rule.limit) return ["BLOCKED", "BELOW MINIMUM", `${shown} is below the ${limit} minimum${source}. ${rule.action}`];
-  if (rule.warn !== null && value <= rule.warn) return ["WARNING", "NEAR MINIMUM", `${shown} is close to the ${limit} minimum${source}.`];
+  if (rule.warn !== null && value <= rule.warn) {
+    if (countdown) return ["WARNING", "NEAR MINIMUM", `${shown} left before the deadline: plan it now, as the warning starts at ${fmt(rule.warn, rule.unit)} left${source}.`];
+    if (value === rule.limit) return ["WARNING", "NEAR MINIMUM", `${shown} is exactly the ${limit} minimum, with no room to spare${source}.`];
+    return ["WARNING", "NEAR MINIMUM", `${shown} is close to the ${limit} minimum${warns("at")}.`];
+  }
+  if (countdown) return ["CLEARED", "CLEARED", `${shown} left before the deadline${source}.`];
   return ["CLEARED", "CLEARED", `${shown} meets the ${limit} minimum${source}.`];
 }
+const TIME_UNITS = ["day", "days", "business days", "week", "weeks", "month", "months", "year", "years", "h", "min"];
 
 /* State: current reading per rule, seeded from the example values. */
 const STORE_KEY = "omniarmor-console-v2";

@@ -63,8 +63,8 @@ def _landing_facts():
         "free_worlds": len(FREE_WORLDS),
         "free_track": next(t.name for t in TRACK_LIST if t.key == FREE_TRACK),
         "tracks": len(TRACK_LIST),
-        "fewest_levels": min(t.total for t in TRACK_LIST),
-        "most_levels": max(t.total for t in TRACK_LIST),
+        "fewest_levels": min(t.lessons for t in TRACK_LIST),
+        "most_levels": max(t.lessons for t in TRACK_LIST),
     }
 
 
@@ -101,8 +101,12 @@ def trade_page(slug):
         abort(404)
     if slug != trade.slug:
         return redirect(url_for("public.trade_page", slug=trade.slug), code=301)
+    from .demo_mode import TRADE_DEMO_FOR, TRADE_DEMOS
+    # Each trade page's demo is that trade's own (a salon's opens a salon).
+    demo_kind = TRADE_DEMO_FOR.get(trade.slug, "business")
+    demo_name = TRADE_DEMOS[demo_kind][3].lower() if demo_kind in TRADE_DEMOS else "a restaurant"
     return render_template("trade.html", trade=trade, groups=trades.groups(trade), facts=trades.facts(trade),
-                           sister_url=trades.CYBERLOGIX_URL)
+                           sister_url=trades.CYBERLOGIX_URL, demo_kind=demo_kind, demo_name=demo_name)
 
 
 @public.route("/classrooms")

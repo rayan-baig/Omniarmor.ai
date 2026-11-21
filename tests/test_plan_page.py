@@ -55,7 +55,8 @@ class TestPlanPage(AppTestCase):
             f"{len(academy.INDUSTRY_WORLDS)} industry Rule Quests",
             f"duels in all {len(academy.DUEL_WORLDS)} duel worlds",
         ]
-        expected += [f"{t.name} ({'{:,}'.format(t.total)} levels)" for t in academy.TRACK_LIST]
+        # 1.12.0: each track's business lessons, with the Rule Quests counted apart.
+        expected += [f"{t.name} ({'{:,}'.format(t.lessons)} business lessons)" for t in academy.TRACK_LIST]
         for fact in expected:
             self.assertIn(fact, text)
 

@@ -563,3 +563,6 @@
 
 /* The teacher's getting-started list, above the classes page's hero */
 .ac-start{margin:8px 0 20px}
+/* "First name only?": one fieldset per name that looks like a full name */
+.ac-confirm{margin:14px 0 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;max-width:640px}
+.ac-confirm legend{padding:0 6px;font-weight:700}

@@ -78,8 +78,8 @@
           <li>The Academy's free worlds</li>
         {% else %}
           <li>Everything in {{ facts.pro.name }}</li>
-          <li>The whole Future Owner Academy at no extra cost: {% for t in facts.tracks %}{{ t.name }} ({{ "{:,}".format(t.total) }} levels){{ ', ' if not loop.last }}{% endfor %}</li>
-          <li>All {{ facts.topic_worlds }} business worlds, the Owner's Challenge and its certificates, {{ facts.rule_quests }} industry Rule Quests, and duels in all {{ facts.duel_worlds }} duel worlds</li>
+          <li>The whole Future Owner Academy at no extra cost: {% for t in facts.tracks %}{{ t.name }} ({{ "{:,}".format(t.lessons) }} business lessons){{ ', ' if not loop.last }}{% endfor %}, plus a Rule Quest for each of your industries</li>
+          <li>All {{ facts.topic_worlds }} business worlds, the Owner's Challenge and its certificates, a Rule Quest for each of your industries (all {{ facts.rule_quests }} industry Rule Quests are there to explore), and duels in all {{ facts.duel_worlds }} duel worlds</li>
           <li>Up to {{ facts.max_learners }} kids, each on their own device if you like</li>
         {% endif %}
       </ul>

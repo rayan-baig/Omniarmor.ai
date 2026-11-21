@@ -146,8 +146,8 @@
 {% set buddy = armo_personality(g.user.armo) %}
 <aside class="companion no-print" aria-label="Armo, your helper" data-companion
   data-status="{{ url_for('armo.status') }}" data-needs="{{ state.needs }}" data-signature="{{ state.signature }}"
-  data-issues='{{ state.pressing|tojson }}' data-tips='{{ state.tips|tojson }}' data-page-help="{{ armo_page_help(request.endpoint) }}"
-  data-idle='{{ buddy.idle|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ buddy.clear|tojson }}'
+  data-issues='{{ state.pressing|tojson }}' data-tips='{{ state.tips|tojson }}' data-page-help="{{ armo_page_help(request.endpoint, class_workspace) }}"
+  data-idle='{{ (armo_teacher['idle'] if class_workspace else buddy.idle)|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ (armo_teacher['clear'] if class_workspace else buddy.clear)|tojson }}'
   data-fixed='{{ buddy.fixed|tojson }}' data-poke='{{ buddy.poke|tojson }}'
   data-acts='{{ buddy.activities|tojson }}' data-fix="{{ buddy.fix }}">
   <div class="companion-bubble" data-bubble hidden>

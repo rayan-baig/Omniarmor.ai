@@ -6,6 +6,12 @@ both with pretend data.
                        morning's reminder in Radar and a report ready
     /demo/classroom    a teacher's class: pretend first names, the class
                        progress view, join codes and a sample lesson
+    /demo/salon, /demo/tattoo, /demo/gym, /demo/shop
+                       a salon, a tattoo studio, a gym and a shop, each with
+                       its own checklist (SalonArmor, InkArmor, GymArmor; a
+                       shop's card payments and online sales) and an
+                       employer's: one check overdue, one due soon, a few
+                       done, so each trade page's demo matches the trade
 
 How it stays safe:
 
@@ -42,14 +48,14 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
                    url_for)
 
 from . import academy, armo, demo, usage
-from .catalog import find_rule
+from .catalog import INDUSTRIES, counts_time, date_mode, find_rule, rules_for
 from .db import iso, migrate, utcnow
 from .security import client_ip, new_device_epoch, rate_limited, record_event
 from .tracking import _describe
 
 bp = Blueprint("demo", __name__)
 
-KINDS = ("business", "classroom")
+KINDS = ("business", "classroom", "salon", "tattoo", "gym", "shop")
 PASS_MINUTES = 30
 STARTS_PER_HOUR = 20
 REBUILD_EVERY = timedelta(hours=1)
@@ -73,6 +79,21 @@ CLASS_NAME = "Room 12"
 RESTAURANT, EMPLOYER = 2, 30     # RestoArmor, HRArmor
 SCHOOL_INDUSTRY = 51             # SchoolSafetyArmor
 WORKSPACE_AGE_DAYS = 6
+# The trade demos: kind -> (the trade's industries, its own first; the
+# workspace's name; the owner; what the demo page calls it; its trade page).
+# Each also has HRArmor, as a shop with staff does; the readings of its own
+# checklist are planned by _trade_plan.
+TRADE_DEMOS = {
+    "salon": ((52, EMPLOYER), "Sample Salon (demo)", ("Robin Vale", f"robin@{DOMAIN}"), "A salon",
+              "salons-and-barbershops"),
+    "tattoo": ((53, EMPLOYER), "Sample Tattoo Studio (demo)", ("Morgan Reyes", f"morgan@{DOMAIN}"),
+               "A tattoo studio", "tattoo-and-piercing-studios"),
+    "gym": ((54, EMPLOYER), "Sample Gym (demo)", ("Jordan Hale", f"jordan@{DOMAIN}"), "A gym",
+            "gyms-and-fitness-studios"),
+    "shop": ((EMPLOYER, 32, 50), "Sample Shop (demo)", ("Sam Ortiz", f"sam@{DOMAIN}"), "A shop",
+             "shops-and-retail-stores"),
+}
+TRADE_DEMO_FOR = {slug: kind for kind, (_, _, _, _, slug) in TRADE_DEMOS.items()}
 
 # The restaurant's readings (demo.reading_for explains the shapes): a few
 # checks done, one overdue (the 7-day date marking, last done 9 days ago),
@@ -197,11 +218,70 @@ def _fill_business(conn, cfg, now, rng):
                  " 'vomiting', 'sent_home', ?, ?, ?, ?)",
                  (org, RESTAURANT, (today - timedelta(days=3)).isoformat(), stamp, owner, people[owner]))
     conn.commit()
-    # This morning's reminder digest, through the real reminder code, kept in
-    # Radar and never sent (no mail server, .example addresses).
-    from .reminders import run_reminders
-    run_reminders(conn, dict(cfg, SMTP_HOST=""))
     return {"user": owner, "org": org}
+
+
+def _trade_plan(industry_id, today, levels=("BLOCKED", "WARNING", "CLEARED", "CLEARED")):
+    """A trade demo's readings for its own checklist: the first dated check
+    overdue, the next due soon, two more done, the first two yes-or-no
+    checks answered well, and the rest waiting for a first reading. Each
+    reading is found by trying it (demo.reading_for), so it always shows the
+    level it is meant to."""
+    plan = {}
+    # Tasks counted from the day they were done come first: an overdue
+    # cleaning log shows the idea better than an expired license.
+    dated = sorted((r for r in rules_for(industry_id) if date_mode(r) and not counts_time(r)),
+                   key=lambda r: date_mode(r) != "since")
+    for rule, level in zip(dated, levels):
+        kind = "ago" if date_mode(rule) == "since" else "in"
+        start = 1 if level == "CLEARED" else int(rule.limit or 0)
+        try:
+            demo.reading_for(industry_id, rule, (kind, start, level), today)
+        except ValueError:
+            continue
+        plan[rule.key] = (kind, start, level)
+    yes_no = [r for r in rules_for(industry_id) if r.kind in ("required", "forbidden")][:2]
+    for rule in yes_no:
+        plan[rule.key] = ("answer", "yes" if rule.kind == "required" else "no")
+    return plan
+
+
+def _fill_trade(conn, cfg, now, rng, kind):
+    """A trade demo's workspace: its own checklist and an employer's, with
+    a few checks done (_trade_plan), one overdue and one due soon."""
+    industries, name, person, _, _ = TRADE_DEMOS[kind]
+    industry_id = industries[0]
+    today = now.astimezone(ZoneInfo(TIMEZONE)).date()
+    opened = today - timedelta(days=WORKSPACE_AGE_DAYS)
+    created = _at(opened, 9, 5)
+    trial_ends = iso(now + timedelta(days=max(1, cfg["ACADEMY_TRIAL_DAYS"] - WORKSPACE_AGE_DAYS)))
+    owner = _user(conn, person, created)
+    org = _org(conn, name, created, trial_ends)
+    conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
+                 (owner, org, created))
+    conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",
+                     [(org, i) for i in industries])
+    _audit(conn, org, owner, person[0], created, "workspace", f"Workspace created with {len(industries)} industries")
+    own = [i for i in industries if i != EMPLOYER]
+    plans = {i: _trade_plan(i, today) if n == 0 else _trade_plan(i, today, ("CLEARED", "CLEARED"))
+             for n, i in enumerate(own)}
+    plans[EMPLOYER] = {"i9_section_2": ("ago", 1, "WARNING"), "hours_records": ("answer", "yes"),
+                       **({"overtime_pay": ("answer", "yes")} if industry_id == EMPLOYER else {})}
+    for ind, plan in plans.items():
+        for key, spec in plan.items():
+            rule = find_rule(ind, key)
+            row = demo.reading_for(ind, rule, spec, today)
+            at = _at(opened + timedelta(days=rng.randint(0, WORKSPACE_AGE_DAYS - 1)), rng.randint(9, 16),
+                     rng.randint(0, 59))
+            conn.execute(
+                "INSERT INTO items (org_id, industry_id, rule_key, value_num, value_bool, value_date, updated_at,"
+                " updated_by, updated_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (org, ind, key, row["value_num"], row["value_bool"], row["value_date"], at, owner, person[0]))
+            after = _describe(rule, row)
+            _audit(conn, org, owner, person[0], at, "reading", f"{rule.title}: no reading → {after}", ind, key,
+                   "no reading", after)
+    conn.commit()
+    return {"user": owner, "org": org, "industry": industry_id}
 
 
 def _fill_classroom(conn, cfg, now, rng):
@@ -258,7 +338,13 @@ def build(cfg, now=None):
     rng = random.Random(2026)
     facts = {"business": _fill_business(conn, cfg, now, rng), "classroom": _fill_classroom(conn, cfg, now, rng),
              "built": now}
+    for kind in TRADE_DEMOS:
+        facts[kind] = _fill_trade(conn, cfg, now, rng, kind)
     conn.commit()
+    # This morning's reminder digests, through the real reminder code, kept in
+    # Reminders and never sent (no mail server, .example addresses).
+    from .reminders import run_reminders
+    run_reminders(conn, dict(cfg, SMTP_HOST=""))
     return conn, facts
 
 
@@ -363,6 +449,19 @@ def active():
 def tour(kind):
     """The demo's pages in order: (endpoint, url, title, what it shows)."""
     ids = facts()[kind]
+    if kind in TRADE_DEMOS:
+        industry = next((i for i in TRADE_DEMOS[kind][0] if i != EMPLOYER), TRADE_DEMOS[kind][0][0])
+        return [
+            ("app.overview", url_for("app.overview"), "Dashboard",
+             "What needs attention, what's coming due and what to do next, on one page."),
+            ("app.industry", url_for("app.industry", industry_id=industry), "Your trade's checklist",
+             f"{INDUSTRIES[industry]['brand']}: each check says what to do and which rule it comes from. Enter a"
+             " date or an answer once and OmniArmor counts the days."),
+            ("app.notifications", url_for("app.notifications"), "Reminders",
+             "This morning's reminder email. In the demo it is kept here and never sent."),
+            ("app.report", url_for("app.report"), "Report",
+             "Every check's status in one report, to print or download for an inspector."),
+        ]
     if kind == "business":
         return [
             ("app.overview", url_for("app.overview"), "Dashboard",
@@ -387,13 +486,15 @@ def tour(kind):
         ("academy.progress_report", url_for("academy.progress_report", learner_id=ids["showcase"]),
          "One student", "One student's lessons and quiz scores."),
         ("academy.play", url_for("academy.play", learner_id=ids["sample"], world_number=first, stage=1),
-         "A sample lesson", "A real first lesson: read the cards, then try the quiz. Nothing is saved."),
+         "A sample lesson", "A real lesson: read the short cards, then try the quiz. Nothing is saved."),
     ]
 
 
 def signup_url(kind):
     if kind == "classroom":
         return url_for("auth.signup", then="classes")
+    if kind in TRADE_DEMOS:
+        return url_for("auth.signup", industry=list(TRADE_DEMOS[kind][0]))
     return url_for("auth.signup", industry=RESTAURANT)
 
 
@@ -421,7 +522,8 @@ def demo_context():
 def index():
     if g.get("kid") is not None:
         return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
-    return render_template("demo/index.html", minutes=PASS_MINUTES, limited=False, class_grades=academy.CLASS_GRADES)
+    return render_template("demo/index.html", minutes=PASS_MINUTES, limited=False, class_grades=academy.CLASS_GRADES,
+                           trades=TRADE_DEMOS)
 
 
 @bp.route("/demo/<kind>")
@@ -440,7 +542,7 @@ def start(kind):
         flash(f"The demo was opened {STARTS_PER_HOUR} times from here in the last hour. Please try again later,"
               " or start your free trial.", "error")
         return render_template("demo/index.html", minutes=PASS_MINUTES, limited=True,
-                               class_grades=academy.CLASS_GRADES), 429
+                               class_grades=academy.CLASS_GRADES, trades=TRADE_DEMOS), 429
     record_event([key])
     from .db import get_db
     usage.count(get_db(), "demos_opened")

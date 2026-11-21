@@ -174,7 +174,18 @@ def add_students(class_id):
     the box to fix, so nothing typed is lost."""
     row = _class_or_404(class_id)
     conn = get_db()
-    names = classrooms.parse_names(request.form.get("names"))
+    confirmed = request.form.get("confirmed") == "1"
+    if confirmed:
+        # The answers to "Is this a first and last name?": only what the
+        # teacher picked for each is added; "Don't add" leaves it out.
+        count = min(request.form.get("asked", 0, type=int), classrooms.MAX_ADD_AT_ONCE)
+        picked = [(request.form.get(f"pick-{n}") or "").strip() for n in range(max(count, 0))]
+        names = [(classrooms.clean_student_name(p), p) for p in picked if p]
+        if not names:
+            flash("Nothing was added.", "ok")
+            return _back(class_id)
+    else:
+        names = classrooms.parse_names(request.form.get("names"))
     if not names:
         flash_error("Type each student's first name or nickname, one on each line.")
         return _back(class_id)
@@ -185,7 +196,7 @@ def add_students(class_id):
                     "Start the free trial or choose a classroom plan to add students.")
         return _class_view(row, [(typed, None) for _, typed in names], 400)
     taken = {k["nickname"].lower() for k in classrooms.students(conn, class_id)}
-    wanted, rejected = classrooms.sort_names(names, taken, room)
+    wanted, rejected, ask = classrooms.sort_names(names, taken, room, confirmed=confirmed)
     pictures = list(academy.AVATARS)
     start = conn.execute("SELECT COUNT(*) FROM learners WHERE class_id = ?", (class_id,)).fetchone()[0]
     for n, name in enumerate(wanted):
@@ -198,25 +209,34 @@ def add_students(class_id):
     if wanted:
         usage.count(conn, "class_students", len(wanted))
         flash(f"Added {len(wanted)} student{'s' if len(wanted) != 1 else ''} to {row['name']}.", "ok")
-    if not rejected:
+    if not rejected and not ask:
         return _back(class_id)
-    many = len(rejected)
-    flash_error(f"{many} name{'s' if many != 1 else ''} {'weren' if many != 1 else 'wasn'}'t added. "
-                f"{'They are' if many != 1 else 'It is'} listed below the box, with the reason, and back in the box"
-                " to fix.")
+    if ask:
+        many = len(ask)
+        flash(f"{many} name{'s' if many != 1 else ''} look{'s' if many == 1 else ''} like a first and last name, so"
+              f" {'they weren' if many != 1 else 'it wasn'}'t added yet. Students need only a first name: choose"
+              " below.", "ok")
+    if rejected:
+        many = len(rejected)
+        flash_error(f"{many} name{'s' if many != 1 else ''} {'weren' if many != 1 else 'wasn'}'t added. "
+                    f"{'They are' if many != 1 else 'It is'} listed below the box, with the reason, and back in the"
+                    " box to fix.")
     return _class_view(conn.execute("SELECT * FROM classes WHERE id = ?", (class_id,)).fetchone(), rejected,
-                       200 if wanted else 400)
+                       200 if wanted or ask else 400, ask=ask)
 
 
-def _class_view(row, rejected=(), status=200):
+def _class_view(row, rejected=(), status=200, ask=()):
     """The class page; rejected is [(what was typed, why it wasn't added)]
-    after adding students, shown under the box and put back in it."""
+    after adding students, shown under the box and put back in it; ask is
+    the names that look like a first and last name, each asked about with a
+    shorter one suggested ("Ava Thompson": add as Ava T?)."""
     conn = get_db()
     return render_template("academy/class.html", cls=row, view=classrooms.class_progress(conn, row),
                            room=classrooms.room_for_students(conn, g.org, row), limits=plans.class_limits(g.org),
                            avatars=academy.AVATARS, max_name=classrooms.MAX_NAME,
                            codes=_active_codes(conn, row), rejected=list(rejected),
-                           names_back="\n".join(typed for typed, _ in rejected)), status
+                           names_back="\n".join(typed for typed, _ in rejected),
+                           ask=[(name, classrooms.suggest_short_name(name)) for name in ask]), status
 
 
 @bp.route("/app/academy/classes/<int:class_id>/students/<int:learner_id>/remove", methods=["POST"])

@@ -2,6 +2,7 @@
    to add one. The check's status, above, is its worst entry's. Needs s, r, info, m (what an entry is, an example),
    read_only, only, today, now. #}
 {% set thing = m[0]|lower %}
+{% set dw = entry_date_words(info.id, r.key) %}
 {% set eurl = url_for('app.entry_change', industry_id=info.id, rule_key=r.key) %}
 <div class="entries" data-entries="{{ s.entries|length }}">
   <p class="q">{{ r.input }}</p>
@@ -12,7 +13,7 @@
       {% set es = e.state %}
       <li class="entry" data-entry="{{ e.id }}" data-level="{{ es.level }}">
         <div class="entry-top"><span class="entry-name">{{ e.label }}</span><span class="tag {{ es.level }}">{{ es.label }}</span></div>
-        <p class="entry-meta mono">{{ es.shown_value if not es.mode else ('Last done ' ~ es.value_date.isoformat() if es.mode == 'since' and es.value_date else es.shown_value) }}{% if es.due_date %} · {{ es.due_text }} · {{ es.due_label }}{% endif %}</p>
+        <p class="entry-meta mono">{{ es.shown_value if not es.mode else (dw[0] ~ ' ' ~ es.value_date.isoformat() if es.mode == 'since' and es.value_date else es.shown_value) }}{% if es.due_date %} · {{ es.due_text }} · {{ es.due_label }}{% endif %}</p>
         {% if not read_only %}
         <form class="entry-form" method="post" action="{{ eurl }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -45,7 +46,7 @@
       <label class="hint" for="{{ aid }}-n">Name</label>
       <input type="text" id="{{ aid }}-n" name="label" maxlength="60" placeholder="{{ m[1] }}" required>
       {% if s.mode %}
-        <label class="hint" for="{{ aid }}-d">{{ 'The date it was made, opened or last done' if s.mode == 'since' else 'The due or expiry date' }}</label>
+        <label class="hint" for="{{ aid }}-d">{{ dw[1] if s.mode == 'since' else 'The due or expiry date' }}</label>
         <input type="date" id="{{ aid }}-d" name="date"{% if s.mode == 'since' %} max="{{ today.isoformat() }}" value="{{ today.isoformat() }}"{% endif %} required>
       {% else %}
         <label class="hint" for="{{ aid }}-v">Reading ({{ r.unit }})</label>

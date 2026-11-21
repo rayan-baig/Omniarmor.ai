@@ -80,8 +80,10 @@ def scrub(text):
     if not text:
         return ""
     text = redact(str(text))
-    text = text.replace(ROOT + os.sep, "")
+    # Libraries first: a virtual environment inside the project folder
+    # (ROOT/.venv/.../site-packages/) is still a library's path.
     text = _SITE_PACKAGES.sub("", text)
+    text = text.replace(ROOT + os.sep, "")
     text = _ABSOLUTE_PY.sub("", text)
     text = _EMAIL.sub("[email]", text)
     text = _SECRET_VALUE.sub(lambda m: (m.group(1) or m.group(4)) + (m.group(2) or m.group(5)) + "[hidden]", text)
@@ -94,11 +96,13 @@ def relative(filename):
     """A stack frame's file, relative: to the project for OmniArmor's own
     code, to site-packages for a library's, the file name alone otherwise."""
     path = os.path.abspath(filename)
-    if path.startswith(ROOT + os.sep):
-        return os.path.relpath(path, ROOT)
+    # A library's first, even from a virtual environment inside the project
+    # folder (ROOT/.venv/lib/python3.x/site-packages/flask/app.py).
     parts = re.split(r"[\\/](?:site|dist)-packages[\\/]", path, maxsplit=1)
     if len(parts) == 2:
         return parts[1]
+    if path.startswith(ROOT + os.sep):
+        return os.path.relpath(path, ROOT)
     return os.path.basename(path)
 
 

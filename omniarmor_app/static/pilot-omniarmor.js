@@ -44,6 +44,10 @@
     if (path === "/app/settings") return "Settings";
     if (path === "/app/plan") return "Plans";
     if (path === "/app/academy/classes") return "Home: your classes";
+    if (/^\/app\/academy\/classes\/\d+$/.test(path)) return `Class page: ${heading()} (students, join codes, progress)`;
+    if (/^\/app\/academy\/classes\/\d+\/join-codes$/.test(path)) return `Join codes for ${heading()}`;
+    if (path === "/app/academy") return "The Future Owner Academy: the family's learners";
+    if (path === "/app/armo") return "Armo: what needs attention, and Armo's personality";
     return document.title;
   }
 
@@ -75,10 +79,15 @@
     if (path === "/classrooms/guide") return [C("Plan a week", "Help me plan one world a week for my class."),
       C("How long is a lesson?", "How long does a lesson take, and how does a student unlock the next one?")];
     if (path === "/demo") return [C("What can I try?", "What can I try in the demos?"), C("Is anything saved?", "Is anything I do in the demo saved?")];
-    if (path === "/app/academy/classes") return [C("Add students", "Add students to my class."),
-      C("How do join codes work?", "How do join codes work for my students?"),
-      C("What's due?", "What's due or overdue on the school checklist?")];
-    if (path === "/app" || path.startsWith("/app/industry/")) return [C("What's due or overdue?", "What's due or overdue?"),
+    // A teacher's pages: OmniArmor's own suggestions, about their classes. The
+    // school checklist's "What's overdue?" only on Whole school.
+    if (path === "/app/academy/classes" || /^\/app\/academy\/classes\/\d+(\/join-codes)?$/.test(path)) {
+      return [C("Add students", "Add students to my class."),
+        C("How do join codes work?", "How do join codes work for my students?"),
+        facts.school_checklist ? C("What's overdue?", "What's due or overdue on the school checklist?")
+          : C("Plan a week", "Help me plan one world a week for my class.")];
+    }
+    if (path === "/app" || path.startsWith("/app/industry/")) return [C("What's overdue?", "What's due or overdue?"),
       C("Explain a check", "Explain one of my checks and the rule it comes from."),
       C("What do the colours mean?", "What does each colour and status mean?")];
     if (path === "/app/report") return [C("Summarise my report", "Summarise my report."),
@@ -88,7 +97,12 @@
       C("Add a reminder", "Add a reminder for one of my checks.")];
     if (path === "/app/settings" || path === "/app/plan") return [C("Choose my emails", "How do I choose which reminder emails I get?"),
       C("What do the plans include?", "What does each plan include?")];
-    return [];
+    // Anywhere else: OmniArmor's own suggestions for who is here.
+    if (who === "teacher") return [C("Add students", "Add students to my class."),
+      C("How do join codes work?", "How do join codes work for my students?")];
+    if (who === "business") return [C("What's overdue?", "What's due or overdue?"),
+      C("How do reminders work?", "How do OmniArmor's reminder emails work?")];
+    return [C("What does OmniArmor do?", "In plain words, what does OmniArmor do for a small business?")];
   }
 
   const TASKS = {
@@ -113,19 +127,32 @@
     // OpenAI-compatible API (pilot.COMPATIBLE_HOSTS and the person's own computer).
     compatibleHosts: (d.hosts || "").split(/\s+/).filter(Boolean),
     privacyUrl: "/privacy",
-    keyNote: "Pilot uses your own AI key. AI keys are for grown-ups (the AI companies require 18+).",
+    // One plain sentence on what an AI key is and where a grown-up gets one;
+    // the window shows it under the pills (before a key is set) and in the
+    // key settings.
+    keyNote: "An AI key is a private code from an AI company that lets Pilot think for you, billed to the key's owner: "
+      + "a grown-up gets one by signing up on that company's website. AI keys are for grown-ups (the AI companies require 18+).",
     audienceNote: "The people using Pilot here are grown-ups: small-business owners and their teams, and teachers or school staff. "
       + "Students never use Pilot. Never ask for or repeat students' names; a teacher may type first names for adding students, and that's all. "
       + "OmniArmor is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",
     kidView,
-    // Pilot core 1.1.0 keeps the robot out of the way: it gives Armo (the
-    // companion, with his bubble) room, and never sits on a Blocked status,
-    // the "Fix it" bubble or the menu at the top (Sign out among it). When
-    // one of those is where it sits, it moves to a free corner, or tucks half
-    // away until tapped. The tab bar is kept clear by app.css, which puts the
-    // robot's bottom corners above it.
+    // Pilot core 1.1.1 keeps the robot out of the way: it keeps off the
+    // page's own words and buttons wherever the page is scrolled to, and off
+    // a box being typed in. On top of that it gives Armo (the companion, with
+    // his bubble) room, and never sits on a status tag (NO READING, BLOCKED
+    // and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a check's
+    // message, a flash or banner, Armo's bubble and badge, the "First name
+    // only?" card or the menu at the top (Sign out among it). When one of
+    // those is where it sits, it moves to a free corner, or tucks away at the
+    // edge until tapped, with only a slice showing. The tab bar is kept clear
+    // by app.css, which puts the robot's bottom corners above it.
     yieldTo: [".companion"],
-    avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],
+    avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
+      ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav"],
+    // On a phone the page's column gets the core's side room (24px), so line
+    // ends stop before the slice of a tucked robot (and of Armo, tucked at the
+    // left edge). The column is .wrap, whose own padding is 16px there.
+    gutter: ["main > .wrap", "footer.site > .wrap"],
     screen,
     chips,
     taskPrompt,

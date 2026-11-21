@@ -35,10 +35,10 @@
     <div class="ac-player-text">
       <p class="ac-kicker">{{ summary.rank }}{% if summary.certificate %} · {{ summary.certificate }}{% endif %}</p>
       <h1 class="ac-title">{{ summary.learner.nickname }}'s adventure</h1>
-      <div class="ac-xp" role="img" aria-label="{{ summary.done }} of {{ summary.total }} levels done">
+      <div class="ac-xp" role="img" aria-label="{{ summary.done }} of {{ summary.total }} lessons done">
         <span class="ac-xp-fill pct-{{ summary.done|pct(summary.total, 1) }}"></span>
       </div>
-      <p class="ac-xp-label">{{ summary.done }} / {{ "{:,}".format(summary.total) }} levels · {{ summary.stars }} stars
+      <p class="ac-xp-label">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons · {{ summary.stars }} stars
         {% if summary.next_rank %} · {{ summary.next_rank[0] - summary.done }} more to {{ summary.next_rank[1] }}{% endif %}</p>
     </div>
     {% if track.rule_quests %}
@@ -107,8 +107,8 @@
 
   {% if explore %}
   <details class="ac-card ac-explore">
-    <summary><span class="ac-h3">Explore other industries</span> <span class="muted">· {{ explore|length }} Rule Quests</span></summary>
-    <p class="muted">See how other kinds of companies stay safe.{% if explore and not explore[0].open %} These open after stage 1 of {{ unlock_world.title }}.{% endif %}</p>
+    <summary><span class="ac-h3">Extra: explore other industries</span> <span class="muted">· optional · {{ explore|length }} Rule Quests</span></summary>
+    <p class="muted">See how other kinds of companies stay safe, if you're curious. These are extras: they aren't counted in your lessons.{% if explore and not explore[0].open %} These open after stage 1 of {{ unlock_world.title }}.{% endif %}</p>
     <ol class="ac-worlds">{% for card in explore %}{{ world_card(card, lid) }}{% endfor %}</ol>
   </details>
   {% endif %}

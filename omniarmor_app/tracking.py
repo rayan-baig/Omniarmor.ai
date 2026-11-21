@@ -460,6 +460,20 @@ def org_industry_ids(conn, org_id):
     return [r["industry_id"] for r in rows if r["industry_id"] in INDUSTRIES]
 
 
+def checklist_ids(conn, org):
+    """The industries whose checks the workspace works with: Armo, Reminders,
+    the Report, Home and the digests. A school's workspace keeps the school
+    safety checklist only on Whole school; on the free trial or Classroom it
+    is left out everywhere (classrooms.school_checklist_hidden), though its
+    row stays, so choosing Whole school brings it back with its readings."""
+    ids = org_industry_ids(conn, org["id"])
+    from .classrooms import school_checklist_hidden
+    from .trades import SCHOOL_INDUSTRY
+    if SCHOOL_INDUSTRY in ids and school_checklist_hidden(org):
+        ids = [i for i in ids if i != SCHOOL_INDUSTRY]
+    return ids
+
+
 def _load_rows(conn, org_id):
     rows = conn.execute(
         "SELECT items.*, COALESCE(users.name, items.updated_by_name) AS updated_by_name FROM items"
@@ -518,7 +532,7 @@ def states_for_org(conn, org, industry_ids=None, today=None, now=None):
         now = now or datetime.now(tz)
         today = now.astimezone(tz).date()
     now = now or _moment_on(today, tz)
-    ids = org_industry_ids(conn, org["id"]) if industry_ids is None else industry_ids
+    ids = checklist_ids(conn, org) if industry_ids is None else industry_ids
     rows = _load_rows(conn, org["id"])
     entries = _load_entries(conn, org["id"])
     out = []
@@ -930,6 +944,11 @@ def apply_entry(conn, org, user_id, industry_id, rule_key, action, form):
 
     if action == "add":
         label = _clean_label(form.get("label"))
+        names = [r["label"] for r in extra] + ([item["label"] or FIRST_ENTRY[(industry_id, rule_key)]]
+                                                if main_used else [])
+        if label.lower() in (n.lower() for n in names if n):
+            raise ValidationError(f"There's already a {thing} called {label} in this list. Give this one its own"
+                                  f" name, like {label} 2 or {label} (back shelf), or update the one that's there.")
         if len(extra) + main_used >= MAX_ENTRIES:
             raise ValidationError(f"A check holds up to {MAX_ENTRIES} entries. Remove one you no longer use first.")
         value_num, value_date = _entry_value(rule, form, today, tz)

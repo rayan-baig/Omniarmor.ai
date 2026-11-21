@@ -78,13 +78,47 @@ def evaluate(rule, value):
         if value > rule.limit:
             return BLOCKED, "OVER LIMIT", f"{shown} is over the {limit} limit{source}. {rule.action}"
         if rule.warn is not None and value >= rule.warn:
-            return WARNING, "NEAR LIMIT", f"{shown} is close to the {limit} limit{source}."
+            if value == rule.limit:
+                return WARNING, "NEAR LIMIT", f"{shown} is close to the {limit} limit: it is at the limit now{source}."
+            return WARNING, "NEAR LIMIT", f"{shown} is close to the {limit} limit{_warns(rule, 'from')}."
         return CLEARED, "CLEARED", f"{shown} is within the {limit} limit{source}."
+    if value < rule.limit and rule.limit == 0 and _counts_down(rule):
+        late = -value
+        unit = rule.unit[:-1] if late == 1 and rule.unit.endswith("s") else rule.unit
+        return BLOCKED, "BELOW MINIMUM", f"{_fmt(late, unit)} past the deadline{source}. {rule.action}"
     if value < rule.limit:
         return BLOCKED, "BELOW MINIMUM", f"{shown} is below the {limit} minimum{source}. {rule.action}"
     if rule.warn is not None and value <= rule.warn:
-        return WARNING, "NEAR MINIMUM", f"{shown} is close to the {limit} minimum{source}."
+        if rule.limit == 0 and _counts_down(rule):
+            # A countdown to a deadline (days left on a license): "41 days is
+            # close to the 0 days minimum" read as nonsense.
+            return WARNING, "NEAR MINIMUM", (f"{shown} left before the deadline: plan it now, as the warning starts at"
+                                             f" {_fmt(rule.warn, rule.unit)} left{source}.")
+        if value == rule.limit:
+            return WARNING, "NEAR MINIMUM", f"{shown} is exactly the {limit} minimum, with no room to spare{source}."
+        return WARNING, "NEAR MINIMUM", f"{shown} is close to the {limit} minimum{_warns(rule, 'at')}."
+    if rule.limit == 0 and _counts_down(rule):
+        return CLEARED, "CLEARED", f"{shown} left before the deadline{source}."
     return CLEARED, "CLEARED", f"{shown} meets the {limit} minimum{source}."
+
+
+_TIME_UNITS = ("day", "days", "business days", "week", "weeks", "month", "months", "year", "years", "h", "min")
+
+
+def _counts_down(rule):
+    """Whether a minimum of 0 is a countdown: the time left before a deadline."""
+    return rule.kind == "min" and rule.unit in _TIME_UNITS
+
+
+def _warns(rule, word):
+    """ (it warns from 6 days)": where the warning starts, when that isn't the
+    limit itself, with "policy setting" in the same brackets for a policy limit."""
+    policy = "policy setting" if rule.policy else ""
+    if rule.warn is None or rule.warn == rule.limit:
+        return f" ({policy})" if policy else ""
+    more = "or more" if rule.kind == "max" else "or less"
+    warns = f"it warns {word} {_fmt(rule.warn, rule.unit)}{' ' + more if word == 'at' else ''}"
+    return f" ({warns}; {policy})" if policy else f" ({warns})"
 
 
 _KEY = re.compile(r"^[a-z][a-z0-9_]*$")

@@ -524,6 +524,20 @@ class Track:
         return self.topic_worlds + [FINAL_WORLD] + (INDUSTRY_WORLDS if self.rule_quests else [])
 
     @property
+    def lessons(self):
+        """The business lessons: every topic world and the Owner's (or Class)
+        Challenge, without the Rule Quests. The number the pages lead with:
+        the Rule Quests are counted apart (total_for), one per industry."""
+        return self.topic_lessons + self.final_stages
+
+    def total_for(self, industry_ids):
+        """A workspace's lessons on this track: the business lessons plus the
+        Rule Quests of its own industries. Another industry's Rule Quest is an
+        optional extra a learner can open from the map; it isn't counted."""
+        own = len({i for i in industry_ids if i in INDUSTRIES}) if self.rule_quests else 0
+        return self.lessons + own * self.industry_stages
+
+    @property
     def total(self):
         return (sum(self.stages(w) for w in self.topic_worlds) + self.final_stages
                 + len(INDUSTRY_WORLDS) * self.industry_stages)
@@ -1032,6 +1046,28 @@ def _wrong_answers(rng, right, texts, count=2):
     return picked
 
 
+# Who follows a rule nearly every business follows: never "only restaurants".
+_WHO_ALL = {30: "Any business with employees", 31: "Any business that keeps people's personal data",
+            32: "Any business that takes card payments"}
+
+
+def _who_follows(rng, industry_id, rule, sector, shared):
+    """"Which kind of business follows this rule?" For a rule nearly every
+    business follows (is_universal), the answer says so, and the wrong
+    answers are each one kind of business only, which can't be true."""
+    also = sorted(set(shared) & UNIVERSAL_INDUSTRIES)
+    if is_universal(industry_id, rule) or also:
+        key = industry_id if industry_id in UNIVERSAL_INDUSTRIES else (also[0] if also else None)
+        everyone = _WHO_ALL.get(key, "Many kinds of business, not just one")
+        only = [f"Only {INDUSTRIES[i]['sector'].lower()}" for i in INDUSTRIES if i not in shared and i != industry_id]
+        return _choice(rng, f"Who has to follow \"{rule.title}\"?", everyone, rng.sample(only, 2),
+                       f"\"{rule.title}\" isn't for one trade only: {everyone[0].lower() + everyone[1:]} follows it.")
+    return _choice(rng, f"Which kind of business follows \"{rule.title}\"?", sector,
+                   rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES
+                               if i not in shared and i not in UNIVERSAL_INDUSTRIES], 2),
+                   f"This rule is one of the ten that matter most in {sector.lower()}.")
+
+
 def _rule_questions(rng, industry_id, index):
     rule = CATALOG[industry_id][index - 1]
     # Some rules are in several industries (OFAC screening is in four), some
@@ -1052,9 +1088,7 @@ def _rule_questions(rng, industry_id, index):
         _choice(rng, f"If \"{rule.title}\" is broken, what should the team do?", rule.action,
                 _wrong_answers(rng, rule.action, [r.action for r in others]),
                 "Knowing the fix ahead of time means acting fast."),
-        _choice(rng, f"Which kind of business follows \"{rule.title}\"?", sector,
-                rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES if i not in shared], 2),
-                f"This rule is one of the ten that matter most in {sector.lower()}."),
+        _who_follows(rng, industry_id, rule, sector, shared),
         _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
                 _wrong_answers(rng, rule.input, [r.input for r in others]),
                 "OmniArmor asks a simple question or reading for every rule."),
@@ -1194,14 +1228,36 @@ def _rows(rng, rows, company, level=1):
 _DECOY_NAMES = ["Riverside Services", "Maple Street Group", "Blue Lake Company", "Summit Supply Co."]
 
 
+# Rules almost any business follows, whatever its trade: an employer's
+# (HRArmor), card payments (PayArmor) and personal data (PrivacyArmor), and
+# checks many trades share, like fire extinguishers or safety data sheets.
+# They are never a wrong answer to "which is your company's rule?": "Hours
+# worked records kept" is true for a restaurant with staff too.
+UNIVERSAL_INDUSTRIES = frozenset({30, 31, 32})
+UNIVERSAL_RULE = re.compile(
+    r"fire extinguisher|safety data sheet|hazard communication|hazcom|osha 300|injury report|severe injury"
+    r"|^overtime paid|card (data|security)|first.aid kit|sales tax|hours worked|minimum wage", re.I)
+
+
+@functools.lru_cache(maxsize=None)
+def is_universal(industry_id, rule):
+    """Whether a rule is one nearly every business follows (UNIVERSAL_RULE),
+    or the same duty as one of an employer's, card payments' or personal
+    data's rules ("OFAC sanctions screening" is a bank's and PayArmor's)."""
+    if industry_id in UNIVERSAL_INDUSTRIES or UNIVERSAL_RULE.search(rule.title):
+        return True
+    return any(_same_requirement(rule, other) for i in UNIVERSAL_INDUSTRIES for other in CATALOG.get(i, ()))
+
+
 def _unrelated_rules(industry_ids):
-    """Rules from industries the company isn't in (nor of the same kind)."""
+    """Rules from industries the company isn't in (nor of the same kind),
+    leaving out the rules nearly every business follows (is_universal)."""
     mine = set(industry_ids)
     for group in KINDRED:
         if mine & group:
             mine |= group
     return [r for i, rules in CATALOG.items() if i not in mine for r in rules
-            if not any(_same_requirement(r, own) for own in _company_rules(industry_ids))]
+            if not is_universal(i, r) and not any(_same_requirement(r, own) for own in _company_rules(industry_ids))]
 
 
 def _company_items(rng, company, ids):
@@ -1545,11 +1601,14 @@ def _rule_index(industry_id, stage):
 
 
 def story(t, world_number, stage, company, industry_ids):
-    """The lesson cards. Stage 1 teaches the whole lesson; later stages show one
-    reminder card so kids get straight to the challenge."""
+    """The lesson cards: every lesson teaches what its quiz asks. Stage 1
+    teaches the world, plus a short card for any question its cards don't
+    cover; a later stage (and the boss round) has a short card for each of
+    its own questions, so no question asks about something never taught."""
     w = WORLDS[world_number]
     if w.kind == "industry":
         return _rule_story(w.industry_id, _rule_index(w.industry_id, stage))
+    lesson = quiz(t, world_number, stage, company, industry_ids, "teach")
     if t.key == CLASSROOM_KEY:
         company = CLASS_BUSINESS
     if w.kind == "final":
@@ -1559,12 +1618,47 @@ def story(t, world_number, stage, company, industry_ids):
     else:
         cards = _CONTENT[w.key](company, list(industry_ids))
     if stage == 1:
-        return cards
+        # The first lesson stays short: what its cards don't already teach
+        # goes on its last card, under "Before the quiz".
+        said = " ".join(f"{a} {b}" for a, b in cards).lower()
+        extra = teaching_cards([q for q in lesson if not _taught(q, said)])
+        if not extra:
+            return cards
+        facts = " ".join(f"{h}: {b}" if h != "Good to know" else b for h, b in extra)
+        return cards[:-1] + [(cards[-1][0], f"{cards[-1][1]} Before the quiz: {facts}")]
+    teach = teaching_cards(lesson)
     if is_boss(t, w, stage):
-        return [(f"Stage {stage}: boss round!", "The last lesson of this world, with its highest pass mark. "
-                                                "Take your time and read carefully.")]
-    reminder = cards[(stage - 2) % len(cards)]
-    return [(f"Stage {stage}: remember", f"{reminder[0]}: {reminder[1]}")]
+        head = (f"Stage {stage}: boss round!", "The last lesson of this world, with its highest pass mark. "
+                                               "Read each card, then take your time on the quiz.")
+    else:
+        head = (f"Stage {stage}: learn, then play", f"Read these {len(teach)} short cards. The quiz asks about"
+                                                    f" {'each one' if len(teach) > 1 else 'it'}.")
+    return [head] + teach
+
+
+def _taught(q, said):
+    """Whether lesson text already teaches a question: its explanation, or
+    its right answer (a word or more, not a bare True or False), is in it."""
+    answer = str(q.options[q.answer]).lower().strip(' ."')
+    return q.explain.lower().strip(" .") in said or (len(answer) > 5 and answer in said)
+
+
+def teaching_cards(questions):
+    """One short card per question, from what its explanation teaches: the
+    fact the question then checks. "Good to know" when the explanation has no
+    heading of its own ("Revenue: all the money customers pay")."""
+    cards, seen = [], set()
+    for q in questions:
+        text = q.explain.strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        head, sep, rest = text.partition(": ")
+        if sep and len(head) <= 40 and rest and "." not in head:
+            cards.append((head, rest))
+        else:
+            cards.append(("Good to know", text))
+    return cards
 
 
 def quiz(t, world_number, stage, company, industry_ids, seed):

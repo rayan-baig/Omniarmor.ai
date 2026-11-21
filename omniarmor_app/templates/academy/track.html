@@ -25,11 +25,11 @@
           {{ emblem(t.key, 88) }}
           <span class="ac-track-level">{{ t.level }}</span>
           <strong class="ac-track-name">{{ t.name }}</strong>
-          <span class="ac-track-total">{{ "{:,}".format(t.total) }} levels</span>
+          <span class="ac-track-total">{{ "{:,}".format(t.lessons) }} business lessons</span>
           <span class="ac-track-tag">{{ t.tagline }}</span>
           <ul class="ac-track-facts">
             <li>{{ t.topics|length }} business worlds, {{ t.topic_lessons }} lessons, no question asked twice in a world</li>
-            <li>{{ t.industry_stages }} lessons in each of the {{ rule_quest_count }} industry Rule Quests, one per rule</li>
+            <li>Plus a Rule Quest for each of your own industries, {{ t.industry_stages }} lessons each, one per real rule. Other industries' Rule Quests are optional extras</li>
             <li>{{ t.min_questions }} questions a lesson, pass at {{ (t.pass_low * 100)|int }}% to {{ (t.pass_high * 100)|int }}%</li>
           </ul>
           {% if done[t.key] %}<span class="ac-track-done">{{ "{:,}".format(done[t.key]) }} done</span>{% endif %}

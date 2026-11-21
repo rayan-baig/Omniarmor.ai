@@ -56,6 +56,14 @@ def on_whole_school(org, access=None):
     return access["paid"] and access["kind"] == plans.SCHOOL.key and not access["paused"]
 
 
+def school_checklist_hidden(org, access=None):
+    """Whether this workspace must not show the school safety checklist: a
+    school's workspace on the free trial or Classroom. Armo, Reminders, the
+    Report and the menus leave it out, and its page sends the teacher back to
+    their classes (views.industry)."""
+    return is_class_workspace(org) and not on_whole_school(org, access)
+
+
 def invoice_email(cfg):
     """Where a school writes to pay by invoice."""
     from .config import support_email
@@ -123,15 +131,37 @@ def why_not_a_name(typed):
     return "has characters that can't be used in a name"
 
 
-def sort_names(parsed, taken, room):
+def looks_like_full_name(name):
+    """Whether a name looks like a first and last name ("Ava Thompson"):
+    two or more words, the last longer than an initial. "Noah K" and "Jo B."
+    are fine; "Mary Jane" is asked about, as it may be one first name."""
+    words = (name or "").split()
+    last = words[-1].rstrip(".") if words else ""
+    return len(words) >= 2 and len(last) >= 2 and last.isalpha()
+
+
+def suggest_short_name(name):
+    """A first name and last initial for a name that looks like a full name:
+    "Ava Thompson" becomes "Ava T"."""
+    words = name.split()
+    return f"{words[0]} {words[-1][0].upper()}"
+
+
+def sort_names(parsed, taken, room, confirmed=False):
     """Which of the names a teacher typed (parse_names) can be added to a
     class that already has the names in `taken` (lowercase) and room for
-    `room` more: (names to add, [(what was typed, why it wasn't added)]).
-    One name that can't be added never stops the others."""
-    added, rejected, seen = [], [], set()
+    `room` more: (names to add, [(what was typed, why it wasn't added)],
+    [names to ask about]). A name that looks like a first and last name is
+    not added: the teacher is asked first (looks_like_full_name), unless the
+    names come from that question (confirmed). One name that can't be added
+    never stops the others."""
+    added, rejected, ask, seen = [], [], [], set()
     for name, typed in parsed:
         if name is None:
             rejected.append((typed, why_not_a_name(typed)))
+            continue
+        if not confirmed and looks_like_full_name(name):
+            ask.append(name)
             continue
         key = name.lower()
         if key in taken:
@@ -144,7 +174,7 @@ def sort_names(parsed, taken, room):
         else:
             seen.add(key)
             added.append(name)
-    return added, rejected
+    return added, rejected, ask
 
 
 # --- Reading classes -------------------------------------------------------------------

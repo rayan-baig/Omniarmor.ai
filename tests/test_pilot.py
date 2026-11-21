@@ -32,7 +32,7 @@ STATIC = os.path.join(ROOT, "omniarmor_app", "static")
 CORE = ("pilot.js", "pilot-store.js", "pilot-mascot.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.js",
         "pilot-render.js", "pilot-panel.js", "pilot.css", "pilot-panel.css", "pilot-motion.js", "pilot-actor.js",
         "pilot-actor.css")
-# The moving robot (core 1.1.0): fetched once the page is idle, never under reduce motion.
+# The moving robot (core 1.1.0 and later): fetched once the page is idle, never under reduce motion.
 MOTION = ("pilot-motion.js", "pilot-actor.js", "pilot-actor.css", "pilot-rest-body.webp", "pilot-rest-head.webp",
           "pilot-rest-eyes.webp")
 LAZY = ("pilot-panel.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.js", "pilot-render.js", "pilot-panel.css",
@@ -41,8 +41,9 @@ PUBLIC = ("/", "/industries", "/industries/restoarmor", "/for/salons-and-barbers
           "/classrooms/guide", "/demo")
 BUSINESS = ("/app", "/app/industry/1", "/app/report", "/app/audit", "/app/notifications", "/app/settings", "/app/plan")
 # ("/app" sends a teacher without Whole school to the classes page: 1.11.0.)
-TEACHER = ("/app/academy/classes", "/app/industry/51", "/app/report", "/app/notifications", "/app/audit",
-           "/app/settings", "/app/plan")
+# A teacher on the free trial: the school checklist and its report send them
+# back to their classes (1.12.0), so they aren't Pilot pages of their own.
+TEACHER = ("/app/academy/classes", "/app/notifications", "/app/audit", "/app/settings", "/app/plan")
 MODEL_NAMES = re.compile(r"claude-|gpt-?\d|gemini-\d|\bo[1-9]-|sonnet|opus|haiku|llama|dall-?e|\bsora\b|whisper|imagen|\bveo\b",
                          re.IGNORECASE)
 
@@ -318,7 +319,10 @@ class TestPilotSecurity(PilotCase):
         with open(os.path.join(STATIC, "pilot-omniarmor.js"), encoding="utf-8") as f:
             config = f.read()
         self.assertIn('yieldTo: [".companion"],', config)
-        self.assertIn('avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],', config)
+        # 1.12.0: every status tag, badge and note, not just a Blocked status.
+        self.assertRegex(config, r'avoid: \[".tag", ".top-n", ".bundle", ".msg",')
+        self.assertIn('".companion-bubble", ".companion-fix", ".companion-badge"', config)
+        self.assertIn('".topbar .nav"]', config)
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
             css = f.read()
         # Above the tab bar, and measured there by the core: --pilot-gap is a plain length.

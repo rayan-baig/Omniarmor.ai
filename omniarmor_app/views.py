@@ -12,12 +12,12 @@ from . import connections, nudges, plans, usage
 from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .config import support_email
-from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, find_rule, multi_check,
-                      top_rank, why_line)
+from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, entry_date_words, find_rule,
+                      multi_check, top_rank, why_line)
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, ValidationError, add_illness,
-                       apply_bulk, apply_change, apply_entry, illness_log, local_date, org_industry_ids, org_now,
+                       apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, local_date, org_industry_ids, org_now,
                        org_today, remove_illness, states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
@@ -29,6 +29,11 @@ MAX_LOCATIONS = 25      # workspaces one person can own (each is a location, bil
 def _industry_or_404(industry_id):
     if industry_id not in org_industry_ids(get_db(), g.org["id"]):
         abort(404)
+    if industry_id not in checklist_ids(get_db(), g.org):
+        # The school safety checklist comes with Whole school: a teacher on the
+        # free trial or Classroom is sent back to their classes, with a plain note.
+        flash("The school safety checklist comes with the Whole school plan. Your classes are here.", "ok")
+        abort(redirect(url_for("classes.index")))
     return INDUSTRIES[industry_id]
 
 
@@ -37,7 +42,7 @@ def nav_context():
     if g.get("org") is None:
         return {}
     from .classrooms import is_class_workspace, on_whole_school
-    ids = org_industry_ids(get_db(), g.org["id"])
+    ids = checklist_ids(get_db(), g.org)
     access = plans.access(g.org)
     # What the workspace's plan allows: base.html's read-only and grace banners, and the industry pages.
     # class_workspace: a school's, whose menus are a classroom's (base.html); school_checklist: whether
@@ -59,7 +64,7 @@ def overview():
     conn = get_db()
     states = states_for_org(conn, g.org)
     today = org_today(g.org)
-    ids = org_industry_ids(conn, g.org["id"])
+    ids = checklist_ids(conn, g.org)
     problems = sorted([s for s in states if s.problem], key=lambda s: s.sort_key)
     upcoming = sorted([s for s in states if s.due_date and 0 <= s.days_left <= UPCOMING_DAYS and not s.problem],
                       key=lambda s: s.days_left)
@@ -148,6 +153,7 @@ def industry(industry_id):
                            can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
                            top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS,
                            bundle=_bundle(industry_id), multi_check=multi_check, logs=logs,
+                           entry_date_words=entry_date_words,
                            illness_reported=ILLNESS_REPORTED, illness_actions=ILLNESS_ACTIONS)
 
 
@@ -359,7 +365,7 @@ def audit():
     next_up = None
     if not rows:
         conn = get_db()
-        next_up = next_reading(states_for_org(conn, g.org), org_industry_ids(conn, g.org["id"]))
+        next_up = next_reading(states_for_org(conn, g.org), checklist_ids(conn, g.org))
     return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE,
                            next_up=next_up)
 
@@ -425,18 +431,29 @@ def audit_csv():
 @bp.route("/report")
 @login_required
 def report():
+    from .classrooms import school_checklist_hidden
+    if school_checklist_hidden(g.org):
+        # A teacher without Whole school has no checklist to report on: the
+        # Trial report on each class page is theirs.
+        flash("The compliance report is for the school safety checklist, which comes with the Whole school plan."
+              " Each class has its own report on its class page.", "ok")
+        return redirect(url_for("classes.index"))
     states = states_for_org(get_db(), g.org)
+    ids = checklist_ids(get_db(), g.org)
     groups = []
-    for i in org_industry_ids(get_db(), g.org["id"]):
+    for i in ids:
         mine = sorted([s for s in states if s.industry_id == i], key=lambda s: s.sort_key)
         groups.append({"industry": INDUSTRIES[i], "states": mine, "counts": tally(mine)})
     return render_template("app/report.html", groups=groups, counts=tally(states), today=org_today(g.org),
-                           next_up=next_reading(states, org_industry_ids(get_db(), g.org["id"])))
+                           next_up=next_reading(states, ids))
 
 
 @bp.route("/report.csv")
 @login_required
 def report_csv():
+    from .classrooms import school_checklist_hidden
+    if school_checklist_hidden(g.org):
+        return redirect(url_for("app.report"))
     states = sorted(states_for_org(get_db(), g.org), key=lambda s: (s.industry_id, s.sort_key))
     return _csv_response("omniarmor-compliance-report.csv",
                          ["Industry", "Check", "Status", "Reading", "Due date", "Rule", "Last updated (UTC)", "Updated by"],
@@ -459,16 +476,29 @@ def _report_rows(states):
 @bp.route("/notifications")
 @login_required
 def notifications():
+    # Each email says who it went to by role ("the owner", "a team member"),
+    # never by address, so two copies of one digest are told apart.
     rows = get_db().execute(
-        "SELECT * FROM notifications WHERE org_id = ? OR (org_id IS NULL AND user_id = ?)"
-        " ORDER BY created_at DESC, id DESC LIMIT 200",
-        (g.org["id"], g.user["id"]),
+        "SELECT notifications.*, memberships.role AS recipient_role FROM notifications"
+        " LEFT JOIN memberships ON memberships.user_id = notifications.user_id AND memberships.org_id = ?"
+        " WHERE notifications.org_id = ? OR (notifications.org_id IS NULL AND notifications.user_id = ?)"
+        " ORDER BY notifications.created_at DESC, notifications.id DESC LIMIT 200",
+        (g.org["id"], g.org["id"], g.user["id"]),
     ).fetchall()
     next_dated = None
     if not rows:
         conn = get_db()
-        next_dated = next_reading(states_for_org(conn, g.org), org_industry_ids(conn, g.org["id"]), dated=True)
-    return render_template("app/notifications.html", rows=rows, next_dated=next_dated)
+        next_dated = next_reading(states_for_org(conn, g.org), checklist_ids(conn, g.org), dated=True)
+    return render_template("app/notifications.html", rows=rows, next_dated=next_dated, recipient_label=recipient_label)
+
+
+def recipient_label(row, me_id):
+    """Who an email went to, by role, never by address: "you (the owner)",
+    "the owner", "a team member", or "a former team member"."""
+    role = {"owner": "the owner", "member": "a team member"}.get(row["recipient_role"])
+    if role is None:
+        return "a former team member" if row["user_id"] else "the team"
+    return f"you ({role})" if row["user_id"] == me_id else role
 
 
 @bp.route("/settings", methods=["GET"])

@@ -3,6 +3,81 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.12.0 (21 November 2026)
+
+Fixes from a strict third review: the school checklist stays out of a
+teacher's pages until Whole school, the helpers keep off the content, honest
+Academy counts, full names checked with the teacher, and many smaller things.
+
+- **A teacher on the free trial or Classroom no longer sees the school
+  checklist anywhere.** Armo doesn't count its checks or offer "Fix it" for
+  them, Reminders doesn't point at them, the Report isn't the school's
+  compliance report, and Pilot doesn't know the checklist. Opening the
+  checklist's page goes back to the classes, with a plain note that it comes
+  with Whole school. On Whole school it all comes back, with any readings.
+- **Armo talks like a teacher's helper on a teacher's pages:** add students,
+  print the join codes, the teacher guide and the trial report.
+- **Armo keeps out of the way.** His bubble opens when you tap him. By
+  itself it opens at most once a day, and only on a screen wide enough for
+  it to sit beside the page, never over it, so most days you see just his
+  badge. A tap anywhere else closes it. On a phone he waits tucked at the
+  left edge with his badge showing, and comes out when tapped.
+- **Pilot's robot keeps clear of more.** It never sits on a status tag (No
+  reading, Blocked and the rest), a Top 5 badge, the Kitchen Safety Bundle
+  note, a check's message, a notice at the top, Armo's badge or bubble, or
+  the "First name only?" card: it moves to a free corner or tucks half away
+  until tapped. Pilot now uses Pilot core 1.1.1: it keeps off the page's
+  words and buttons wherever you scroll, and off a box you're typing in. On
+  a phone, when there's no free corner, it tucks away at the edge with a
+  slice showing, and the page keeps a little room at the sides for it, so
+  it no longer covers text on the home page or the "No reading" tags. Its
+  18+ note now sits above the message box, so a phone's keyboard never
+  hides it.
+- **Pilot's own suggestions.** Once you're chatting, OmniArmor's own
+  suggestions come first, on every page Pilot is on: for a teacher "Add
+  students", "How do join codes work?" and "What's overdue?" (or "Plan a
+  week" without the school checklist); for a business "What's overdue?" and
+  the page's own. The window keeps the design's five buttons.
+  Pilot's key settings now say in one sentence what an AI key is and where a
+  grown-up gets one.
+- **Honest Academy counts.** Each track leads with its business lessons:
+  Launchpad 90, Trailblazer 350, Summit 296, Titan Mastery 224, and the
+  Academy home says "Up to 350". A learner's count adds the Rule Quests of
+  the workspace's own industries only; the other industries' Rule Quests are
+  optional extras on the map, and aren't counted.
+- **Every lesson teaches what it asks.** A lesson after the first starts with
+  a short card for each of its questions, before the quiz, instead of one
+  recap card. The first lesson stays short: anything its cards didn't cover
+  is added to its last card.
+- **No true "wrong" answers.** Rules nearly every business follows (keeping
+  hours records, fire extinguisher checks, card payments, personal data) are
+  never offered as the wrong answer to "which is your company's rule?", and
+  "Who has to follow ...?" says "Any business with employees" for an
+  employer's rule. A new script, tools/quiz_truth_review.py, checks every
+  lesson for these patterns, and a test runs it.
+- **Honest result headings.** "So close!" only when you were one short of a
+  pass. Below that: "Good start", "Keep going" or "Not this time", and Armo
+  doesn't say "so close" either.
+- **Full names are checked with the teacher.** A name like "Ava Thompson"
+  isn't added straight away: the class page asks "First name only?",
+  suggests "Ava T", and keeps only what the teacher picks ("it's all first
+  name", like Mary Jane, is there too, and so is "Don't add").
+- **A demo for each trade.** "See a demo" on the salon, tattoo studio, gym
+  and shop pages opens a pretend salon, studio, gym or shop with its own
+  checklist, not the restaurant.
+- **The right words on entries.** A food batch says "Made or opened", a
+  pedicure tub "Cleaned", a sterilizer "Tested", an AED "Checked". Adding an
+  entry with a name already in the list is refused with a friendly message.
+- **Who each email went to.** Reminders shows "To you (the owner)" or "To a
+  team member" beside each email, never an address.
+- **Plain words for countdowns.** A license with 41 days left says "41 days
+  left before the deadline", not "close to the 0 days minimum", and a late
+  one "3 days past the deadline". Other warnings say where the warning
+  starts.
+- **Error reports read right with a virtual environment inside the project
+  folder:** a library's file is still shown from the library, not as a
+  project path.
+
 ## 1.11.1 (21 November 2026)
 
 - **Pilot updated to the newest version: smaller on phones, steps aside for

@@ -114,6 +114,24 @@ MULTI_CHECKS = {
 FIRST_ENTRY = {key: f"{thing.split(' or ')[0]} 1" for key, (thing, _) in MULTI_CHECKS.items()}
 
 
+# What an entry's date means, for the checks counted from a date: a food
+# batch is made or opened, a pedicure tub cleaned, a sterilizer tested.
+# (industry id, rule key) -> (the short label, the add form's question).
+ENTRY_DATE_WORDS = {
+    (2, "date_marking"): ("Made or opened", "The date it was made or opened"),
+    (52, "disinfectant_changed"): ("Changed", "The date the disinfectant was last changed"),
+    (52, "foot_spa_cleaning"): ("Cleaned", "The date the tub was last cleaned"),
+    (53, "spore_test"): ("Tested", "The date of the last spore test"),
+    (54, "aed_check"): ("Checked", "The date the AED was last checked"),
+}
+
+
+def entry_date_words(industry_id, rule_key):
+    """(short label, form question) for an entry's date: "Made or opened" for
+    a food batch, never "Last done"."""
+    return ENTRY_DATE_WORDS.get((industry_id, rule_key), ("Last done", "The date it was last done"))
+
+
 def multi_check(industry_id, rule_key):
     """(what one entry is, an example name) for a check with one entry per
     item, None for the others."""

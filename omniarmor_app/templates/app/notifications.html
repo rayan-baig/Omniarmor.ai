@@ -6,7 +6,11 @@
   <div>
     <p class="eyebrow">{{ g.org.name }}</p>
     <h1>Reminders</h1>
+    {% if class_workspace and not school_checklist %}
+    <p class="sub">Every email OmniArmor has sent about this school's workspace, and who it went to.</p>
+    {% else %}
     <p class="sub">Every reminder and account email OmniArmor has sent your team. Reminders go out each morning when something is 30, 7 or 1 day from due, due today, or overdue. Checks that count hours or minutes also send one when they reach their warning point and one when they become overdue.</p>
+    {% endif %}
   </div>
 </div>
 {% if not config.SMTP_HOST %}
@@ -17,8 +21,8 @@
     {% for n in rows %}
       <li>
         <details class="note">
-          <summary><span class="title">{{ n.subject }}</span></summary>
-          <p class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC · <span data-pilot-private>to {{ n.recipient }}</span> · {{ {'sent': 'Sent', 'logged': 'Saved (email not set up)', 'failed': 'Failed: ' ~ (n.error or '')}[n.status] }}</p>
+          <summary><span class="title">{{ n.subject }}</span> <span class="meta" data-recipient>To {{ recipient_label(n, g.user.id) }}</span></summary>
+          <p class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC · {{ {'sent': 'Sent', 'logged': 'Saved (email not set up)', 'failed': 'Failed: ' ~ (n.error or '')}[n.status] }}</p>
           <pre class="mono note-body">{{ n.body }}</pre>
         </details>
       </li>
@@ -27,6 +31,8 @@
 {% else %}
   {% if next_dated %}
     {{ empty('reminders', 'Every reminder email sent to your team will show here. They start once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
+  {% elif class_workspace and not school_checklist %}
+    {{ empty('reminders', 'Emails about your account, like a new sign-in link, will show here. Reminder emails for the school safety checklist come with the Whole school plan.', url_for('classes.index'), 'Back to your classes') }}
   {% else %}
     {{ empty('reminders', 'Every reminder email sent to your team will show here, starting with the next check that comes due.', url_for('app.settings', _anchor='reminders'), 'Choose your reminder emails') }}
   {% endif %}

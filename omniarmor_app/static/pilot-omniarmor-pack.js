@@ -73,7 +73,7 @@ The totals at the top of a page and the thin bar under them use the same colours
 ## OmniArmor for schools and teachers
 - Schools have two sides: SchoolSafetyArmor (the school's safety routines: drills, AED and first-aid kits, playground and gym, the nurse's medication log, cafeteria, buses, concussion and heat checks, visitors, lab chemicals, background-check renewals) and the Future Owner Academy for a class.
 - Teacher sign-up: name, school email, password and the school's name, with no list of industries. It lands on the Classes page ("Home") and starts the free classroom trial.
-- Adding students: open a class, type each student's first name or nickname, one per line. No email, no last name, no birthdate, no photo. A name that can't be added (it looks like an email, it's too long, or it's already in the class) is listed with the reason and put back in the box.
+- Adding students: open a class, type each student's first name or nickname, one per line. No email, no last name, no birthdate, no photo. A name that can't be added (it looks like an email, it's too long, or it's already in the class) is listed with the reason and put back in the box. A name that looks like a first and last name ("Ava Thompson") isn't added until the teacher chooses: add it as a first name and last initial ("Ava T", suggested), keep it if it's all first name (like Mary Jane), or leave it out.
 - Join codes: print one code per student; each works once, on a school device, and lets that device open the student's Academy and nothing else.
 - The class page shows each student's lessons done and the class total. Certificates print on one page. The class leaderboard (first names and lessons done, this class only) starts off for a new class; the teacher can turn it on.
 - The trial report: one page with totals only (students, lessons finished, topics covered), no student names, for the school office.
@@ -604,6 +604,9 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
         if (r.error) return { error: r.error };
         // Only what the app said, and why any typed name wasn't added: never the class list.
         const rejected = r.doc ? [...r.doc.querySelectorAll("[data-not-added] [data-rejected]")].map(text) : [];
+        // A name that looks like a first and last name waits for the teacher
+        // to choose on the class page ("Ava Thompson": add as Ava T?).
+        if (r.doc) for (const l of r.doc.querySelectorAll("[data-confirm-names] [data-ask] legend")) rejected.push(`${text(l)}: looks like a first and last name. Choose on the class page (like ${text(l).split(" ")[0]} with a last initial)`);
         return { done: r.ok || r.said.some((s) => /^Added \d+/.test(s)), omniarmor_said: r.said,
           not_added: rejected.length || names.bad.length ? rejected.concat(names.bad.map((n) => `${n}: first names or nicknames only`)) : undefined };
       },

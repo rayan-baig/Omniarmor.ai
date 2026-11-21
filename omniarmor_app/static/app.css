@@ -305,7 +305,7 @@ body:not(.has-tabs):has(> .companion) main{padding-bottom:120px}
 @keyframes bubble-pop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
 /* On a phone Armo is small and sits at the very edge, so he covers as little of a card as he can, and he
    tucks himself away while the page scrolls (armo.js) so he never sits on what is being read. */
-@media (max-width:560px){.companion{left:2px;transition:transform .25s ease,opacity .25s ease}.companion-armo svg{width:52px;height:52px}.companion-badge{top:2px;right:0}.companion-bubble{margin-left:10px}.companion.tucked{transform:translateX(-72%);opacity:.55}.companion.tucked .companion-bubble{display:none}}
+@media (max-width:560px){.companion{left:2px;transition:transform .25s ease,opacity .25s ease}.companion-armo svg{width:52px;height:52px}.companion-badge{top:2px;right:0}.companion-bubble{margin-left:10px}.companion.tucked{transform:translateX(-70%);opacity:.92}.companion.tucked .companion-bubble{display:none}}
 @media (max-width:560px) and (prefers-reduced-motion:reduce){.companion{transition:none}}
 
 /* Armo page */
@@ -505,15 +505,19 @@ details.note .title{color:var(--ink);font-weight:600}
    own gap (16px, 12px on a phone). The core measures a corner with --pilot-gap when it checks that the corner is
    free (its avoid and yieldTo settings, pilot-omniarmor.js), so it measures where the robot really sits, above the
    tab bar. It must stay a plain length for that. The right-hand corners keep the core's usual distance from the
-   edge; a left-hand corner, used only when the robot steps aside, stays clear of Armo. The window opens beside the
-   robot, above the tab bar. A phone's full-width sheet is unchanged. */
+   edge on a phone; on a wider screen every corner keeps --pilot-gap, so the core measures each corner exactly where
+   the robot sits (1.12.0). A left-hand corner, used only when the robot steps aside, stays clear of Armo. The window
+   opens beside the robot, above the tab bar. A phone's full-width sheet is unchanged. */
 body.has-tabs .pilot-root{--pilot-gap:80px}
 body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-bl{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom))}
-body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:16px}
+body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:16px;--pilot-tuck:calc(var(--pilot-size) + 16px - var(--pilot-peek-show))}
 @media (min-width:721px){
   body.has-tabs .pilot-at-br .pilot-panel,body.has-tabs .pilot-at-bl .pilot-panel{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom));height:min(720px,calc(100vh - var(--pilot-gap) - 16px - env(safe-area-inset-bottom)))}
 }
+/* On a phone the right-hand corners keep close to the edge (12px), so the core's tuck (Pilot core 1.1.1:
+   --pilot-tuck, the robot's size plus its gap less the slice that shows) is counted from there; the
+   left-hand corners keep --pilot-gap, clear of Armo. */
 @media (max-width:720px){
   body.has-tabs .pilot-root{--pilot-gap:76px}
-  body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:12px}
+  body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:12px;--pilot-tuck:calc(var(--pilot-size) + 12px - var(--pilot-peek-show))}
 }

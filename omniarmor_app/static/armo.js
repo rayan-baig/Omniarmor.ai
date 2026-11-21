@@ -1,8 +1,13 @@
 /* Armo, the companion above the tab bar. While things are calm he does his
-   own thing (coffee, a book, juggling, a nap) and now and then says something
-   in his personality's voice. When something needs attention he jumps up and
-   points at it. Every minute he checks for new issues while the page is open.
-   Without this script he's a plain link to the Armo page. */
+   own thing (coffee, a book, juggling, a nap). When something needs
+   attention his badge shows how many, and he jumps. Every minute he checks
+   for new issues while the page is open. Without this script he's a plain
+   link to the Armo page.
+
+   He keeps out of the way: his bubble opens when someone taps him. By
+   itself it opens at most once a day on this device, and only where it fits
+   beside the page's content column (a wide screen), never over it, so on a
+   phone or a laptop he shows just his badge until tapped. */
 (function () {
   "use strict";
   var root = document.querySelector("[data-companion]");
@@ -46,6 +51,36 @@
     } catch (e) { /* storage may be blocked; Armo still works */ }
     return null;
   }
+  // At most once a day, and only beside the content column (mayOpenByItself).
+  var BUBBLE_ROOM = 340;   // the bubble's widest (300px) plus its margins
+  function localDay() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  function remember(key, value) {
+    try {
+      if (value === undefined) return window.localStorage.getItem(key);
+      window.localStorage.setItem(key, value);
+    } catch (e) { /* storage may be blocked: then he never opens by himself */ return value === undefined ? localDay() : null; }
+    return null;
+  }
+  function roomBeside() {
+    var column = document.querySelector("main .wrap");
+    if (!column) return 0;
+    var box = column.getBoundingClientRect();
+    var pad = parseFloat(window.getComputedStyle(column).paddingLeft) || 0;
+    return box.left + pad - root.getBoundingClientRect().left;
+  }
+  function mayOpenByItself() {
+    return remember("armo-bubble-day") !== localDay() && roomBeside() >= BUBBLE_ROOM;
+  }
+  function openByItself(show) {
+    if (!mayOpenByItself()) return false;
+    remember("armo-bubble-day", localDay());
+    show();
+    return true;
+  }
+
   function pick(list) {
     if (!list.length) return "";
     var choice = list[Math.floor(Math.random() * list.length)];
@@ -94,7 +129,7 @@
 
   // While Armo's bubble (an alert, a "Fix it", a tip) is showing, Pilot's
   // robot steps aside by itself: OmniArmor's Pilot config lists Armo in its
-  // yieldTo (pilot-omniarmor.js, Pilot core 1.1.0), so nothing is needed here.
+  // yieldTo (pilot-omniarmor.js, Pilot core 1.1.1), so nothing is needed here.
 
   function jump() {
     root.classList.remove("jump");
@@ -171,6 +206,15 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && !bubble.hidden) close.click();
   });
+  // A tap anywhere else closes his bubble, so it never stays over the page.
+  document.addEventListener("click", function (event) {
+    // (A tap on Armo can swap his picture for a new pose, so its target may
+    // no longer be in the page: that tap was his, not somewhere else.)
+    if (!bubble.hidden && event.target.isConnected && !root.contains(event.target)) {
+      if (alerting) store("armo-dismissed", state.signature);
+      standDown();
+    }
+  });
 
   // Idle life: every so often, do an activity and maybe say something.
   function idleTick() {
@@ -185,15 +229,7 @@
         } else {
           pose(act);
         }
-        // Half the time Armo shares something useful; otherwise he chats.
-        var roll = Math.random();
-        if (roll < 0.75) {
-          setTimeout(function () {
-            if (alerting) return;
-            if (roll < 0.35 && giveTip()) return;
-            say(pick(lines.idle));
-          }, 1200);
-        }
+        // He only talks when tapped: idle life is a pose, never a bubble.
         clearTimeout(restTimer);
         restTimer = setTimeout(function () { if (!alerting) pose("idle"); }, 14000);
       }
@@ -216,12 +252,14 @@
         state.tips = data.tips || state.tips;
         updateBadge();
         if (state.needs && changed && store("armo-dismissed") !== state.signature) {
-          soundTheAlarm();
+          pose("alert");
+          jump();
+          openByItself(soundTheAlarm);
         } else if (!state.needs && hadIssues) {
           alerting = false;
           pose("cheer");
           jump();
-          say(pick(lines.fixed.length ? lines.fixed : lines.clear));
+          if (!bubble.hidden) say(pick(lines.fixed.length ? lines.fixed : lines.clear));
           restTimer = setTimeout(function () { pose("idle"); }, 6000);
         }
       })
@@ -230,22 +268,25 @@
 
   updateBadge();
   if (state.needs && store("armo-dismissed") !== state.signature) {
-    setTimeout(soundTheAlarm, 1200);
-  } else if (!store("armo-greeted")) {
-    store("armo-greeted", "1");
-    setTimeout(function () { if (!alerting) say(pick(state.needs ? lines.idle : lines.clear.concat(lines.idle))); }, 2500);
+    setTimeout(function () {
+      pose("alert");
+      jump();
+      openByItself(soundTheAlarm);
+    }, 1200);
   }
   idleTick();
   setInterval(poll, 60000);
 
-  // On a phone, Armo tucks himself to the edge while the page scrolls, and
-  // comes back a moment after it stops, unless his bubble is open.
+  // On a phone there is no room beside the page, so Armo stays tucked at
+  // the edge, in the page's side margin, with his badge showing: a tap on
+  // him brings him out with his bubble (say() untucks him), and he tucks
+  // away again when it closes.
   var narrow = window.matchMedia && window.matchMedia("(max-width: 560px)");
-  var tuckTimer = null;
-  window.addEventListener("scroll", function () {
-    if (!narrow || !narrow.matches || !bubble.hidden) return;
-    root.classList.add("tucked");
-    clearTimeout(tuckTimer);
-    tuckTimer = setTimeout(function () { root.classList.remove("tucked"); }, 1500);
-  }, { passive: true });
+  function tuckIfNarrow() {
+    root.classList.toggle("tucked", Boolean(narrow && narrow.matches && bubble.hidden));
+  }
+  var hideBubble = hide;
+  hide = function () { hideBubble(); tuckIfNarrow(); };
+  if (narrow && narrow.addEventListener) narrow.addEventListener("change", tuckIfNarrow);
+  tuckIfNarrow();
 })();

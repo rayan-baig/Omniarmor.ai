@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.1.0**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.1.1**) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -32,10 +32,10 @@ forgets the last person's chat and any key kept for that tab only.
 
 | File | What it is |
 |---|---|
-| `static/pilot/` | the core 1.1.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
+| `static/pilot/` | the core 1.1.1, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
-| `static/pilot-omniarmor.js` | the config: screens, suggestions, the 18+ note, `kidView()`, `avoid` and `yieldTo` |
+| `static/pilot-omniarmor.js` | the config: screens, suggestions, the AI key and 18+ note, `kidView()`, `avoid`, `yieldTo` and `gutter` |
 | `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and OmniArmor's tools, loaded on first open |
 
 The tag carries: who is there (`visitor`, `business` or `teacher`), whether it's the demo or a
@@ -48,31 +48,49 @@ person's name, an email, a business record or a student. The pack never types a 
 
 ## The robot on OmniArmor
 
-The core 1.1.0 robot is smaller on phones (56 px), and once the page is idle it comes to life: it
+The core robot is smaller on phones (56 px), and once the page is idle it comes to life: it
 breathes and blinks, and now and then waves, does a small trick or strolls near its corner and back.
 It keeps still while its window is open, and under `prefers-reduced-motion` the moving robot isn't
 even fetched (`pilot.js` checks before loading `pilot-motion.js` and `pilot-actor.js`). Like Pilot
 itself, it is never on a page a student uses.
 
+Since core 1.1.1 (OmniArmor 1.12.0) the robot keeps off the page's own words and buttons wherever the
+page is scrolled to, and off a box being typed in. While the page scrolls it only checks its own spot
+(and tucks away there if words are under it); once scrolling stops it may move to a free corner. With no
+free corner it tucks away at the edge until tapped, with only a slice showing (20 px on a phone).
+
 Armo lives in the bottom-left corner and the robot in the bottom-right. The config tells the core:
 
-- `yieldTo: [".companion"]`: Armo, with his bubble. While Armo is talking and his bubble reaches the
-  robot's corner (on a phone), the robot moves to the first free corner, or tucks half away until
-  tapped. The robot doesn't wander while Armo is on the page.
-- `avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"]`: a Blocked status,
-  Armo's "Fix it" bubble and the menu at the top (with Sign out) are never covered. With Armo talking
-  on a phone and the menu in view, no corner is free, so the robot tucks half away at the right edge.
+- `yieldTo: [".companion"]`: Armo, with his bubble. While Armo's bubble reaches the robot's corner, the
+  robot moves to the first free corner, or tucks away. Armo's bubble opens only when tapped (or by
+  itself at most once a day, and only beside the content column: see the handbook), so this is rare.
+- `avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
+  ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav"]`:
+  every status tag (No reading, Blocked and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a
+  check's message, an entry's name and tag, a flash or banner, a learner's badge, Armo's bubble, "Fix
+  it" and badge, the "First name only?" card and the menu at the top (with Sign out) are never covered.
+- `gutter: ["main > .wrap", "footer.site > .wrap"]`: on a phone the core gives the page's column its
+  side room (`--pilot-side`, 24 px, through `.pilot-gutter-side`), so line ends stop before the slice
+  of a tucked robot, and of Armo, who waits tucked at the left edge on a phone.
 
 On signed-in pages the tab bar runs along the bottom. `app.css` sets the core's `--pilot-gap` there to
 the tab bar's height plus the usual gap (80 px, 76 px on a phone), so the robot sits above the tab bar
-and the core measures each corner where the robot really is when it checks the list above. (The tab
-bar is always there, so it isn't in `avoid`: the core would count every bottom corner as taken and send
-the robot to the top.) The right-hand corners keep the usual distance from the edge, and the window
-opens beside the robot, above the tab bar.
+and the core measures each corner where the robot really is. On a wider screen every corner keeps that
+gap on both sides, so the core's measure is exact. On a phone the right-hand corners sit 12 px from the
+edge, and `app.css` sets the core's `--pilot-tuck` for them from there, so the tucked slice is at the
+edge where the core checks it; the core's check of an untucked right-hand corner is then 64 px to the
+left of the robot, which on a phone (words across the whole column) only ever makes it tuck sooner.
+(The tab bar is always there, so it isn't in `avoid`: the core would count every bottom corner as taken
+and send the robot to the top.) The window opens beside the robot, above the tab bar.
+
+The chat window (core 1.1.1) shows OmniArmor's own suggestions first once a chat has started ("Add
+students", "How do join codes work?", "What's overdue?" and the page's own), and keeps the 18+ note
+above the message box, so a phone's keyboard never hides it. The welcome keeps the design's five
+buttons. OmniArmor's note says in one sentence what an AI key is and where a grown-up gets one.
 
 The page keeps its last lines clear with the core's gutter: on a signed-in page the body keeps room
 above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public page the footer keeps
-`--pilot-gutter` free under its last line. Armo's old `armo-talking` stopgap (1.11.0) is gone.
+`--pilot-gutter` free under its last line.
 
 ## The security policy
 
@@ -80,8 +98,9 @@ above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public p
 `pilot.COMPATIBLE_HOSTS`, and `http://localhost:*` / `http://127.0.0.1:*` for a local model),
 `media-src` adds `blob:` (a video made with the person's own key), and the Permissions-Policy allows
 `microphone=(self)` for voice. Nothing else was widened: scripts, styles, fonts and pictures stay
-this site's own, and no page loads anything from another company. Core 1.1.0 needed nothing new: the
-moving robot's files and pictures come from this site, and it moves with the Web Animations API.
+this site's own, and no page loads anything from another company. Cores 1.1.0 and 1.1.1 needed nothing new: the
+moving robot's files and pictures come from this site, it moves with the Web Animations API, and
+1.1.1 only reads the page's own layout (`elementsFromPoint`).
 
 ## The tools
 

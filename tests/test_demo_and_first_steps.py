@@ -189,7 +189,10 @@ class TestBusinessDemo(DemoCase):
         schools = self.client.get("/for/schools").data.decode()
         self.assertIn('href="/demo/classroom"', schools)
         self.assertNotIn('href="/demo/business"', schools)
-        self.assertIn('href="/demo/business"', self.client.get("/for/salons-and-barbershops").data.decode())
+        # 1.12.0: a trade's page opens that trade's own demo, not the restaurant.
+        salons = self.client.get("/for/salons-and-barbershops").data.decode()
+        self.assertIn('href="/demo/salon"', salons)
+        self.assertNotIn('href="/demo/business"', salons)
         self.assertIn('href="/demo/classroom"', self.client.get("/classrooms").data.decode())
         robots = self.client.get("/robots.txt").data.decode()
         self.assertIn("Disallow: /demo", robots)

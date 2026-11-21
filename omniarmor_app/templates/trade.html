@@ -31,10 +31,10 @@
   {% else %}
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a>
-    <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow" data-demo-link>See a demo</a>
+    <a class="btn ghost" href="{{ url_for('demo.start', kind=demo_kind) }}" rel="nofollow" data-demo-link>See a demo</a>
     <a class="btn quiet" href="#checklists">See the checklists</a>
   </div>
-  <p class="hint" data-demo-hint>The demo is a pretend restaurant with a few checks done, so you can see how it works before you sign up.</p>
+  <p class="hint" data-demo-hint>The demo is {{ demo_name.replace('a ', 'a pretend ', 1) }} with a few checks done, so you can see how it works before you sign up.</p>
   {% include "_plan_summary.html" %}
   {% endif %}
 </section>
@@ -87,6 +87,6 @@
 {% if trade.academy %}
 <p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free trial</a> <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">See the classroom demo</a></p>
 {% else %}
-<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a> <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow">See a demo</a> <a href="{{ url_for('public.industries') }}">All industries and trades</a></p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', industry=facts.industry_ids) }}">Start free</a> <a class="btn ghost" href="{{ url_for('demo.start', kind=demo_kind) }}" rel="nofollow">See a demo</a> <a href="{{ url_for('public.industries') }}">All industries and trades</a></p>
 {% endif %}
 {% endblock %}

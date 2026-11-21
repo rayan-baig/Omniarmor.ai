@@ -251,10 +251,10 @@ class TestAddingStudents(SchoolCase):
 
     def test_sorting_names(self):
         parsed = classrooms.parse_names("Ana\nana\nBo\n" + "x" * 31)
-        added, rejected = classrooms.sort_names(parsed, {"bo"}, 5)
+        added, rejected, _ = classrooms.sort_names(parsed, {"bo"}, 5)
         self.assertEqual(added, ["Ana"])
         self.assertEqual([typed for typed, _ in rejected], ["ana", "Bo", "x" * 31])
-        added, rejected = classrooms.sort_names(classrooms.parse_names("A\nB\nC"), set(), 2)
+        added, rejected, _ = classrooms.sort_names(classrooms.parse_names("A\nB\nC"), set(), 2)
         self.assertEqual(added, ["A", "B"])
         self.assertEqual(rejected, [("C", "didn't fit: the class is full")])
 
@@ -322,9 +322,9 @@ class TestStudentMap(SchoolCase):
         maya = self.students(class_id)["Maya"]
         text = words(self.client.get(f"/app/academy/{maya['id']}").data.decode())
         self.assertNotIn("Rule Quest", text)
-        self.assertIn(f"0 / {academy.CLASSROOM.total} levels", text)
+        self.assertIn(f"0 / {academy.CLASSROOM.total} lessons", text)
         self.assertIn("The Class Challenge", text)
-        self.assertNotIn("change", re.sub(r"(?i)challenge", "", text.split("levels")[0]))
+        self.assertNotIn("change", re.sub(r"(?i)challenge", "", text.split(" lessons ")[0]))
 
 
 # --- 9. Plain menu labels -------------------------------------------------------------------------
@@ -420,7 +420,8 @@ class TestSmallerFixes(AppTestCase):
         self.assertIn("width:52px", phone)
         self.assertIn(".companion.tucked", phone)
         with open(os.path.join(STATIC, "armo.js")) as f:
-            self.assertIn('root.classList.add("tucked")', f.read())
+            # 1.12.0: on a phone he stays tucked until tapped.
+            self.assertIn('root.classList.toggle("tucked"', f.read())
 
 
 # --- 11. Fonts from the app itself -------------------------------------------------------------------
@@ -513,8 +514,10 @@ class TestSchoolTrialEndsWithThePilot(SchoolCase):
         with self.db() as conn:
             conn.execute("UPDATE orgs SET pilot_ends_at = ?, academy_trial_ends = ?", (past, past))
             conn.commit()
-        page = words(self.client.get("/app/industry/51").data.decode())
-        self.assertIn("The school safety checklist comes with Whole school", page)
+        # 1.12.0: the checklist page itself sends a teacher without Whole
+        # school back to their classes, with a plain note.
+        page = words(self.client.get("/app/industry/51", follow_redirects=True).data.decode())
+        self.assertIn("The school safety checklist comes with the Whole school plan", page)
         self.assertNotIn("choose Pro or Plus", page)
         plan = words(self.client.get("/app/plan").data.decode())
         self.assertIn("Your free trial has ended", plan)
@@ -546,7 +549,7 @@ class TestSecondReviewFixes(SchoolCase):
             self.assertNotRegex(text, r"(?i)\b(free|class|classroom) pilot\b|\bpilot report\b", path)
 
     def test_armo_and_pilot_keep_apart_without_touching_pilot_s_core(self):
-        """1.11.1: Pilot core 1.1.0 gives Armo room itself (yieldTo), so the
+        """1.11.1: Pilot core 1.1.0 (now 1.1.1) gives Armo room itself (yieldTo), so the
         armo-talking stopgap is gone. Armo stays bottom-left, and the core's
         files stay the shared core's, unchanged."""
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
@@ -558,11 +561,12 @@ class TestSecondReviewFixes(SchoolCase):
         with open(os.path.join(STATIC, "pilot-omniarmor.js"), encoding="utf-8") as f:
             config = f.read()
         self.assertIn('yieldTo: [".companion"],', config)
-        self.assertIn('avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],', config)
+        self.assertRegex(config, r'avoid: \[".tag", ".top-n", ".bundle", ".msg",')
+        self.assertIn('".companion-bubble", ".companion-fix", ".companion-badge"', config)
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.1\.0 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.1\.1 · ", name)
 
 
 if __name__ == "__main__":
