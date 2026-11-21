@@ -30,7 +30,11 @@ from omniarmor_app.catalog import rules_for  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "omniarmor_app", "static")
 CORE = ("pilot.js", "pilot-store.js", "pilot-mascot.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.js",
-        "pilot-render.js", "pilot-panel.js", "pilot.css", "pilot-panel.css")
+        "pilot-render.js", "pilot-panel.js", "pilot.css", "pilot-panel.css", "pilot-motion.js", "pilot-actor.js",
+        "pilot-actor.css")
+# The moving robot (core 1.1.0): fetched once the page is idle, never under reduce motion.
+MOTION = ("pilot-motion.js", "pilot-actor.js", "pilot-actor.css", "pilot-rest-body.webp", "pilot-rest-head.webp",
+          "pilot-rest-eyes.webp")
 LAZY = ("pilot-panel.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.js", "pilot-render.js", "pilot-panel.css",
         "pilot-omniarmor-pack.js")
 PUBLIC = ("/", "/industries", "/industries/restoarmor", "/for/salons-and-barbershops", "/for/schools", "/classrooms",
@@ -173,7 +177,9 @@ class TestThePilotTag(PilotCase):
                          "pilot/pilot-robot-128.webp", "pilot/pilot-robot-256.webp") + tuple(
                     n if n.startswith("pilot-omniarmor") else f"pilot/{n}" for n in LAZY):
                 self.assertRegex(page, rf'data-[a-z0-9-]+="/static/{re.escape(name)}\?v=\d+"', (path, name))
-            for name in LAZY:
+            for name in MOTION:
+                self.assertRegex(page, rf'data-[a-z0-9-]+="/static/pilot/{re.escape(name)}\?v=\d+"', (path, name))
+            for name in LAZY + MOTION:
                 self.assertNotRegex(page, rf'(?:src|href)="[^"]*{re.escape(name)}', (path, name))
             self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)[^>]*>", path)
             self.assertNotIn('style="', page, path)
@@ -272,6 +278,55 @@ class TestPilotSecurity(PilotCase):
             providers = f.read()
         self.assertIn('"anthropic-dangerous-direct-browser-access": "true"', providers)
         self.assertIn('credentials: "omit"', providers)
+
+    def test_the_pose_pictures_are_listed_and_a_new_one_is_picked_up(self):
+        page = self.page("/", client=self.app.test_client())
+        poses = dict(pair.split("=", 1) for pair in re.search(r'data-poses="([^"]*)"', tag(page)).group(1).split())
+        on_disk = sorted(n[:-5] for n in os.listdir(os.path.join(STATIC, "pilot", "poses")) if n.endswith(".webp"))
+        self.assertEqual(sorted(poses), on_disk)
+        self.assertGreaterEqual(len(poses), 18)
+        for pose, url in poses.items():
+            self.assertIn(pose, pilot.POSES)
+            self.assertRegex(url, rf"^/static/pilot/poses/{re.escape(pose)}\.webp\?v=\d+$")
+        folder = os.path.join(self.tmp.name, "poses")
+        os.mkdir(folder)
+        for name in ("wave.png", "wave.webp", "kick.png", "dance.webp", "notes.txt"):
+            open(os.path.join(folder, name), "wb").close()
+        with self.app.app_context():
+            self.assertEqual(pilot.pose_files(folder), {"kick": "kick.png", "wave": "wave.webp"})
+            self.assertEqual(pilot.pose_files(os.path.join(folder, "missing")), {})
+
+    def test_the_moving_robot_comes_late_and_never_under_reduce_motion(self):
+        with open(os.path.join(STATIC, "pilot", "pilot.js"), encoding="utf-8") as f:
+            loader = f.read()
+        self.assertIn('window.matchMedia("(prefers-reduced-motion: reduce)").matches;', loader)
+        self.assertIn("if (still || !assets.motion || !assets.actor || !assets.restBody) return;", loader)
+        self.assertIn("setTimeout(() => soon(go, { timeout: 4000 }), 1500);", loader)
+        for name in MOTION[3:]:
+            with open(os.path.join(STATIC, "pilot", name), "rb") as f:
+                self.assertLess(len(f.read()), 12_000, name)
+        # The same limits as the MTRX Horizyn site: each pose fetched only when a move first needs it.
+        total = 0
+        for name in os.listdir(os.path.join(STATIC, "pilot", "poses")):
+            with open(os.path.join(STATIC, "pilot", "poses", name), "rb") as f:
+                data = f.read()
+            self.assertTrue(data[:4] == b"RIFF" and data[8:12] == b"WEBP" and len(data) < 25_000, name)
+            total += len(data)
+        self.assertLess(total, 420_000)
+
+    def test_the_robot_keeps_clear_of_armo_the_tab_bar_and_blocked_checks(self):
+        with open(os.path.join(STATIC, "pilot-omniarmor.js"), encoding="utf-8") as f:
+            config = f.read()
+        self.assertIn('yieldTo: [".companion"],', config)
+        self.assertIn('avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],', config)
+        with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
+            css = f.read()
+        # Above the tab bar, and measured there by the core: --pilot-gap is a plain length.
+        self.assertIn("body.has-tabs .pilot-root{--pilot-gap:80px}", css)
+        self.assertIn("body.has-tabs .pilot-root{--pilot-gap:76px}", css)
+        # The core's own gutter keeps the last lines clear.
+        self.assertIn("var(--pilot-gutter)", css)
+        self.assertNotIn("armo-talking", css)
 
 
 # --- The files -------------------------------------------------------------------------------

@@ -254,14 +254,14 @@ body.has-tabs{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 
 /* Armo, the companion sitting on the tab bar */
 /* Armo lives in the bottom-left corner and Pilot's robot in the bottom-right (1.11.0: they used to pile up in the
-   same corner). The page keeps room at the bottom for both, so neither covers the last lines or a status tag. */
+   same corner). The page keeps room at the bottom for both, so neither covers the last lines or a status tag: above
+   the tab bar, the room Armo needs or Pilot core's own --pilot-gutter, whichever is more; on a public page (no tab
+   bar, no Armo) the footer keeps --pilot-gutter free under its last line. */
 body.has-tabs:has(> .companion),body.has-tabs:has(> .pilot-root){padding-bottom:calc(160px + env(safe-area-inset-bottom))}
-body:not(.has-tabs):has(> .companion) main,body:not(.has-tabs):has(> .pilot-root) main{padding-bottom:120px}
+:root.pilot-on body.has-tabs:has(> .pilot-root){padding-bottom:calc(max(160px,64px + var(--pilot-gutter)) + env(safe-area-inset-bottom))}
+body:not(.has-tabs):has(> .companion) main{padding-bottom:120px}
+:root.pilot-on body:not(.has-tabs) footer.site{padding-bottom:var(--pilot-gutter)}
 .companion{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(56px + env(safe-area-inset-bottom));z-index:60;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none}
-/* While Armo talks (armo.js), Pilot's robot steps aside; an open Pilot window stays. */
-.pilot-root .pilot-launcher{transition:transform .25s ease,opacity .25s ease}
-body.armo-talking .pilot-root .pilot-launcher{transform:translateY(160%);opacity:0;pointer-events:none}
-@media (prefers-reduced-motion:reduce){.pilot-root .pilot-launcher{transition:none}}
 .companion > *{pointer-events:auto}
 .companion-armo{position:relative;display:block;line-height:0;border-radius:50%;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
 .companion-armo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -501,12 +501,19 @@ details.note .title{color:var(--ink);font-weight:600}
 }
 
 /* Pilot, the MTRX Horizyn assistant (static/pilot/, docs/PILOT.md): its robot and window keep the core's own look.
-   On signed-in pages its bottom corners sit above the tab bar, and the bottom-right one above Armo, so nothing
-   covers anything. A phone's full-width sheet is unchanged. */
-body.has-tabs .pilot-root{--omni-lift:64px}
-body.has-tabs:has(> .companion) .pilot-root.pilot-at-br{--omni-lift:150px}
-body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-bl{bottom:calc(var(--pilot-gap) + var(--omni-lift) + env(safe-area-inset-bottom))}
+   On signed-in pages the tab bar runs along the bottom (64px), so there --pilot-gap is the tab bar plus the core's
+   own gap (16px, 12px on a phone). The core measures a corner with --pilot-gap when it checks that the corner is
+   free (its avoid and yieldTo settings, pilot-omniarmor.js), so it measures where the robot really sits, above the
+   tab bar. It must stay a plain length for that. The right-hand corners keep the core's usual distance from the
+   edge; a left-hand corner, used only when the robot steps aside, stays clear of Armo. The window opens beside the
+   robot, above the tab bar. A phone's full-width sheet is unchanged. */
+body.has-tabs .pilot-root{--pilot-gap:80px}
+body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-bl{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom))}
+body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:16px}
 @media (min-width:721px){
-  body.has-tabs .pilot-at-br .pilot-panel,body.has-tabs .pilot-at-bl .pilot-panel{bottom:calc(var(--pilot-size) * .97 + 28px + var(--omni-lift));height:min(680px,calc(100vh - var(--pilot-size) * .97 - 48px - var(--omni-lift)))}
+  body.has-tabs .pilot-at-br .pilot-panel,body.has-tabs .pilot-at-bl .pilot-panel{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom));height:min(720px,calc(100vh - var(--pilot-gap) - 16px - env(safe-area-inset-bottom)))}
 }
-@media (max-width:560px){body.has-tabs:has(> .companion) .pilot-root.pilot-at-br{--omni-lift:110px}}
+@media (max-width:720px){
+  body.has-tabs .pilot-root{--pilot-gap:76px}
+  body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:12px}
+}

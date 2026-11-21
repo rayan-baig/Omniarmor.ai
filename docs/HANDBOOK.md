@@ -448,7 +448,7 @@ Armo is OmniArmor's mascot: a round, friendly shield with big sparkly eyes, a wa
   - pointers to the Academy, the report and History.
 - **Has his own page** (`/app/armo`) that lists everything he found, each with "What to do" and a Fix it button, plus the personality picker.
 
-**Armo and Pilot keep apart** (1.11.0). Armo lives in the bottom-left corner and Pilot's robot in the bottom-right, and the page keeps room at the bottom so neither covers its last lines or a status tag. While Armo's bubble is showing (an alert, a Fix it, a tip), `armo.js` puts `armo-talking` on the page's body and `app.css` tucks Pilot's robot away (an open Pilot window stays), so only one helper shows at a time. A later Pilot core (1.1.0, with its `avoid` and `yieldTo` settings) can do this itself; until that core is copied in, this stays.
+**Armo and Pilot keep apart** (1.11.0; 1.11.1). Armo lives in the bottom-left corner and Pilot's robot in the bottom-right, and the page keeps room at the bottom so neither covers its last lines or a status tag. Since 1.11.1 Pilot core 1.1.0 does the rest itself: OmniArmor's Pilot config lists Armo in `yieldTo` and a Blocked status, Armo's "Fix it" bubble and the menu at the top in `avoid`, so while Armo's bubble reaches the robot's corner the robot moves to a free corner (or tucks half away until tapped), and it never sits on a Blocked status. On signed-in pages `app.css` sets the core's `--pilot-gap` to sit above the tab bar, which is also where the core checks. The 1.11.0 stopgap (an `armo-talking` class that hid the robot) is gone. See docs/PILOT.md.
 
 ### 4.3 Personalities
 

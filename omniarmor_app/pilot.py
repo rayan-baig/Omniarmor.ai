@@ -18,8 +18,9 @@ says only three things:
 
 import hashlib
 import hmac
+import os
 
-from flask import current_app, g, request
+from flask import current_app, g, request, url_for
 
 PROVIDER_HOSTS = ("api.anthropic.com", "api.openai.com", "generativelanguage.googleapis.com")
 COMPATIBLE_HOSTS = ("openrouter.ai", "api.groq.com", "api.mistral.ai", "api.deepseek.com", "api.together.xyz",
@@ -36,6 +37,34 @@ TEACHER_PAGES = frozenset({"classes.index", "app.overview", "app.industry", "app
                            "app.audit", "app.settings", "plan.plan_page"})
 # Never, whoever is signed in: every page a student uses, and the kids' join page.
 STUDENT_BLUEPRINTS = ("academy.", "kids.")
+
+
+# The moving robot's pose pictures (core 1.1.0): every <pose>.webp or .png in
+# static/pilot/poses/ whose name is one of these, so a new pose is added just
+# by putting its picture there. The same list as the MTRX Horizyn site's.
+POSES = ("standing", "sitting", "wave", "walk1", "walk2", "run1", "run2", "fly", "climb1", "climb2", "flip",
+         "throw", "kick", "tennis", "celebrate", "slide", "point", "power", "dash", "love", "land", "arms-crossed")
+
+
+def pose_files(folder=None):
+    """{pose: file name} for the pose pictures there are (WebP wins over PNG)."""
+    found = {}
+    try:
+        names = sorted(os.listdir(folder or os.path.join(current_app.static_folder, "pilot", "poses")))
+    except OSError:
+        return found
+    for name in names:
+        stem, _, ext = name.partition(".")
+        if stem in POSES and ext in ("webp", "png") and (stem not in found or ext == "webp"):
+            found[stem] = name
+    return found
+
+
+def poses():
+    """The pose pictures, as "name=address name=address" for the tag's
+    data-poses. The browser fetches one only when a move first needs it."""
+    return " ".join(f"{pose}={url_for('static', filename='pilot/poses/' + name)}"
+                    for pose, name in pose_files().items())
 
 
 def audience():
@@ -115,6 +144,7 @@ def facts(who):
         "readonly": "on" if access is not None and access["read_only"] else "off",
         "account": account_marker(),
         "hosts": " ".join(COMPATIBLE_HOSTS + LOCAL_HOSTS),
+        "poses": poses(),
         "facts": data,
     }
 

@@ -118,6 +118,14 @@
       + "Students never use Pilot. Never ask for or repeat students' names; a teacher may type first names for adding students, and that's all. "
       + "OmniArmor is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",
     kidView,
+    // Pilot core 1.1.0 keeps the robot out of the way: it gives Armo (the
+    // companion, with his bubble) room, and never sits on a Blocked status,
+    // the "Fix it" bubble or the menu at the top (Sign out among it). When
+    // one of those is where it sits, it moves to a free corner, or tucks half
+    // away until tapped. The tab bar is kept clear by app.css, which puts the
+    // robot's bottom corners above it.
+    yieldTo: [".companion"],
+    avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],
     screen,
     chips,
     taskPrompt,

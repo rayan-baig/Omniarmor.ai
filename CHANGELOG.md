@@ -3,6 +3,17 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.11.1 (21 November 2026)
+
+- **Pilot updated to the newest version: smaller on phones, steps aside for
+  Armo, and comes to life with small moves.** Pilot's robot now uses Pilot
+  core 1.1.0. It is smaller on phones. While Armo is talking, the robot moves
+  to a free corner by itself, and it never sits on a Blocked status or
+  Armo's "Fix it" bubble. Now and then it blinks, waves or takes a short walk
+  near its corner, and it keeps still while its window is open. If your
+  device is set to reduce motion, it stays still. It is still never on a
+  page a student uses.
+
 ## 1.11.0 (20 November 2026)
 
 Fixes from a strict second review: honest Academy lessons, harder quizzes,

@@ -546,16 +546,23 @@ class TestSecondReviewFixes(SchoolCase):
             self.assertNotRegex(text, r"(?i)\b(free|class|classroom) pilot\b|\bpilot report\b", path)
 
     def test_armo_and_pilot_keep_apart_without_touching_pilot_s_core(self):
+        """1.11.1: Pilot core 1.1.0 gives Armo room itself (yieldTo), so the
+        armo-talking stopgap is gone. Armo stays bottom-left, and the core's
+        files stay the shared core's, unchanged."""
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
             css = f.read()
-        self.assertIn("body.armo-talking .pilot-root .pilot-launcher{", css)
+        self.assertNotIn("armo-talking", css)
         self.assertRegex(css, r"\.companion\{position:fixed;left:")
         with open(os.path.join(STATIC, "armo.js"), encoding="utf-8") as f:
-            self.assertIn('document.body.classList.toggle("armo-talking", on)', f.read())
+            self.assertNotIn("armo-talking", f.read())
+        with open(os.path.join(STATIC, "pilot-omniarmor.js"), encoding="utf-8") as f:
+            config = f.read()
+        self.assertIn('yieldTo: [".companion"],', config)
+        self.assertIn('avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"],', config)
         for name in os.listdir(os.path.join(STATIC, "pilot")):
-            if name.endswith(".js"):
+            if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertTrue(f.readline().startswith("// Pilot core 1.0.1"), name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.1\.0 · ", name)
 
 
 if __name__ == "__main__":

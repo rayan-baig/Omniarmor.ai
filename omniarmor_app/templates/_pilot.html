@@ -4,7 +4,10 @@
     it fetches the robot, its store and OmniArmor's config, and the chat
     window and everything it needs come only the first time someone opens
     it. It talks to the AI provider the person chose, from their browser,
-    with their own key: never through this server. -#}
+    with their own key: never through this server. Once the page is idle
+    (and only if the person hasn't asked for less motion) it also fetches the
+    moving robot: pilot-motion.js, pilot-actor.js, pilot-actor.css and the
+    robot's three layers; a pose picture comes only when a move needs it. -#}
 {%- set pt = pilot_tag() %}
 {%- if pt %}
 <script src="{{ url_for('static', filename='pilot/pilot.js') }}" defer id="pilot-core"
@@ -15,6 +18,10 @@
   data-render="{{ url_for('static', filename='pilot/pilot-render.js') }}" data-providers="{{ url_for('static', filename='pilot/pilot-providers.js') }}"
   data-engine="{{ url_for('static', filename='pilot/pilot-engine.js') }}" data-media="{{ url_for('static', filename='pilot/pilot-media.js') }}"
   data-panel="{{ url_for('static', filename='pilot/pilot-panel.js') }}"
+  data-motion="{{ url_for('static', filename='pilot/pilot-motion.js') }}" data-actor="{{ url_for('static', filename='pilot/pilot-actor.js') }}"
+  data-actor-css="{{ url_for('static', filename='pilot/pilot-actor.css') }}"
+  data-rest-body="{{ url_for('static', filename='pilot/pilot-rest-body.webp') }}" data-rest-head="{{ url_for('static', filename='pilot/pilot-rest-head.webp') }}"
+  data-rest-eyes="{{ url_for('static', filename='pilot/pilot-rest-eyes.webp') }}" data-poses="{{ pt.poses }}"
   data-who="{{ pt.who }}" data-demo="{{ pt.demo }}" data-readonly="{{ pt.readonly }}" data-account="{{ pt.account }}"
   data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
 {%- endif %}

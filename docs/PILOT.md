@@ -2,10 +2,10 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.0.1**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.1.0**) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
-providers, what is sent and to whom, confirm cards and plans, voice, memory, and the security rules.
-This page covers only what is OmniArmor's own.
+providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
+security rules. This page covers only what is OmniArmor's own.
 
 ## Who gets Pilot, and where
 
@@ -32,16 +32,47 @@ forgets the last person's chat and any key kept for that tab only.
 
 | File | What it is |
 |---|---|
-| `static/pilot/` | the core, copied unchanged from the MTRX Horizyn site (10 files and the two robot pictures) |
+| `static/pilot/` | the core 1.1.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
-| `pilot.py` | the provider hosts for the security policy, the page lists, and the facts on the tag |
-| `static/pilot-omniarmor.js` | the config: screens, suggestions, the 18+ note, `kidView()` |
+| `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
+| `static/pilot-omniarmor.js` | the config: screens, suggestions, the 18+ note, `kidView()`, `avoid` and `yieldTo` |
 | `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and OmniArmor's tools, loaded on first open |
 
 The tag carries: who is there (`visitor`, `business` or `teacher`), whether it's the demo or a
 read-only workspace, an opaque account mark (a keyed hash), the workspace's checklists (ids and
-names, for the tools), the compatible hosts, and the plans' names and prices from `plans.py`. Never a
+names, for the tools), the compatible hosts, the plans' names and prices from `plans.py`, and the
+moving robot's files (`data-motion`, `data-actor`, `data-actor-css`, `data-rest-body`, `data-rest-head`,
+`data-rest-eyes`) with `data-poses`, the pose pictures in `static/pilot/poses/` (`pilot.poses()`, so a new
+pose is added by putting its picture there). Never a
 person's name, an email, a business record or a student. The pack never types a price.
+
+## The robot on OmniArmor
+
+The core 1.1.0 robot is smaller on phones (56 px), and once the page is idle it comes to life: it
+breathes and blinks, and now and then waves, does a small trick or strolls near its corner and back.
+It keeps still while its window is open, and under `prefers-reduced-motion` the moving robot isn't
+even fetched (`pilot.js` checks before loading `pilot-motion.js` and `pilot-actor.js`). Like Pilot
+itself, it is never on a page a student uses.
+
+Armo lives in the bottom-left corner and the robot in the bottom-right. The config tells the core:
+
+- `yieldTo: [".companion"]`: Armo, with his bubble. While Armo is talking and his bubble reaches the
+  robot's corner (on a phone), the robot moves to the first free corner, or tucks half away until
+  tapped. The robot doesn't wander while Armo is on the page.
+- `avoid: [".tag.BLOCKED", ".companion-bubble", ".companion-fix", ".topbar .nav"]`: a Blocked status,
+  Armo's "Fix it" bubble and the menu at the top (with Sign out) are never covered. With Armo talking
+  on a phone and the menu in view, no corner is free, so the robot tucks half away at the right edge.
+
+On signed-in pages the tab bar runs along the bottom. `app.css` sets the core's `--pilot-gap` there to
+the tab bar's height plus the usual gap (80 px, 76 px on a phone), so the robot sits above the tab bar
+and the core measures each corner where the robot really is when it checks the list above. (The tab
+bar is always there, so it isn't in `avoid`: the core would count every bottom corner as taken and send
+the robot to the top.) The right-hand corners keep the usual distance from the edge, and the window
+opens beside the robot, above the tab bar.
+
+The page keeps its last lines clear with the core's gutter: on a signed-in page the body keeps room
+above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public page the footer keeps
+`--pilot-gutter` free under its last line. Armo's old `armo-talking` stopgap (1.11.0) is gone.
 
 ## The security policy
 
@@ -49,7 +80,8 @@ person's name, an email, a business record or a student. The pack never types a 
 `pilot.COMPATIBLE_HOSTS`, and `http://localhost:*` / `http://127.0.0.1:*` for a local model),
 `media-src` adds `blob:` (a video made with the person's own key), and the Permissions-Policy allows
 `microphone=(self)` for voice. Nothing else was widened: scripts, styles, fonts and pictures stay
-this site's own, and no page loads anything from another company.
+this site's own, and no page loads anything from another company. Core 1.1.0 needed nothing new: the
+moving robot's files and pictures come from this site, and it moves with the Web Animations API.
 
 ## The tools
 
@@ -77,7 +109,8 @@ posts the same form they would press, after they press **Allow** on a card that 
 
 ## Tests
 
-`python -m unittest tests.test_pilot` (pages, student pages, the tag, the security policy, the files,
+`python -m unittest tests.test_pilot` (pages, student pages, the tag and its pose pictures, the moving
+robot fetched late and never under reduce motion, keeping clear of Armo, the security policy, the files,
 no model names, the privacy page) also runs the Node tests: `node --test tests/js/pilot.test.js`
-(the core's own tests) and `node --test tests/js/omniarmor-pilot.test.js` (the pack, confirm first,
+(the core's own tests, with the moving robot and where it may sit) and `node --test tests/js/omniarmor-pilot.test.js` (the pack, confirm first,
 the forbidden actions, the bulk-answer rule, first names only).
