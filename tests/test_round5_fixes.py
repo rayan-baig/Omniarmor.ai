@@ -229,18 +229,19 @@ class TestPhoneLayout(unittest.TestCase):
         # Pilot steps back entirely while Armo's badge has a count; Armo steps back without one.
         self.assertIn("body:has(.companion-badge:not([hidden])) .pilot-root:not(.pilot-open)", block)
         self.assertIn(".companion:not(:has(.companion-badge:not([hidden])))", block)
-        # Both in the bottom-right corner, whole (no tucking off the screen), with a margin.
+        # Both in the bottom-right corner, with a margin, never off the screen. 1.14.0: tucked away, the
+        # robot shrinks into that corner with the core's keepInViewport (tests/test_pilot_welcome.py).
         self.assertIn("right:max(12px,env(safe-area-inset-right))", block)
-        self.assertIn("transform:none;opacity:1", block)
+        self.assertIn(".pilot-root.pilot-keep-in.pilot-peek:is(", block)
         self.assertIn(".companion{left:auto;right:max(12px", block)
         config = read("omniarmor_app", "static", "pilot-omniarmor.js")
-        self.assertIn("gutter: false,", config)
+        self.assertIn("keepInViewport: true,", config)
         self.assertNotIn("tucked", read("omniarmor_app", "static", "armo.js"))
         # Pilot's core is untouched.
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.1\.1 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.2\.0 · ", name)
 
     def test_the_report_turns_into_cards_on_a_phone(self):
         css = read("omniarmor_app", "static", "app.css")

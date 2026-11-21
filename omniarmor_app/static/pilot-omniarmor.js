@@ -64,7 +64,7 @@
   }
 
   const C = (label, prompt) => ({ label, prompt });
-  function chips() {
+  function pageChips() {
     if (path === "/") return [C("What does OmniArmor do?", "In plain words, what does OmniArmor do for a small business?"),
       C("Which plan fits me?", "Which OmniArmor plan would fit me? Ask me one or two questions first."),
       C("How do reminders work?", "How do OmniArmor's reminder emails work?")];
@@ -121,10 +121,80 @@
     return who === "visitor" ? "Help me pick the right OmniArmor checklist for my business: " : "Help me with this page.";
   }
 
+  // Core 1.2.0: the welcome is OmniArmor's own (docs/PILOT.md), and fits who
+  // is here: a business owner gets their checklist's questions, a teacher
+  // their class's. A visitor gets the questions for the side of the site
+  // they are looking at (the schools pages, or the business pages).
+  const P = (icon, label, action, send) => ({ icon, label, action, send: Boolean(send) });
+  const KEY = P("key", "Add my AI key", "settings");
+  const schoolSide = who === "teacher" || (who === "visitor" && /^\/classrooms(\/|$)/.test(path));
+  const WELCOME = {
+    business: {
+      tagline: "Your checklist helper",
+      pills: [P("bolt", "What's due or overdue?", "What's due or overdue?", true),
+        P("help", "Explain this check", "Explain this check and the rule it comes from: "),
+        P("bars", "Summarise my report", "Summarise my report and tell me what to fix first.", true),
+        P("spark", "What does this colour mean?", "What does each colour and status on my checklist mean?", true),
+        KEY],
+    },
+    teacher: {
+      tagline: "Your classroom helper",
+      pills: [P("chat", "Add students", "Add these students to my class (first names only): "),
+        P("help", "How do join codes work?", "How do join codes work for my students?", true),
+        P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
+        P("bars", "Print certificates", "How do I print certificates for my students?", true),
+        KEY],
+    },
+    school: {
+      tagline: "Your classroom helper",
+      pills: [P("help", "Is it safe for students?", "What does OmniArmor keep about my students?", true),
+        P("bolt", "How does the free trial work?", "How does the free classroom trial work?", true),
+        P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
+        P("bars", "Explain this page", "explain-screen"),
+        KEY],
+    },
+    visitor: {
+      tagline: "Your checklist helper",
+      pills: [P("chat", "What does OmniArmor do?", "In plain words, what does OmniArmor do for a small business?", true),
+        P("help", "Which checklist fits me?", "Which OmniArmor checklist fits my business? Ask me what kind of business it is first.", true),
+        P("bolt", "Which plan fits me?", "Which OmniArmor plan would fit me? Ask me one or two questions first.", true),
+        P("bars", "Explain this page", "explain-screen"),
+        KEY],
+    },
+  };
+  const welcome = who === "business" ? WELCOME.business : who === "teacher" ? WELCOME.teacher
+    : schoolSide ? WELCOME.school : WELCOME.visitor;
+
+  // The core shows this page's suggestions under the welcome's pills too.
+  // There, a suggestion that asks what a pill already asks is left out, so
+  // nothing shows twice; once a chat has started (the pills fold away) every
+  // suggestion for the page is back.
+  const SAME = {
+    "What's overdue?": "What's due or overdue?", "Explain a check": "Explain this check",
+    "What do the colours mean?": "What does this colour mean?", "Plan a week": "Plan a week of lessons",
+  };
+  const pillLabels = new Set(welcome.pills.map((p) => p.label));
+  function chips() {
+    const list = pageChips();
+    let chatting = false;
+    try { chatting = window.Pilot.store.loadChat().length > 0; } catch (_) { chatting = false; }
+    return chatting ? list : list.filter((c) => !pillLabels.has(c.label) && !pillLabels.has(SAME[c.label]));
+  }
+
   const mounted = window.Pilot.mount({
     appName: "OmniArmor",
     name: "Pilot",
-    tagline: "Your AI copilot. Powered by you.",
+    tagline: welcome.tagline,
+    welcomePills: welcome.pills,
+    // Pilot here answers in words and works the checklist; it has no use for
+    // making pictures or videos, so their key sections are left out.
+    hideKeySections: ["image", "video"],
+    // Tucked away, the robot shrinks into its corner instead of hanging off
+    // the screen's edge (on a phone, in the one corner: app.css).
+    keepInViewport: true,
+    // No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs
+    // (Armo's bubble is a helper's, in yieldTo below), and the core already
+    // steps back for anything covering the whole screen.
     storagePrefix: "omniarmor-pilot",
     pack: d.pack || "",
     // Exactly the hosts the security policy lets a browser reach for an
@@ -140,7 +210,7 @@
       + "Students never use Pilot. Never ask for or repeat students' names; a teacher may type first names for adding students, and that's all. "
       + "OmniArmor is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",
     kidView,
-    // Pilot core 1.1.1 keeps the robot out of the way: it keeps off the
+    // Pilot core 1.2.0 keeps the robot out of the way: it keeps off the
     // page's own words and buttons wherever the page is scrolled to, and off
     // a box being typed in. On top of that it gives Armo (the companion, with
     // his bubble) room, and never sits on a status tag (NO READING, BLOCKED
@@ -148,16 +218,18 @@
     // message, a flash or banner, Armo's bubble and badge, the "First name
     // only?" card or the menu at the top (Sign out among it). When one of
     // those is where it sits, it moves to a free corner, or tucks away at the
-    // edge until tapped, with only a slice showing. The tab bar is kept clear
-    // by app.css, which puts the robot's bottom corners above it.
+    // edge until tapped, shrunk into its corner (keepInViewport). The tab bar
+    // is kept clear by app.css, which puts the robot's bottom corners above it.
     yieldTo: [".companion"],
     avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
       ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav"],
-    // On a phone the robot never tucks at an edge: it stays whole in the
-    // bottom-right corner, the one corner it shares with Armo, and only one
-    // of them shows (app.css, "One helper, one corner"). So the page's column
-    // needs no side room for it.
-    gutter: false,
+    // On a phone the robot stays in the bottom-right corner, the one corner
+    // it shares with Armo, and only one of them shows (app.css, "One helper,
+    // one corner"); tucked away it shrinks there, never off the edge. The
+    // page's column keeps the core's side room (30px on a phone) so line ends
+    // stop before the small robot. The column is main's .wrap (main itself
+    // has no side padding).
+    gutter: ["main > .wrap"],
     screen,
     chips,
     taskPrompt,

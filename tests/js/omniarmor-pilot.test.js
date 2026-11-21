@@ -342,3 +342,110 @@ test("before the Allow card for adding students, a line says the names go to the
     delete globalThis.MutationObserver;
   }
 });
+
+// ---------------------------------------------------------------- 1.14.0: OmniArmor's own welcome (core 1.2.0)
+
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+// OmniArmor's config, run for one person on one page: what it gives Pilot.mount.
+// chat: the messages already in this tab's chat (the welcome shows before any).
+function mountFor(who, pathname, { facts = {}, chat = [] } = {}) {
+  let given = null;
+  const store = { prefix: "omniarmor-pilot", loadChat: () => chat, clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
+  const dataset = { who, facts: JSON.stringify(facts), account: "a1" };
+  const sessionStorage = { getItem: () => null, setItem() {} };
+  vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
+    window: { Pilot: { mount: (c) => { given = c; return true; }, store }, location: { pathname }, sessionStorage },
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: () => null },
+  });
+  // Values from the config's own realm, made plain so deepEqual compares them fairly.
+  const plain = (v) => JSON.parse(JSON.stringify(v));
+  return { ...given, plain: plain(given), chipLabels: (screen = {}) => plain(given.chips(screen)).map((x) => x.label) };
+}
+// The core's own cleaning of the pills, as the window does it.
+function cleaned(pills) {
+  const sandbox = { window: {}, document: {} };
+  vm.runInNewContext(fs.readFileSync(core("pilot-panel.js"), "utf8"), sandbox);
+  return JSON.parse(JSON.stringify(sandbox.window.PilotPanel.welcomePills(pills)));
+}
+const labels = (c) => cleaned(c.welcomePills).map((p) => p.label);
+
+test("1.14.0 welcome: a business owner gets their checklist's five pills and tagline", () => {
+  const c = mountFor("business", "/app");
+  assert.equal(c.tagline, "Your checklist helper");
+  assert.deepEqual(labels(c), ["What's due or overdue?", "Explain this check", "Summarise my report", "What does this colour mean?", "Add my AI key"]);
+  const pills = cleaned(c.welcomePills);
+  // Every pill survives the core's cleaning as given: a known icon, a prompt or a built-in.
+  assert.deepEqual(pills.map((p) => p.icon), c.plain.welcomePills.map((p) => p.icon));
+  assert.deepEqual(pills.map((p) => [p.builtin, p.send]), [[false, true], [false, false], [false, true], [false, true], [true, false]]);
+  assert.equal(pills[4].action, "settings");
+  // "Explain this check" leaves the cursor in the box to name the check.
+  assert.ok(pills[1].action.endsWith(": "));
+});
+
+test("1.14.0 welcome: a teacher gets their class's five pills and tagline, on every teacher page", () => {
+  for (const where of ["/app/academy/classes", "/app/settings", "/app", "/app/notifications"]) {
+    const c = mountFor("teacher", where);
+    assert.equal(c.tagline, "Your classroom helper", where);
+    assert.deepEqual(labels(c), ["Add students", "How do join codes work?", "Plan a week of lessons", "Print certificates", "Add my AI key"], where);
+  }
+  const pills = cleaned(mountFor("teacher", "/app/academy/classes").welcomePills);
+  // Adding students is a prompt to finish (first names only), never sent on its own.
+  assert.equal(pills[0].send, false);
+  assert.match(pills[0].action, /first names only\): $/);
+});
+
+test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on", () => {
+  for (const where of ["/", "/industries", "/for/salons-and-barbershops", "/demo"]) {
+    const c = mountFor("visitor", where);
+    assert.equal(c.tagline, "Your checklist helper", where);
+    assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "Which plan fits me?", "Explain this page", "Add my AI key"], where);
+  }
+  for (const where of ["/classrooms", "/classrooms/guide"]) {
+    const c = mountFor("visitor", where);
+    assert.equal(c.tagline, "Your classroom helper", where);
+    assert.deepEqual(labels(c), ["Is it safe for students?", "How does the free trial work?", "Plan a week of lessons", "Explain this page", "Add my AI key"], where);
+  }
+});
+
+test("1.14.0 welcome: short taglines and labels, no picture or video keys, kept on screen, the column's side room", () => {
+  for (const [who, where] of [["business", "/app"], ["teacher", "/app/academy/classes"], ["visitor", "/"], ["visitor", "/classrooms"]]) {
+    const c = mountFor(who, where);
+    // One line at 320px under "Pilot" (about 158px of room).
+    assert.ok(c.tagline.length <= 21, c.tagline);
+    assert.ok(c.welcomePills.every((p) => p.label.length <= 40));
+    assert.deepEqual(c.plain.hideKeySections, ["image", "video"]);
+    assert.equal(c.keepInViewport, true);
+    assert.deepEqual(c.plain.gutter, ["main > .wrap"]);
+    // Armo's room and the things never covered are kept.
+    assert.deepEqual(c.plain.yieldTo, [".companion"]);
+    assert.ok(c.avoid.includes(".companion-badge") && c.avoid.includes(".topbar .nav"));
+  }
+});
+
+test("1.14.0 welcome: a suggestion that repeats a pill is left off the welcome, and is back once a chat has started", () => {
+  // A business's Home: "What's overdue?", "Explain a check" and "What do the colours mean?" are all pills.
+  assert.deepEqual(mountFor("business", "/app").chipLabels(), []);
+  assert.deepEqual(mountFor("business", "/app/report").chipLabels(), ["How do I export it?"]);
+  const chatting = [{ role: "user", content: "hi" }];
+  assert.deepEqual(mountFor("business", "/app", { chat: chatting }).chipLabels(),
+    ["What's overdue?", "Explain a check", "What do the colours mean?"]);
+  // A teacher's classes page: all three are pills (or "What's overdue?" with the school checklist).
+  assert.deepEqual(mountFor("teacher", "/app/academy/classes").chipLabels(), []);
+  assert.deepEqual(mountFor("teacher", "/app/academy/classes", { facts: { school_checklist: true } }).chipLabels(),
+    ["What's overdue?"]);
+  assert.deepEqual(mountFor("teacher", "/app/academy/classes", { chat: chatting }).chipLabels(),
+    ["Add students", "How do join codes work?", "Plan a week"]);
+  assert.deepEqual(mountFor("visitor", "/classrooms").chipLabels(), ["Classroom or Whole school?"]);
+});
+
+test("1.14.0 welcome: never on a student's page or a kid's device, whatever the welcome says", () => {
+  assert.equal(mountFor("visitor", "/kids").kidView(), true);
+  assert.equal(mountFor("teacher", "/app/academy/12").kidView(), true);
+  assert.equal(mountFor("teacher", "/app/academy/12/world/x/stage/1").kidView(), true);
+  assert.equal(mountFor("", "/").kidView(), true);
+  assert.equal(mountFor("kid", "/").kidView(), true);
+  assert.equal(mountFor("teacher", "/app/academy/classes").kidView(), false);
+  assert.equal(mountFor("business", "/app").kidView(), false);
+});

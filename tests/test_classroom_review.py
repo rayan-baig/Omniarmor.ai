@@ -549,7 +549,7 @@ class TestSecondReviewFixes(SchoolCase):
             self.assertNotRegex(text, r"(?i)\b(free|class|classroom) pilot\b|\bpilot report\b", path)
 
     def test_armo_and_pilot_keep_apart_without_touching_pilot_s_core(self):
-        """1.11.1: Pilot core 1.1.0 (now 1.1.1) gives Armo room itself (yieldTo), so the
+        """1.11.1: Pilot core 1.1.0 (now 1.2.0) gives Armo room itself (yieldTo), so the
         armo-talking stopgap is gone. Armo stays bottom-left, and the core's
         files stay the shared core's, unchanged."""
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
@@ -566,7 +566,7 @@ class TestSecondReviewFixes(SchoolCase):
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.1\.1 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.2\.0 · ", name)
 
 
 if __name__ == "__main__":

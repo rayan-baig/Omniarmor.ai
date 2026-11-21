@@ -3,6 +3,34 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.14.0 (21 November 2026)
+
+Pilot core 1.2.0, and a Pilot welcome made for OmniArmor.
+
+- **Pilot greets you with your own questions.** A business owner sees
+  "Your checklist helper" and five buttons: What's due or overdue?,
+  Explain this check, Summarise my report, What does this colour mean?
+  and Add my AI key. A teacher sees "Your classroom helper" with Add
+  students, How do join codes work?, Plan a week of lessons, Print
+  certificates and Add my AI key. Visitors get the questions for the side
+  of the site they are looking at: running a business, or schools.
+- **Nothing you ask is lost before there is an AI key.** A question
+  typed or pressed with no key yet stays in the box, the key settings
+  open, and it is sent the moment a key is saved.
+- **No buttons twice.** The page's suggestions under the welcome leave out
+  any that asks what a button already asks; they all come back once you
+  are chatting.
+- **No picture or video key settings.** Pilot here answers in words and
+  works your checklist, so only chat keys are offered.
+- **The robot never hangs off the screen.** When it steps aside for the
+  page, it shrinks into its corner, fully on the screen. On a phone it
+  stays in its one corner, 3 pixels from the edge and above the tab bar,
+  and the page's text leaves room beside it. On the first page of a visit
+  it shows whole for a few seconds so you notice it.
+- **The phone rules stay:** one helper in one corner, Armo first while his
+  badge has a count, nothing while you type, and Pilot is never on a page
+  a student uses.
+
 ## 1.13.0 (21 November 2026)
 
 Fixes from a strict fourth review: codes for students added later, a
