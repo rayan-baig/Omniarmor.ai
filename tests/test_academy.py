@@ -326,7 +326,7 @@ class TestAcademyPages(AppTestCase):
         lid = self.learner_id()
         self.mark_passed(lid, (1, 1), (1, 40), (2, 300))
         page = self.client.get(f"/app/academy/{lid}/progress").data.decode()
-        self.assertIn(f"1 of {BASIC.total:,}", page)
+        self.assertIn(f"1 of {BASIC.lessons:,}", page)
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM learner_progress").fetchone()[0], 3)
         self.assertFalse(academy.level_exists(BASIC, academy.level_id(BASIC, 1, 40)))

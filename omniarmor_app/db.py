@@ -528,6 +528,19 @@ MIGRATIONS = [
     );
     CREATE INDEX illness_log_org ON illness_log (org_id, industry_id, rule_key, reported_on);
     """),
+    # learners.joined_at: when a student last joined on a device with a join
+    # code (cleared when they are signed out everywhere), so the join codes
+    # page can make codes for just the students who have none, and keep the
+    # slips already handed out working. A class student who has played
+    # before this version is counted as joined. learner_days.passed: the
+    # levels passed that day, for the daily goal (levels counts every try,
+    # for the streak).
+    (27, """
+    ALTER TABLE learners ADD COLUMN joined_at TEXT;
+    UPDATE learners SET joined_at = created_at
+        WHERE class_id IS NOT NULL AND id IN (SELECT learner_id FROM learner_progress);
+    ALTER TABLE learner_days ADD COLUMN passed INTEGER NOT NULL DEFAULT 0;
+    """),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

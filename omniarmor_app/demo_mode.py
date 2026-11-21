@@ -90,7 +90,7 @@ TRADE_DEMOS = {
                "A tattoo studio", "tattoo-and-piercing-studios"),
     "gym": ((54, EMPLOYER), "Sample Gym (demo)", ("Jordan Hale", f"jordan@{DOMAIN}"), "A gym",
             "gyms-and-fitness-studios"),
-    "shop": ((EMPLOYER, 32, 50), "Sample Shop (demo)", ("Sam Ortiz", f"sam@{DOMAIN}"), "A shop",
+    "shop": ((50, EMPLOYER, 32), "Sample Shop (demo)", ("Sam Ortiz", f"sam@{DOMAIN}"), "A shop",
              "shops-and-retail-stores"),
 }
 TRADE_DEMO_FOR = {slug: kind for kind, (_, _, _, _, slug) in TRADE_DEMOS.items()}
@@ -505,10 +505,20 @@ def demo_context():
         return {}
     steps = tour(kind)
     here = next((n for n, step in enumerate(steps) if step[0] == request.endpoint), None)
+    text = None if here is None else steps[here][3]
+    title = None if here is None else steps[here][2]
+    shown = (request.view_args or {}).get("industry_id")
+    if (here is not None and request.endpoint == "app.industry" and shown in INDUSTRIES
+            and steps[here][1] != url_for("app.industry", industry_id=shown)):
+        # Another of the workspace's checklists (HRArmor in a salon): the
+        # step's words name the page's own checklist, not the trade's.
+        text = (f"{INDUSTRIES[shown]['brand']}: each check says what to do and which rule it comes from. Enter a"
+                " date or an answer once and OmniArmor counts the days.")
+        title = f"The {INDUSTRIES[shown]['brand']} checklist"
     return {"demo_bar": {
         "kind": kind,
         "steps": [{"url": url, "title": title, "current": n == here} for n, (_, url, title, _) in enumerate(steps)],
-        "here": None if here is None else {"number": here + 1, "title": steps[here][2], "text": steps[here][3]},
+        "here": None if here is None else {"number": here + 1, "title": title, "text": text},
         "next": None if here is None or here + 1 >= len(steps) else {"url": steps[here + 1][1],
                                                                      "title": steps[here + 1][2]},
         "total": len(steps),

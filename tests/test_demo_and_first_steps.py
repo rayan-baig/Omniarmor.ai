@@ -54,8 +54,8 @@ class TestBusinessDemo(DemoCase):
         r = self.open_demo()
         self.assertTrue(r.headers["Location"].endswith("/app"))
         page = text(self.client.get("/app"))
-        self.assertIn("Demo Pretend data. Nothing you do here is saved, and no emails or reminders go out.", page)
-        self.assertIn("Step 1 of 4: Dashboard.", page)
+        self.assertIn("Pretend data. Nothing you do here is saved, and no emails or reminders go out.", page)
+        self.assertIn("Demo Step 1 of 4: Dashboard", page)
         self.assertIn(demo_mode.BUSINESS, page)
         self.assertIn("Next: A checklist", page)
         self.assertIn("Start your free trial", page)
@@ -212,7 +212,7 @@ class TestClassroomDemo(DemoCase):
         r = self.open_demo("classroom")
         self.assertTrue(r.headers["Location"].endswith("/app/academy/classes"))
         page = text(self.client.get("/app/academy/classes"))
-        self.assertIn("Step 1 of 5: Classes.", page)
+        self.assertIn("Step 1 of 5: Classes", page)
         self.assertIn(demo_mode.CLASS_NAME, page)
         self.assertIn("Free classroom trial", page)
         facts = self.facts("classroom")
@@ -226,7 +226,7 @@ class TestClassroomDemo(DemoCase):
         first = academy.CLASSROOM.topic_worlds[0].number
         lesson = self.client.get(f"/app/academy/{facts['sample']}/world/{first}/stage/1")
         self.assertEqual(lesson.status_code, 200)
-        self.assertIn("Step 5 of 5: A sample lesson.", text(lesson))
+        self.assertIn("Step 5 of 5: A sample lesson", text(lesson))
         self.assertIn(academy.CLASS_BUSINESS, text(lesson))
         self.assertIn('href="/signup?then=classes" data-demo-signup>Start your free trial',
                       lesson.data.decode())
@@ -390,7 +390,6 @@ class TestEmptyScreens(AppTestCase):
         self.empty(f"/app/academy/classes/{class_id}/certificates", "certificates")
         self.empty(f"/app/academy/classes/{class_id}/report", "report")
         self.post(f"/app/academy/classes/{class_id}/students", {"names": "Ana"})
-        self.empty(f"/app/academy/classes/{class_id}/join-codes", "codes", button=False)
         self.assertIn("Make a code for every student",
                       self.client.get(f"/app/academy/classes/{class_id}/join-codes").data.decode())
         conn = self.db()

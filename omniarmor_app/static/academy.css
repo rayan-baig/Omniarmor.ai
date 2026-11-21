@@ -237,6 +237,7 @@
 .ac-track-level{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:6px}
 .ac-track-name{font-family:var(--kid);font-weight:800;font-size:26px;line-height:1.1}
 .ac-track-total{font-family:var(--kid);font-weight:800;font-size:20px;background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ac-track-total small{display:block;font-family:var(--body,inherit);font-weight:600;font-size:14px;color:var(--muted)}
 .ac-track-tag{font-size:14.5px;color:var(--muted)}
 .ac-track-facts{list-style:none;padding:0;margin:10px 0 0;font-size:13.5px;color:var(--muted);display:grid;gap:3px}
 .ac-track-done,.ac-track-lock{position:absolute;top:12px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px}
@@ -246,6 +247,10 @@
 
 /* Map extras */
 .ac-banner{margin:18px 0 0;padding:12px 16px;border-radius:14px;border:1px solid var(--accent);background:rgba(247,116,58,.08);font-size:15px}
+/* Students without a join code yet (classroom_views.join_codes): one line and the button that makes codes for just them. */
+.ac-missing{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;border-radius:14px;border:1px solid var(--accent);background:rgba(247,116,58,.08);font-size:15px}
+.ac-missing span{flex:1 1 220px}
+.ac-missing .btn{flex:none}
 .ac-quick{display:flex;flex-wrap:wrap;gap:10px}
 .ac-unit{display:flex;align-items:baseline;gap:10px}
 .ac-unit-meta{font-family:var(--sans);font-size:15px;font-weight:500}

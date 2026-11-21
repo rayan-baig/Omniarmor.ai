@@ -25,11 +25,11 @@
           {{ emblem(t.key, 88) }}
           <span class="ac-track-level">{{ t.level }}</span>
           <strong class="ac-track-name">{{ t.name }}</strong>
-          <span class="ac-track-total">{{ "{:,}".format(t.lessons) }} business lessons</span>
+          <span class="ac-track-total" data-lesson-count="{{ t.lessons }}">{{ "{:,}".format(t.lessons) }} business lessons{% if quests %} <small>{{ plus_quests(quests) }}</small>{% endif %}</span>
           <span class="ac-track-tag">{{ t.tagline }}</span>
           <ul class="ac-track-facts">
-            <li>{{ t.topics|length }} business worlds, {{ t.topic_lessons }} lessons, no question asked twice in a world</li>
-            <li>Plus a Rule Quest for each of your own industries, {{ t.industry_stages }} lessons each, one per real rule. Other industries' Rule Quests are optional extras</li>
+            <li data-lesson-count="{{ t.lessons }}">{{ t.topics|length }} business worlds and the Owner's Challenge: {{ "{:,}".format(t.lessons) }} lessons, no question asked twice in a world</li>
+            <li>{% if quests %}{{ plus_quests(quests) }}, one for each of your own industries{% else %}A Rule Quest for each of your own industries{% endif %}: {{ t.industry_stages }} lessons each, one per real rule. Other industries' Rule Quests are optional extras</li>
             <li>{{ t.min_questions }} questions a lesson, pass at {{ (t.pass_low * 100)|int }}% to {{ (t.pass_high * 100)|int }}%</li>
           </ul>
           {% if done[t.key] %}<span class="ac-track-done">{{ "{:,}".format(done[t.key]) }} done</span>{% endif %}

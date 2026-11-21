@@ -27,12 +27,12 @@
   <h2 class="ac-h2">Tracks and certificates</h2>
   <div class="table-wrap">
   <table class="ac-report">
-    <thead><tr><th>Track</th><th>Levels passed</th><th class="ac-wide-only">Stars</th><th class="ac-wide-only">Rank</th><th>Certificate</th></tr></thead>
+    <thead><tr><th>Track</th><th>Lessons passed</th><th class="ac-wide-only">Stars</th><th class="ac-wide-only">Rank</th><th>Certificate</th></tr></thead>
     <tbody>
       {% for row in tracks %}
         <tr>
           <td><span class="ac-report-track">{{ emblem(row.track.key, 28) }} {{ row.track.name }}</span>{% if row.current %} <span class="ac-tag">Now</span>{% endif %}</td>
-          <td>{{ "{:,}".format(row.done) }} of {{ "{:,}".format(row.track.total) }}</td>
+          <td>{{ "{:,}".format(row.lessons) }} of {{ "{:,}".format(row.track.lessons) }}{% if row.done > row.lessons %} <span class="muted">+ {{ row.done - row.lessons }} Rule Quest level{{ 's' if row.done - row.lessons != 1 }}</span>{% endif %}</td>
           <td class="ac-wide-only">{{ row.stars }}</td>
           <td class="ac-wide-only">{{ row.rank }}</td>
           <td>{% if row.certificate %}{% if row.current %}<a href="{{ url_for('academy.certificate', learner_id=learner.id) }}">{{ row.certificate }}</a>{% else %}{{ row.certificate }}{% endif %}{% else %}<span class="muted">Not yet: pass stage 1 of the {{ "Owner's Challenge" if row.track.rule_quests else 'Class Challenge' }}</span>{% endif %}</td>

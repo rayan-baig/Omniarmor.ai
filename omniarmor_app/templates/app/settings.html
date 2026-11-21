@@ -10,41 +10,48 @@
 </div>
 
 <h2 id="reminders">Your reminder emails</h2>
+{% if email_choices %}
 <p class="muted"><span data-pilot-private>Sent to {{ g.user.email }}.</span> Everyone on the team chooses their own. Reminders keeps a copy of each.</p>
 {% if access.paused %}<p class="plan-banner paused" data-reminders-paused><strong>Off while your plan is paused.</strong> {% if access.pause_open %}No reminder emails or alerts go out while it's paused (with no end date), whatever you pick here. They start again with the plan.{% else %}No reminder emails or alerts go out until {{ access.resumes_at|local_date }}, whatever you pick here. They start again by themselves that day.{% endif %}</p>{% endif %}
 <form method="post" action="{{ url_for('app.settings_reminders') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Daily digest: checks coming due in 30, 7 and 1 days, due today, and each week they stay overdue</label>
-  <label class="check"><input type="checkbox" name="email_alerts" {% if g.user.email_alerts %}checked{% endif %}> Time-limit alerts: an hour or minute clock reaching its warning point, and when it's overdue</label>
+  {% if 'email_reminders' in email_choices %}<label class="check"><input type="checkbox" name="email_reminders" {% if g.user.email_reminders %}checked{% endif %}> Daily digest: {{ 'school checklist checks' if scope.school else 'checks' }} coming due in 30, 7 and 1 days, due today, and each week they stay overdue</label>{% endif %}
+  {% if 'email_alerts' in email_choices %}<label class="check"><input type="checkbox" name="email_alerts" {% if g.user.email_alerts %}checked{% endif %}> Time-limit alerts: an hour or minute clock reaching its warning point, and when it's overdue</label>{% endif %}
   {% if operator %}<label class="check"><input type="checkbox" name="email_weekly" {% if g.user.email_weekly %}checked{% endif %}> Weekly Autopilot report: what Autopilot fixed and what still needs you (problems are always emailed)</label>{% endif %}
   <button class="btn quiet mt-s" type="submit">Save</button>
 </form>
+{% else %}
+<p class="muted" data-no-check-emails>OmniArmor emails you about your plan and your password only. Reminder emails are about the school safety checklist, which comes with <a href="{{ url_for('plan.plan_page') }}">Whole school</a>.</p>
+{% endif %}
 
 <h2>Armo</h2>
 <p class="row">{% if g.user.armo == 'off' %}Armo is hidden.{% else %}Armo's personality: {{ armo_personality(g.user.armo).name }}, {{ armo_personality(g.user.armo).tagline|lower }}.{% endif %}
   <a href="{{ url_for('armo.page') }}">Change</a></p>
 
 {% if g.role == 'owner' %}
-  <h2>Company</h2>
+  {% set word = 'School' if scope.school else 'Company' %}
+  <h2 id="workspace">{{ word }}</h2>
   <form method="post" action="{{ url_for('app.settings_company') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="narrow">
-      <label class="field"><span>Company name</span><input type="text" name="name" value="{{ g.org.name }}" required maxlength="120"></label>
+      <label class="field"><span>{{ word }} name</span><input type="text" name="name" value="{{ g.org.name }}" required maxlength="120"></label>
       <label class="field"><span>Timezone</span>
         <select name="timezone">
           {% set tzs = timezones if g.org.timezone in timezones else [g.org.timezone] + timezones %}
           {% for tz in tzs %}<option value="{{ tz }}" {% if tz == g.org.timezone %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
         </select></label>
     </div>
-    <fieldset class="plain">
-      <legend class="plain">Industries</legend>
+    {% if industries %}
+    <fieldset class="plain" data-industries="{{ industries|length }}">
+      <legend class="plain">{{ 'Your school checklists' if scope.school else 'Industries' }}</legend>
       <div class="checks">
         {% for ind in industries.values() %}
           <label class="check"><input type="checkbox" name="industries" value="{{ ind.id }}" {% if ind.id in picked %}checked{% endif %}> {{ ind.brand }} <span class="faint">· {{ ind.sector }}</span></label>
         {% endfor %}
       </div>
     </fieldset>
-    <button class="btn quiet" type="submit">Save company settings</button>
+    {% endif %}
+    <button class="btn quiet" type="submit">Save {{ word|lower }} settings</button>
   </form>
 {% endif %}
 
@@ -73,8 +80,13 @@
   </form>
 {% endif %}
 
+{% if scope.locations %}
 <h2 id="locations">Locations</h2>
 <p class="muted">Each location is its own workspace, with its own checks, team and plan. {% if locations|length > 1 %}You're working in <strong>{{ g.org.name }}</strong>.{% endif %}</p>
+{% elif locations|length > 1 %}
+<h2 id="locations">Your workspaces</h2>
+<p class="muted">You're working in <strong>{{ g.org.name }}</strong>.</p>
+{% endif %}
 {% if locations|length > 1 %}
   <ul class="list" data-locations>
     {% for l in locations %}
@@ -114,13 +126,13 @@
   <a href="{{ url_for('plan.plan_page') }}">{{ 'Manage billing' if access.paid and g.role == 'owner' else 'See the plans' }}</a></p>
 {% endif %}
 {% if g.role == 'owner' and switch_yearly %}<p class="row" data-yearly-switch-link><span>Paying monthly? Switch to yearly, {{ pf.free_label }}.</span> <a href="{{ url_for('plan.plan_page') }}#switch-yearly">Switch to yearly</a></p>{% endif %}
-<p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}{% if pf.yearly.pro %} or {{ pf.pro.yearly_short }}{% endif %}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}{% if pf.yearly.plus %} or {{ pf.plus.yearly_short }}{% endif %}: everything in {{ pf.pro.name }} and the whole Future Owner Academy.{% if pf.yearly.any %} Paying yearly gives {{ pf.free_label }} (<a href="{{ url_for('plan.plan_page', billing='yearly') }}" data-yearly-link>see yearly prices</a>).{% endif %} The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>
+{% if not class_workspace %}<p class="muted" data-plan-note>{{ pf.pro.name }}, {{ pf.pro.price }}{% if pf.yearly.pro %} or {{ pf.pro.yearly_short }}{% endif %}: the compliance tracker. {{ pf.plus.name }}, {{ pf.plus.price }}{% if pf.yearly.plus %} or {{ pf.plus.yearly_short }}{% endif %}: everything in {{ pf.pro.name }} and the whole Future Owner Academy.{% if pf.yearly.any %} Paying yearly gives {{ pf.free_label }} (<a href="{{ url_for('plan.plan_page', billing='yearly') }}" data-yearly-link>see yearly prices</a>).{% endif %} The Academy's first worlds stay free for everyone{% if g.role != 'owner' %}. Only the workspace owner can change the plan{% endif %}.</p>{% endif %}
 
 {% if g.role == 'owner' %}
   <h2>Delete workspace</h2>
   <form method="post" action="{{ url_for('app.delete_workspace') }}" class="narrow">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <p class="muted">This permanently deletes {{ g.org.name }}, every reading, the audit trail and all team accounts that aren't part of another workspace. Export your report and audit trail first if you need them.</p>
+    <p class="muted">This permanently deletes {{ g.org.name }}, {{ 'its classes and their progress, any checklist readings' if class_workspace else 'every reading' }}, the audit trail and all team accounts that aren't part of another workspace. Export your report and audit trail first if you need them.</p>
     <label class="field"><span>Type <strong>{{ g.org.name }}</strong> to confirm</span><input type="text" name="confirm" autocomplete="off" required></label>
     <button class="btn danger" type="submit">Delete workspace</button>
   </form>

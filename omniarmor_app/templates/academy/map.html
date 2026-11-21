@@ -38,8 +38,8 @@
       <div class="ac-xp" role="img" aria-label="{{ summary.done }} of {{ summary.total }} lessons done">
         <span class="ac-xp-fill pct-{{ summary.done|pct(summary.total, 1) }}"></span>
       </div>
-      <p class="ac-xp-label">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons · {{ summary.stars }} stars
-        {% if summary.next_rank %} · {{ summary.next_rank[0] - summary.done }} more to {{ summary.next_rank[1] }}{% endif %}</p>
+      <p class="ac-xp-label" data-lesson-count="{{ summary.total }}">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons{% if summary.quests %} · <span data-quest-count="{{ summary.quests }}">{{ plus_quests(summary.quests) }}</span>{% endif %} · {{ summary.stars }} stars
+        {% if summary.next_rank %} · {{ summary.to_next }} more to {{ summary.next_rank[1] }}{% endif %}</p>
     </div>
     {% if track.rule_quests %}
     <a class="ac-track-chip" href="{{ url_for('academy.choose_track', learner_id=lid) }}" title="Change track">

@@ -10,25 +10,41 @@
   <p class="ac-kicker">{{ cls.name }} · {{ g.org.name }}</p>
   <h1 class="ac-title">Join codes</h1>
   <p class="muted">On a school device, open <strong>{{ join_url }}</strong> and type the code. Each code works once, for {{ days }} days. A student who joins sees only their own lessons{% if cls.leaderboard %} and the class leaderboard{% endif %}.</p>
+  {% if missing and has_students %}
+  <form class="ac-callout ac-missing no-print" data-codes-missing="{{ missing|length }}" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="for" value="missing">
+    {% if codes or joined %}
+      <span><strong>{{ missing|length }} student{{ 's have' if missing|length != 1 else ' has' }} no code yet</strong>{% if missing|length <= 3 %} ({{ missing|map(attribute='nickname')|join(', ') }}){% endif %}. The slips you already handed out keep working.</span>
+      <button class="btn ac-btn" type="submit">Make codes for {{ 'them' if missing|length != 1 else missing[0].nickname }}</button>
+    {% else %}
+      <span>Each student gets a code, ready to print and cut into slips.</span>
+      <button class="btn ac-btn" type="submit">Make a code for every student</button>
+    {% endif %}
+  </form>
+  {% endif %}
   {% if codes %}
     <ul class="ac-codes" data-join-codes>
       {% for c in codes %}
         <li><span class="ac-code-name">{{ c.nickname }}</span> <span class="mono ac-code">{{ c.code }}</span></li>
       {% endfor %}
     </ul>
-    <p class="hint no-print">Print this page and cut it into slips. Making new codes replaces these.</p>
-  {% else %}
-    {% if has_students %}
-      {{ empty('codes', 'Each student\'s join code will show here, ready to print and cut into slips.', none, none) }}
-    {% else %}
-      {{ empty('codes', 'Each student\'s join code will show here, ready to print. Add your students first.', url_for('classes.class_page', class_id=cls.id) ~ '#add-students', 'Add students') }}
-    {% endif %}
+    <p class="hint no-print">Print this page and cut it into slips. A student who has joined doesn't need a slip again{% if joined %} ({{ joined }} ha{{ 've' if joined != 1 else 's' }} joined){% endif %}.</p>
+  {% elif has_students and not missing %}
+    <p class="muted" data-codes-all-joined>Every student has joined on a device. Nobody needs a slip right now.</p>
+  {% elif not has_students %}
+    {{ empty('codes', 'Each student\'s join code will show here, ready to print. Add your students first.', url_for('classes.class_page', class_id=cls.id) ~ '#add-students', 'Add students') }}
   {% endif %}
-  {% if has_students %}
-  <form class="no-print mt" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn ac-btn" type="submit">{{ 'Make new codes for everyone' if codes else 'Make a code for every student' }}</button>
-  </form>
+  {% if has_students and (codes or joined) %}
+  <details class="ac-manage no-print mt" data-codes-everyone>
+    <summary>Lost the slips? Make new codes for everyone</summary>
+    <p>This replaces every student's code, including the slips already handed out: the old slips stop working, and students who already joined keep their place. Print the page again afterwards.</p>
+    <form method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="for" value="everyone">
+      <button class="btn quiet" type="submit">Make new codes for everyone</button>
+    </form>
+  </details>
   {% endif %}
 </div>
 {% endblock %}

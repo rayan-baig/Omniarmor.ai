@@ -416,12 +416,12 @@ class TestSmallerFixes(AppTestCase):
     def test_armo_keeps_off_the_cards_on_a_phone(self):
         with open(os.path.join(STATIC, "app.css")) as f:
             css = f.read()
-        phone = re.search(r"@media \(max-width:560px\)\{\.companion\{[^@]*", css).group(0)
+        phone = re.search(r"@media \(max-width:560px\)\{\.companion-armo svg\{[^@]*", css).group(0)
         self.assertIn("width:52px", phone)
-        self.assertIn(".companion.tucked", phone)
+        # 1.13.0: on a phone he no longer tucks at the edge; he shares one corner with Pilot, and only one of
+        # them shows (tests/test_round5_fixes.py).
         with open(os.path.join(STATIC, "armo.js")) as f:
-            # 1.12.0: on a phone he stays tucked until tapped.
-            self.assertIn('root.classList.toggle("tucked"', f.read())
+            self.assertNotIn("tucked", f.read())
 
 
 # --- 11. Fonts from the app itself -------------------------------------------------------------------

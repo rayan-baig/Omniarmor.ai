@@ -24,6 +24,15 @@
     <a class="btn quiet" href="{{ url_for('classes.join_codes', class_id=cls.id) }}">Join codes</a>
   </p>
 
+  {% if missing and view.students %}
+  <form class="ac-callout ac-missing no-print" data-codes-missing="{{ missing|length }}" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="for" value="missing">
+    <span><strong>{{ missing|length }} student{{ 's have' if missing|length != 1 else ' has' }} no code yet</strong>{% if codes %}: the slips you already handed out keep working{% endif %}.</span>
+    <button class="btn ac-btn" type="submit">Make codes for {{ 'them' if missing|length != 1 else missing[0].nickname }}</button>
+  </form>
+  {% endif %}
+
   {% if ask %}
   <form class="ac-card mt no-print" id="confirm-names" data-confirm-names method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

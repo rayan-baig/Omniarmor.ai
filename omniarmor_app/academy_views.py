@@ -129,9 +129,11 @@ def _streak(learner_id, today):
 
 
 def _today_levels(learner_id, today):
-    row = get_db().execute("SELECT levels FROM learner_days WHERE learner_id = ? AND day = ?",
+    """Levels passed today, for the daily goal: a try that didn't pass
+    doesn't count (learner_days.levels counts every try, for the streak)."""
+    row = get_db().execute("SELECT passed FROM learner_days WHERE learner_id = ? AND day = ?",
                            (learner_id, today.isoformat())).fetchone()
-    return row["levels"] if row else 0
+    return row["passed"] if row else 0
 
 
 def _summary(learner, progress=None, t=None):
@@ -143,26 +145,31 @@ def _summary(learner, progress=None, t=None):
     final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
     done = len(passed)
     today = org_today(g.org)
-    # Counted: the business lessons and the Rule Quests of the workspace's own
-    # industries (Track.total_for). Another industry's Rule Quest a learner
-    # opened as an extra still earns stars and ranks, but isn't counted here.
+    # Counted: the business lessons only (Track.lessons_done), the same count
+    # on the Academy home, the track picker and the map. The Rule Quests of
+    # the workspace's own industries are shown apart, as "+N Rule Quests".
     own = org_industry_ids(get_db(), g.org["id"])
-    counted = {w.number for w in t.topic_worlds} | {academy.FINAL_WORLD.number}
-    if t.rule_quests:
-        counted |= {academy.INDUSTRY_WORLD_BASE + i for i in own}
+    upcoming = academy.next_rank(done, t)   # ranks count every level passed, Rule Quests too
     return {
         "learner": learner,
         "track": t,
         "stars": sum(r["best_stars"] for r in progress.values()),
-        "done": sum(1 for lid in passed if (lid % 1_000_000) // 1000 in counted),
+        "done": t.lessons_done(passed),
         "rank": academy.rank_for(done, t),
         "tier": academy.rank_tier(done, t),
-        "next_rank": academy.next_rank(done, t),
+        "next_rank": upcoming,
+        "to_next": upcoming[0] - done if upcoming else 0,
         "certificate": academy.certificate_for(done, final_passed, t),
-        "total": t.total_for(own),
+        "total": t.lessons,
+        "quests": t.quests_for(own),
         "streak": _streak(learner["id"], today),
         "today": _today_levels(learner["id"], today),
     }
+
+
+def _own_quests():
+    """The Rule Quests a family track has here: one per workspace industry."""
+    return academy.TRACKS[academy.DEFAULT_TRACK].quests_for(org_industry_ids(get_db(), g.org["id"]))
 
 
 def _world_or_404(number, t):
@@ -252,10 +259,11 @@ def _review(conn, row, now):
                      (streak, iso(now + timedelta(days=REVIEW_DAYS[streak - 1])), row["id"]))
 
 
-def _log_day(conn, learner_id):
-    conn.execute("INSERT INTO learner_days (learner_id, day, levels) VALUES (?, ?, 1)"
-                 " ON CONFLICT (learner_id, day) DO UPDATE SET levels = levels + 1",
-                 (learner_id, org_today(g.org).isoformat()))
+def _log_day(conn, learner_id, passed=False):
+    """A day played (the streak), and a level passed (the daily goal)."""
+    conn.execute("INSERT INTO learner_days (learner_id, day, levels, passed) VALUES (?, ?, 1, ?)"
+                 " ON CONFLICT (learner_id, day) DO UPDATE SET levels = levels + 1, passed = passed + excluded.passed",
+                 (learner_id, org_today(g.org).isoformat(), int(bool(passed))))
 
 
 @bp.app_context_processor
@@ -263,7 +271,13 @@ def academy_context():
     return {"academy_tracks": academy.TRACK_LIST, "unit_names": academy.UNIT_NAMES,
             "free_world_count": len(academy_plan.FREE_WORLDS),
             "free_track_name": academy.TRACKS[academy_plan.FREE_TRACK].name,
-            "rule_quest_count": len(academy.INDUSTRY_WORLDS)}
+            "rule_quest_count": len(academy.INDUSTRY_WORLDS), "plus_quests": plus_quests}
+
+
+def plus_quests(n):
+    """The Rule Quests shown beside a lesson count: "+1 Rule Quest", "+2 Rule
+    Quests", or nothing."""
+    return f"+{n} Rule Quest{'s' if n != 1 else ''}" if n else ""
 
 
 # --- Learners --------------------------------------------------------------------
@@ -286,7 +300,7 @@ def home():
     return render_template("academy/home.html", summaries=[_summary(l) for l in learners], avatars=academy.AVATARS,
                            max_learners=academy.MAX_LEARNERS, tracks=academy.TRACK_LIST,
                            world_count=len(academy.TOPIC_WORLDS), plan=academy_plan.plan_status(g.org),
-                           offer=offer, class_count=class_count)
+                           offer=offer, class_count=class_count, quests=_own_quests())
 
 
 # --- The upgrade offer (nudges.py) -----------------------------------------------
@@ -400,8 +414,9 @@ def choose_track(learner_id):
         t = academy.TRACKS[key]
         flash(f"{t.name} it is: {t.lessons:,} business lessons to explore. Let's go!", "ok")
         return redirect(url_for("academy.level_map", learner_id=learner_id))
-    done = {t.key: len(_passed(_progress(learner_id, t))) for t in academy.TRACK_LIST}
+    done = {t.key: t.lessons_done(_passed(_progress(learner_id, t))) for t in academy.TRACK_LIST}
     return render_template("academy/track.html", learner=learner, tracks=academy.TRACK_LIST, done=done,
+                           quests=_own_quests(),
                            avatars=academy.AVATARS, plan=academy_plan.plan_status(g.org),
                            first_time=not learner["track_chosen"])
 
@@ -600,7 +615,7 @@ def play(learner_id, world_number, stage):
         (learner_id, lid, score, stars, now_iso() if stars >= 1 else None),
     )
     _remember(conn, learner_id, results)
-    _log_day(conn, learner_id)
+    _log_day(conn, learner_id, passed=stars >= 1)
     conn.commit()
     after = _summary(learner)
     passed = stars >= 1
@@ -615,7 +630,7 @@ def play(learner_id, world_number, stage):
         first_clear=passed and not was_passed, avatars=academy.AVATARS, summary=after,
         new_rank=after["rank"] if after["rank"] != before["rank"] else None,
         new_certificate=after["certificate"] if after["certificate"] != before["certificate"] else None,
-        goal_hit=before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
+        goal_hit=passed and before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
         missed=sum(1 for r in results if not r["right"]),
         band=result_band(score, len(questions), needed, stars),
         retry_lines=retry_lines(armo.personality(learner["armo"], armo.DEFAULT_KID), score, needed),
@@ -635,7 +650,7 @@ def result_band(score, total, needed, stars):
         return "Good start. Try again"
     if score > 0:
         return "Keep going: read the cards, then try again"
-    return "Not this time. Read the cards again, then try"
+    return "Not this time. Read the cards again, then try again"
 
 
 _CLOSE = re.compile(r"\b(so close|close|almost|a second look)\b", re.I)
@@ -774,7 +789,8 @@ def progress_report(learner_id):
             continue
         passed = _passed(progress)
         final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
-        tracks.append({"track": t, "done": len(passed), "stars": sum(r["best_stars"] for r in progress.values()),
+        tracks.append({"track": t, "done": len(passed), "lessons": t.lessons_done(passed),
+                       "stars": sum(r["best_stars"] for r in progress.values()),
                        "rank": academy.rank_for(len(passed), t),
                        "certificate": academy.certificate_for(len(passed), final_passed, t),
                        "current": t.key == learner["track"]})
@@ -819,7 +835,7 @@ def join_code(learner_id):
 def sign_out_devices(learner_id):
     learner = _learner_or_404(learner_id)
     conn = get_db()
-    conn.execute("UPDATE learners SET device_epoch = device_epoch + 1 WHERE id = ?", (learner_id,))
+    conn.execute("UPDATE learners SET device_epoch = device_epoch + 1, joined_at = NULL WHERE id = ?", (learner_id,))
     conn.execute("DELETE FROM join_codes WHERE learner_id = ?", (learner_id,))
     conn.commit()
     flash(f"{learner['nickname']} was signed out on every device.", "ok")
@@ -848,6 +864,9 @@ def join():
         # two type it at the same moment.
         used = conn.execute("DELETE FROM join_codes WHERE code = ? AND learner_id = ? AND expires_at > ?",
                             (code, row["id"], now_iso())).rowcount
+        if used == 1:
+            # Joined: the join codes page no longer counts them as needing a code.
+            conn.execute("UPDATE learners SET joined_at = ? WHERE id = ?", (now_iso(), row["id"]))
         conn.commit()
         if used != 1:
             record_event([key])

@@ -13,7 +13,7 @@ from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .config import support_email
 from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, entry_date_words, find_rule,
-                      multi_check, top_rank, why_line)
+                      multi_check, rules_for, top_rank, why_line)
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, ValidationError, add_illness,
@@ -48,6 +48,11 @@ def nav_context():
     # class_workspace: a school's, whose menus are a classroom's (base.html); school_checklist: whether
     # its menus show the school safety checklist, which comes with Whole school.
     class_workspace = is_class_workspace(g.org)
+    from .demo_mode import TRADE_DEMOS
+    if g.get("demo") in TRADE_DEMOS:
+        # A trade demo's menu leads with the trade's own checklist (ShopArmor before PayArmor and HRArmor).
+        order = TRADE_DEMOS[g.demo][0]
+        ids = sorted(ids, key=lambda i: order.index(i) if i in order else len(order))
     return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": access,
             "class_workspace": class_workspace,
             "school_checklist": class_workspace and on_whole_school(g.org, access)}
@@ -507,6 +512,32 @@ def settings():
     return _settings_page()
 
 
+SCHOOL_CHECKLISTS = (8, 51)    # SchoolArmor and SchoolSafetyArmor: the school's own checklists
+
+
+def settings_scope(conn, org, access=None):
+    """What a workspace's Settings shows (and its forms change). A business:
+    everything. A school's workspace (a teacher's): "School", not "Company";
+    no Locations; on the free trial or Classroom, no industries and no
+    reminder emails about checks or clocks, since its school checklist comes
+    with Whole school (classrooms.school_checklist_hidden); on Whole school,
+    only the school's own checklists, and the clock alerts only if one of
+    its checks counts hours or minutes."""
+    from .classrooms import is_class_workspace, school_checklist_hidden
+    school = is_class_workspace(org)
+    picked = org_industry_ids(conn, org["id"])
+    if not school:
+        return {"school": False, "industries": list(INDUSTRIES), "choices": EMAIL_CHOICES, "locations": True,
+                "picked": picked}
+    if school_checklist_hidden(org, access):
+        return {"school": True, "industries": [], "choices": [], "locations": False, "picked": picked}
+    shown = sorted(set(SCHOOL_CHECKLISTS) | set(picked))
+    clocks = any(counts_time(rule) for i in picked for rule in rules_for(i))
+    choices = [c for c in EMAIL_CHOICES if c[0] != "email_alerts" or clocks]
+    return {"school": True, "industries": [i for i in shown if i in INDUSTRIES], "choices": choices,
+            "locations": False, "picked": picked}
+
+
 def _settings_page(new_key=None):
     """The Settings page. new_key is a connection key just made, shown on
     this one page and never again (only its hash is kept)."""
@@ -528,10 +559,13 @@ def _settings_page(new_key=None):
         " WHERE memberships.user_id = ? ORDER BY memberships.created_at, orgs.id", (g.user["id"],)).fetchall()
     from .plan_views import switch_offer
     access = plans.access(g.org)
-    return render_template("app/settings.html", members=members, locations=locations,
+    scope = settings_scope(conn, g.org, access)
+    return render_template("app/settings.html", members=members, locations=locations, scope=scope,
+                           email_choices=[c[0] for c in scope["choices"]],
                            switch_yearly=switch_offer(current_app.config, g.org, access, plans.YEAR),
-                           can_add_location=sum(1 for l in locations if l["role"] == "owner") < MAX_LOCATIONS, picked=set(org_industry_ids(conn, g.org["id"])),
-                           industries=INDUSTRIES, timezones=COMMON_TIMEZONES, open_invites=invites,
+                           can_add_location=scope["locations"] and sum(1 for l in locations if l["role"] == "owner") < MAX_LOCATIONS,
+                           picked=set(scope["picked"]), industries={i: INDUSTRIES[i] for i in scope["industries"]},
+                           timezones=COMMON_TIMEZONES, open_invites=invites,
                            access=access, operator=operator, class_limits=plans.class_limits(g.org),
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
                            support_email=support_email(current_app.config),
@@ -575,9 +609,13 @@ EMAIL_CHOICES = [("email_reminders", "daily digest"), ("email_alerts", "time-lim
 @login_required
 def settings_reminders():
     weekly = [("email_weekly", "weekly Autopilot report")] if is_operator(g.user, current_app.config) else []
-    choices = EMAIL_CHOICES + weekly
-    picked = {field: request.form.get(field) == "on" for field, _ in choices}
     conn = get_db()
+    # Only the choices the page shows (settings_scope): one it leaves out
+    # keeps its value.
+    choices = settings_scope(conn, g.org)["choices"] + weekly
+    if not choices:
+        return redirect(url_for("app.settings"))
+    picked = {field: request.form.get(field) == "on" for field, _ in choices}
     conn.execute(f"UPDATE users SET {', '.join(f'{field} = ?' for field in picked)}, reminders_chosen_at = ?"
                  " WHERE id = ?", (*(int(on) for on in picked.values()), now_iso(), g.user["id"]))
     conn.commit()
@@ -591,16 +629,23 @@ def settings_reminders():
 def settings_company():
     name = clean_text(request.form.get("name"), 120)
     tz = request.form.get("timezone", "")
-    picked = sorted({int(i) for i in request.form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6 and int(i) in INDUSTRIES})
+    conn = get_db()
+    scope = settings_scope(conn, g.org)
+    word = "school" if scope["school"] else "company"
+    # Only the industries the page offers can change (settings_scope): the
+    # others stay as they are.
+    offered = set(scope["industries"])
+    ticked = {int(i) for i in request.form.getlist("industries") if i.isascii() and i.isdigit() and len(i) < 6
+              and int(i) in offered}
+    picked = sorted((set(scope["picked"]) - offered) | ticked)
     if not name:
-        flash_error("Enter your company name, without line breaks.")
+        flash_error(f"Enter your {word} name, without line breaks.")
     elif not valid_timezone(tz):
         flash_error("Pick a valid timezone.")
     elif not picked:
         flash_error("Keep at least one industry.")
     else:
-        conn = get_db()
-        before = set(org_industry_ids(conn, g.org["id"]))
+        before = set(scope["picked"])
         conn.execute("UPDATE orgs SET name = ?, timezone = ? WHERE id = ?", (name, tz, g.org["id"]))
         conn.execute("DELETE FROM org_industries WHERE org_id = ?", (g.org["id"],))
         conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",
@@ -610,9 +655,10 @@ def settings_company():
         detail = "; ".join(filter(None, [f"added {', '.join(added)}" if added else "",
                                          f"removed {', '.join(removed)}" if removed else ""]))
         record_audit(conn, g.org["id"], g.user["id"], "workspace",
-                     f"Company settings updated{': ' + detail if detail else ''}")
+                     f"{word.title()} settings updated{': ' + detail if detail else ''}")
         conn.commit()
-        flash("Company settings saved. Readings for removed industries are kept in case you add them back.", "ok")
+        flash(f"{word.title()} settings saved." + (" Readings for removed industries are kept in case you add them"
+                                                   " back." if removed else ""), "ok")
     return redirect(url_for("app.settings"))
 
 
@@ -627,6 +673,9 @@ def add_location():
     moment it is made), so the owner chooses a plan for it. Deleting a
     location and adding it again doesn't give a new one either."""
     conn = get_db()
+    if not settings_scope(conn, g.org)["locations"]:
+        # A school's workspace has no locations: a location is a business's.
+        return redirect(url_for("app.settings"))
     name = clean_text(request.form.get("name"), 120)
     owned = conn.execute("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND role = 'owner'",
                          (g.user["id"],)).fetchone()[0]

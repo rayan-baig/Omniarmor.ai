@@ -7,7 +7,9 @@
    He keeps out of the way: his bubble opens when someone taps him. By
    itself it opens at most once a day on this device, and only where it fits
    beside the page's content column (a wide screen), never over it, so on a
-   phone or a laptop he shows just his badge until tapped. */
+   phone or a laptop he shows just his badge until tapped. On a phone he and
+   Pilot share one corner and only one of them shows (app.css): Armo while
+   his badge has a count, Pilot the rest of the time. */
 (function () {
   "use strict";
   var root = document.querySelector("[data-companion]");
@@ -114,7 +116,6 @@
     next.textContent = options.next || "";
     next.hidden = !options.next;
     bubble.hidden = false;
-    root.classList.remove("tucked");   // a tucked Armo would hide his bubble
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // restart the pop animation
     bubble.classList.add("pop");
@@ -276,17 +277,4 @@
   }
   idleTick();
   setInterval(poll, 60000);
-
-  // On a phone there is no room beside the page, so Armo stays tucked at
-  // the edge, in the page's side margin, with his badge showing: a tap on
-  // him brings him out with his bubble (say() untucks him), and he tucks
-  // away again when it closes.
-  var narrow = window.matchMedia && window.matchMedia("(max-width: 560px)");
-  function tuckIfNarrow() {
-    root.classList.toggle("tucked", Boolean(narrow && narrow.matches && bubble.hidden));
-  }
-  var hideBubble = hide;
-  hide = function () { hideBubble(); tuckIfNarrow(); };
-  if (narrow && narrow.addEventListener) narrow.addEventListener("change", tuckIfNarrow);
-  tuckIfNarrow();
 })();

@@ -206,21 +206,24 @@ def add_students(class_id):
             (g.org["id"], class_id, name, pictures[(start + n) % len(pictures)], armo.DEFAULT_KID,
              academy.CLASSROOM.key, g.user["id"], now_iso(), new_device_epoch()))
     conn.commit()
+    # One notice, not three: what was added, what to choose below and what
+    # wasn't added (an error only when something wasn't added).
+    said = []
     if wanted:
         usage.count(conn, "class_students", len(wanted))
-        flash(f"Added {len(wanted)} student{'s' if len(wanted) != 1 else ''} to {row['name']}.", "ok")
-    if not rejected and not ask:
-        return _back(class_id)
+        said.append(f"Added {len(wanted)} student{'s' if len(wanted) != 1 else ''} to {row['name']}.")
     if ask:
         many = len(ask)
-        flash(f"{many} name{'s' if many != 1 else ''} look{'s' if many == 1 else ''} like a first and last name, so"
-              f" {'they weren' if many != 1 else 'it wasn'}'t added yet. Students need only a first name: choose"
-              " below.", "ok")
+        said.append(f"{many} name{'s' if many != 1 else ''} to check below: {'they look' if many != 1 else 'it looks'}"
+                    " like a first and last name.")
     if rejected:
         many = len(rejected)
-        flash_error(f"{many} name{'s' if many != 1 else ''} {'weren' if many != 1 else 'wasn'}'t added. "
-                    f"{'They are' if many != 1 else 'It is'} listed below the box, with the reason, and back in the"
-                    " box to fix.")
+        said.append(f"{many} name{'s' if many != 1 else ''} {'weren' if many != 1 else 'wasn'}'t added: see why under"
+                    " the box, and fix it there.")
+    if said:
+        flash(" ".join(said), "error" if rejected and not wanted else "ok")
+    if not rejected and not ask:
+        return _back(class_id)
     return _class_view(conn.execute("SELECT * FROM classes WHERE id = ?", (class_id,)).fetchone(), rejected,
                        200 if wanted or ask else 400, ask=ask)
 
@@ -234,7 +237,8 @@ def _class_view(row, rejected=(), status=200, ask=()):
     return render_template("academy/class.html", cls=row, view=classrooms.class_progress(conn, row),
                            room=classrooms.room_for_students(conn, g.org, row), limits=plans.class_limits(g.org),
                            avatars=academy.AVATARS, max_name=classrooms.MAX_NAME,
-                           codes=_active_codes(conn, row), rejected=list(rejected),
+                           codes=_active_codes(conn, row), missing=classrooms.students_without_code(conn, row["id"]),
+                           rejected=list(rejected),
                            names_back="\n".join(typed for typed, _ in rejected),
                            ask=[(name, classrooms.suggest_short_name(name)) for name in ask]), status
 
@@ -309,12 +313,17 @@ def _active_codes(conn, row):
 @grown_ups_only
 def join_codes(class_id):
     """One join code per student, to hand out on paper: each student types
-    theirs once on a school device. A new set replaces the old one."""
+    theirs once on a school device. "Make codes for them" makes codes only
+    for the students who have none (classrooms.students_without_code), so
+    the slips already handed out keep working; "Make new codes for everyone"
+    (for="everyone") replaces every code, and the old slips stop working."""
     row = _class_or_404(class_id)
     conn = get_db()
     if request.method == "POST":
+        everyone = request.form.get("for") == "everyone"
+        kids = classrooms.students(conn, class_id) if everyone else classrooms.students_without_code(conn, class_id)
         expires = iso(utcnow() + timedelta(days=JOIN_CODE_DAYS))
-        for kid in classrooms.students(conn, class_id):
+        for kid in kids:
             for _ in range(5):
                 code = academy.new_join_code()
                 if conn.execute("SELECT 1 FROM join_codes WHERE code = ?", (code,)).fetchone() is None:
@@ -323,10 +332,31 @@ def join_codes(class_id):
                          " ON CONFLICT (learner_id) DO UPDATE SET code = excluded.code,"
                          " expires_at = excluded.expires_at", (kid["id"], code, expires))
         conn.commit()
+        many = len(kids)
+        if everyone and many:
+            flash(f"New codes for all {many} student{'s' if many != 1 else ''}. The old slips no longer work:"
+                  " print this page again.", "ok")
+        elif many:
+            flash(f"Made {'a code' if many == 1 else f'{many} codes'} for {_names(kids)}. The slips you already"
+                  " handed out still work.", "ok")
+        else:
+            flash("Every student already has a code or has joined.", "ok")
         return redirect(url_for("classes.join_codes", class_id=class_id))
-    return render_template("academy/class_codes.html", cls=row, codes=_active_codes(conn, row),
+    codes = _active_codes(conn, row)
+    missing = classrooms.students_without_code(conn, class_id)
+    joined = conn.execute("SELECT COUNT(*) FROM learners WHERE class_id = ? AND joined_at IS NOT NULL",
+                          (class_id,)).fetchone()[0]
+    return render_template("academy/class_codes.html", cls=row, codes=codes, missing=missing, joined=joined,
                            has_students=bool(classrooms.students(conn, class_id)),
                            days=JOIN_CODE_DAYS, join_url=url_for("kids.join", _external=True))
+
+
+def _names(kids, most=3):
+    """"Ava, Liam and Noah", or "Ava, Liam and 4 more"."""
+    names = [k["nickname"] for k in kids]
+    if len(names) > most:
+        return ", ".join(names[:most - 1]) + f" and {len(names) - most + 1} more"
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
 # --- Certificates and the trial report ---------------------------------------------------

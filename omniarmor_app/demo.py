@@ -318,8 +318,8 @@ def _learner(conn, org_id, owner_id, spec, today, rng, t=None):
                      (learner_id, academy.level_id(t, number, stage), rng.choice((1, 1, 1, 2)), score, stars,
                       _at(day, 16 + i % 4, (i * 7) % 60)))
         per_day[day] = per_day.get(day, 0) + 1
-    conn.executemany("INSERT INTO learner_days (learner_id, day, levels) VALUES (?, ?, ?)",
-                     [(learner_id, day.isoformat(), n) for day, n in per_day.items()])
+    conn.executemany("INSERT INTO learner_days (learner_id, day, levels, passed) VALUES (?, ?, ?, ?)",
+                     [(learner_id, day.isoformat(), n, n) for day, n in per_day.items()])
     # One stage tried and not passed yet, where they are now.
     number, top = max(spec["stages"].items(), key=lambda item: item[1])
     w = academy.world(number)

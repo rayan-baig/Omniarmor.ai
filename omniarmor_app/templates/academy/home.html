@@ -33,7 +33,7 @@
 
   <ul class="ac-tracks-mini" aria-label="Tracks">
     {% for t in tracks %}
-      <li>{{ emblem(t.key, 44) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons</small></span></li>
+      <li>{{ emblem(t.key, 44) }}<span><strong>{{ t.name }}</strong><small data-lesson-count="{{ t.lessons }}">{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons{% if quests %} · {{ plus_quests(quests) }}{% endif %}</small></span></li>
     {% endfor %}
   </ul>
 
@@ -46,7 +46,7 @@
             {{ avatar(s.learner.avatar, avatars, 76, s.tier) }}
             <span class="ac-learner-name">{{ s.learner.nickname }}</span>
             <span class="ac-learner-meta">{{ s.track.name }} · {{ s.rank }}</span>
-            <span class="ac-learner-meta">{{ s.done }}/{{ "{:,}".format(s.total) }} lessons · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
+            <span class="ac-learner-meta" data-lesson-count="{{ s.total }}">{{ s.done }}/{{ "{:,}".format(s.total) }} lessons{% if s.quests %} · {{ plus_quests(s.quests) }}{% endif %} · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
             {% if s.certificate %}<span class="ac-badge">{{ s.certificate }}</span>{% endif %}
           </a>
         </li>
@@ -90,7 +90,7 @@
         {% for t in tracks %}
           <label class="ac-track-pick">
             <input type="radio" name="track" value="{{ t.key }}" {% if loop.first %}checked{% endif %}>
-            {{ emblem(t.key, 36) }}<span><strong>{{ t.name }}</strong><small>{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons</small></span>
+            {{ emblem(t.key, 36) }}<span><strong>{{ t.name }}</strong><small data-lesson-count="{{ t.lessons }}">{{ t.level }} · {{ "{:,}".format(t.lessons) }} lessons</small></span>
           </label>
         {% endfor %}
       </div>

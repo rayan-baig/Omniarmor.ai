@@ -24,7 +24,7 @@ import re
 from datetime import timedelta
 
 from . import academy, plans
-from .db import iso, utcnow
+from .db import iso, now_iso, utcnow
 from .trades import SCHOOL_INDUSTRY
 
 MAX_NAME = 30               # a student's first name or nickname
@@ -193,6 +193,17 @@ def class_or_none(conn, org_id, class_id):
 def students(conn, class_id):
     return conn.execute("SELECT * FROM learners WHERE class_id = ? ORDER BY nickname COLLATE NOCASE, id",
                         (class_id,)).fetchall()
+
+
+def students_without_code(conn, class_id):
+    """The class's students who have no way in yet: no join code that still
+    works, and not joined on a device (learners.joined_at). A student added
+    after the slips were printed is one of them; a student whose slip is
+    still waiting, or who already joined, is not."""
+    return conn.execute(
+        "SELECT * FROM learners WHERE class_id = ? AND joined_at IS NULL AND id NOT IN"
+        " (SELECT learner_id FROM join_codes WHERE expires_at > ?) ORDER BY nickname COLLATE NOCASE, id",
+        (class_id, now_iso())).fetchall()
 
 
 def getting_started(conn, org, limits, class_rows):

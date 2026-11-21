@@ -35,7 +35,7 @@ forgets the last person's chat and any key kept for that tab only.
 | `static/pilot/` | the core 1.1.1, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
-| `static/pilot-omniarmor.js` | the config: screens, suggestions, the AI key and 18+ note, `kidView()`, `avoid`, `yieldTo` and `gutter` |
+| `static/pilot-omniarmor.js` | the config: screens, suggestions, the AI key and 18+ note, `kidView()`, `avoid`, `yieldTo` and `gutter: false` |
 | `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and OmniArmor's tools, loaded on first open |
 
 The tag carries: who is there (`visitor`, `business` or `teacher`), whether it's the demo or a
@@ -59,7 +59,7 @@ page is scrolled to, and off a box being typed in. While the page scrolls it onl
 (and tucks away there if words are under it); once scrolling stops it may move to a free corner. With no
 free corner it tucks away at the edge until tapped, with only a slice showing (20 px on a phone).
 
-Armo lives in the bottom-left corner and the robot in the bottom-right. The config tells the core:
+Armo lives in the bottom-left corner and the robot in the bottom-right on a wider screen. The config tells the core:
 
 - `yieldTo: [".companion"]`: Armo, with his bubble. While Armo's bubble reaches the robot's corner, the
   robot moves to the first free corner, or tucks away. Armo's bubble opens only when tapped (or by
@@ -69,9 +69,23 @@ Armo lives in the bottom-left corner and the robot in the bottom-right. The conf
   every status tag (No reading, Blocked and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a
   check's message, an entry's name and tag, a flash or banner, a learner's badge, Armo's bubble, "Fix
   it" and badge, the "First name only?" card and the menu at the top (with Sign out) are never covered.
-- `gutter: ["main > .wrap", "footer.site > .wrap"]`: on a phone the core gives the page's column its
-  side room (`--pilot-side`, 24 px, through `.pilot-gutter-side`), so line ends stop before the slice
-  of a tucked robot, and of Armo, who waits tucked at the left edge on a phone.
+- `gutter: false` (1.13.0): on a phone the robot never tucks at an edge, so the page's column needs no
+  side room.
+
+**One helper, one corner on a phone** (1.13.0, `app.css` only; the core is unchanged). At 720 px or
+narrower only one helper shows, always in the bottom-right corner, 12 px in from the edge and above the
+tab bar, all of it on the screen:
+
+- **Armo, while his badge has a count.** Something on the checklist needs doing and he goes straight to
+  it, so Pilot steps back entirely (`display: none`; a window already open stays open).
+- **Pilot, the rest of the time.** Armo with nothing to report steps back (his page is a tap away in
+  Settings), unless his bubble is open.
+- **Neither while a box of the page is being typed in**, so the keyboard and the box stay clear.
+
+This is the least intrusive of the choices: two helpers at both edges covered line ends on both sides,
+and a robot tucked half off the screen (at the top, over the menu, on the returning Home) looked broken.
+The core still picks a corner and decides when to tuck; on a phone `app.css` keeps the robot whole in the
+one corner. The page's bottom room lets its last lines scroll clear of that corner.
 
 On signed-in pages the tab bar runs along the bottom. `app.css` sets the core's `--pilot-gap` there to
 the tab bar's height plus the usual gap (80 px, 76 px on a phone), so the robot sits above the tab bar

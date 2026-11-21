@@ -3,6 +3,46 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.13.0 (21 November 2026)
+
+Fixes from a strict fourth review: codes for students added later, a
+teacher's Settings without the business checklist, one lesson count, one
+helper on a phone, and smaller things.
+
+- **Students added after the codes were printed get a code.** The join
+  codes page and the class page say "2 students have no code yet" with
+  **Make codes for them**, which makes codes only for those students: the
+  slips already handed out keep working. **Make new codes for everyone**
+  is still there, apart, and says plainly that the old slips stop working.
+  A student who has joined on a device doesn't need a code again.
+- **One notice after adding students**, not three: what was added, what to
+  check below and what wasn't added.
+- **A teacher's Settings is a school's.** It says "School", not "Company",
+  and has no Locations. On the free trial or Classroom it doesn't list the
+  54 industries or reminder emails about checks and clocks (those come
+  with Whole school, and saving keeps the school's checklist as it is). On
+  Whole school it shows the school's own two checklists and the daily
+  digest.
+- **One lesson count per track.** The Academy home, the track picker, its
+  detail, the learner's map and the progress report all count the business
+  lessons only (Launchpad 90, Trailblazer 350), and show the workspace's
+  Rule Quests apart as "+1 Rule Quest".
+- **One helper in one corner on a phone.** Armo shows while his badge has a
+  count (something needs doing, and he goes straight to it); Pilot shows
+  the rest of the time. Either one sits whole in the bottom-right corner,
+  above the tab bar, never half off the screen, and neither shows while
+  you type. Pilot's own files are unchanged.
+- **The report fits a phone:** each check is a card, with its status on
+  top and every column labelled, the Due date among them.
+- **A compact demo bar on a phone:** the step and the next page on one
+  line, the rest folded under "About this demo".
+- **The shop demo leads with ShopArmor**, in its menu and its tour, with
+  PayArmor after it. On another checklist's page (HRArmor in the salon
+  demo) the demo bar names that page's own checklist.
+- **The daily goal counts passes only.** A failed try never says "Daily goal
+  reached", and the result says "Not this time. Read the cards again, then
+  try again".
+
 ## 1.12.0 (21 November 2026)
 
 Fixes from a strict third review: the school checklist stays out of a

@@ -146,7 +146,8 @@ class TestAcademyCounts(AppTestCase):
     def test_a_track_leads_with_its_business_lessons(self):
         for t in academy.TRACK_LIST:
             self.assertEqual(t.lessons, t.topic_lessons + t.final_stages)
-            self.assertEqual(t.total_for([2]), t.lessons + t.industry_stages)
+            self.assertEqual(t.quests_for([2]), 1)
+            self.assertEqual(t.quests_for([2, 30, 9999]), 2)
             self.assertLess(t.lessons, t.total)
         self.assertEqual(academy.CLASSROOM.lessons, academy.CLASSROOM.total)
 
@@ -169,7 +170,8 @@ class TestAcademyCounts(AppTestCase):
         self.post(f"/app/academy/{learner}/track", {"track": "launchpad"})
         page = words(self.client.get(f"/app/academy/{learner}").data.decode())
         t = academy.TRACKS["launchpad"]
-        self.assertIn(f"0 / {t.lessons + t.industry_stages:,} lessons", page)
+        # 1.13.0: the business lessons only, with the workspace's Rule Quest shown apart.
+        self.assertIn(f"0 / {t.lessons:,} lessons · +1 Rule Quest", page)
         self.assertIn("Extra: explore other industries", page)
         self.assertIn("optional", page)
 

@@ -95,6 +95,10 @@
     if (path === "/app/audit") return [C("What's in History?", "What does the History page record?"), C("Export it", "How do I export the audit trail?")];
     if (path === "/app/notifications") return [C("When do reminders go out?", "When do reminder emails go out?"),
       C("Add a reminder", "Add a reminder for one of my checks.")];
+    if ((path === "/app/settings" || path === "/app/plan") && who === "teacher" && !facts.school_checklist) {
+      return [C("Classroom or Whole school?", "What's the difference between Classroom and Whole school?"),
+        C("Invite a colleague", "How do I invite another teacher to our school's workspace?")];
+    }
     if (path === "/app/settings" || path === "/app/plan") return [C("Choose my emails", "How do I choose which reminder emails I get?"),
       C("What do the plans include?", "What does each plan include?")];
     // Anywhere else: OmniArmor's own suggestions for who is here.
@@ -149,10 +153,11 @@
     yieldTo: [".companion"],
     avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
       ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav"],
-    // On a phone the page's column gets the core's side room (24px), so line
-    // ends stop before the slice of a tucked robot (and of Armo, tucked at the
-    // left edge). The column is .wrap, whose own padding is 16px there.
-    gutter: ["main > .wrap", "footer.site > .wrap"],
+    // On a phone the robot never tucks at an edge: it stays whole in the
+    // bottom-right corner, the one corner it shares with Armo, and only one
+    // of them shows (app.css, "One helper, one corner"). So the page's column
+    // needs no side room for it.
+    gutter: false,
     screen,
     chips,
     taskPrompt,

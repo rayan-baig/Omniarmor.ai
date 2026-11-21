@@ -1,17 +1,28 @@
-{# The demo's bar on every page of a demo (demo_mode.py): what this is, where you are in the tour, the next page and the way out. #}
+{# The demo's bar on every page of a demo (demo_mode.py): what this is, where you are in the tour, the next page and the way out.
+   Compact on a phone (1.13.0): the step and the next page on one line, the rest folded under "About this demo";
+   on a wider screen everything shows (app.css). #}
 {% set d = demo_bar %}
 <section class="demo-bar no-print" data-demo-bar="{{ d.kind }}" aria-label="Demo">
-  <p class="demo-tag"><span class="demo-pill">Demo</span> Pretend data. Nothing you do here is saved, and no emails or reminders go out.</p>
-  <ol class="demo-steps">
-    {% for s in d.steps %}<li><a href="{{ s.url }}"{% if s.current %} aria-current="step"{% endif %}>{{ loop.index }}. {{ s.title }}</a></li>{% endfor %}
-  </ol>
-  {% if d.here %}<p class="demo-here" data-demo-step="{{ d.here.number }}"><strong>Step {{ d.here.number }} of {{ d.total }}: {{ d.here.title }}.</strong> {{ d.here.text }}</p>{% endif %}
-  <div class="demo-actions">
-    {% if d.next %}<a class="btn" href="{{ d.next.url }}" data-demo-next>Next: {{ d.next.title }}</a>{% endif %}
-    <a class="btn{{ ' ghost' if d.next }}" href="{{ d.signup }}" data-demo-signup>{{ 'Start your free trial' if d.kind == 'classroom' else 'Start your free trial' }}</a>
-    <form method="post" action="{{ url_for('demo.leave') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="linkbtn" type="submit">Leave the demo</button>
-    </form>
+  <div class="demo-top">
+    <span class="demo-pill">Demo</span>
+    {% if d.here %}<p class="demo-step" data-demo-step="{{ d.here.number }}"><strong>Step {{ d.here.number }} of {{ d.total }}: {{ d.here.title }}</strong></p>{% else %}<p class="demo-step"><strong>Pretend data</strong></p>{% endif %}
+    {% if d.next %}<a class="btn demo-go" href="{{ d.next.url }}" data-demo-next>Next: {{ d.next.title }}</a>{% else %}<a class="btn demo-go" href="{{ d.signup }}" data-demo-signup>Start your free trial</a>{% endif %}
   </div>
+  <details class="demo-more" data-demo-more>
+    <summary>Pretend data, nothing is saved. About this demo</summary>
+    <div class="demo-body">
+      <p class="demo-tag">Pretend data. Nothing you do here is saved, and no emails or reminders go out.</p>
+      {% if d.here %}<p class="demo-here">{{ d.here.text }}</p>{% endif %}
+      <ol class="demo-steps">
+        {% for s in d.steps %}<li><a href="{{ s.url }}"{% if s.current %} aria-current="step"{% endif %}>{{ loop.index }}. {{ s.title }}</a></li>{% endfor %}
+      </ol>
+      <div class="demo-actions">
+        {% if d.next %}<a class="btn ghost" href="{{ d.signup }}" data-demo-signup>Start your free trial</a>{% endif %}
+        <form method="post" action="{{ url_for('demo.leave') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="linkbtn" type="submit">Leave the demo</button>
+        </form>
+      </div>
+    </div>
+  </details>
 </section>

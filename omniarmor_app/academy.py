@@ -526,16 +526,24 @@ class Track:
     @property
     def lessons(self):
         """The business lessons: every topic world and the Owner's (or Class)
-        Challenge, without the Rule Quests. The number the pages lead with:
-        the Rule Quests are counted apart (total_for), one per industry."""
+        Challenge, without the Rule Quests. The one count every page shows
+        (the Academy home, the track picker and the map); the Rule Quests are
+        shown apart (quests_for), one per industry."""
         return self.topic_lessons + self.final_stages
 
-    def total_for(self, industry_ids):
-        """A workspace's lessons on this track: the business lessons plus the
-        Rule Quests of its own industries. Another industry's Rule Quest is an
-        optional extra a learner can open from the map; it isn't counted."""
-        own = len({i for i in industry_ids if i in INDUSTRIES}) if self.rule_quests else 0
-        return self.lessons + own * self.industry_stages
+    def quests_for(self, industry_ids):
+        """How many Rule Quests a workspace's learners have on this track: one
+        for each of its own industries (none on the Classroom track). The
+        pages show them apart from the lessons, as "+N Rule Quests"; another
+        industry's Rule Quest is an optional extra on the map."""
+        return len({i for i in industry_ids if i in INDUSTRIES}) if self.rule_quests else 0
+
+    def lessons_done(self, passed):
+        """How many of the business lessons (Track.lessons) a set of passed
+        level ids holds: the one count every page shows ("4 / 90 lessons")."""
+        counted = {w.number for w in self.topic_worlds} | {FINAL_WORLD.number}
+        return sum(1 for lid in passed if lid // 1_000_000 == self.index and (lid % 1_000_000) // 1000 in counted
+                   and level_exists(self, lid))
 
     @property
     def total(self):
