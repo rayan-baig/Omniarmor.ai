@@ -677,7 +677,7 @@ def play(learner_id, world_number, stage):
         world_clear=world_clear, boss=academy.is_boss(t, w, stage),
         total=len(questions), earned_stars=stars, passed=passed, needed=needed, next_stage=next_stage,
         first_clear=passed and not was_passed, avatars=academy.AVATARS, summary=after,
-        new_rank=after["rank"] if after["rank"] != before["rank"] else None,
+        new_rank=after["rank"] if after["rank"] != before["rank"] else None, old_tier=before["tier"],
         new_certificate=after["certificate"] if after["certificate"] != before["certificate"] else None,
         goal_hit=passed and before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
         missed=sum(1 for r in results if not r["right"]),

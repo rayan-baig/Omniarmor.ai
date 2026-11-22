@@ -74,6 +74,13 @@
 
   let CLASSES = [];
   try { CLASSES = JSON.parse(d.classes || "[]").filter((c) => c && Number.isInteger(c.id) && typeof c.name === "string"); } catch (_) { CLASSES = []; }
+  // 1.19.0: what needs attention and what's coming due across the workspace (pilot.py, Armo's list), each with
+  // its check's link, so "What's due or overdue?" lists the real items on every page.
+  let DUE = [];
+  try {
+    DUE = JSON.parse(d.due || "[]").filter((x) => x && typeof x.title === "string" && typeof x.url === "string"
+      && /^\/(?![/\\])\S*$/.test(x.url) && ["urgent", "soon", "info"].includes(x.level));
+  } catch (_) { DUE = []; }
   let CHECKLISTS = [];
   try { CHECKLISTS = JSON.parse(d.checklists || "[]").filter((c) => c && Number.isInteger(c.id) && typeof c.name === "string"); } catch (_) { CHECKLISTS = []; }
 
@@ -142,6 +149,18 @@
     .map((k) => (k === "WARNING" ? count(c[k], "warning") : `${c[k]} ${LEVEL_WORD[k]}`)).join(", ");
   const firstChecklist = () => (CHECKLISTS.length ? `/app/industry/${CHECKLISTS[0].id}` : "/app");
 
+  // The workspace's own list (DUE), for any page: what needs attention, then what's coming up.
+  const dueLine = (x) => `- ${linked(words(x.title), pathOf({ getAttribute: () => x.url }))}${x.where ? ` · ${words(x.where)}` : ""}`;
+  function dueList() {
+    const now = DUE.filter((x) => x.level !== "info");
+    const later = DUE.filter((x) => x.level === "info");
+    const line = dueLine;
+    const out = [];
+    if (now.length) out.push(`**Needs attention: ${now.length}.**`, ...now.slice(0, 8).map(line), "");
+    if (later.length) out.push("**Coming up, or still to fill in:**", ...later.slice(0, 6).map(line), "");
+    return out;
+  }
+
   // "What's due or overdue?"
   function dueAnswer() {
     const attention = one("[data-needs-attention]");
@@ -178,17 +197,27 @@
       if (soon.length) out.push(`**Due in the next 30 days: ${soon.length}.**`, ...soon.slice(0, 5).map(line), "");
       if (!out.length) out.push("Nothing on this checklist is overdue, blocked, close to a limit or due in the next 30 days.", "");
       const none = checks.filter((x) => x.level === "NONE").length;
-      if (none) out.push(`${count(none, "check")} here still ${none === 1 ? "has" : "have"} no reading.`);
+      if (none) out.push(`${count(none, "check")} here still ${none === 1 ? "has" : "have"} no reading.`, "");
+      // 1.19.0: what needs attention on the workspace's other checklists too.
+      const elsewhere = DUE.filter((x) => x.level !== "info" && x.url.split("#")[0] !== path);
+      if (elsewhere.length) {
+        out.push(`**On your other checklists: ${elsewhere.length}.**`,
+          ...elsewhere.slice(0, 5).map(dueLine), "");
+      }
       out.push("[Home](/app) shows every checklist together.");
       return out.join("\n").trim();
     }
+    // 1.19.0: any other page (the report, History, Reminders, Settings): the workspace's own list, with links.
+    const out = [];
     const report = all("[data-report-table] tbody tr:not([data-entry-row]) .tag");
     if (report.length) {
       const n = (lvl) => report.filter((t) => t.classList && t.classList.contains(lvl)).length;
-      return `This report shows ${n("BLOCKED")} blocked and ${count(n("WARNING"), "warning")} among ${count(report.length, "check")}.\n\n`
-        + "[Home](/app) lists what needs attention and what's coming due in the next 60 days, with a link to each.";
+      out.push(`This report shows ${n("BLOCKED")} blocked and ${count(n("WARNING"), "warning")} among ${count(report.length, "check")}.`, "");
     }
-    return "[Home](/app) lists what needs attention (blocked and warnings) and what's coming due in the next 60 days, with a link straight to each check.";
+    out.push(...dueList());
+    if (!DUE.length) out.push("Nothing is blocked, close to a limit or due in the next 30 days.", "");
+    out.push("[Home](/app) also lists what's coming due in the next 60 days.");
+    return out.join("\n").trim();
   }
 
   // "Explain this check": the one asked for in the address, else the one in
@@ -303,7 +332,10 @@
     const days = dayList((f || {}).reminder_days);
     return `Once a day each person on the team gets one email, the daily digest, when a check is ${days || "close to"} from due, due today or overdue `
       + "(then once a week while it stays overdue). A missed day is caught up. Checks counted in hours also send an alert at their warning point and when they become overdue.\n\n"
-      + "Each person chooses their own emails in [Settings](/app/settings), and every email is kept under Reminders. [More in Help](/help#reminders)";
+      + (who === "visitor"
+        // 1.19.0: a visitor isn't signed in, so a Settings link would only ask them to sign in.
+        ? "Once signed in, each person chooses their own emails in Settings, and every email is kept under Reminders. [How reminders work](/help#reminders)"
+        : "Each person chooses their own emails in [Settings](/app/settings), and every email is kept under Reminders. [More in Help](/help#reminders)");
   }
   const CHECK = "A check is one compliance rule to keep: an inspection due every so often, a limit that must not be passed, or a yes-or-no control that must be in place. "
     + "Each industry's checks are the failures that cost it the most; start with the ones marked **Top**. Open **Rule and source** on a check to see what it costs when missed and the rule it comes from.\n\n"

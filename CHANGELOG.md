@@ -3,6 +3,56 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.19.0 (22 November 2026)
+
+Fixes from a strict ninth review: clearer quiz answers, more kinds of
+Business Words question, one helper per page, Pilot's due list on every page,
+and an honest, optional second backup.
+
+- **The matching game's answers read right.** A wrong pair now says "goes
+  with: The latest date a job can be finished" (no number glued on), and
+  after checking, each idea on the right takes the colour and number of the
+  word it really goes with. Words stay whole on a phone: no more "Teamwor/k"
+  or "Win-/win".
+- **The quiz bar stays readable.** "Mistakes help us grow!" and the other
+  pop-ups show just below the bar, never over "0 right · streak".
+  "Check my matches" and "Check my sorting" are greyed out until every piece
+  has a place.
+- **One helper per page.** On a tablet or a computer, a page with Pilot no
+  longer shows Armo as well: what Armo pointed at is in Pilot's "What's due
+  or overdue?". Where there is no Pilot, Armo sits in the bottom-right corner,
+  clear of the side bar.
+- **Pilot's "What's due or overdue?" lists the real items on every page**,
+  the report, History, Reminders and Settings too, each with a link to its
+  check (an industry page also lists what needs attention on your other
+  checklists). Visitors are never sent to Settings (a sign-in page): they get
+  the public explanation in Help instead.
+- **Words that read right.** History says "Workspace created with 1 industry"
+  (not "1 industries"), in the demos too. A track's rank goals end at its last
+  lesson: the Classroom track (107 lessons) now ends at "Tycoon, at 107
+  lessons" instead of an unreachable 170. "What is a fine?" no longer ends
+  with an unrelated "A thank-you is a tip.", and the quiz checker now flags a
+  line like that (`stray-line`), so it can't come back.
+- **Business Words is more than "What does X mean?".** Most words are now
+  asked in a small scene ("Which word fills the gap?") or a sentence ("Which
+  sentence uses "Invoice" the right way?"), so a lesson has at most two
+  "What does X mean?" questions. A retry of a matching game pairs the word
+  with different words, and Get the Word Out, Cyber Shield and Business
+  Around the World have matching games of their own terms. Every world keeps
+  its number of lessons, and the quiz checker finds nothing to flag.
+- **The map's road goes behind the worlds.** The dotted road no longer shows
+  through a locked world's picture, and on a computer the path swings further
+  from side to side.
+- **Your own picture on a passed stage.** The result shows the learner's
+  picture (with Armo cheering beside it); when it grew, the old one stands
+  small beside the new one, in the celebration too.
+- **An optional second backup, off by default.** The owner can set
+  `OFFSITE_BACKUP_COMMAND` to send each day's checked backup to a second
+  storage company (docs/OPERATIONS.md, section 4). Only once a copy has gone
+  through in the last two days do the security and privacy pages say so;
+  until then they say, as before, that the backups stay with the hosting
+  company. Autopilot emails the owner if the second copy stops going through.
+
 ## 1.18.0 (22 November 2026)
 
 Fixes from a strict eighth review: Pilot answers every welcome button on its

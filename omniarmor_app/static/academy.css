@@ -171,7 +171,7 @@
 .ac-hud-main{flex:1;min-width:0}
 .ac-hud-line{margin:6px 0 0;font-size:14px;color:var(--muted)}
 .ac-hud-line span{font-weight:800;color:var(--ink)}
-.ac-toast{position:absolute;right:14px;top:50%;margin:-16px 0 0;padding:6px 14px;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:14px;opacity:0;transform:scale(.9);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.ac-toast{position:absolute;right:14px;top:calc(100% + 6px);margin:0;max-width:calc(100% - 28px);box-shadow:0 6px 18px rgba(0,0,0,.35);padding:6px 14px;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:14px;opacity:0;transform:scale(.9);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
 .ac-toast{background:var(--card-2);border:1px solid var(--line);color:var(--ink)}
 .ac-toast.good{border-color:var(--mint)}
 .ac-toast.oops{border-color:var(--accent)}
@@ -662,7 +662,7 @@
 .ac-game{clear:both}
 .ac-game[hidden]{display:none}
 .js .ac-q.game-on [data-game-options]{display:none}
-.ac-match{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px 12px;align-items:start}
+.ac-match{display:grid;grid-template-columns:minmax(min-content,.8fr) minmax(0,1.2fr);gap:10px 12px;align-items:start}
 .ac-match-col{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .ac-chip{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:10px 14px;border-radius:16px;border:2px solid var(--field);background:var(--card);color:var(--ink);font:inherit;font-size:16px;line-height:1.3;text-align:left;cursor:pointer;transition:border-color .15s ease,background-color .15s ease,transform .1s ease}
 .ac-chip-word{font-family:var(--kid);font-weight:800;font-size:18px}
@@ -679,12 +679,16 @@
 .ac-chip.wrong{border-color:var(--red);background:rgba(229,38,28,.12);flex-wrap:wrap}
 .ac-chip.right::after{content:"✓";margin-left:auto;font-weight:800;color:var(--mint)}
 .ac-chip.wrong::after{content:"✗";margin-left:auto;font-weight:800;color:var(--red)}
-.ac-chip > span:last-of-type{min-width:0;overflow-wrap:anywhere}
+/* 1.19.0: words break between words only ("Teamwork", "Win-win" stay whole); the word column is at least as wide as its longest word. */
+.ac-chip-text{min-width:0;overflow-wrap:break-word}
+.ac-chip-word .ac-chip-text{overflow-wrap:normal;word-break:normal;hyphens:none}
+.ac-nb{white-space:nowrap}
 .ac-chip.right::after,.ac-chip.wrong::after{flex:none}
 .ac-fix{flex-basis:100%;font-family:var(--sans);font-weight:400;font-size:14px;color:var(--muted)}
 .ac-game-help{grid-column:1 / -1;margin:2px 0 0;font-size:15px;color:var(--muted)}
 .ac-game-check{grid-column:1 / -1;justify-self:start;margin-top:4px}
 .ac-game.done .ac-game-check{display:none}
+.ac-game-check:disabled{opacity:.45;filter:grayscale(1);cursor:not-allowed;box-shadow:none}
 .ac-sort-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .ac-sort-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:16px;border:2px solid var(--field)}
 .ac-sort-item.in-bin{border-color:var(--card-2);background:var(--card-2)}
@@ -699,7 +703,7 @@
 .ac-bin-1[aria-pressed="true"]{border-color:var(--red);background:rgba(229,38,28,.2)}
 .ac-sort .ac-game-help,.ac-sort .ac-game-check{margin-top:10px}
 @media (max-width:560px){
-  .ac-match{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:8px}
+  .ac-match{grid-template-columns:minmax(min-content,1fr) minmax(0,1.35fr);gap:8px}
   .ac-chip{min-height:52px;padding:8px 10px;font-size:15px;gap:8px}
   .ac-chip-word{font-size:16px}
   .ac-pair{width:22px;height:22px;font-size:12px}
@@ -767,3 +771,29 @@
 @media (prefers-reduced-motion:reduce){
   .ac-trophy-cup,.ac-world-stages li,.ac-celebrate-boss .ac-trophy-cup{animation:none}
 }
+
+/* The map's road goes behind the worlds (1.19.0): a locked world's card fades, but its node stays solid (only
+   greyed), so the dotted road never shows through a locked world's icon. Each node sits above the stretch of road
+   coming down to it. On a computer the road column is wider, so the path swings further from side to side. */
+.ac-path .ac-world.locked > span,.ac-path .ac-world.paid > a{opacity:1}
+.ac-path .ac-world.locked .ac-world-card{opacity:.55}
+.ac-path .ac-world.paid .ac-world-card{opacity:.75}
+.ac-path .ac-world-node{z-index:2}
+.ac-path .ac-world-badge{background-color:var(--card-2)}
+.ac-road{z-index:0}
+@media (min-width:900px){
+  .ac-path{--road:220px;max-width:900px}
+}
+
+/* A passed stage shows the learner's own picture (1.19.0); when it grew, the one before stands small beside it. */
+.ac-celebrate-pics,.ac-result-pics{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px}
+.ac-result-pics{gap:8px;margin-bottom:4px}
+.ac-result-me{line-height:0;animation:ac-pop-in .8s cubic-bezier(.3,1.6,.5,1) both}
+.ac-result-me.grew{animation:ac-grow-up 1.4s cubic-bezier(.3,1.4,.5,1) both}
+.ac-result-armo{align-self:flex-end;line-height:0}
+.ac-result-armo .armo{width:56px;height:53px}
+.ac-grew-from{line-height:0;opacity:.75}
+.ac-grew-arrow{font-family:var(--kid);font-weight:800;font-size:26px;color:var(--sun)}
+@media (prefers-reduced-motion:reduce){.ac-result-me,.ac-result-me.grew{animation:none}}
+/* A Business Words scene (1.19.0): the question is the heading, the scene a quote under it, its gap a line. */
+.ac-word-scene{clear:both;margin:4px 0 12px;padding:10px 14px;border-left:3px solid var(--sun);border-radius:6px;background:rgba(255,194,75,.06);font-size:17px;line-height:1.5}

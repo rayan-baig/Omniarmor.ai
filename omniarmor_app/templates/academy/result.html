@@ -44,7 +44,8 @@
     <div class="ac-celebrate-card">
       <div class="ac-celebrate-rays" aria-hidden="true"></div>
       <div class="ac-celebrate-sparks" aria-hidden="true">{% for i in range(14) %}<i></i>{% endfor %}</div>
-      <span class="ac-celebrate-pic{{ ' grew' if new_rank }}">{{ avatar(learner.avatar, avatars, 112, summary.tier) }}</span>
+      {#- 1.19.0: when the picture grew, the one it was stands small beside the one it is now, so the growing shows. -#}
+      <span class="ac-celebrate-pics">{% if new_rank %}<span class="ac-grew-from" data-grew-from="{{ old_tier }}">{{ avatar(learner.avatar, avatars, 56, old_tier) }}<span class="sr">Before</span></span><span class="ac-grew-arrow" aria-hidden="true">→</span>{% endif %}<span class="ac-celebrate-pic{{ ' grew' if new_rank }}" data-my-picture>{{ avatar(learner.avatar, avatars, 112, summary.tier) }}</span></span>
       <p class="ac-kicker">{{ world.title }} · stage {{ stage }}</p>
       <h2 class="ac-title" id="celebrate-title">{{ 'Perfect!' if earned_stars == 3 else 'Stage passed!' }}</h2>
       <div class="ac-big-stars ac-celebrate-stars">{{ stars(earned_stars, 44) }}</div>
@@ -59,14 +60,23 @@
   {% endif %}
   <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
     {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
-    {{ armo(120, 'cheer' if passed else 'think', buddy.accessory) }}
+    {#- 1.19.0: a passed stage shows the learner's own picture (as it is now, with Armo cheering beside it), so
+        "your picture grew" can be seen; a retry shows Armo thinking. -#}
+    {% if passed %}
+    <div class="ac-result-pics">
+      {% if new_rank %}<span class="ac-grew-from">{{ avatar(learner.avatar, avatars, 64, old_tier) }}<span class="sr">Before</span></span><span class="ac-grew-arrow" aria-hidden="true">→</span>{% endif %}
+      <span class="ac-result-me{{ ' grew' if new_rank }}" data-my-picture>{{ avatar(learner.avatar, avatars, 112, summary.tier) }}</span>
+      <span class="ac-result-armo">{{ armo(64, 'cheer', buddy.accessory) }}</span>
+    </div>
+    {% else %}
+    {{ armo(120, 'think', buddy.accessory) }}
+    {% endif %}
     <p class="ac-kicker">{{ world.title }} · stage {{ stage }}</p>
     <h1 class="ac-title">{{ band }}</h1>
     <p class="ac-lead">{{ learner.nickname }} got <strong class="ac-score">{{ score }}</strong> of {{ total }} right.</p>
     <div class="ac-big-stars">{{ stars(earned_stars, 52) }}</div>
     <p class="ac-armo-says">{{ buddy.name }} Armo: &ldquo;{{ (buddy.win if passed else retry_lines)|random }}&rdquo;</p>
     {% if goal_hit %}<p class="ac-unlock">Daily goal reached: {{ daily_goal }} lessons passed today! Streak: {{ summary.streak }} day{{ 's' if summary.streak != 1 }}.</p>{% endif %}
-    {% if new_rank %}<p class="ac-rankup-art">{{ avatar(learner.avatar, avatars, 96, summary.tier) }}</p>{% endif %}
     {% if new_rank %}<p class="ac-unlock ac-rankup">Rank up! You're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!</p>{% endif %}
     {% if new_certificate %}
       <p class="ac-unlock">You earned the {{ new_certificate }} certificate!</p>

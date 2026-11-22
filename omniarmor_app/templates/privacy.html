@@ -93,7 +93,7 @@
   <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days|plural('day') }}.</li>
   <li><strong>Error reports:</strong> {{ facts.error_days|plural('day') }} in the app. A copy emailed to the people who run OmniArmor stays in their inbox.</li>
   {% if facts.backup_keep > 0 %}
-  <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep|plural('day') }}.</li>
+  <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep|plural('day') }}.{% if facts.offsite_backup %} A copy of each day's backup also goes to a second storage company, where it can stay for as long as that company keeps old copies.{% endif %}</li>
   {% else %}
   <li><strong>Backups:</strong> we copy the whole database once a day and check each copy before we keep it. Old copies are not deleted by themselves, so something you delete can stay in a backup.</li>
   {% endif %}

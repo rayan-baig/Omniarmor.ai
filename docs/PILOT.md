@@ -169,6 +169,15 @@ and the facts on the tag, or a `link`.
 | What does OmniArmor do? / See the prices | an answer from the plans' facts, with links to the demo and the industries / a link to the prices on the Help page |
 | Is it safe for students? / How does the free trial work? | answers from the site's own facts, with links to the privacy page and the classroom prices |
 
+**1.19.0: one helper, and the due list everywhere.** On a tablet or a computer (721 px and wider) a page with
+Pilot (`#pilot-core`) hides Armo (app.css, "One helper per page"); on a phone they already share one corner.
+Where there is no Pilot, Armo sits in the bottom-right corner on a computer, clear of the side bar. What Armo
+pointed at comes to Pilot on the tag's `data-due` (pilot.py: Armo's `live_issues`, at most `DUE_ITEMS`: level,
+title, checklist and the check's own link; like `data-checklists` it is never sent to the AI by itself), so
+"What's due or overdue?" lists the real items with links on every business page: the report, History,
+Reminders and Settings too, and an industry page adds what needs attention on the other checklists. A visitor's
+answers never link to a signed-in page: "How do reminders work?" points to Help instead of Settings.
+
 **1.18.0: every welcome button answers with no key**; only "Add my AI key" and typed questions need the AI.
 
 | Pill or suggestion | What it does with no key (1.18.0) |

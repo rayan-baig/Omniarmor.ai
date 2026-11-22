@@ -147,6 +147,9 @@ def backup_database(cfg, fresh=False):
     today = utcnow().strftime("%Y%m%d")
     existing = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{today}-*.db")))
     if existing and not fresh:
+        # Today's copy didn't reach the second provider yet (it was down): try again.
+        if cfg.get("OFFSITE_BACKUP_COMMAND") and offsite_age(cfg, since=existing[-1]) is None:
+            send_offsite(cfg, existing[-1])
         return existing[-1]
     _remove_stale_partials(cfg["BACKUP_DIR"])
     dest = os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
@@ -165,10 +168,65 @@ def backup_database(cfg, fresh=False):
     copies = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
     for old in copies[:-cfg["BACKUP_KEEP"]] if cfg["BACKUP_KEEP"] > 0 else []:
         os.remove(old)
+    if cfg.get("OFFSITE_BACKUP_COMMAND"):
+        send_offsite(cfg, dest)
     return dest
 
 
 PARTIAL = ".partial"
+OFFSITE_MARK = "offsite-last-ok"
+OFFSITE_TIMEOUT = 15 * 60
+OFFSITE_MAX_AGE = timedelta(hours=50)   # the security page claims the second copy only while it's this fresh
+
+
+def send_offsite(cfg, path):
+    """Runs OFFSITE_BACKUP_COMMAND for one checked backup (1.19.0): a second
+    copy with another storage provider, so the data outlives the hosting
+    company's disk. The command is split like a shell would (no shell runs
+    it) and {file} becomes the backup's path. On success it leaves a mark
+    beside the backups; a failure is logged, never raised, so the local
+    backup still counts, and Autopilot reports it if it keeps failing."""
+    import shlex
+    import subprocess
+    try:
+        argv = [part.replace("{file}", path) for part in shlex.split(cfg["OFFSITE_BACKUP_COMMAND"])]
+        if not argv:
+            return False
+        if not any(path in part for part in argv):
+            argv.append(path)
+        done = subprocess.run(argv, capture_output=True, timeout=OFFSITE_TIMEOUT, check=False)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("offsite backup copy failed to run: %s", exc.__class__.__name__)
+        return False
+    if done.returncode != 0:
+        log.error("offsite backup copy failed with exit code %s", done.returncode)
+        return False
+    with open(os.path.join(cfg["BACKUP_DIR"], OFFSITE_MARK), "w", encoding="utf-8") as mark:
+        mark.write(os.path.basename(path) + "\n")
+    return True
+
+
+def offsite_age(cfg, since=None):
+    """Seconds since a backup last reached the second provider, or None if
+    none has (or none since the file `since` was made)."""
+    mark = os.path.join(cfg["BACKUP_DIR"], OFFSITE_MARK)
+    try:
+        made = os.path.getmtime(mark)
+        if since is not None and made < os.path.getmtime(since):
+            return None
+    except OSError:
+        return None
+    return max(0.0, time.time() - made)
+
+
+def offsite_ok(cfg):
+    """Whether the second-provider copy is set up and working: set, and a
+    copy went through in the last OFFSITE_MAX_AGE. Only then do the public
+    pages mention it."""
+    if not cfg.get("OFFSITE_BACKUP_COMMAND"):
+        return False
+    age = offsite_age(cfg)
+    return age is not None and age <= OFFSITE_MAX_AGE.total_seconds()
 
 
 def _copy_checked(source, target):

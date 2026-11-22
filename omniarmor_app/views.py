@@ -9,6 +9,7 @@ from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, 
                    stream_with_context, url_for)
 
 from . import connections, nudges, plans, usage
+from .words import plural
 from .academy_plan import charges_again
 from .auth import COMMON_TIMEZONES, create_invite, is_operator, valid_timezone
 from .config import support_email
@@ -693,7 +694,7 @@ def add_location():
                  (g.user["id"], org_id, now))
     conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)", [(org_id, i) for i in industries])
     record_audit(conn, org_id, g.user["id"], "workspace",
-                 f"Location created from {g.org['name']} with {len(industries)} industries")
+                 f"Location created from {g.org['name']} with {plural(len(industries), 'industry')}")
     conn.commit()
     usage.count(conn, "locations_added")
     session["org_id"] = org_id

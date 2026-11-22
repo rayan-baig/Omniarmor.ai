@@ -47,6 +47,7 @@ from .academy_bank import basics as _basics
 from .academy_bank import load_expansions, load_worlds
 from .academy_bank.sorting import SORT_SETS
 from .academy_bank.word_ideas import WORD_IDEAS, kindred
+from .academy_bank.word_use import CLASHES, GAP, WORD_SCENES
 from .catalog import INDUSTRIES, counts_first_day, date_mode, date_unit
 from .words import plural
 
@@ -703,6 +704,13 @@ def _scaled(t, table):
             goal = max(goal, last + 1)
         out.append((goal, title))
         last = goal
+    # 1.19.0: no goal past what the track holds (the Classroom track's 107 lessons used to end at "Tycoon, at
+    # 170 lessons"). The goals that would be past it are spread evenly up to the track's last level.
+    over = next((i for i, (goal, _) in enumerate(out) if goal > t.total), None)
+    if over is not None and over > 0:
+        base, left = out[over - 1][0], len(out) - over
+        for k, i in enumerate(range(over, len(out)), start=1):
+            out[i] = (base + max(k, round((t.total - base) * k / left)), out[i][1])
     return out
 
 
@@ -909,7 +917,7 @@ def _calendar_story(company, industry_ids):
     example = pool[0]
     return [
         ("Jobs that repeat", "Lots of jobs must be done again and again, like checking safety gear every year."),
-        ("A real example", f"\"{example.title}\" has to be done at least every {int(example.limit)} days."),
+        ("A real example", f"\"{example.title}\" has to be done at least every {plural(int(example.limit), 'day')}."),
         ("Counting days", "OmniArmor counts the days since a job was last done, so nobody has to remember."),
         ("Friendly reminders", "It sends reminders 30, 7 and 1 day before a deadline, so the team is never surprised."),
     ]
@@ -1181,7 +1189,7 @@ def _rule_questions(rng, industry_id, index):
         limit = int(rule.limit)
         done = rng.randint(1, limit - 1)
         left = limit - done
-        facts.append(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done "
+        facts.append(_choice(rng, f"\"{rule.title}\" must be done at least every {plural(limit, 'day')}. It was last done "
                                   f"{plural(done, 'day')} ago. How many days are left?", str(left),
                              [str(limit + done), str(left + 10)], f"{limit} − {done} = {plural(left, 'day')} left."))
     rng.shuffle(lights)
@@ -1436,7 +1444,7 @@ def _calendar_items(rng, company, ids):
         done = rng.randint(1, limit - 1)
         left = limit - done
         wrong = [w for w in {limit + done, done, abs(left - 7) or left + 3, left + 10} if w != left and w >= 0]
-        add(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done"
+        add(_choice(rng, f"\"{rule.title}\" must be done at least every {plural(limit, 'day')}. It was last done"
                          f" {plural(done, 'day')} ago. How many days are left?", str(left),
                     [str(w) for w in sorted(wrong)[:2]], f"{limit} − {done} = {plural(left, 'day')} left."))
     for k in range(LATE_QUESTIONS):
@@ -1444,10 +1452,10 @@ def _calendar_items(rng, company, ids):
         limit = int(rule.limit)
         late = k % 2 == 0
         ago = limit + rng.randint(1, 20) if late else rng.randint(1, limit - 1)
-        add(_choice(rng, f"\"{rule.title}\" must be done every {limit} days. It was last done {plural(ago, 'day')}"
+        add(_choice(rng, f"\"{rule.title}\" must be done every {plural(limit, 'day')}. It was last done {plural(ago, 'day')}"
                          " ago. Is it late?", "Yes, it's overdue" if late else "No, there's still time",
                     ["No, there's still time" if late else "Yes, it's overdue"],
-                    f"{plural(ago, 'day')} is {'more' if late else 'less'} than {limit} days."))
+                    f"{plural(ago, 'day')} is {'more' if late else 'less'} than {plural(limit, 'day')}."))
     starts = rng.sample(range(7), WEEKDAY_QUESTIONS)
     for k, start in enumerate(starts):
         ahead = 2 + k + rng.randint(0, 3)
@@ -1525,6 +1533,56 @@ def _word_question(rng, word, meaning, words, n):
     return _choice(rng, f"What does \"{word}\" mean?", right, wrong, f"{word}: {meaning}")
 
 
+# --- Business Words in use (1.19.0) ----------------------------------------------
+# Besides "What does X mean?", a word is asked in a scene (which word fills
+# the gap) and in a sentence (which sentence uses it the right way). The
+# scenes are in academy_bank/word_use.py.
+
+def _clash(a, b):
+    """Two words that must never be in one question: kindred words, or words
+    that could half-fit each other's scenes."""
+    return a == b or kindred(a, b) or any(a in group and b in group for group in CLASHES)
+
+
+def _names(text, word):
+    """Whether a text names a word (or its plural)."""
+    return re.search(rf"\b{re.escape(word.lower())}(s|es)?\b", text.lower()) is not None
+
+
+def _in_gap(scene, word):
+    """A scene with a word in its gap, as it would be written mid-sentence."""
+    return scene.replace(GAP, word if word.isupper() else word.lower())
+
+
+def _word_scene(rng, word, meaning, words, n):
+    """"Which word fills the gap?" (1.19.0): the word's scene, the word and two
+    others that don't half-fit it."""
+    scene = WORD_SCENES[word]
+    others = [w for w, _ in words if not _clash(word, w) and not _names(scene, w)]
+    wrong = _wrong_answers(rng, word, others, below=n)
+    q = _choice(rng, f"Which word fills the gap? {scene}", word, wrong, f"{word}: {meaning}")
+    q.look = "scenario"
+    # The page asks the question as its heading and shows the scene under it.
+    q.parts = {"title": "Which word fills the gap?", "scene": scene}
+    return q
+
+
+def _word_sentence(rng, word, meaning, words, n):
+    """'Which sentence uses "Invoice" the right way?' (1.19.0): the word's own
+    scene, and two other words' scenes with it put in their gap."""
+    right = _in_gap(WORD_SCENES[word], word)
+    others = [_in_gap(WORD_SCENES[w], word) for w, _ in words
+              if w in WORD_SCENES and not _clash(word, w) and not _names(WORD_SCENES[w], word)]
+    wrong = _wrong_answers(rng, right, others, below=n)
+    return _choice(rng, f"Which sentence uses \"{word}\" the right way?", right, wrong, f"{word}: {meaning}")
+
+
+def _word_of(q):
+    """The word a Business Words question asks about, or None."""
+    found = re.match(r'What does "(.+)" mean\?$', q.prompt)
+    return found.group(1) if found else None
+
+
 def _quiz_words(words):
     """The Word Bank's words the quiz asks about: those with an idea in other words."""
     return [(w, m) for w, m in words if w in WORD_IDEAS]
@@ -1584,24 +1642,82 @@ def _code_label(names, picks, sep=" → "):
     return "; ".join(f"{n}{sep}{p}" for n, p in zip(names, picks))
 
 
-def _match_question(q, rng):
-    """A word question turned into a matching game: the word asked about and
-    the two words whose ideas were its wrong answers, each to its idea."""
-    idea_of = {idea: w for w, idea in WORD_IDEAS.items()}
-    word = re.match(r'What does "(.+)" mean\?$', q.prompt)
-    if not word or any(o not in idea_of for o in q.options):
-        return q
-    words = [word.group(1)] + [idea_of[o] for o in q.options if idea_of[o] != word.group(1)]
-    ideas = list(q.options)
-    rng.shuffle(ideas)
+def _build_match(words, idea_of, meaning_of, rng, title="Match each word to its idea.", pool=None):
+    """A matching game: three words (or terms), each to its idea, with one
+    option per way of pairing them, so it is graded like any question."""
+    ideas = [idea_of[w] for w in words]
+    shown = list(ideas)
+    rng.shuffle(shown)
     codes = list(itertools.permutations(range(3)))
-    labels = [_code_label(words, [ideas[i] for i in code]) for code in codes]
-    truth = tuple(ideas.index(WORD_IDEAS[w]) for w in words)
-    explain = " ".join(f"{w}: {m.rstrip('.')}." for w, m in ((w, dict(GLOSSARY)[w]) for w in words))
-    parts = {"title": "Match each word to its idea.", "left": words, "right": ideas,
+    labels = [_code_label(words, [shown[i] for i in code]) for code in codes]
+    truth = tuple(shown.index(idea_of[w]) for w in words)
+    explain = " ".join(f"{w}: {meaning_of[w].rstrip('.')}." for w in words)
+    parts = {"title": title, "left": list(words), "right": shown,
              "codes": [",".join(map(str, c)) for c in codes]}
+    if pool:
+        parts["pool"] = pool
     return Question(f"Match the words to their ideas: {', '.join(words)}", labels, codes.index(truth), explain,
                     "match", parts=parts)
+
+
+def _match_question(q, rng, lesson=()):
+    """A word question turned into a matching game: the word asked about and
+    the two words whose ideas were its wrong answers, each to its idea.
+    1.19.0: it also keeps the other words its lesson teaches (`lesson`), so
+    each attempt can match the word with a different two (_rotated)."""
+    idea_of = {idea: w for w, idea in WORD_IDEAS.items()}
+    word = _word_of(q)
+    if not word or any(o not in idea_of for o in q.options):
+        return q
+    words = [word] + [idea_of[o] for o in q.options if idea_of[o] != word]
+    glossary = dict(GLOSSARY)
+    pool = list(words) + [w for w in lesson if w in WORD_IDEAS and w not in words and not _clash(word, w)]
+    return _build_match(words, WORD_IDEAS, glossary, rng, pool=pool)
+
+
+def _rotated(q, rng):
+    """A match with a pool (1.19.0): the first word, and two others from the
+    pool picked for this attempt, so a retry isn't the same three words."""
+    pool = q.parts["pool"]
+    anchor, rest = pool[0], list(pool[1:])
+    rng.shuffle(rest)
+    pair = []
+    for w in rest:
+        if len(pair) < 2 and all(not _clash(w, p) for p in pair):
+            pair.append(w)
+    if len(pair) < 2:
+        return Question(q.prompt, list(q.options), q.answer, q.explain, q.kind, parts=q.parts)
+    glossary = dict(GLOSSARY)
+    return _build_match([anchor] + pair, WORD_IDEAS, glossary, rng, title=q.parts["title"], pool=pool)
+
+
+# Worlds with a matching game of their own terms (1.19.0): three "What is a
+# ...?" questions of the world, each term to its answer.
+TERM_MATCH_WORLDS = ("marketing", "cyber", "world")
+_TERM = re.compile(r"^What (?:is|are) (?:a |an |the )?['\"]?([A-Za-z][A-Za-z -]{1,24}?)['\"]?(?: in marketing)?\?$")
+
+
+def _term_matches(questions, rng):
+    """Matching games from a world's "What is a ...?" questions: terms of one
+    or two words, three to a game, no term twice."""
+    terms = {}
+    for q in questions:
+        found = _TERM.match(q.prompt) if q.kind == "choice" else None
+        if found and len(found.group(1).split()) <= 2:
+            term = found.group(1).strip()
+            term = term[0].upper() + term[1:]
+            terms.setdefault(term, (q.options[q.answer], q.explain))
+    names = list(terms)
+    rng.shuffle(names)
+    out = []
+    while len(names) >= 3:
+        group, names = names[:3], names[3:]
+        idea_of = {t: terms[t][0] for t in group}
+        # The idea is the question's right answer; what it means, its explanation (so a lesson's cards never
+        # carry another question's answer word for word).
+        meaning_of = {t: terms[t][1] for t in group}
+        out.append(_build_match(group, idea_of, meaning_of, rng, title="Match each term to what it means."))
+    return out
 
 
 def _sort_questions(key, rng):
@@ -1638,12 +1754,19 @@ def _mix_formats(key, questions, size):
     its items last) in place of each lesson's true-or-false question (or its
     last plain multiple-choice one) after the first, where the world has a
     sorting set, and, in Business Words, a matching game in every second
+    lesson. 1.19.0: Business Words also asks most of its words in a scene
+    (which word fills the gap) or a sentence (which uses it right), so a
+    lesson keeps at most two "What does X mean?"; and a few more worlds
+    (TERM_MATCH_WORLDS) get a matching game of their own terms in every second
     lesson. The same every time (a fixed seed per world)."""
-    if key not in SORT_SETS and key != "words":
+    if key not in SORT_SETS and key != "words" and key not in TERM_MATCH_WORLDS:
         return questions
     rng = random.Random(f"formats:{key}:{size}")
     out = list(questions)
     sorts = _sort_questions(key, rng) if key in SORT_SETS else []
+    terms = _term_matches(out, rng) if key in TERM_MATCH_WORLDS else []
+    words = _quiz_words(GLOSSARY) if key == "words" else []
+    turns = {"_word_question": 0, "_word_scene": 0, "_word_sentence": 0}
     for n in range(len(out) // size):
         chunk = range(n * size, (n + 1) * size)
         if sorts and n >= 1:
@@ -1653,10 +1776,30 @@ def _mix_formats(key, questions, size):
                 spot = next((i for i in reversed(chunk) if out[i].kind == "choice" and not out[i].look), None)
             if spot is not None:
                 out[spot] = sorts.pop(0)
-        if key == "words" and n % 2 == 1:
-            spot = next((i for i in reversed(chunk) if out[i].kind == "choice"), None)
+        if terms and n % 2 == 1:
+            spot = next((i for i in reversed(chunk) if out[i].kind == "choice" and not out[i].look), None)
+            if spot is None:
+                spot = next((i for i in reversed(chunk) if out[i].kind == "choice"), None)
             if spot is not None:
-                out[spot] = _match_question(out[spot], rng)
+                out[spot] = terms.pop(0)
+        if key == "words":
+            taught = [_word_of(out[i]) for i in chunk]
+            if n % 2 == 1:
+                spot = next((i for i in reversed(chunk) if out[i].kind == "choice"), None)
+                if spot is not None:
+                    out[spot] = _match_question(out[spot], rng, [w for w in taught if w])
+            plain = [i for i in chunk if out[i].kind == "choice" and _word_of(out[i]) in WORD_SCENES]
+            keep = max(2, size // 3)
+            change = plain[:max(0, len(plain) - keep)]
+            for turn, i in enumerate(plain):
+                word = _word_of(out[i])
+                meaning = dict(GLOSSARY)[word]
+                # Each kind turns its right answer's length round on its own (shortest, between, longest),
+                # so length gives nothing away in any of them.
+                make = (_word_question if i not in change else _word_scene if change.index(i) % 2 == 0
+                        else _word_sentence)
+                out[i] = make(rng, word, meaning, words, turns[make.__name__])
+                turns[make.__name__] += 1
     return tuple(out)
 
 
@@ -1842,7 +1985,17 @@ def teaching_cards(questions):
     fact the question then checks. "Good to know" when the explanation has no
     heading of its own ("Revenue: all the money customers pay")."""
     cards, seen = [], set()
+    glossary = dict(GLOSSARY)
     for q in questions:
+        if q.kind == "match" and q.parts and q.parts.get("pool"):
+            # 1.19.0: a matching game picks its words afresh each attempt, so the cards teach every word it
+            # can pick, one card each (the same card a word's own question has).
+            for word in q.parts["pool"]:
+                text = f"{word}: {glossary[word]}"
+                if text not in seen:
+                    seen.add(text)
+                    cards.append((word, glossary[word]))
+            continue
         text = q.explain.strip()
         if not text or text in seen:
             continue
@@ -1975,7 +2128,7 @@ _STAND_QUESTIONS = [
      "The store that sells the stand its lemons", "Customers are the people who buy from a business."),
     ("What is a product?", "Something a business sells, like lemonade", "Work done for someone, like a car wash",
      "The money left after paying for supplies",
-     "A product is a thing customers can buy. Work done for someone is a service."),
+     "A product is a thing customers can buy. Work done for someone is a service, not a product."),
     ("What is a service?", "Work a business does for someone", "Something a customer takes home",
      "A list of the prices a business charges",
      "A service is work done for a customer, like washing a car, not a thing to take home."),
@@ -2056,7 +2209,7 @@ _STAND_RULES = [
      "The business's own customers", "Inspectors visit food businesses to make sure the rules are followed."),
     ("What is a fine?", "Money paid as a penalty for breaking a rule", "Money paid to the town for a permit",
      "Money a customer adds as a thank-you",
-     "A fine costs money that could have gone to growing the business. A thank-you is a tip."),
+     "A fine is a penalty for breaking a rule. It costs money that could have gone to growing the business."),
     ("Why do some real stands need a permit?", "It's the town's permission to sell there",
      "It's a receipt for the supplies", "It's a sign that the lemonade tastes good",
      "A permit says the town has agreed the stand can sell in that spot."),
@@ -2419,13 +2572,15 @@ def _fresh(q, rng):
     """A copy of a pool question with its options in a new order (a true or
     false question keeps True first, and a light question keeps green,
     yellow, red: the order of a traffic light)."""
+    if q.kind == "match" and q.parts and q.parts.get("pool"):
+        return _rotated(q, rng)
     if q.kind in ("truefalse", "light", "match", "sort"):
         # A match or sort question keeps its pieces in place: its options are their codes.
         return Question(q.prompt, list(q.options), q.answer, q.explain, q.kind, parts=q.parts)
     right = q.options[q.answer]
     options = list(q.options)
     rng.shuffle(options)
-    return Question(q.prompt, options, options.index(right), q.explain, q.kind)
+    return Question(q.prompt, options, options.index(right), q.explain, q.kind, parts=q.parts, look=q.look)
 
 
 def _classroom_quiz(w, stage, rng):

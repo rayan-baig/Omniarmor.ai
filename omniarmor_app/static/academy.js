@@ -360,7 +360,7 @@
         var ready = picks.every(function (p) { return p !== null; });
         if (check) check.disabled = !ready;
         if (help) help.textContent = ready ? "All matched. Check them, or tap a word to change it."
-          : current !== null ? "Now tap the idea that goes with \u201c" + words[current].textContent.trim() + "\u201d."
+          : current !== null ? "Now tap the idea that goes with \u201c" + (words[current].querySelector(".ac-chip-text") || words[current]).textContent.trim() + "\u201d."
           : "Tap a word, then the idea that goes with it.";
       };
       words.forEach(function (w, i) {
@@ -418,15 +418,28 @@
     var mine = (chosen ? chosen.getAttribute("data-code") : "").split(",").map(Number);
     if (kind === "match") {
       var ideas = Array.prototype.slice.call(q.querySelectorAll("[data-right]"));
+      // The idea's own words, without its number badge (1.19.0).
+      var ideaText = function (idea) {
+        var own = idea.querySelector(".ac-chip-text");
+        return (own || idea).textContent.trim();
+      };
       Array.prototype.forEach.call(q.querySelectorAll("[data-left]"), function (w, i) {
         var ok = mine[i] === truth[i];
         w.classList.add(ok ? "right" : "wrong");
         if (!ok && ideas[truth[i]]) {
           var fix = document.createElement("span");
           fix.className = "ac-fix";
-          fix.textContent = "goes with: " + ideas[truth[i]].textContent.trim();
+          fix.textContent = "goes with: " + ideaText(ideas[truth[i]]);
           w.appendChild(fix);
         }
+      });
+      // Each idea now shows the colour and number of the word it really goes with.
+      ideas.forEach(function (idea, j) {
+        var owner = truth.indexOf(j);
+        if (owner < 0) return;
+        idea.className = "ac-chip paired pair-" + owner + " answer";
+        var badge = idea.querySelector(".ac-pair");
+        if (badge) badge.textContent = String(owner + 1);
       });
     } else {
       var bins = Array.prototype.map.call(q.querySelectorAll(".ac-sort-item:first-child [data-bin]"), function (b) { return b.textContent.trim(); });

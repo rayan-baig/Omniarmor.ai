@@ -28,6 +28,7 @@ from zoneinfo import ZoneInfo
 from werkzeug.security import generate_password_hash
 
 from . import academy
+from .words import plural
 from .auth import INVITE_DAYS
 from .catalog import INDUSTRIES, find_rule
 from .db import connect, iso, migrate, utcnow
@@ -202,7 +203,7 @@ def _fill(conn, password, rng):
                  (member_id, org_id, _at(joined, 8, 40)))
     people = {owner_id: OWNER[0], member_id: PHARMACIST[0]}
     audit = [
-        (_at(opened, 9, 12), owner_id, "workspace", "Workspace created with 2 industries", None, None, None, None),
+        (_at(opened, 9, 12), owner_id, "workspace", "Workspace created with " + plural(2, "industry"), None, None, None, None),
         (_at(opened, 9, 30), owner_id, "team", f"Invite link created (valid {INVITE_DAYS} days)", None, None, None, None),
         (_at(joined, 8, 40), member_id, "team", f"{PHARMACIST[0]} joined the team", None, None, None, None),
     ]

@@ -27,14 +27,15 @@
       {% set qi = loop.index0 %}
       {% set game = q.kind in ('match', 'sort') and q.parts %}
       <fieldset class="ac-q ac-q-{{ q.kind }}{% if q.look %} ac-q-{{ q.look }}{% endif %}" data-index="{{ qi }}"{% if game %} data-game="{{ q.kind }}"{% endif %}>
-        <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %}{% if q.look == 'scenario' %} <span class="ac-tag ac-tag-scene">Scenario</span>{% elif game %} <span class="ac-tag ac-tag-game">{{ 'Match it' if q.kind == 'match' else 'Sort it' }}</span>{% endif %} {{ q.parts.title if game else q.prompt }}</legend>
+        <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %}{% if q.look == 'scenario' %} <span class="ac-tag ac-tag-scene">Scenario</span>{% elif game %} <span class="ac-tag ac-tag-game">{{ 'Match it' if q.kind == 'match' else 'Sort it' }}</span>{% endif %} {{ q.parts.title if game or (q.parts and q.parts.scene) else q.prompt }}</legend>
+        {% if not game and q.parts and q.parts.scene %}<p class="ac-word-scene">{{ q.parts.scene }}</p>{% endif %}
         {% if game and q.kind == 'match' %}
         <div class="ac-game ac-match" data-match hidden>
           <ul class="ac-match-col" aria-label="Words">
-            {% for word in q.parts.left %}<li><button type="button" class="ac-chip ac-chip-word" data-left="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span>{{ word }}</span></button></li>{% endfor %}
+            {% for word in q.parts.left %}<li><button type="button" class="ac-chip ac-chip-word" data-left="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span class="ac-chip-text">{% for part in word.split(' ') %}<span class="ac-nb">{{ part }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></button></li>{% endfor %}
           </ul>
           <ul class="ac-match-col" aria-label="Ideas">
-            {% for idea in q.parts.right %}<li><button type="button" class="ac-chip" data-right="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span>{{ idea }}</span></button></li>{% endfor %}
+            {% for idea in q.parts.right %}<li><button type="button" class="ac-chip" data-right="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span class="ac-chip-text">{{ idea }}</span></button></li>{% endfor %}
           </ul>
           <p class="ac-game-help" data-game-help aria-live="polite">Tap a word, then the idea that goes with it.</p>
           <button type="button" class="btn ac-btn ac-game-check" data-game-check disabled>Check my matches</button>

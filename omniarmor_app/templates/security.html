@@ -30,7 +30,12 @@
   <li>The whole database is copied <strong>once a day</strong>, and each copy is checked before it is kept.</li>
   {% endif %}
   <li>Autopilot, the part of OmniArmor that watches the service, makes a missed backup by itself and emails the people who run OmniArmor if backups keep failing or the disk runs low.</li>
+  {% if facts.offsite_backup %}
+  <li>A copy of each day's backup also goes to <strong>a second, separate storage company</strong>, so the data survives even if our main hosting company loses its disk. Something you delete can stay in that copy for as long as that company keeps old copies.</li>
+  <li>The backups are there to bring OmniArmor back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
+  {% else %}
   <li>The backups are copies of the same database, kept by the same hosting company. They are there to bring OmniArmor back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
+  {% endif %}
 </ul>
 
 <h2 id="students">Who can see a student's name</h2>

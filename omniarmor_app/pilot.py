@@ -38,6 +38,7 @@ BUSINESS_PAGES = frozenset({"app.overview", "app.industry", "app.report", "app.a
 TEACHER_PAGES = frozenset({"classes.index", "classes.class_page", "classes.join_codes", "public.class_guide",
                            "app.overview", "app.industry", "app.report", "app.notifications", "app.audit",
                            "app.settings", "plan.plan_page"})
+DUE_ITEMS = 12   # what Pilot's "What's due or overdue?" lists at most, from any page (1.19.0)
 # Never, whoever is signed in: every page a student uses, and the kids' join page.
 STUDENT_BLUEPRINTS = ("academy.", "kids.")
 
@@ -173,8 +174,18 @@ def facts(who):
         data["school_checklist"] = bool(checklists)
         from .db import get_db
         classes = [{"id": c["id"], "name": c["name"]} for c in classrooms.classes(get_db(), g.org["id"])]
+    # 1.19.0: what needs attention and what's coming due (Armo's list: blocked, warnings, due within 30 days),
+    # each with a link to its check, so "What's due or overdue?" lists them on every page, the report too. Like
+    # the checklists, it is for the answers given in the browser and never sent to the AI by itself.
+    due = []
+    if g.get("org") is not None and who in ("business", "teacher") and (who == "business" or checklists):
+        from .armo_views import current_state
+        state = current_state() or {}
+        due = [{"level": i["level"], "title": i["title"], "where": i["where"], "url": i["url"]}
+               for i in state.get("issues", [])[:DUE_ITEMS]]
     return {
         "who": who,
+        "due": due,
         "checklists": checklists,
         "classes": classes,
         "demo": "on" if g.get("demo") else "off",

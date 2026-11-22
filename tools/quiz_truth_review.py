@@ -23,6 +23,11 @@ and flags the patterns that have slipped through before:
                 so the quiz asks the kid to spot a sentence, not to use the
                 idea (1.18.0). Naming the company's own checks is the point
                 of those questions, so they are left out.
+- stray-line    an explanation has a short "X is a Y." line about one of the
+                wrong answers that shares no word with the question or its
+                right answer ("What is a fine?" ... "A thank-you is a tip."),
+                so it reads as a line from somewhere else (1.19.0). Say how it
+                ties back ("..., not a product.") or leave it out.
 
 Run it from the project folder:
 
@@ -157,6 +162,43 @@ def word_for_word_flags(t, company, ids):
     return flags
 
 
+# Words too common to tie two sentences together.
+_COMMON = set(
+    "a an the and or but if then so to of in on at by for with from as is are was were be been it its this that these"
+    " those there their they them you your we our he she his her not no do does did can could would should will may"
+    " might must have has had what which who when where why how all any each every some more most much many one than"
+    " too very just only also into out up about after before own same other such".split())
+
+
+def _stem(word):
+    word = word.lower().strip("'")
+    for end in ("ing", "ed", "es", "s"):
+        if len(word) > 4 and word.endswith(end):
+            return word[:-len(end)]
+    return word
+
+
+def _content(text):
+    return {_stem(w) for w in re.findall(r"[A-Za-z][A-Za-z'-]*", str(text)) if w.lower() not in _COMMON and len(w) > 2}
+
+
+_DEFINES = re.compile(r"^[A-Za-z][\w' -]* (is|are) (a|an) [\w' -]+\.$")
+
+
+def stray_lines(q):
+    """The explanation's short "X is a Y." lines about a wrong answer that share
+    no word with the question or its right answer."""
+    if q.kind != "choice":
+        return []
+    lines = [x for x in re.split(r"(?<=[.!?])\s+", q.explain.strip()) if x]
+    if len(lines) < 2:
+        return []
+    ties = _content(q.prompt) | _content(q.options[q.answer])
+    wrong = _content(" ".join(o for n, o in enumerate(q.options) if n != q.answer))
+    return [x for x in lines if len(x.split()) <= 8 and _DEFINES.match(x) and _content(x) & wrong
+            and not _content(x) & ties]
+
+
 def review(companies=None, tracks=None):
     """Every flag, as (pattern, where, question prompt, the option); for a
     shape flag, (pattern, where, what was found, the limit)."""
@@ -183,6 +225,8 @@ def review(companies=None, tracks=None):
                         flags.append(("own-rule", f"{company}: {where}", q.prompt, option))
                     if q.prompt.endswith(_YOURS) and _norm(option) in universal:
                         flags.append(("universal", f"{company}: {where}", q.prompt, option))
+                for line in stray_lines(q):
+                    flags.append(("stray-line", f"{company}: {where}", q.prompt, line))
                 if q.prompt.startswith(_FOLLOWS):
                     title = q.prompt[len(_FOLLOWS):].rstrip("?\"")
                     if _norm(title) in universal or _norm(title) in shared_universal:
@@ -203,6 +247,8 @@ def main(argv):
     for pattern, where, prompt, option in flags:
         if pattern == "word-for-word":
             print(f"[{pattern}] {where}\n    Q: {prompt}\n    right answer copied from its card: {option}")
+        elif pattern == "stray-line":
+            print(f"[stray-line] {where}\n    Q: {prompt}\n    a line that doesn't tie back to it: {option}")
         elif pattern == "shape":
             print(f"[shape] {where}\n    {prompt} ({option})")
         else:

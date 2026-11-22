@@ -123,6 +123,28 @@ service's Shell tab). Copy them off the server regularly (for example, a
 nightly sync to cloud storage), because a backup on the same disk doesn't
 survive losing the disk.
 
+### A second copy with another provider (optional, off by default)
+
+Set `OFFSITE_BACKUP_COMMAND` and each day's checked backup is also handed to
+that command, which sends it to a storage company other than your host. It is
+run directly, not through a shell; `{file}` becomes the backup's path (left
+out, the path goes last). For example, with [rclone](https://rclone.org)
+installed and a remote called `offsite` set up (`rclone config`) for any
+S3-compatible bucket:
+
+```sh
+OFFSITE_BACKUP_COMMAND="rclone copy {file} offsite:omniarmor-backups"
+```
+
+Set the bucket's own rule to delete copies older than `BACKUP_KEEP` days, so
+deleted data doesn't stay there longer than in the local backups. A failed
+copy is logged (the local backup still counts) and tried again on the next
+run that day. When a copy goes through, `offsite-last-ok` is written in
+`BACKUP_DIR`; only while that is under 2 days old do the security and privacy
+pages say there is a second copy. If none has gone through for 2 days,
+Autopilot emails you (`offsite-backup`). Unset, nothing is sent anywhere and
+the pages say the backups stay with the hosting company.
+
 ### Restore checklist (about 10 minutes)
 
 The backup goes into a fresh file beside the current database, and the app is

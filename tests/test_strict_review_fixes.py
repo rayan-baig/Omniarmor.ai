@@ -267,6 +267,11 @@ class TestLessonsTeachWhatTheyAsk(unittest.TestCase):
                     if stage == 1 and f"{academy.QUIZ_HINT.lower()}:" in said:
                         continue
                     for q in academy.quiz(t, w.number, stage, company, ids, "x"):
+                        if q.kind == "match" and q.parts.get("pool"):
+                            # 1.19.0: a matching game's words change each attempt: each one's meaning is taught.
+                            for word in q.parts["left"]:
+                                self.assertIn(f"{word} {dict(academy.GLOSSARY)[word]}".lower(), said, q.prompt)
+                            continue
                         explain = q.explain.lower().strip(" .")
                         head, _, rest = q.explain.partition(": ")
                         self.assertTrue(explain in said or rest.lower().strip(" .") in said

@@ -48,6 +48,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
                    url_for)
 
 from . import academy, armo, demo, usage
+from .words import plural
 from .catalog import INDUSTRIES, counts_time, date_mode, find_rule, rules_for
 from .db import iso, migrate, utcnow
 from .security import client_ip, new_device_epoch, rate_limited, record_event
@@ -185,7 +186,7 @@ def _fill_business(conn, cfg, now, rng):
     conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'member', ?)",
                  (cook, org, joined))
     people = {owner: OWNER[0], cook: COOK[0]}
-    _audit(conn, org, owner, OWNER[0], created, "workspace", "Workspace created with 2 industries")
+    _audit(conn, org, owner, OWNER[0], created, "workspace", f"Workspace created with {plural(2, 'industry')}")
     _audit(conn, org, owner, OWNER[0], _at(opened, 9, 30), "team", "Invite link created (valid 7 days)")
     _audit(conn, org, cook, COOK[0], joined, "team", f"{COOK[0]} joined the team")
     for industry_id, plan in READINGS.items():
@@ -261,7 +262,7 @@ def _fill_trade(conn, cfg, now, rng, kind):
                  (owner, org, created))
     conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",
                      [(org, i) for i in industries])
-    _audit(conn, org, owner, person[0], created, "workspace", f"Workspace created with {len(industries)} industries")
+    _audit(conn, org, owner, person[0], created, "workspace", f"Workspace created with {plural(len(industries), 'industry')}")
     own = [i for i in industries if i != EMPLOYER]
     plans = {i: _trade_plan(i, today) if n == 0 else _trade_plan(i, today, ("CLEARED", "CLEARED"))
              for n, i in enumerate(own)}
@@ -301,7 +302,7 @@ def _fill_classroom(conn, cfg, now, rng):
     conn.execute("UPDATE users SET pilot_used_at = ? WHERE id = ?", (pilot_start, teacher))
     class_id = conn.execute("INSERT INTO classes (org_id, name, leaderboard, created_by, created_at)"
                             " VALUES (?, ?, 1, ?, ?)", (org, CLASS_NAME, teacher, _at(opened, 15, 25))).lastrowid
-    _audit(conn, org, teacher, TEACHER[0], created, "workspace", "Workspace created with 1 industries")
+    _audit(conn, org, teacher, TEACHER[0], created, "workspace", f"Workspace created with {plural(1, 'industry')}")
     _audit(conn, org, teacher, TEACHER[0], pilot_start, "workspace",
            f"Free classroom trial started ({cfg['CLASSROOM_PILOT_DAYS']} days)")
     _audit(conn, org, teacher, TEACHER[0], _at(opened, 15, 25), "workspace", f"Class added: {CLASS_NAME}")

@@ -1145,7 +1145,7 @@ MOVES_MORE = [
      "Take time, get expert advice and compare your options",
      "Sign today, since cash offers don't come around often",
      "Say no right away without hearing the offer",
-     "Big decisions deserve time and good advice. Pressure to rush is a warning sign."),
+     "Selling the shop is a big decision: it deserves time and good advice. A buyer who pushes you to sign today is a warning sign."),
     ("What's a good way to test a new idea without big risk?",
      "Try it small first, like selling a new treat for one weekend",
      "Spend all your savings on it at once to show you believe in it",

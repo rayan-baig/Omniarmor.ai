@@ -47,6 +47,10 @@ def load_config(**overrides):
         "DATABASE": database,
         "BACKUP_DIR": env.get("BACKUP_DIR", os.path.join(os.path.dirname(os.path.abspath(database)), "backups")),
         "BACKUP_KEEP": _whole(env, "BACKUP_KEEP", "14"),
+        # 1.19.0: optional, off unless set. A command that sends each day's checked backup to a second storage
+        # provider ({file} is the backup's path), e.g. "rclone copy {file} offsite:omniarmor-backups"
+        # (docs/OPERATIONS.md, section 4). The security page says so only once a copy has gone through.
+        "OFFSITE_BACKUP_COMMAND": env.get("OFFSITE_BACKUP_COMMAND", "").strip(),
         "BASE_URL": env.get("BASE_URL", "http://localhost:8000").rstrip("/"),
         "SMTP_HOST": env.get("SMTP_HOST", ""),
         "SMTP_PORT": _whole(env, "SMTP_PORT", "587"),

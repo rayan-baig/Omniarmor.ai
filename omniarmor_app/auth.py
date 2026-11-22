@@ -9,6 +9,7 @@ from flask import Blueprint, current_app, flash, g, redirect, render_template, r
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import usage
+from .words import plural
 from .academy_plan import trial_end_for_new_workspace
 from .catalog import INDUSTRIES, TOP_COUNT
 from .trades import SCHOOL_INDUSTRY, SIGNUP_LEAD
@@ -155,7 +156,7 @@ def signup():
                          (user_id, org_id, now))
             conn.executemany("INSERT INTO org_industries (org_id, industry_id) VALUES (?, ?)",
                              [(org_id, i) for i in picked])
-            record_audit(conn, org_id, user_id, "workspace", f"Workspace created with {len(picked)} industries")
+            record_audit(conn, org_id, user_id, "workspace", f"Workspace created with {plural(len(picked), 'industry')}")
             start = _start_industry(form) if _start_industry(form) in picked else picked[0]
         else:
             org_id = invite["org_id"]

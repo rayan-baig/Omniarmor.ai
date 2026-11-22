@@ -560,11 +560,11 @@ function select(root, sel) {
 }
 
 // OmniArmor's config on one page: what it gives Pilot.mount, with that page.
-function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [], hash = "" } = {}) {
+function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [], hash = "", due = [] } = {}) {
   let given = null;
   const store = { prefix: "omniarmor-pilot", loadChat: () => [], clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
   const dataset = { who, facts: JSON.stringify({ ...FACTS, join_code_days: 7, join_path: "/kids", ...facts }), account: "a1",
-    classes: JSON.stringify(classes), checklists: JSON.stringify(checklists) };
+    classes: JSON.stringify(classes), checklists: JSON.stringify(checklists), due: JSON.stringify(due) };
   const body = page || h("main");
   const sent = [];
   const closed = [];
@@ -880,4 +880,48 @@ test("1.18.0: the window wears OmniArmor's colours through the app's own theme c
   const css = fs.readFileSync(site("app.css"), "utf8");
   assert.ok(css.includes(".pilot-root.omni-pilot{--pilot-blue:#F7743A"));
   assert.ok(css.includes(".pilot-root.omni-pilot .pilot-panel{"));
+});
+
+// ---------------------------------------------------------------- 1.19.0
+
+const DUE = [
+  { level: "urgent", title: "Hood cleaning: overdue by 3 days", where: "RestoArmor", url: "/app/industry/2#rule-hood" },
+  { level: "soon", title: "Form I-9: due in 1 day", where: "HRArmor", url: "/app/industry/30#rule-i9" },
+  { level: "info", title: "Health permit: due in 12 days", where: "RestoArmor", url: "/app/industry/2#rule-permit" },
+  { level: "urgent", title: "Sneaky [link](https://evil.example)", where: "X", url: "https://evil.example/x" },
+];
+
+test("1.19.0: what's due lists the real items with links on every page, the report and History too", () => {
+  for (const where of ["/app/report", "/app/audit", "/app/notifications", "/app/settings", "/app/plan"]) {
+    const text = mountOn("business", where, h("main"), { due: DUE }).answer("What's due or overdue?");
+    assert.match(text, /\*\*Needs attention: 2\.\*\*/, where); // the one with a link off the site is left out
+    assert.match(text, /- \[Hood cleaning: overdue by 3 days\]\(\/app\/industry\/2#rule-hood\) · RestoArmor/, where);
+    assert.match(text, /\*\*Coming up, or still to fill in:\*\*\n- \[Health permit: due in 12 days\]/, where);
+    const links = linksIn(text);
+    assert.ok(links.includes("/app/industry/30#rule-i9"), where);
+    assert.ok(links.every((l) => l.startsWith("/")), `${where}: only this site's links`);
+    assert.ok(!text.includes("evil.example"), where);
+  }
+  // An industry page adds what needs attention on the other checklists.
+  const other = mountOn("business", "/app/industry/30", h("main", {}, h("ul", {},
+    h("li", { class: "rule", id: "rule-i9", "data-level": "WARNING", "data-days": "1" }, h("h2", {}, "Form I-9"), h("span", { class: "tag WARNING" }, "Warning")))),
+  { due: DUE }).answer("What's due or overdue?");
+  assert.match(other, /\*\*On your other checklists: 1\.\*\*\n- \[Hood cleaning: overdue by 3 days\]/);
+  // Nothing due: it says so, still with no key.
+  assert.match(mountOn("business", "/app/report", h("main")).answer("What's due or overdue?"), /Nothing is blocked/);
+});
+
+test("1.19.0: a visitor is never sent to a signed-in page like Settings; the public explanation instead", () => {
+  for (const where of ["/", "/industries", "/industries/restoarmor", "/for/salons-and-barbershops", "/classrooms", "/classrooms/guide", "/demo"]) {
+    const c = mountOn("visitor", where, h("main", {}, h("h1", {}, "Page")), { facts: { trades: TRADES, class_plan: CLASS_PLAN } });
+    const answers = [...c.welcomePills].filter((p) => p.answer !== undefined).map((p) => c.answer(p.label))
+      .concat([...c.chips()].filter((x) => x.answer !== undefined).map((x) => c.answer(x.label)));
+    for (const text of answers) {
+      for (const link of linksIn(text)) assert.ok(!link.startsWith("/app"), `${where}: ${link}`);
+    }
+  }
+  const reminders = mountOn("visitor", "/", h("main")).answer("How do reminders work?");
+  assert.deepEqual(linksIn(reminders), ["/help#reminders"]);
+  // Signed in, Settings is where the emails are chosen.
+  assert.ok(linksIn(mountOn("business", "/app/notifications", h("main")).answer("When do reminders go out?")).includes("/app/settings"));
 });

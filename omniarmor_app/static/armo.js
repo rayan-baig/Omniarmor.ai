@@ -77,8 +77,13 @@
     var column = document.querySelector("main .wrap");
     if (!column) return 0;
     var box = column.getBoundingClientRect();
-    var pad = parseFloat(window.getComputedStyle(column).paddingLeft) || 0;
-    return box.left + pad - root.getBoundingClientRect().left;
+    var me = root.getBoundingClientRect();
+    var style = window.getComputedStyle(column);
+    // 1.19.0: on a computer he may sit in the right-hand corner; then the room is at the column's right.
+    if (me.left > window.innerWidth / 2) {
+      return me.right - (box.right - (parseFloat(style.paddingRight) || 0));
+    }
+    return box.left + (parseFloat(style.paddingLeft) || 0) - me.left;
   }
   function mayOpenByItself() {
     return remember("armo-bubble-day") !== localDay() && roomBeside() >= BUBBLE_ROOM;

@@ -144,7 +144,7 @@ def _rules_facts():
     from .academy_views import JOIN_CODE_DAYS, QUIZ_CHECK_DAYS
     from .autopilot import KEEP_ERRORS, MAX_EMAILS_PER_HOUR
     from .errormail import MAX_PER_DAY
-    from .jobs import ALERTS_EVERY_SECONDS
+    from .jobs import ALERTS_EVERY_SECONDS, offsite_ok
     from .auth import INVITE_DAYS, RESET_HOURS
     from .connections import SIGNATURE_MEMORY
     from .plans import PAUSE_MONTHS
@@ -154,6 +154,7 @@ def _rules_facts():
         "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
         "free_worlds": len(FREE_WORLDS),
         "backup_keep": cfg["BACKUP_KEEP"],
+        "offsite_backup": offsite_ok(cfg),
         "session_days": cfg["PERMANENT_SESSION_LIFETIME"].days,
         "reset_hours": RESET_HOURS,
         "invite_days": INVITE_DAYS,
@@ -196,7 +197,7 @@ def _help_facts():
     from .plan_views import plan_facts
     from .autopilot import SLOT_MINUTES
     from .catalog import TOP_COUNT
-    from .jobs import ALERTS_EVERY_SECONDS
+    from .jobs import ALERTS_EVERY_SECONDS, offsite_ok
     from .plans import PAUSE_MONTHS, RESUME_NOTICE
     from .reminders import REMINDER_DAYS
     cfg = current_app.config
@@ -209,6 +210,7 @@ def _help_facts():
         "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
         "autopilot_minutes": SLOT_MINUTES,
         "backup_keep": cfg["BACKUP_KEEP"],
+        "offsite_backup": offsite_ok(cfg),
         "reset_hours": RESET_HOURS,
         "join_code_days": JOIN_CODE_DAYS,
         "support_email": support_email(cfg),

@@ -28,5 +28,5 @@
   data-rest-head-set="{{ url_for('static', filename='pilot/pilot-rest-head-112.webp') }} 112w, {{ url_for('static', filename='pilot/pilot-rest-head-168.webp') }} 168w"
   data-rest-eyes-set="{{ url_for('static', filename='pilot/pilot-rest-eyes-112.webp') }} 112w, {{ url_for('static', filename='pilot/pilot-rest-eyes-168.webp') }} 168w"
   data-who="{{ pt.who }}" data-demo="{{ pt.demo }}" data-readonly="{{ pt.readonly }}" data-account="{{ pt.account }}"
-  data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-classes='{{ pt.classes|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
+  data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-due='{{ pt.due|tojson }}' data-classes='{{ pt.classes|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
 {%- endif %}

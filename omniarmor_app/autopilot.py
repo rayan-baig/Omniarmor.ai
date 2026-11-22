@@ -159,6 +159,17 @@ def find_problems(conn, cfg, deep=False):
                                  "Check that the backup folder exists, is writable and has free space. "
                                  "Run: flask --app wsgi backup"))
 
+        # 1.19.0: the optional second-provider copy (OFFSITE_BACKUP_COMMAND), once set, keeps going through.
+        from .jobs import OFFSITE_MAX_AGE, offsite_age
+        if cfg.get("OFFSITE_BACKUP_COMMAND") and age is not None and age < BACKUP_MAX_AGE.total_seconds():
+            sent = offsite_age(cfg)
+            if sent is None or sent > OFFSITE_MAX_AGE.total_seconds():
+                found.append(Finding("offsite-backup", "Backups aren't reaching the second storage provider",
+                                     "OFFSITE_BACKUP_COMMAND is set, but no backup has gone through it in over 2 days."
+                                     " The security page has stopped saying there is a second copy.",
+                                     "Run the command by hand on the newest backup to see its error"
+                                     " (docs/OPERATIONS.md, section 4), or unset it."))
+
     last = conn.execute("SELECT MAX(finished_at) FROM job_runs WHERE job = 'daily'").fetchone()[0]
     if last and _parse(last) < now - DAILY_JOB_MAX_AGE:
         found.append(Finding("daily-job", "The daily job hasn't finished in 2 days",
