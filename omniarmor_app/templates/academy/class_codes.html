@@ -9,7 +9,7 @@
   <p class="ac-crumb no-print"><a href="{{ url_for('classes.class_page', class_id=cls.id) }}">← {{ cls.name }}</a></p>
   <p class="ac-kicker">{{ cls.name }} · {{ g.org.name }}</p>
   <h1 class="ac-title">Join codes</h1>
-  <p class="muted">On a school device, open <strong>{{ join_url }}</strong> and type the code. Each code works once, for {{ days }} days. A student who joins sees only their own lessons{% if cls.leaderboard %} and the class leaderboard{% endif %}.</p>
+  <p class="muted">On a school device, open <strong>{{ join_url }}</strong> and type the code. Each code works once, for {{ days|plural('day') }}. A student who joins sees only their own lessons{% if cls.leaderboard %} and the class leaderboard{% endif %}.</p>
   {% if missing and has_students %}
   <form class="ac-callout ac-missing no-print" data-codes-missing="{{ missing|length }}" method="post" action="{{ url_for('classes.join_codes', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

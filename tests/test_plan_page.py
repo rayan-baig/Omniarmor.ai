@@ -109,7 +109,10 @@ class TestPlanPage(AppTestCase):
         self.assertIn(free, words(self.client.get("/app/academy").data.decode()))
         with mock.patch.object(academy_plan, "FREE_WORLDS", {1, 2}):
             self.assertIn("the first 2 worlds of", words(self.client.get("/app/academy").data.decode()))
-            self.assertIn("the first 2 Launchpad worlds", words(self.client.get("/app/academy/1").data.decode()))
+            # 1.18.0: the learner's map is the kid's screen: locked worlds, no plan talk or link.
+            kid = words(self.client.get("/app/academy/1").data.decode())
+            self.assertIn("Some worlds are locked. Ask a grown-up about Plus!", kid)
+            self.assertNotIn("Unlock everything", kid)
 
 
 if __name__ == "__main__":

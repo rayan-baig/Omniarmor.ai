@@ -9,6 +9,18 @@
     var t = e.target && e.target.closest ? e.target.closest("[data-print]") : null;
     if (t) { e.preventDefault(); window.print(); }
   });
+  // A link to a form's own place ("#add-students", "#add-class": an empty state's button, or Pilot's "Add
+  // students") puts the cursor in its first box, ready to type (1.18.0).
+  function focusForm() {
+    var id = (window.location.hash || "").slice(1);
+    if (!/^add-[a-z-]+$/.test(id)) return;
+    var form = document.getElementById(id);
+    if (!form || form.tagName !== "FORM") return;
+    var box = form.querySelector("textarea, input:not([type=hidden]):not([type=submit]):not([type=checkbox]):not([type=radio])");
+    if (box) { try { box.focus({ preventScroll: true }); } catch (e) { box.focus(); } }
+  }
+  focusForm();
+  window.addEventListener("hashchange", focusForm);
   var menu = document.querySelector("[data-nav-menu]");
   if (!menu) return;
   var summary = menu.querySelector("summary");

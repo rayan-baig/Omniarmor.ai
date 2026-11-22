@@ -192,6 +192,55 @@ summary:where(:not(.pilot-root *)):hover{color:var(--ink)}
 .yes-bad{margin:0;font-size:13px;color:var(--faint)}
 .log-form .field{display:flex;flex-direction:column;gap:4px}
 .entry-row td{font-size:13.5px;color:var(--muted)}
+/* Pilot in OmniArmor's own colours (1.18.0): the app's themeClass (pilot-omniarmor.js) on Pilot's root, so the
+   window is OmniArmor's warm black with its orange-to-red edge instead of the core's navy and violet. Only colours
+   change; the core's layout, robot and words stay as they are (static/pilot/ is never edited here). */
+.pilot-root.omni-pilot{--pilot-blue:#F7743A;--pilot-cyan:#FF9A66;--pilot-violet:#E5261C;--pilot-ink:#F2ECE4;--pilot-muted:#C3B8AC;
+  --pilot-glass:rgba(22,20,18,.97);--pilot-glass-2:rgba(30,24,20,.97);--pilot-edge:rgba(247,116,58,.55);--pilot-ready:#4FD1A5;--pilot-nokey:#FFC24B;
+  /* Core 1.4.1's theming variables too, so what it draws new (the pills' compact row under an answer) wears them. */
+  --pilot-panel-bg:radial-gradient(120% 70% at 100% 0%,rgba(229,38,28,.16),transparent 60%),radial-gradient(90% 60% at 0% 100%,rgba(245,146,52,.12),transparent 60%),linear-gradient(165deg,rgba(22,20,18,.97),rgba(30,24,20,.97));
+  --pilot-panel-shadow:0 0 0 1px rgba(247,116,58,.22),0 0 24px rgba(229,38,28,.22),0 24px 60px rgba(0,0,0,.6);
+  --pilot-title:#fff;--pilot-soft-ink:#D9CFC4;--pilot-accent:#FF9A66;--pilot-link:#FF9A66;--pilot-hover-line:rgba(255,154,102,.9);
+  --pilot-hello-bg:linear-gradient(160deg,rgba(48,30,22,.6),rgba(30,22,18,.6));--pilot-hello-line:rgba(247,116,58,.4);--pilot-hello-tail:#251B16;
+  --pilot-pill-bg:rgba(36,28,23,.8);--pilot-pill-line:rgba(247,116,58,.36);--pilot-pill-ink:#F2ECE4;--pilot-chip-bg:rgba(36,28,23,.8);--pilot-chip-line:rgba(247,116,58,.36);
+  --pilot-user-bg:linear-gradient(100deg,#E5261C 0%,#FF6A36 45%,#F59234 100%);--pilot-bubble-bg:rgba(34,27,22,.85);--pilot-bubble-line:rgba(247,116,58,.3);
+  --pilot-keycard-bg:linear-gradient(160deg,rgba(40,28,22,.9),rgba(30,22,18,.85));--pilot-compose-bg:rgba(15,14,13,.7);--pilot-compose-line:rgba(247,116,58,.5);
+  --pilot-round-bg:rgba(30,24,20,.8);--pilot-round-line:rgba(247,116,58,.45)}
+.pilot-root.omni-pilot .pilot-panel{background:radial-gradient(120% 70% at 100% 0%,rgba(229,38,28,.16),transparent 60%),
+  radial-gradient(90% 60% at 0% 100%,rgba(245,146,52,.12),transparent 60%),linear-gradient(165deg,var(--pilot-glass),var(--pilot-glass-2));
+  box-shadow:0 0 0 1px rgba(247,116,58,.22),0 0 24px rgba(229,38,28,.22),0 24px 60px rgba(0,0,0,.6)}
+.pilot-root.omni-pilot.pilot-theme-calm .pilot-panel{background:#161412;box-shadow:0 18px 50px rgba(0,0,0,.55);border-color:var(--line)}
+.pilot-root.omni-pilot .pilot-mark{filter:drop-shadow(0 0 8px rgba(247,116,58,.45))}
+.pilot-root.omni-pilot .pilot-tagline,.pilot-root.omni-pilot .pilot-keycard-words small,.pilot-root.omni-pilot .pilot-h3,
+.pilot-root.omni-pilot .pilot-row,.pilot-root.omni-pilot .pilot-state,.pilot-root.omni-pilot .pilot-round{color:#D9CFC4}
+.pilot-root.omni-pilot .pilot-hello{border-color:rgba(247,116,58,.4);background:linear-gradient(160deg,rgba(48,30,22,.6),rgba(30,22,18,.6));box-shadow:inset 0 0 18px rgba(229,38,28,.08)}
+.pilot-root.omni-pilot .pilot-hello::after{border-color:rgba(247,116,58,.4);background:#251B16}
+.pilot-root.omni-pilot .pilot-hello .pilot-icon{fill:#F7743A;filter:drop-shadow(0 0 6px rgba(247,116,58,.6))}
+.pilot-root.omni-pilot .pilot-pill,.pilot-root.omni-pilot .pilot-chip,.pilot-root.omni-pilot .pilot-btn{border-color:rgba(247,116,58,.36);background:rgba(36,28,23,.8);color:#F2ECE4}
+.pilot-root.omni-pilot .pilot-pill .pilot-icon,.pilot-root.omni-pilot .pilot-keycard>.pilot-icon:first-child,.pilot-root.omni-pilot .pilot-send,.pilot-root.omni-pilot .pilot-mic{color:#FF9A66}
+.pilot-root.omni-pilot .pilot-pill:hover,.pilot-root.omni-pilot .pilot-pill:focus-visible,.pilot-root.omni-pilot .pilot-chip:hover,
+.pilot-root.omni-pilot .pilot-chip:focus-visible,.pilot-root.omni-pilot .pilot-btn:hover,.pilot-root.omni-pilot .pilot-btn:focus-visible{border-color:rgba(255,154,102,.9);background:rgba(58,38,28,.85)}
+.pilot-root.omni-pilot .pilot-keycard{border-color:rgba(247,116,58,.5);background:linear-gradient(160deg,rgba(40,28,22,.9),rgba(30,22,18,.85));box-shadow:0 0 18px rgba(229,38,28,.12)}
+.pilot-root.omni-pilot .pilot-from-user{background:var(--blend);color:#0F0E0D}
+.pilot-root.omni-pilot .pilot-from-pilot{border-color:rgba(247,116,58,.3);background:rgba(34,27,22,.85)}
+.pilot-root.omni-pilot .pilot-md a,.pilot-root.omni-pilot .pilot-link,.pilot-root.omni-pilot .pilot-panel .pilot-small a{color:#FF9A66}
+.pilot-root.omni-pilot .pilot-note{background:rgba(247,116,58,.1);color:#F2E3D6}
+.pilot-root.omni-pilot .pilot-copy{border-color:rgba(247,116,58,.4);background:#211A16}
+.pilot-root.omni-pilot .pilot-foot{border-top-color:rgba(247,116,58,.18)}
+.pilot-root.omni-pilot .pilot-compose{border-color:rgba(247,116,58,.5);background:rgba(15,14,13,.7);box-shadow:0 0 14px rgba(229,38,28,.1)}
+.pilot-root.omni-pilot .pilot-input::placeholder{color:#B5AA9E}
+.pilot-root.omni-pilot .pilot-send .pilot-icon{filter:drop-shadow(0 0 6px rgba(247,116,58,.55))}
+.pilot-root.omni-pilot .pilot-round{border-color:rgba(247,116,58,.45);background:rgba(30,24,20,.8)}
+.pilot-root.omni-pilot .pilot-round:hover,.pilot-root.omni-pilot .pilot-round:focus-visible,.pilot-root.omni-pilot .pilot-round.on{color:#fff;border-color:rgba(255,154,102,.95);box-shadow:0 0 12px rgba(229,38,28,.3)}
+.pilot-root.omni-pilot .pilot-win:hover,.pilot-root.omni-pilot .pilot-win:focus-visible{background:rgba(247,116,58,.16)}
+.pilot-root.omni-pilot .pilot-field,.pilot-root.omni-pilot .pilot-keyform,.pilot-root.omni-pilot .pilot-keys li,.pilot-root.omni-pilot .pilot-notes li,
+.pilot-root.omni-pilot .pilot-section{border-color:rgba(247,116,58,.3);background:rgba(15,14,13,.55)}
+.pilot-root.omni-pilot .pilot-facts li::before{background:#F7743A}
+.pilot-root.omni-pilot .pilot-btn-go{border-color:transparent;background:var(--blend);color:#0F0E0D}
+.pilot-root.omni-pilot .pilot-scroll{scrollbar-color:rgba(247,116,58,.4) transparent}
+.pilot-root.omni-pilot .pilot-launcher::before{background:radial-gradient(closest-side,rgba(247,116,58,.4),rgba(229,38,28,.14) 60%,transparent)}
+.pilot-root.omni-pilot .pilot-dot{border-color:#0F0E0D}
+
 /* Pilot: the line above the Allow card for adding students (pilot-omniarmor-pack.js) */
 .pilot-root .omni-names-note{margin:0 0 8px;padding:8px 10px;border-radius:10px;border:1px solid var(--pilot-edge);font-size:13px;line-height:1.45;color:var(--pilot-ink)}
 .pilot-root .omni-names-note a{color:var(--pilot-cyan);text-decoration:underline}
@@ -559,8 +608,8 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
      page without Pilot (his page stays a tap away in Settings), unless his bubble is open.
    - Neither while a box of the page is being typed in, so the keyboard and the box stay clear.
    Pilot core still chooses its corner and decides when to tuck; on a phone this stylesheet keeps the robot in the
-   one corner. Tucked away there (1.14.0: the core's keepInViewport) it shrinks into that corner, 3px from the
-   screen's edge and just above the tab bar, never off the screen, and the page's column keeps the core's side room
+   one corner. Tucked away there (1.14.0: the core's keepInViewport; 1.18.0: stepped to the edge, below) it
+   shrinks into that corner, just above the tab bar, and the page's column keeps the core's side room
    for it (gutter in pilot-omniarmor.js), so line ends stop before it. When the core would move it to another corner (this one is busy), it shrinks here
    too, rather than sitting whole on the page's words (but not during its first look of a visit, while the core
    marks its root pilot-revealing: core 1.2.1's own name, never one the chat window styles). The page's bottom
@@ -610,6 +659,12 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 /* A lesson on a grown-up's device (base.html, lesson_view): one "Back to map" under it, not the tab bar. */
 .lessonbar{justify-content:flex-start;padding-inline:max(16px,env(safe-area-inset-left))}
 .lessonbar .tab-back{flex:none;max-width:none;flex-direction:row;gap:8px;padding:0 16px;font-size:15px;color:var(--ink)}
+/* "Grown-up? Hold to exit" on a learner's map (1.18.0): a bar fills while it is held (academy.js). */
+.lessonbar .tab-hold{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:10px;min-height:44px;margin-block:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.lessonbar .tab-hold::after{content:"";position:absolute;inset:0;background:var(--accent);opacity:.22;transform:scaleX(0);transform-origin:0 50%;pointer-events:none}
+.lessonbar .tab-hold.holding::after{transform:scaleX(1);transition:transform 1.5s linear}
+.lessonbar .tab-hold.held::after{transform:scaleX(1)}
+.lessonbar .tab-hold span,.lessonbar .tab-hold svg{position:relative}
 
 /* The overview on a computer: Needs attention and Coming due side by side. */
 @media (min-width:1000px){
@@ -694,23 +749,20 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   body.has-tabs:not(.lesson-view) .topbar .wrap{justify-content:flex-end}
 }
 
-/* The helpers' own corner on a phone (1.16.0). The page's column stays centred, with the same room at both
-   sides: nothing is kept down its right for Armo any more. Instead the bottom-right corner just above the tab bar
-   is reserved for the one helper that shows there (Armo while something needs doing, else Pilot): the tab bar
-   grows a small raised corner for it, the page scrolls behind it as it does behind the tab bar, and the page's
-   bottom room lets its last lines end above it. Pilot then needs no side room on these pages either
-   (pilot-omniarmor.js). On a kid's lesson screen there is no helper and no corner. */
+/* The helpers' corner on a phone. 1.16.0 gave the tab bar a raised, framed corner for the one helper there, but
+   the box stayed over the page's last lines at rest ("Lost the slips?" on the join codes page, the end of a new
+   checklist's card). 1.18.0 takes the box away: nothing covers the page. The helper sits whole in the corner only
+   while nothing of the page is there (Pilot core decides; Armo's armo.js too); when the corner is busy it steps
+   aside to the screen's edge, a small slice of it still showing to tap (below). The page's bottom room lets its
+   last lines end above the corner. On a kid's lesson screen there is no helper. */
 @media (max-width:720px){
-  body.has-tabs:not(.lesson-view):has(> .pilot-root, > .companion .companion-badge:not([hidden]))::after{
-    content:"";position:fixed;z-index:51;right:max(4px,env(safe-area-inset-right));bottom:calc(64px + env(safe-area-inset-bottom));
-    width:72px;height:74px;border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;
-    background:rgba(15,14,13,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
-  body.has-tabs:not(.lesson-view):has(:is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=submit]),textarea,select):focus)::after{display:none}
-  /* In the corner Armo keeps his size: it is his, so there is nothing of the page's to shrink away from. */
-  body.has-tabs .companion.armo-tucked{right:max(12px,env(safe-area-inset-right))}
-  body.has-tabs .companion.armo-tucked .companion-armo svg{width:52px;height:52px}
-  body.has-tabs .companion.armo-tucked .companion-badge{top:2px;right:0}
-  body.has-tabs .companion.armo-tucked .companion-stage{animation:armo-breathe 4s ease-in-out infinite}
+  html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl) .pilot-launcher,
+  html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible),
+  html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-revealing) .pilot-launcher{
+    transform-origin:100% 100%;transform:translate(calc(12px + var(--pilot-size) * .7 - var(--omni-slice)),calc(12px - var(--pilot-keep-margin))) scale(.7)}
+  .pilot-root{--omni-slice:26px}
+  /* Armo steps aside the same way when his corner is busy. */
+  body.has-tabs .companion.armo-tucked{right:max(3px,env(safe-area-inset-right))}
 }
 
 /* The picture by the headline (1.16.0): beside it on a computer; on a phone or a tablet right under the
@@ -719,4 +771,11 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 @media (max-width:959px){
   .hero-shot-side{display:none}
   .hero .hero-shot-phone{display:flex;width:min(100%,360px);margin:4px 0 4px;justify-self:auto;align-self:center}
+  /* 1.18.0: the longer line about the trades waits until after the picture, so the first screen is the
+     headline, one short line, the buttons and the app itself. */
+  .hero .lead-more{order:2}
+  .hero .hero-shot-phone ~ *{order:3}
+  .hero p.lead-more{font-size:16px}
+  /* The third button waits too: the longer line after the picture links to the industries. */
+  .hero .cta-more{display:none}
 }

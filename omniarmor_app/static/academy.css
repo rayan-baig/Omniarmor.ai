@@ -652,3 +652,118 @@
   .ac-celebrate-rays,.ac-celebrate-pic,.ac-celebrate-pic.grew,.ac-celebrate-stars .star,.ac-celebrate.show{animation:none}
   .ac-celebrate-sparks{display:none}
 }
+
+/* Lesson formats (1.18.0). A scenario sets a scene: a warm edge and a "Scenario" tag. A matching game pairs three
+   words with their ideas (tap a word, then its idea); a sorting game puts three things into two bins. Both are
+   one question; academy.js shows them in place of their radio buttons (which stay for a page without the script). */
+.ac-tag-scene{border-color:var(--sun);color:var(--sun)}
+.ac-tag-game{border-color:var(--mint);color:var(--mint)}
+.ac-q-scenario{border-left:4px solid var(--sun);background:linear-gradient(100deg,rgba(255,194,75,.06),transparent 55%),var(--card)}
+.ac-game{clear:both}
+.ac-game[hidden]{display:none}
+.js .ac-q.game-on [data-game-options]{display:none}
+.ac-match{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px 12px;align-items:start}
+.ac-match-col{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ac-chip{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:10px 14px;border-radius:16px;border:2px solid var(--field);background:var(--card);color:var(--ink);font:inherit;font-size:16px;line-height:1.3;text-align:left;cursor:pointer;transition:border-color .15s ease,background-color .15s ease,transform .1s ease}
+.ac-chip-word{font-family:var(--kid);font-weight:800;font-size:18px}
+.ac-chip:hover:not(:disabled){border-color:var(--accent)}
+.ac-chip:active:not(:disabled){transform:scale(.98)}
+.ac-chip:disabled{cursor:default}
+.ac-chip.picked{border-color:var(--accent);background:var(--card-2);box-shadow:0 0 0 3px rgba(247,116,58,.25)}
+.ac-pair{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px dashed var(--field);font-family:var(--kid);font-weight:800;font-size:14px;color:var(--glyph,#0F0E0D)}
+.ac-chip.paired .ac-pair{border-style:solid}
+.ac-chip.pair-0{border-color:#5AB0F0}.ac-chip.pair-0 .ac-pair{background:#5AB0F0;border-color:#5AB0F0}
+.ac-chip.pair-1{border-color:#B79CFF}.ac-chip.pair-1 .ac-pair{background:#B79CFF;border-color:#B79CFF}
+.ac-chip.pair-2{border-color:#FFC24B}.ac-chip.pair-2 .ac-pair{background:#FFC24B;border-color:#FFC24B}
+.ac-chip.right{border-color:var(--mint);background:rgba(79,209,165,.12)}
+.ac-chip.wrong{border-color:var(--red);background:rgba(229,38,28,.12);flex-wrap:wrap}
+.ac-chip.right::after{content:"✓";margin-left:auto;font-weight:800;color:var(--mint)}
+.ac-chip.wrong::after{content:"✗";margin-left:auto;font-weight:800;color:var(--red)}
+.ac-chip > span:last-of-type{min-width:0;overflow-wrap:anywhere}
+.ac-chip.right::after,.ac-chip.wrong::after{flex:none}
+.ac-fix{flex-basis:100%;font-family:var(--sans);font-weight:400;font-size:14px;color:var(--muted)}
+.ac-game-help{grid-column:1 / -1;margin:2px 0 0;font-size:15px;color:var(--muted)}
+.ac-game-check{grid-column:1 / -1;justify-self:start;margin-top:4px}
+.ac-game.done .ac-game-check{display:none}
+.ac-sort-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ac-sort-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:16px;border:2px solid var(--field)}
+.ac-sort-item.in-bin{border-color:var(--card-2);background:var(--card-2)}
+.ac-sort-item.right{border-color:var(--mint);background:rgba(79,209,165,.1)}
+.ac-sort-item.wrong{border-color:var(--red);background:rgba(229,38,28,.1)}
+.ac-sort-text{flex:1 1 220px;font-size:16px;line-height:1.35}
+.ac-bins{display:flex;gap:8px;flex:none}
+.ac-bin{min-height:44px;min-width:92px;padding:0 14px;border-radius:999px;border:2px solid var(--field);background:none;color:var(--ink);font-family:var(--kid);font-weight:800;font-size:16px;cursor:pointer}
+.ac-bin:hover:not(:disabled){border-color:var(--accent)}
+.ac-bin:disabled{cursor:default}
+.ac-bin-0[aria-pressed="true"]{border-color:var(--mint);background:rgba(79,209,165,.2)}
+.ac-bin-1[aria-pressed="true"]{border-color:var(--red);background:rgba(229,38,28,.2)}
+.ac-sort .ac-game-help,.ac-sort .ac-game-check{margin-top:10px}
+@media (max-width:560px){
+  .ac-match{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:8px}
+  .ac-chip{min-height:52px;padding:8px 10px;font-size:15px;gap:8px}
+  .ac-chip-word{font-size:16px}
+  .ac-pair{width:22px;height:22px;font-size:12px}
+  .ac-bins{width:100%}
+  .ac-bin{flex:1}
+}
+
+/* The map as a path (1.18.0): each world a node on a winding road, its card beside it. The road column is
+   --road wide; a node sits at 26%, 50% or 74% across it (p-0 to p-3), and an SVG line runs from each node down
+   to the next one's (stretched to the row's height; its stroke keeps its width). Stretches already walked are
+   solid, the rest dotted. The Rule Quests below stay a grid of cards. */
+.ac-path{--road:104px;--node:60px;grid-template-columns:minmax(0,1fr);gap:18px;max-width:760px}
+.ac-path > li{position:relative}
+.ac-path .ac-world a,.ac-path .ac-world > span{grid-template-columns:var(--road) minmax(0,1fr);grid-template-rows:auto;column-gap:10px;align-items:start;padding:0;background:none;border:0;border-radius:0}
+.ac-path .ac-world a:hover{transform:none}
+.ac-path .ac-world a:hover .ac-world-card{border-color:var(--u1);transform:translateY(-2px)}
+.ac-world-node{display:contents}
+.ac-world-card{display:contents}
+.ac-path .ac-world-node{display:block;position:relative;z-index:1;height:var(--node);padding-top:8px}
+.ac-path .ac-world-badge{position:absolute;top:8px;left:calc(var(--x) * 1% - var(--node) / 2);box-shadow:0 0 0 6px var(--bg)}
+.ac-path .p-0{--x:26}.ac-path .p-1{--x:50}.ac-path .p-2{--x:74}.ac-path .p-3{--x:50}
+.ac-path .ac-world-card{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:20px;background:var(--card);border:1px solid var(--line);transition:transform .15s ease,border-color .15s ease}
+.ac-path .ac-world.here .ac-world-card{border-color:var(--u2);box-shadow:0 0 0 3px rgba(245,146,52,.18)}
+.ac-road{position:absolute;z-index:0;left:0;top:38px;width:var(--road);height:calc(100% + 18px);overflow:visible;pointer-events:none}
+.ac-road path{fill:none;stroke:var(--field);stroke-width:5;stroke-linecap:round;stroke-dasharray:1 11;vector-effect:non-scaling-stroke}
+.ac-world.done .ac-road path{stroke:var(--u2);stroke-dasharray:none;opacity:.85}
+.ac-world.locked .ac-road path,.ac-world.paid .ac-road path{opacity:.5}
+.ac-path .ac-world.boss .ac-world-badge{--node:72px;width:72px;height:72px}
+.ac-path-end{margin-top:8px}
+@media (max-width:560px){
+  .ac-path{--road:90px;--node:52px;gap:14px}
+  .ac-path .ac-world-badge{width:52px;height:52px}
+  .ac-road{top:35px;height:calc(100% + 14px)}
+  .ac-path .ac-world-card{padding:12px 14px}
+}
+
+/* A whole world cleared (1.18.0): a trophy with the learner's picture on it, every stage's stars and the world's
+   total. A boss round's clear is bigger again: a gold edge and glow, more sparks, faster rays, a bouncing cup. */
+.ac-trophy{position:relative;z-index:1;display:grid;place-items:center;margin:2px 0 4px}
+.ac-trophy-cup{line-height:0;color:var(--sun);filter:drop-shadow(0 8px 18px rgba(255,194,75,.45));animation:ac-pop-in .7s cubic-bezier(.3,1.6,.5,1) both}
+.ac-trophy-pic{position:absolute;bottom:-12px;right:-40px;padding:3px;border-radius:50%;background:var(--card);animation-delay:.35s}
+.ac-world-total{position:relative;z-index:1;margin:6px 0 2px;font-size:17px;color:var(--muted);text-align:center}
+.ac-world-total svg{vertical-align:-6px;margin-right:4px}
+.ac-world-total strong{font-family:var(--kid);font-size:26px;color:var(--ink)}
+.ac-world-stages{position:relative;z-index:1;list-style:none;margin:4px 0 6px;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.ac-world-stages li{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border-radius:12px;background:var(--card-2);animation:ac-pop-in .4s cubic-bezier(.3,1.6,.5,1) both}
+.ac-world-stages li:nth-child(2){animation-delay:.1s}.ac-world-stages li:nth-child(3){animation-delay:.2s}.ac-world-stages li:nth-child(4){animation-delay:.3s}
+.ac-world-stages li:nth-child(5){animation-delay:.4s}.ac-world-stages li:nth-child(n+6){animation-delay:.5s}
+.ac-world-stage-n{font-size:12px;font-weight:700;color:var(--muted)}
+.ac-celebrate-world .ac-celebrate-rays{top:96px}
+.ac-celebrate-world .ac-celebrate-sparks{top:96px}
+.ac-celebrate-sparks i:nth-child(15){--x:-200px;--y:-30px}.ac-celebrate-sparks i:nth-child(16){--x:200px;--y:-40px}
+.ac-celebrate-sparks i:nth-child(17){--x:-100px;--y:-190px}.ac-celebrate-sparks i:nth-child(18){--x:100px;--y:-185px}
+.ac-celebrate-sparks i:nth-child(19){--x:-190px;--y:90px}.ac-celebrate-sparks i:nth-child(20){--x:190px;--y:95px}
+.ac-celebrate-sparks i:nth-child(21){--x:-20px;--y:-210px}.ac-celebrate-sparks i:nth-child(22){--x:20px;--y:150px}
+.ac-celebrate-sparks i:nth-child(23){--x:-230px;--y:-140px}.ac-celebrate-sparks i:nth-child(24){--x:230px;--y:-150px}
+.ac-celebrate-sparks i:nth-child(25){--x:-150px;--y:150px}.ac-celebrate-sparks i:nth-child(26){--x:150px;--y:155px}
+.ac-celebrate-sparks i:nth-child(27){--x:-60px;--y:-230px}.ac-celebrate-sparks i:nth-child(28){--x:60px;--y:-235px}
+.ac-celebrate-sparks i:nth-child(n+15){width:12px;height:12px;animation-delay:.45s}
+.ac-celebrate-boss .ac-celebrate-card{border:2px solid var(--sun);background:radial-gradient(circle at 50% 28%,rgba(255,194,75,.32),transparent 62%),var(--card);box-shadow:0 0 0 6px rgba(255,194,75,.12),0 30px 80px rgba(0,0,0,.6)}
+.ac-celebrate-boss .ac-celebrate-rays{background:repeating-conic-gradient(rgba(255,194,75,.26) 0 10deg,transparent 10deg 24deg);animation-duration:7s}
+.ac-celebrate-boss .ac-trophy-cup{animation:ac-pop-in .7s cubic-bezier(.3,1.6,.5,1) both,ac-cup-bounce 1.6s ease-in-out .8s infinite}
+.ac-celebrate-boss .ac-title{font-size:clamp(36px,7vw,52px);background:linear-gradient(100deg,#FFC24B,#F59234,#E5261C);-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes ac-cup-bounce{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-8px) rotate(-6deg)}60%{transform:translateY(0) rotate(5deg)}}
+@media (prefers-reduced-motion:reduce){
+  .ac-trophy-cup,.ac-world-stages li,.ac-celebrate-boss .ac-trophy-cup{animation:none}
+}

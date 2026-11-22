@@ -146,9 +146,9 @@ class TestTheSideBarAndTheHelpersCorner(AppTestCase):
     def test_no_gutter_down_the_right_for_armo_but_a_reserved_corner(self):
         css = read("omniarmor_app", "static", "app.css")
         self.assertNotIn("padding-right:max(42px", css)
-        corner = css[css.index("/* The helpers' own corner on a phone"):]
-        self.assertIn("body.has-tabs:not(.lesson-view):has(> .pilot-root, > .companion .companion-badge:not([hidden]))::after", corner)
-        self.assertIn("bottom:calc(64px + env(safe-area-inset-bottom))", corner)
+        # 1.18.0: the corner's framed box covered the page's last lines, so it is gone (tests/test_round8_fixes.py).
+        self.assertNotIn("::after{\n    content:\"\";position:fixed;z-index:51", css)
+        self.assertIn("/* The helpers' corner on a phone.", css)
         # Pilot's side room is left out on signed-in pages, kept on public ones.
         config = read("omniarmor_app", "static", "pilot-omniarmor.js")
         self.assertIn('gutter: document.body && document.body.classList.contains("has-tabs") ? false : ["main > .wrap"],', config)
@@ -261,7 +261,8 @@ class TestNoWayOutOfAKidsScreen(ProgressCase):
         self.assertNotIn("Sign out", result[result.index('<header class="topbar">'):result.index("</header>")])
 
     def test_the_grown_up_s_own_pages_keep_the_menu(self):
-        page = self.client.get("/app/academy/1").data.decode()
+        # 1.18.0: the learner's map is the kid's screen (no menu); the progress report is the grown-up's.
+        page = self.client.get("/app/academy/1/progress").data.decode()
         self.assertIn("data-nav-menu", page)
         self.assertIn("Sign out", page)
         self.assertNotIn("data-lockup-still", page)

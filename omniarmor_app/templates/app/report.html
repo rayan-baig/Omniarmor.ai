@@ -22,7 +22,7 @@
       <thead><tr><th scope="col">Check</th><th scope="col">Status</th><th scope="col">Reading</th><th scope="col">Due</th><th scope="col">Rule</th><th scope="col">Last updated</th></tr></thead>
       <tbody>
         {% for s in group.states %}
-          <tr>
+          <tr data-check="{{ url_for('app.industry', industry_id=group.industry.id) }}#rule-{{ s.rule.key }}"{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %}>
             <td>{{ s.rule.title }}</td>
             <td><span class="tag {{ s.level }}">{{ s.label }}</span></td>
             <td class="num" data-label="Reading">{{ s.shown_value or '—' }}</td>

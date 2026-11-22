@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Security and your data{% endblock %}
+{% block description %}Where OmniArmor keeps your data, how it is backed up, who can see a student's name, how to delete everything and who to write to, in plain words.{% endblock %}
+{% block content %}
+{#- 1.18.0: the trust page. Every line matches the Privacy page and what the code does today; the numbers come
+    from the settings (_rules_facts), like the Privacy page's. -#}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Trust · Last changed {{ facts.security_updated }}</p>
+    <h1>Security and your data</h1>
+    <p class="sub">What a school, a parent or a business owner usually asks first, answered plainly. The <a href="{{ url_for('public.privacy') }}">Privacy page</a> has every detail.</p>
+  </div>
+</div>
+<div class="plain" data-security-page>
+
+<h2 id="where">Where your data lives</h2>
+<ul>
+  <li>Everything you type into OmniArmor is kept in <strong>one database on one server</strong>, run for MTRX Horizyn by our hosting company. MTRX Horizyn makes OmniArmor and looks after that data.</li>
+  <li>Every page is sent over a secure connection (HTTPS), and browsers are told to use only the secure address. The sign-in cookie is sent only over that connection, and the page's own code can't read it.</li>
+  <li>Passwords are stored scrambled (hashed), so nobody can read them, not even us. Card numbers go straight to Stripe and never reach us.</li>
+  <li>Our pages, fonts and pictures all come from our own server. No ad, analytics or tracking company sees when you or a student opens a page.</li>
+  <li>Pilot, the optional AI helper, runs in your browser on your own AI key and talks to the AI company you chose. Our server never sees the key or the chat, and Pilot is never on a page a student uses.</li>
+</ul>
+
+<h2 id="backups">Backups</h2>
+<ul>
+  {% if facts.backup_keep > 0 %}
+  <li>The whole database is copied <strong>once a day</strong>. Each copy is checked before it is kept, and the newest {{ facts.backup_keep|plural('copy') }} are kept.</li>
+  {% else %}
+  <li>The whole database is copied <strong>once a day</strong>, and each copy is checked before it is kept.</li>
+  {% endif %}
+  <li>Autopilot, the part of OmniArmor that watches the service, makes a missed backup by itself and emails the people who run OmniArmor if backups keep failing or the disk runs low.</li>
+  <li>The backups are copies of the same database, kept by the same hosting company. They are there to bring OmniArmor back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
+</ul>
+
+<h2 id="students">Who can see a student's name</h2>
+<ul>
+  <li>A teacher adds students by <strong>first name or nickname only</strong>. We never ask for a student's last name, email, birthdate or photo, and students have no accounts or passwords.</li>
+  <li>The names can be seen by the grown-ups signed in to that school's workspace: the teacher, and any colleague the school invites. Nobody in another school or another workspace can.</li>
+  <li>A student who joins with a code sees only their own lessons. If the teacher turns the class leaderboard on (it starts off), classmates see each other's first name or nickname and lessons done, for that class only.</li>
+  <li>The one-page trial report for the school office shows totals only, never a name.</li>
+  <li>Pilot never reads the class list. A name goes to the teacher's AI company only if the teacher types it to add students.</li>
+  <li>The people at MTRX Horizyn who run OmniArmor can open the database when they need to fix something. They don't use it for anything else, and we never sell or share it for ads.</li>
+</ul>
+
+<h2 id="delete">How to delete it</h2>
+<ul>
+  <li><strong>One student:</strong> on the class page, the teacher removes them. Their progress goes with them, at once.</li>
+  <li><strong>A whole class:</strong> the teacher deletes the class on its page. Its students and their progress go too.</li>
+  <li><strong>One kid in a family:</strong> a grown-up opens the Academy, then Manage learners, then Remove.</li>
+  <li><strong>Everything:</strong> the workspace owner goes to Settings, then Delete workspace, and types the name. Every record, the audit trail, the reminder log, every class and every learner are deleted. (A paid plan is cancelled first.) Download your report and audit trail first if you need them.</li>
+  <li>Deleted means gone from the app right away. Copies can still sit in backups for the time above, and in the server logs for as long as our hosting company keeps them.</li>
+</ul>
+
+<h2 id="contact">Questions, or something looks wrong</h2>
+<p>Write to us at <a href="mailto:{{ facts.support_email }}" data-support-email>{{ facts.support_email }}</a>. Tell us the workspace's name and what you saw. If you think someone got into your account, change your password from the sign-in page ("Forgot your password?") and write to us straight away.</p>
+<p>We work hard to keep your data safe, but no website is perfectly safe, and we won't promise that nothing will ever go wrong. See also our <a href="{{ url_for('public.terms') }}">Terms</a> and <a href="{{ url_for('public.privacy') }}">Privacy page</a>.</p>
+</div>
+{% endblock %}

@@ -104,7 +104,8 @@
 </header>
 <main id="main" tabindex="-1">
   <div class="wrap">
-    {% if g.user and plan_access %}
+    {#- A kid's screen on a grown-up's device (1.18.0: the map too) has no plan banners: they are for grown-ups. -#}
+    {% if g.user and plan_access and not kid_screen %}
       {% set pa = plan_access %}
       {% if pa.read_only and pa.reason == 'paused' %}
         <div class="plan-banner paused no-print" data-paused-banner>
@@ -160,7 +161,7 @@
   <div class="wrap">
     <span>OmniArmor.ai · {{ SLOGAN }} · A product of MTRX Horizyn</span>
     <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
-    <nav aria-label="Rules"><a href="{{ url_for('public.help') }}">Help</a><a href="{{ url_for('public.terms') }}">Terms</a><a href="{{ url_for('public.privacy') }}">Privacy</a></nav>
+    <nav aria-label="Rules"><a href="{{ url_for('public.help') }}">Help</a><a href="{{ url_for('public.terms') }}">Terms</a><a href="{{ url_for('public.privacy') }}">Privacy</a><a href="{{ url_for('public.security') }}">Security and your data</a></nav>
   </div>
 </footer>
 {% endif %}
@@ -200,12 +201,21 @@
 {% set ep = request.endpoint or '' %}
 {% if lesson_view() %}
 {#- A lesson on a grown-up's device is the kid's screen: no grown-up tabs (Report, History, Reminders,
-    Settings) under it, only the way back to their map. -#}
-<nav class="tabbar lessonbar no-print" aria-label="Lesson" data-lessonbar>
+    Settings) under it, only the way back to their map. The map itself (1.18.0) has "Grown-up? Hold to exit":
+    a grown-up presses and holds it to go back to the learners (or the class); a quick tap only says to hold
+    (academy.js). Without the script it is a plain link. -#}
+<nav class="tabbar lessonbar no-print" aria-label="{{ 'Map' if ep == 'academy.level_map' else 'Lesson' }}" data-lessonbar>
+  {% if ep == 'academy.level_map' %}
+  <a class="tab tab-back tab-hold" href="{{ kid_exit_url() }}" data-hold-exit data-hold-hint="Keep holding to exit">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    <span data-hold-label>Grown-up? Hold to exit</span>
+  </a>
+  {% else %}
   <a class="tab tab-back" href="{{ url_for('academy.level_map', learner_id=request.view_args.learner_id) }}">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
     <span>Back to map</span>
   </a>
+  {% endif %}
 </nav>
 {% else %}
 <nav class="tabbar no-print" aria-label="Sections">

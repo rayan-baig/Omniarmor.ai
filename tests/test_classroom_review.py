@@ -567,7 +567,7 @@ class TestSecondReviewFixes(SchoolCase):
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.4\.0 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.4\.1 · ", name)
 
 
 if __name__ == "__main__":

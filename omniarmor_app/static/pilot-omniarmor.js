@@ -80,6 +80,15 @@
   // Words from the page, kept as plain words in Pilot's markdown.
   const words = (t) => String(t || "").replace(/[*_`[\]#<>|\\]/g, "").replace(/\s+/g, " ").trim();
   const count = (n, one, many) => `${n} ${n === 1 ? one : (many || `${one}s`)}`;
+  // A yearly price, said once: "$299 a year" stays as it is, "$299" gets " a year".
+  // "30, 7 and 1 day": the reminder days said as a person would (1.18.0; was "30, 7, 1 days").
+  const dayList = (days) => {
+    const d = (Array.isArray(days) ? days : []).filter((n) => Number.isInteger(n));
+    if (!d.length) return "";
+    const last = d[d.length - 1];
+    return `${d.length > 1 ? `${d.slice(0, -1).join(", ")} and ` : ""}${last} day${last === 1 ? "" : "s"}`;
+  };
+  const yearly = (price) => { const p = words(price); return !p ? "" : /\ba year\b/.test(p) ? p : `${p} a year`; };
   const all = (sel, under) => Array.from((under || document).querySelectorAll(sel) || []);
   const one = (sel, under) => (under || document).querySelector(sel);
   // An element's words, leaving out anything marked private (a person's name).
@@ -197,9 +206,17 @@
       const out = [`**${c.title}**: ${c.tag}`];
       const msg = said(one("p.msg", li) || one("p.sr", li));
       if (msg) out.push("", msg);
+      // "Why it matters" is cut from "If it's missed" (catalog.why_line): when one holds the other, the
+      // longer is said once (1.18.0: the same sentence used to show twice).
+      let matters = said(one(".why-line", li)).replace(/^Top \d+ · #?\d+\s*/, "").replace(/^Why this matters:\s*/, "");
+      let missed = why ? said(one("p", why)) : "";
+      const bare = (t) => t.toLowerCase().replace(/[.\s]+$/, "");
+      if (matters && missed && (bare(missed).startsWith(bare(matters)) || bare(matters).startsWith(bare(missed)))) {
+        missed = bare(missed).length >= bare(matters).length ? missed : matters;
+        matters = "";
+      }
       const facts2 = [["What it asks", said(one(".q", li))], ["Limit", said(one(".limits", li))], ["Due", c.due],
-        ["Why it matters", said(one(".why-line", li)).replace(/^Top \d+ · #?\d+\s*/, "").replace(/^Why this matters:\s*/, "")],
-        ["If it's missed", why ? said(one("p", why)) : ""], ["Rule and source", why ? said(one("p.mono", why)) : ""]];
+        ["Why it matters", matters], ["If it's missed", missed], ["Rule and source", why ? said(one("p.mono", why)) : ""]];
       out.push("", ...facts2.filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`));
       out.push("", STATUS.split("\n")[["BLOCKED", "WARNING", "CLEARED", "NONE"].indexOf(c.level in LEVEL_WORD ? c.level : "NONE")].replace(/^- /, "Status: "));
       out.push("", NOT_ADVICE, "", "To explain another check, scroll to it and press this again.");
@@ -260,11 +277,11 @@
   // A visitor's: what OmniArmor does, the free trial, and safety for students.
   function whatAnswer(f) {
     const x = f || {};
-    const days = (x.reminder_days || []).join(", ");
+    const days = dayList(x.reminder_days);
     return "OmniArmor keeps a small business's compliance checks in one place, so nothing slips past a deadline or a limit.\n\n"
       + `- **Starter checklists** for ${x.industries || "many"} industries (${x.checks || "hundreds of"} checks), the failures that cost each industry the most, with the rule each comes from.\n`
       + "- **Enter a date, a number or a yes-or-no answer once.** It counts the days every morning and shows each check as Cleared, Warning or Blocked.\n"
-      + `- **Reminder emails** to your team${days ? ` ${days} days before a due date,` : ""} on the day, and weekly while overdue.\n`
+      + `- **Reminder emails** to your team${days ? ` ${days} before a due date,` : ""} on the day, and weekly while overdue.\n`
       + "- **A report** to print or export for an inspector, auditor or insurer.\n\n"
       + `${x.trial_days ? `Free for ${x.trial_days} days, no card. ` : ""}[See a demo](/demo) or [find your industry](/industries).`;
   }
@@ -279,12 +296,12 @@
     + "- A student joins on a school device with a one-time join code, and sees only their own lessons.\n"
     + "- The class leaderboard starts off; the teacher can turn it on (first names and lessons done, this class only).\n"
     + "- The trial report for the school office shows totals only.\n- Pilot, this helper, is never on a student's page.\n\n"
-    + "[Read the privacy page](/privacy)";
+    + "[Security and your data](/security): where it's kept, backups, who can see a name and how to delete it. [The privacy page](/privacy)";
 
   // Short answers for page suggestions.
   function reminderAnswer(f) {
-    const days = ((f || {}).reminder_days || []).join(", ");
-    return `Once a day each person on the team gets one email, the daily digest, when a check is ${days ? `${days} days` : "close to"} from due, due today or overdue `
+    const days = dayList((f || {}).reminder_days);
+    return `Once a day each person on the team gets one email, the daily digest, when a check is ${days || "close to"} from due, due today or overdue `
       + "(then once a week while it stays overdue). A missed day is caught up. Checks counted in hours also send an alert at their warning point and when they become overdue.\n\n"
       + "Each person chooses their own emails in [Settings](/app/settings), and every email is kept under Reminders. [More in Help](/help#reminders)";
   }
@@ -296,8 +313,9 @@
   const DEMO_SAVED = "No. The demos use pretend data: nothing you do is saved and no emails go out. To keep your own checks, [start a free trial](/signup).";
   function plansAnswer(f) {
     const x = f || {};
-    return `- **${words(x.classroom) || "Classroom"}** (${words(x.classroom_price)} a year): ${words(x.classroom_summary)}\n`
-      + `- **${words(x.school) || "Whole school"}** (${words(x.school_price)} a year): ${words(x.school_summary)}\n\n[See the prices](/classrooms#price)`;
+    // The prices already say "a year" (plans.price_label): 1.18.0 stops "$299 a year a year".
+    return `- **${words(x.classroom) || "Classroom"}** (${yearly(x.classroom_price)}): ${words(x.classroom_summary)}\n`
+      + `- **${words(x.school) || "Whole school"}** (${yearly(x.school_price)}): ${words(x.school_summary)}\n\n[See the prices](/classrooms#price)`;
   }
   function lessonAnswer(f) {
     const x = f || {};
@@ -305,48 +323,179 @@
       + "after the first lesson of every world comes the Class Challenge, which earns a certificate. [Open the teacher guide](/classrooms/guide)";
   }
 
+  // ---------------------------------------------------------------- 1.18.0: every welcome button answers with no key
+
+  // "Which checklist fits me?": asks what kind of business it is, with a link to each trade's page.
+  function checklistAnswer(f) {
+    const x = f || {};
+    const list = (Array.isArray(x.trades) ? x.trades : []).filter((t) => t && typeof t.name === "string" && /^\/[\w/-]*$/.test(t.path || ""));
+    const links = list.slice(0, 12).map((t) => `- [${words(t.name)}](${t.path})`).join("\n");
+    return `**What kind of business is it?** Pick yours to see the checklists that fit it, what each one checks, and what OmniArmor doesn't cover:\n\n${links || "- [Every industry](/industries)"}\n\n`
+      + `Not there? [All ${x.industries || ""} industries](/industries) each have their own starter list of ${x.top_count ? "the checks that cost them the most" : "checks"}. `
+      + "You can pick more than one when you sign up. [Or see a demo](/demo) first.";
+  }
+
+  // "Which plan fits me?": the plans side by side, from plans.py's own names and prices.
+  function planFitAnswer(f) {
+    const x = f || {};
+    const school = who === "teacher" || schoolSide;
+    if (school) {
+      return `**For a class or a school, paid yearly:**\n\n${plansAnswer(x).replace(/\n\n\[See the prices\]\(\/classrooms#price\)$/, "")}\n\n`
+        + `Pick **${words(x.classroom) || "Classroom"}** for one class, **${words(x.school) || "Whole school"}** for every class and the school safety checklist. `
+        + `Both start with a free ${x.pilot_days || 30}-day trial for one class, no card. [See the prices](/classrooms#price)`;
+    }
+    const year = (y) => (y ? `, or ${words(y)}${x.free_label ? ` (${words(x.free_label)})` : ""}` : "");
+    return "**Two plans, one question:** do you want the Academy for your kids too?\n\n"
+      + `- **${words(x.pro) || "Pro"}** (${words(x.pro_price)}${year(x.pro_yearly)}): ${words(x.pro_summary)}.\n`
+      + `- **${words(x.plus) || "Plus"}** (${words(x.plus_price)}${year(x.plus_yearly)}): ${words(x.plus_summary)}.\n\n`
+      + `Pick **${words(x.pro) || "Pro"}** if you only need the checklist; **${words(x.plus) || "Plus"}** if someone in the family may run the business one day. `
+      + `${x.trial_days ? `Every plan starts with ${x.trial_days} days free, no card. ` : ""}`
+      + `Teaching a class? [The classroom plans](/classrooms#price) are yearly. [All the prices](/help#prices)`;
+  }
+
+  // "Explain this page": from its own headings and what it says it's for.
+  function explainPageAnswer() {
+    const main = one("main") || document.body;
+    const title = heading() || words(document.title);
+    const purpose = said(one(".page-head .sub, .hero p.lead, p.lead, p.sub, p.ac-lead", main));
+    const parts = all("main h2", main).map((h) => said(h)).filter((t) => t && t.length < 90);
+    const seen = new Set();
+    const uniq = parts.filter((t) => { const k = t.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 7);
+    const where = words(screenName());
+    const out = [`**${where && where !== words(document.title) ? where : (title || "This page")}**${title && where && !where.includes(title) ? `: ${title}` : ""}`];
+    if (purpose) out.push("", purpose);
+    if (uniq.length) out.push("", "**On this page:**", ...uniq.map((t) => `- ${t}`));
+    const c = pageCounts();
+    if (c) out.push("", `Right now: ${countsLine(c)}.`);
+    out.push("", who === "visitor" ? "[Read the help page](/help) for the common questions, or [see a demo](/demo)."
+      : "Ask me about anything you see here, or press another button above.");
+    return out.join("\n");
+  }
+
+  // Teacher's "Add students": straight to the class page's Add students box (focused), or a link to it.
+  function addStudentsAnswer() {
+    const box = one("form#add-students textarea");
+    if (box) {
+      setTimeout(() => {
+        try { window.Pilot.close(); } catch (_) { /* fine */ }
+        try { box.scrollIntoView({ block: "center" }); } catch (_) { /* old browser */ }
+        try { box.focus({ preventScroll: true }); } catch (_) { box.focus(); }
+      }, 60);
+      return "The **Add students** box is open on this page: type each student's first name or nickname, one on each line, then press **Add students**. "
+        + "No email, last name, birthdate or photo. Each student then gets a join code.";
+    }
+    const cls = classHere();
+    if (cls) return `[Open the Add students box${cls.name ? ` for ${words(cls.name)}` : ""}](/app/academy/classes/${cls.id}#add-students): type first names or nicknames, one on each line.`;
+    if (CLASSES.length) return `Which class? Each one's page has the Add students box:\n${classLinks("#add-students")}`;
+    return "[Add your class](/app/academy/classes#add-class) first: then its page has the Add students box, for first names or nicknames.";
+  }
+
+  // "Plan a week of lessons": a world a day for five days, from the Classroom track's worlds in order (the
+  // teacher guide's), each with its lessons, about how long they take and a question to talk about.
+  function weekAnswer(f) {
+    const x = f || {};
+    const worlds = (Array.isArray(x.class_plan) ? x.class_plan : []).filter((w) => w && typeof w.title === "string" && Number.isInteger(w.lessons) && w.lessons > 0);
+    const minutes = Number(x.lesson_minutes) || 3;
+    if (!worlds.length) return "[Open the teacher guide](/classrooms/guide): it lists every world in order, how long it takes and questions to talk about.";
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const out = ["**A first week: one world a day.** Play its lessons in one sitting or split them across the day, then talk about it together.", ""];
+    days.forEach((day, n) => {
+      const w = worlds[n];
+      if (!w) return;
+      out.push(`- **${day}: ${words(w.title)}.** ${count(w.lessons, "lesson")}, about ${w.lessons * minutes} minutes.${w.talk ? ` Talk: "${words(w.talk)}"` : ""}`);
+    });
+    out.push("", "The first lesson of each world opens the next one, so nobody gets stuck waiting. A student who misses a day catches up on a school device. "
+      + "[The teacher guide](/classrooms/guide) has every world, in order, with more questions.");
+    return out.join("\n");
+  }
+
+  // "Summarise my report": from the report's own counts and rows (or this page's), no AI.
+  function reportAnswer() {
+    const rows = all("[data-report-table] tbody tr[data-check]").map((tr) => {
+      const tag = one(".tag", tr);
+      const level = ["BLOCKED", "WARNING", "CLEARED", "NONE"].find((l) => tag && tag.classList && tag.classList.contains(l)) || "NONE";
+      const cells = all("td", tr);
+      const days = tr.getAttribute("data-days");
+      return { level, title: said(cells[0]), due: said(cells[3]).replace(/^—$/, ""), href: tr.getAttribute("data-check") || "",
+        days: days === null || days === "" ? null : Number(days) };
+    }).filter((r) => r.title);
+    if (!rows.length) {
+      const c = pageCounts();
+      return `${c ? `Right now: ${countsLine(c)}.\n\n` : ""}[Open the report](/app/report) and press this again for a summary of every check, with what to fix first.`;
+    }
+    const c = { BLOCKED: 0, WARNING: 0, CLEARED: 0, NONE: 0 };
+    for (const r of rows) c[r.level] += 1;
+    const link = (r) => linked(r.title, /^\/(?![/\\])\S*$/.test(r.href) ? r.href : "");
+    const first = rows.filter((r) => r.level === "BLOCKED").sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+    const warn = rows.filter((r) => r.level === "WARNING").sort((a, b) => (a.days ?? 9e9) - (b.days ?? 9e9));
+    const empty = rows.filter((r) => r.level === "NONE");
+    const out = [`**Your report: ${count(rows.length, "check")}.** ${countsLine(c)}.`];
+    const when = (r) => (!r.due ? "" : r.days !== null && r.days < 0 ? `: overdue, it was due ${r.due}` : `: due ${r.due}`);
+    if (first.length) out.push("", "**Fix first (blocked):**", ...first.slice(0, 4).map((r) => `- ${link(r)}${when(r)}`));
+    if (warn.length) out.push("", "**Next (close to a limit or a date):**", ...warn.slice(0, 3).map((r) => `- ${link(r)}${when(r)}`));
+    if (!first.length && !warn.length) out.push("", "Nothing is blocked or close to a limit. Well kept!");
+    if (empty.length) out.push("", `${count(empty.length, "check")} still ${empty.length === 1 ? "has" : "have"} no reading: start with ${link(empty[0])}.`);
+    out.push("", "For an inspector, press **Print** or **Export CSV** at the top of the report.");
+    return out.join("\n");
+  }
+
+  // Short answers for the other page suggestions.
+  function demoAnswer() {
+    return "Two demos, both pretend and nothing saved:\n\n"
+      + "- [The business demo](/demo/business): a restaurant with a few checks done, one overdue, a reminder email and the report. Or one for a [salon](/demo/salon), [tattoo studio](/demo/tattoo), [gym](/demo/gym) or [shop](/demo/shop).\n"
+      + "- [The classroom demo](/demo/classroom): a class with its progress, join codes and a sample lesson.\n\nA demo lasts a while and then closes; open it again any time.";
+  }
+  const HISTORY = "History is the audit trail: every check saved, every reading and date, and every team or settings change, each with who made it and when. "
+    + "It's the record an inspector asks for. Nothing in it can be edited. Press **Export CSV** on the History page for a spreadsheet of it all.";
+  const HISTORY_EXPORT = "On the [History](/app/audit) page, press **Export CSV** at the top: you get every change, with who made it and when, as a spreadsheet.";
+  const REMINDER_HOW = "Reminders come by themselves from each check's due date: give a check its date (when it was last done, or when it expires) on its checklist, "
+    + "and the team is emailed before it's due, on the day, and each week while it's overdue. Each person picks their own emails in [Settings](/app/settings).";
+  const INVITE = "In [Settings](/app/settings), under the team, press **Create invite link** and send the link to your colleague: it works once, for a few days. "
+    + "They sign up with it and join this workspace. Only the owner can remove someone.";
+  const EMAILS = "In [Settings](/app/settings), under **Your reminder emails**, choose the daily digest, the time-limit alerts, both or neither. Each person chooses their own; every reminder email links back there.";
+
   // A page suggestion: an AI prompt (words), or an answer given at once.
   const C = (label, what) => (typeof what === "string" ? { label, prompt: what } : { label, ...what });
   const A = (fn) => ({ answer: (ctx) => fn((ctx && ctx.facts) || {}) });
   function pageChips() {
     if (path === "/") return [C("What does OmniArmor do?", A(whatAnswer)),
-      C("Which plan fits me?", "Which OmniArmor plan would fit me? Ask me one or two questions first."),
+      C("Which plan fits me?", A(planFitAnswer)),
       C("How do reminders work?", A(reminderAnswer))];
     if (path === "/industries" || path.startsWith("/industries/") || path.startsWith("/for/")) {
-      return [C("Which checklist fits me?", "Which OmniArmor checklist fits my business? Ask me what kind of business it is first."),
+      return [C("Which checklist fits me?", A(checklistAnswer)),
         C("What's a check?", { answer: CHECK }),
         C("Is this legal advice?", { answer: ADVICE })];
     }
     if (path === "/classrooms") return [C("How does the free trial work?", A(trialAnswer)),
       C("Is it safe for students?", { answer: SAFE }),
       C("Classroom or Whole school?", A(plansAnswer))];
-    if (path === "/classrooms/guide") return [C("Plan a week", "Help me plan one world a week for my class."),
+    if (path === "/classrooms/guide") return [C("Plan a week", A(weekAnswer)),
       C("How long is a lesson?", A(lessonAnswer))];
-    if (path === "/demo") return [C("What can I try?", "What can I try in the demos?"), C("Is anything saved?", { answer: DEMO_SAVED })];
+    if (path === "/demo") return [C("What can I try?", { answer: demoAnswer }), C("Is anything saved?", { answer: DEMO_SAVED })];
     // A teacher's pages: OmniArmor's own suggestions, about their classes. The
     // school checklist's "What's overdue?" only on Whole school.
     if (path === "/app/academy/classes" || /^\/app\/academy\/classes\/\d+(\/join-codes)?$/.test(path)) {
-      return [C("Add students", "Add students to my class."),
+      return [C("Add students", { answer: addStudentsAnswer }),
         C("How do join codes work?", A(joinAnswer)),
         facts.school_checklist ? C("What's overdue?", { answer: dueAnswer })
-          : C("Plan a week", "Help me plan one world a week for my class.")];
+          : C("Plan a week", A(weekAnswer))];
     }
     if (path === "/app" || path.startsWith("/app/industry/")) return [C("What's overdue?", { answer: dueAnswer }),
       C("Explain a check", { answer: explainAnswer }),
       C("What do the colours mean?", { answer: colourAnswer })];
-    if (path === "/app/report") return [C("Summarise my report", "Summarise my report."),
+    if (path === "/app/report") return [C("Summarise my report", { answer: reportAnswer }),
       C("What's overdue?", { answer: dueAnswer }), C("How do I export it?", { answer: EXPORT })];
-    if (path === "/app/audit") return [C("What's in History?", "What does the History page record?"), C("Export it", "How do I export the audit trail?")];
+    if (path === "/app/audit") return [C("What's in History?", { answer: HISTORY }), C("Export it", { answer: HISTORY_EXPORT })];
     if (path === "/app/notifications") return [C("When do reminders go out?", A(reminderAnswer)),
-      C("Add a reminder", "Add a reminder for one of my checks.")];
+      C("Add a reminder", { answer: REMINDER_HOW })];
     if ((path === "/app/settings" || path === "/app/plan") && who === "teacher" && !facts.school_checklist) {
       return [C("Classroom or Whole school?", A(plansAnswer)),
-        C("Invite a colleague", "How do I invite another teacher to our school's workspace?")];
+        C("Invite a colleague", { answer: INVITE })];
     }
-    if (path === "/app/settings" || path === "/app/plan") return [C("Choose my emails", "How do I choose which reminder emails I get?"),
-      C("What do the plans include?", "What does each plan include?")];
+    if (path === "/app/settings" || path === "/app/plan") return [C("Choose my emails", { answer: EMAILS }),
+      C("What do the plans include?", A(planFitAnswer))];
     // Anywhere else: OmniArmor's own suggestions for who is here.
-    if (who === "teacher") return [C("Add students", "Add students to my class."),
+    if (who === "teacher") return [C("Add students", { answer: addStudentsAnswer }),
       C("How do join codes work?", A(joinAnswer))];
     if (who === "business") return [C("What's overdue?", { answer: dueAnswer }),
       C("How do reminders work?", A(reminderAnswer))];
@@ -373,8 +522,10 @@
   // are sheets of paper (copy), not a chart. The key pill is the welcome's
   // one ask for a key (core 1.3.0 shows no key card beside it).
   // Core 1.4.0 (OmniArmor 1.17.0): the pills that need no AI work with no key:
-  // an answer from this page and the site's facts, or a link. Summing up a
-  // report, adding students and planning lessons still need the AI.
+  // an answer from this page and the site's facts, or a link. 1.18.0: every
+  // welcome button does (summing up the report, adding students, planning a
+  // week, which checklist or plan fits, explaining the page); only the key
+  // pill and typed questions need the AI.
   const P = (icon, label, action, send) => ({ icon, label, action, send: Boolean(send) });
   const ANSWER = (icon, label, answer) => ({ icon, label, answer });
   const LINK = (icon, label, link) => ({ icon, label, link });
@@ -385,15 +536,15 @@
       tagline: "Your checklist helper",
       pills: [ANSWER("bolt", "What's due or overdue?", dueAnswer),
         ANSWER("help", "Explain this check", explainAnswer),
-        P("bars", "Summarise my report", "Summarise my report and tell me what to fix first.", true),
+        ANSWER("bars", "Summarise my report", reportAnswer),
         ANSWER("spark", "What does this colour mean?", colourAnswer),
         KEY],
     },
     teacher: {
       tagline: "Your classroom helper",
-      pills: [P("chat", "Add students", "Add these students to my class (first names only): "),
+      pills: [ANSWER("chat", "Add students", addStudentsAnswer),
         ANSWER("help", "How do join codes work?", (ctx) => joinAnswer(ctx && ctx.facts)),
-        P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
+        ANSWER("spark", "Plan a week of lessons", (ctx) => weekAnswer(ctx && ctx.facts)),
         LINK("copy", "Print certificates", certificatesLink()),
         KEY],
     },
@@ -401,16 +552,16 @@
       tagline: "Your OmniArmor helper",
       pills: [ANSWER("help", "Is it safe for students?", SAFE),
         ANSWER("bolt", "How does the free trial work?", (ctx) => trialAnswer(ctx && ctx.facts)),
-        P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
-        P("bars", "Explain this page", "explain-screen"),
+        ANSWER("spark", "Plan a week of lessons", (ctx) => weekAnswer(ctx && ctx.facts)),
+        ANSWER("bars", "Explain this page", explainPageAnswer),
         KEY],
     },
     visitor: {
       tagline: "Your OmniArmor helper",
       pills: [ANSWER("chat", "What does OmniArmor do?", (ctx) => whatAnswer(ctx && ctx.facts)),
-        P("help", "Which checklist fits me?", "Which OmniArmor checklist fits my business? Ask me what kind of business it is first.", true),
+        ANSWER("help", "Which checklist fits me?", (ctx) => checklistAnswer(ctx && ctx.facts)),
         LINK("bolt", "See the prices", "/help#prices"),
-        P("bars", "Explain this page", "explain-screen"),
+        ANSWER("bars", "Explain this page", explainPageAnswer),
         KEY],
     },
   };
@@ -446,10 +597,18 @@
     // Tucked away, the robot shrinks into its corner instead of hanging off
     // the screen's edge (on a phone, in the one corner: app.css).
     keepInViewport: true,
+    // Core 1.4.1 fades the phone robot out rather than cover a link or a bar that stays put. On a signed-in
+    // page its corner is raised above the tab bar (app.css), but the core measures the tucked robot at the
+    // screen's edge, over the tab bar, so it would hide it on every page once scrolled: there it keeps 1.4.0's
+    // "tuck where it covers least" (and app.css steps it to the edge). Public pages use 1.4.1's rule.
+    hideWhenCrowded: !(document.body && document.body.classList.contains("has-tabs")),
     // No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs
     // (Armo's bubble is a helper's, in yieldTo below), and the core already
     // steps back for anything covering the whole screen.
     storagePrefix: "omniarmor-pilot",
+    // 1.18.0: OmniArmor's own colours for the window (app.css, ".pilot-root.omni-pilot"): warm black with the
+    // orange-to-red edge, not the core's navy and violet. Layout and words stay the core's.
+    themeClass: "omni-pilot",
     pack: d.pack || "",
     // Exactly the hosts the security policy lets a browser reach for an
     // OpenAI-compatible API (pilot.COMPATIBLE_HOSTS and the person's own computer).
@@ -483,7 +642,10 @@
     // page's words still let the robot touch them.
     avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
       ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav", ".lockup",
-      ".pick", "[data-teacher-guide] p", "[data-teacher-guide] li", "[data-teacher-guide] h2", "[data-teacher-guide] h3"],
+      ".pick", "[data-teacher-guide] p", "[data-teacher-guide] li", "[data-teacher-guide] h2", "[data-teacher-guide] h3",
+      // 1.18.0: the app's picture under the headline (its Blocked and Warning rows) and a folded line like the
+      // join codes page's "Lost the slips?": the robot steps aside rather than sit on them.
+      ".hero-shot", "details > summary"],
     // On a phone the robot stays in the bottom-right corner, the one corner
     // it shares with Armo, and only one of them shows (app.css, "One helper,
     // one corner"); tucked away it shrinks there, never off the edge. The

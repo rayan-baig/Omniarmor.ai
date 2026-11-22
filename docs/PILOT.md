@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.4.0**, since OmniArmor 1.17.0) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.4.1**, since OmniArmor 1.18.0; 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -131,12 +131,28 @@ pill is the welcome's one ask for a key (no key card beside it), the key setting
 welcome's note is one line, `keyNoteShort` "AI keys are for grown-ups (18+)." (the full `keyNote` stays
 beside the key settings and in help).
 
+**Core 1.4.1** (OmniArmor 1.18.0, MTRX Horizyn f221ffc, the thirteen files byte for byte): the welcome's pills
+come back as a compact row under an answer of the app's own; long answers open at their start; an app's own answer
+is never sent to the AI provider (a stand-in keeps the turns); on a phone the robot fades out (`.pilot-away`) rather
+than cover a link, a button, a bar that stays put or something in `avoid`, and keeps one bottom corner while the
+page is scrolled. Pilot's tag also gives the robot's pictures at the sizes they are drawn (`data-robot-set`,
+`data-rest-body-set`, `data-rest-head-set`, `data-rest-eyes-set`; `pilot-robot-112/168/176.webp`,
+`pilot-rest-*-112/168.webp`), so it is crisp on phones.
+
+**OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
+and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
+edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of
+its own. The core's files are unchanged.
+
 **Armo and Pilot on a phone** (1.15.0): Armo's bubble has **Ask Pilot**, which opens Pilot's window
 (`window.Pilot.open()`), since Pilot steps back while Armo's badge has a count. Armo keeps clear of the
 page the way Pilot does: `armo.js` (`keepClear`) checks a grid of points under him for controls, status
 tags, notices and words, and shrinks him into his corner (`armo-tucked`) where he would cover one; on a
-phone (1.16.0) he and Pilot share a reserved corner above the tab bar instead, so the column stays centred
-and he keeps his size there. On a computer (1100 px and wider) the
+phone (1.16.0) he and Pilot share the corner above the tab bar instead, so the column stays centred. 1.18.0
+took away the framed box 1.16.0 drew behind that corner (it covered the page's last lines): the helper sits
+whole there only while the corner is free, and steps to the screen's edge (a slice of it still showing) when
+it is busy. The picture under the home page's headline and a folded line like "Lost the slips?" are on the
+`avoid` list. On a computer (1100 px and wider) the
 sections are a side bar, so Pilot's corners there use the core's own 16 px gap.
 
 **Answers with no AI key** (1.17.0, core 1.4.0's pill actions). The pills and suggestions that need no AI
@@ -153,16 +169,26 @@ and the facts on the tag, or a `link`.
 | What does OmniArmor do? / See the prices | an answer from the plans' facts, with links to the demo and the industries / a link to the prices on the Help page |
 | Is it safe for students? / How does the free trial work? | answers from the site's own facts, with links to the privacy page and the classroom prices |
 
+**1.18.0: every welcome button answers with no key**; only "Add my AI key" and typed questions need the AI.
+
+| Pill or suggestion | What it does with no key (1.18.0) |
+|---|---|
+| Which checklist fits me? | asks what kind of business it is, with a link to each trade's page (`trades` on the tag: the industry list's lead trades and the other trade pages) and to every industry |
+| Which plan fits me? (and "What do the plans include?") | the plans side by side from the tag's facts (`pro`, `pro_price`, `pro_yearly`, `pro_summary`, the same for Plus; for a teacher or the schools pages, Classroom and Whole school), and which fits whom |
+| Explain this page | the screen's name, its heading, what it says it is for (`.page-head .sub`, the lead) and its section headings, never anything marked private |
+| Add students (a teacher's) | on a class page: Pilot closes and the Add students box gets the cursor; elsewhere a link to `/app/academy/classes/<id>#add-students` (`page.js` puts the cursor in a form reached by its `#add-…` address) or to each class's, or to add a class first |
+| Plan a week of lessons (and "Plan a week") | five days, a world a day, from the Classroom track in order (`class_plan` on the tag: each world's title, lessons and first talk question, from `academy.class_guide()`), with minutes and a link to the teacher guide |
+| Summarise my report | on the report: every check counted, the blocked ones to fix first and the next ones close to a limit (each a link: the report's rows carry `data-check` and `data-days`), and the first with no reading; elsewhere a link to the report |
+| What's in History? / Export it / Add a reminder / Invite a colleague / Choose my emails / What can I try? | short answers with links |
+
 Some page suggestions answer too (reminders, What's a check?, Is this legal advice?, exporting the report,
 Classroom or Whole school, lesson length, Is anything saved in the demo). An answer never reads anything
 marked `data-pilot-private` and never lists a student: the class page is counted (`data-total`,
 `data-codes-missing`), never its table. Under an answer, "Want more? Add your AI key to ask anything."
-(`answerMore`) offers the key until one is added. Summarise my report, Add students, Plan a week of lessons,
-Which checklist fits me? and Explain this page still use the AI.
+(`answerMore`) offers the key until one is added. The core adds its own "Summarise this" suggestion once a
+chat has started; that one uses the AI (scratchpad note for core 1.4.1).
 
-With a key, the rest are sent at once (each has a tool or the pack's answer); "Add students" puts a prompt
-in the box to finish (first names only). "Explain this page" is
-the core's `explain-screen` and "Add my AI key" opens key settings. The taglines fit on one line at
+"Add my AI key" opens key settings. The taglines fit on one line at
 320 px. A pill pressed before there is a key stays waiting in the box and is sent once a key is saved (the
 core). The picture and video key sections are hidden (`hideKeySections`): Pilot here has no use for them.
 

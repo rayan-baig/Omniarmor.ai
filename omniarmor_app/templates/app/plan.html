@@ -118,7 +118,7 @@
     <p class="plan-price">{{ b.price }}, through CyberLogix</p>
     <ul>
       <li>CyberLogix, MTRX Horizyn's fridge and freezer alarm app, fills in your temperature checks</li>
-      <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while CyberLogix sends signed reports (one in the last {{ b.fresh_days }} days)</li>
+      <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while CyberLogix sends signed reports (one in the last {{ b.fresh_days|plural('day') }})</li>
       <li>If they stop, {{ b.includes.name }} stays on for {{ b.grace_days }} more days with a warning, then the usual rules apply</li>
       <li>Add the Academy with {{ facts.plus.name }} for {{ b.upgrade_price }}, the difference{% if facts.yearly.bundle_upgrade %}, or {{ b.upgrade_yearly_short }} paid yearly{% endif %}</li>
     </ul>

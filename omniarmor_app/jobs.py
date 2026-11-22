@@ -28,6 +28,7 @@ from .db import connect, iso, migrate, now_iso, utcnow
 from .notify import notify
 from .reminders import run_clock_alerts, run_reminders
 from .tracking import local_date
+from .words import plural
 
 log = logging.getLogger("omniarmor.jobs")
 CHECK_EVERY_SECONDS = 600   # the daily job's check and Autopilot
@@ -595,10 +596,10 @@ def register_cli(app):
         click.echo(f"Demo workspace ready: {facts['business']} ({' and '.join(facts['industries'])}), all made up.")
         click.echo(f"  Database: {cfg['DATABASE']}")
         click.echo(f"  Checks: {checks['done']} done, {checks['soon']} coming due, {checks['overdue']} overdue,"
-                   f" {checks['empty']} without a reading. Audit trail: {facts['audit_rows']} entries.")
+                   f" {checks['empty']} without a reading. Audit trail: {plural(facts['audit_rows'], 'entry')}.")
         for kid in facts["learners"]:
             cert = f", certificate: {kid['certificate']}" if kid["certificate"] else ""
-            click.echo(f"  Academy: {kid['nickname']}, {kid['levels']} levels passed{cert}")
+            click.echo(f"  Academy: {kid['nickname']}, {plural(kid['levels'], 'level')} passed{cert}")
         click.echo(f"  Reminder digests kept in Reminders (not sent): {facts['digests']}")
         click.echo(f"  Autopilot: {facts['autopilot']}")
         click.echo("")

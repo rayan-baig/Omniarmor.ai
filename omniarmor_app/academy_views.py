@@ -32,13 +32,32 @@ kids = Blueprint("kids", __name__, url_prefix="/kids")
 # practice and a duel. On a grown-up's device they are the kid's screens, so
 # base.html shows only "Back to map" under them, not the grown-up tab bar.
 LESSON_ENDPOINTS = frozenset({"academy.world_page", "academy.play", "academy.practice", "academy.duel"})
+# 1.18.0: the learner's map, and the kid's pages it leads to (friends, their
+# class, their certificate, their track), are the kid's screens too: no
+# grown-up tab bar, Menu or plan banners. The map's own bar is "Grown-up? Hold
+# to exit" (back to the learners, or the class); the others' is "Back to map".
+KID_SCREEN_ENDPOINTS = LESSON_ENDPOINTS | {"academy.level_map", "academy.friends", "academy.certificate",
+                                          "academy.choose_track", "classes.my_class"}
 
 
 def lesson_view():
-    """Whether this page is a learner's lesson screen seen on a grown-up's
-    device (a kid's own device has no tab bar at all)."""
-    return (g.get("user") is not None and request.endpoint in LESSON_ENDPOINTS
+    """Whether this page is one of a learner's own screens (KID_SCREEN_ENDPOINTS)
+    seen on a grown-up's device (a kid's own device has no tab bar at all)."""
+    return (g.get("user") is not None and request.endpoint in KID_SCREEN_ENDPOINTS
             and "learner_id" in (request.view_args or {}))
+
+
+def kid_exit_url():
+    """Where "Grown-up? Hold to exit" on a learner's map goes: their class's
+    page for a student, the family's learners otherwise."""
+    learner_id = (request.view_args or {}).get("learner_id")
+    row = None
+    if g.get("org") is not None and isinstance(learner_id, int) and 0 <= learner_id <= MAX_ID:
+        row = get_db().execute("SELECT class_id FROM learners WHERE id = ? AND org_id = ?",
+                               (learner_id, g.org["id"])).fetchone()
+    if row is not None and row["class_id"]:
+        return url_for("classes.class_page", class_id=row["class_id"])
+    return url_for("academy.home")
 JOIN_CODE_DAYS = 7
 FAMILY_TRACKS = {t.key for t in academy.TRACK_LIST}   # the tracks a family's learner can pick
 DAILY_GOAL = 3          # levels a day for the daily goal
@@ -240,7 +259,7 @@ def _remember(conn, learner_id, results):
         same = cards.get(q.prompt, [])
         if not r["right"]:
             data = json.dumps({"prompt": q.prompt, "options": q.options, "answer": q.answer,
-                               "explain": q.explain, "kind": q.kind})
+                               "explain": q.explain, "kind": q.kind, "parts": q.parts})
             card = next((c for c in same if c["qkey"] == key), same[0] if same else None)
             if card is None:
                 conn.execute("INSERT INTO learner_mistakes (learner_id, qkey, question, misses, streak, due_at)"
@@ -638,8 +657,24 @@ def play(learner_id, world_number, stage):
     if after["certificate"] and after["certificate"] != before["certificate"]:
         usage.count(conn, "certificates")
     next_stage = stage + 1 if stage < t.stages(w) else None
+    # 1.18.0: the last stage of a world passed for the first time clears the
+    # world: its own celebration, with a trophy, the learner's picture and the
+    # stars of every stage (bigger again for a boss round).
+    world_clear = None
+    if passed and not was_passed and next_stage is None and w.kind != "final":
+        now = _progress(learner_id, t)
+        best = [(now.get(academy.level_id(t, w.number, n)) or {"best_stars": 0})["best_stars"]
+                for n in range(1, t.stages(w) + 1)]
+        if all(b >= 1 for b in best):
+            order = [x.number for x in t.topic_worlds]
+            spot = order.index(w.number) + 1 if w.number in order else None
+            following = order[spot] if spot is not None and spot < len(order) else None
+            world_clear = {"stages": best, "stars": sum(best), "most": 3 * len(best),
+                           "next": (academy.world_for(t, following) if following
+                                    else academy.world_for(t, academy.FINAL_WORLD.number) if spot is not None else None)}
     return render_template(
         "academy/result.html", learner=learner, world=w, stage=stage, results=results, score=score,
+        world_clear=world_clear, boss=academy.is_boss(t, w, stage),
         total=len(questions), earned_stars=stars, passed=passed, needed=needed, next_stage=next_stage,
         first_clear=passed and not was_passed, avatars=academy.AVATARS, summary=after,
         new_rank=after["rank"] if after["rank"] != before["rank"] else None,
@@ -749,7 +784,11 @@ def practice(learner_id):
 
 def _stored_question(row):
     data = json.loads(row["question"])
-    return academy.Question(data["prompt"], data["options"], data["answer"], data["explain"], data.get("kind", "choice"))
+    kind = data.get("kind", "choice")
+    parts = data.get("parts") if isinstance(data.get("parts"), dict) else None
+    if kind in ("match", "sort") and parts is None:
+        kind = "choice"   # a game's pieces are missing: still answerable from its options
+    return academy.Question(data["prompt"], data["options"], data["answer"], data["explain"], kind, parts=parts)
 
 
 @bp.route("/<int:learner_id>/certificate")

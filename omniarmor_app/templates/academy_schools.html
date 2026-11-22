@@ -8,7 +8,7 @@
   <p class="eyebrow">For schools and teachers</p>
   <p class="eyebrow" data-grades>{{ facts.grades }} · {{ facts.ages }}</p>
   <h1><span class="blend-text">How a business runs,</span> one short lesson at a time.</h1>
-  <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety. Your class learns by running a pretend lemonade stand, {{ facts.class_business }}. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days }} days, no card needed.</p>
+  <p class="lead">The Future Owner Academy is a game-like course for kids: money, customers, teamwork, leading, rules and safety. Your class learns by running a pretend lemonade stand, {{ facts.class_business }}. Run it for a whole class or an entrepreneurship club. Try it free for {{ facts.pilot_days|plural('day') }}, no card needed.</p>
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free trial</a>
     <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow" data-demo-link>See the classroom demo</a>
@@ -58,7 +58,7 @@
 <div class="plans" data-classroom-plans>
   <div data-plan="pilot">
     <p class="eyebrow">Free trial</p>
-    <p><b>{{ facts.pilot_days }} days free</b>: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and the whole Academy. No card needed. One pilot per account.</p>
+    <p><b>{{ facts.pilot_days|plural('day') }} free</b>: {{ facts.pilot_classes }} class of up to {{ facts.class_size }} students and the whole Academy. No card needed. One pilot per account.</p>
   </div>
   {% for p in facts.plans %}
     <div data-plan="{{ p.key }}">

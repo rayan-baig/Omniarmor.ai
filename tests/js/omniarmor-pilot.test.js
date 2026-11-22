@@ -380,10 +380,9 @@ test("1.14.0 welcome: a business owner gets their checklist's five pills and tag
   // Every pill survives the core's cleaning as given: a known icon, a prompt, a built-in or (1.17.0) an answer.
   assert.deepEqual(pills.map((p) => p.icon), c.plain.welcomePills.map((p) => p.icon));
   // 1.17.0 (core 1.4.0): what's due, explain this check and the colours answer at once with no key;
-  // summing up the report still needs the AI.
-  assert.deepEqual([...c.welcomePills].map((p) => typeof p.answer), ["function", "function", "undefined", "function", "undefined"]);
-  assert.deepEqual(pills.map((p) => [p.builtin, p.send]), [[false, false], [false, false], [false, true], [false, false], [true, false]]);
-  assert.equal(pills[2].action, "Summarise my report and tell me what to fix first.");
+  // 1.18.0: summing up the report too. Only the key pill is left.
+  assert.deepEqual([...c.welcomePills].map((p) => typeof p.answer), ["function", "function", "function", "function", "undefined"]);
+  assert.deepEqual(pills.map((p) => [p.builtin, p.send]), [[false, false], [false, false], [false, false], [false, false], [true, false]]);
   assert.equal(pills[4].action, "settings");
 });
 
@@ -393,10 +392,10 @@ test("1.14.0 welcome: a teacher gets their class's five pills and tagline, on ev
     assert.equal(c.tagline, "Your classroom helper", where);
     assert.deepEqual(labels(c), ["Add students", "How do join codes work?", "Plan a week of lessons", "Print certificates", "Add my AI key"], where);
   }
-  const pills = cleaned(mountFor("teacher", "/app/academy/classes").welcomePills);
-  // Adding students is a prompt to finish (first names only), never sent on its own.
-  assert.equal(pills[0].send, false);
-  assert.match(pills[0].action, /first names only\): $/);
+  // 1.18.0: adding students and planning a week answer with no key too (the box, the five days).
+  const given = [...mountFor("teacher", "/app/academy/classes").welcomePills];
+  assert.deepEqual(given.map((p) => typeof p.answer), ["function", "function", "function", "undefined", "undefined"]);
+  assert.equal(typeof given[3].link, "string");
 });
 
 test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on (1.15.0: under \"Your OmniArmor helper\")", () => {
@@ -508,10 +507,11 @@ function dress(node) {
 }
 function parts(compound) {
   const out = { tag: "", cls: [], attr: [], not: [] };
-  const re = /^([a-z0-9]+)|\.([\w-]+)|\[([\w-]+)(?:(\^?=)'?([^'\]]*)'?)?\]|:not\(([^)]*\)?)\)/gi;
+  const re = /^([a-z0-9]+)|\.([\w-]+)|\[([\w-]+)(?:(\^?=)'?([^'\]]*)'?)?\]|:not\(([^)]*\)?)\)|#([\w-]+)/gi;
   let m;
   while ((m = re.exec(compound))) {
-    if (m[1]) out.tag = m[1].toUpperCase();
+    if (m[7]) out.attr.push(["id", "=", m[7]]);
+    else if (m[1]) out.tag = m[1].toUpperCase();
     else if (m[2]) out.cls.push(m[2]);
     else if (m[3]) out.attr.push([m[3], m[4], m[5]]);
     else if (m[6]) out.not.push(parts(m[6]));
@@ -530,6 +530,15 @@ function matchPart(node, p, classes) {
   return !p.not.some((n) => node.matches(n));
 }
 function select(root, sel) {
+  // "a, b": every element either finds, in page order (1.18.0).
+  const list = sel.split(/,(?![^(]*\))/);
+  if (list.length > 1) {
+    const hits = new Set(list.flatMap((one) => select(root, one)));
+    const order = [];
+    const walk = (node) => { for (const k of node.kids) if (k.tag) { if (hits.has(k)) order.push(k); walk(k); } };
+    walk(root);
+    return order;
+  }
   const steps = sel.trim().split(/\s+(?![^(]*\))/).map(parts);
   const found = [];
   const walk = (node) => {
@@ -558,8 +567,10 @@ function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [
     classes: JSON.stringify(classes), checklists: JSON.stringify(checklists) };
   const body = page || h("main");
   const sent = [];
+  const closed = [];
   vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
-    window: { Pilot: { mount: (c) => { given = c; return true; }, store }, location: { pathname, hash }, innerHeight: 800,
+    setTimeout: (fn) => fn(),
+    window: { Pilot: { mount: (c) => { given = c; return true; }, store, close: () => closed.push(true) }, location: { pathname, hash }, innerHeight: 800,
       sessionStorage: { getItem: () => null, setItem() {} }, fetch: (...a) => { sent.push(a); throw new Error("no network"); } },
     document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: (s) => body.querySelector(s),
       querySelectorAll: (s) => body.querySelectorAll(s) },
@@ -571,7 +582,7 @@ function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [
     const p = pill(label) || [...given.chips()].find((c) => c.label === label);
     return typeof p.answer === "function" ? p.answer(ctx) : p.answer;
   };
-  return { ...given, pill, answer, sent };
+  return { ...given, pill, answer, sent, closed };
 }
 
 const Render = require(core("pilot-render.js"));
@@ -698,16 +709,16 @@ test("1.17.0: a teacher's join codes answer counts, never names, and goes to tha
   assert.equal(several.pill("Print certificates").link, "/app/academy/classes");
   assert.deepEqual(linksIn(several.answer("How do join codes work?")), ["/app/academy/classes/12/join-codes", "/app/academy/classes/14/join-codes"]);
   assert.match(mountOn("teacher", "/app/academy/classes", h("main")).answer("How do join codes work?"), /\[Add your class\]\(\/app\/academy\/classes#add-class\)/);
-  // Adding students and planning lessons still need the AI.
-  assert.equal(typeof c.pill("Add students").action, "string");
-  assert.equal(typeof c.pill("Plan a week of lessons").action, "string");
+  // 1.18.0: adding students and planning lessons answer with no key too.
+  assert.equal(typeof c.pill("Add students").answer, "function");
+  assert.equal(typeof c.pill("Plan a week of lessons").answer, "function");
 });
 
 test("1.17.0: a visitor learns what OmniArmor does and the free trial with no key; the prices are a link", () => {
   const c = mountOn("visitor", "/", h("main"));
   const what = c.answer("What does OmniArmor do?");
   assert.match(what, /\*\*Starter checklists\*\* for 51 industries \(510 checks\)/);
-  assert.match(what, /to your team 30, 7, 1 days before a due date/);
+  assert.match(what, /to your team 30, 7 and 1 day before a due date/);
   assert.match(what, /Free for 14 days, no card\./);
   assert.deepEqual(linksIn(what), ["/demo", "/industries"]);
   assert.equal(c.pill("See the prices").link, "/help#prices");
@@ -750,4 +761,123 @@ test("1.17.0: every answer and link survives the core's cleaning, links stay on 
     }
     assert.deepEqual(c.sent, [], `${who} ${where}`);
   }
+});
+
+// ---------------------------------------------------------------- 1.18.0: every welcome button answers with no key
+
+const TRADES = [{ name: "Restaurants and cafés", path: "/industries/restoarmor" }, { name: "Salons and barbershops", path: "/for/salons-and-barbershops" },
+  { name: "Evil", path: "https://evil.example/x" }];
+const CLASS_PLAN = [{ title: "Meet the Class Stand", lessons: 5, talk: "What would we sell?" }, { title: "Business Words", lessons: 8, talk: "Which word was new?" },
+  { title: "Rules at the Stand", lessons: 6, talk: "Why keep it cold?" }, { title: "Money at the Stand", lessons: 6, talk: "" },
+  { title: "Talk Like a Pro", lessons: 7, talk: "How do we answer the phone?" }, { title: "Work as a Team", lessons: 5, talk: "Who does what?" }];
+
+test("1.18.0: every welcome button but the key answers with no key, for everyone, on every page", () => {
+  const pages = [["business", "/app"], ["business", "/app/report"], ["business", "/app/settings"], ["teacher", "/app/academy/classes/12"],
+    ["teacher", "/app/settings"], ["visitor", "/"], ["visitor", "/industries"], ["visitor", "/classrooms"], ["visitor", "/classrooms/guide"]];
+  for (const [who, where] of pages) {
+    const c = mountOn(who, where, h("main"), { classes: [{ id: 12, name: "Room 12" }], facts: { trades: TRADES, class_plan: CLASS_PLAN } });
+    for (const p of [...c.welcomePills]) {
+      if (p.action === "settings") continue;
+      assert.ok(typeof p.answer === "function" || typeof p.answer === "string" || typeof p.link === "string", `${who} ${where}: ${p.label}`);
+      if (p.answer !== undefined) assert.ok(c.answer(p.label).length > 20, `${who} ${where}: ${p.label}`);
+    }
+    // The page's suggestions answer too.
+    for (const chip of [...c.chips()]) assert.ok(chip.answer !== undefined || chip.link !== undefined, `${who} ${where}: ${chip.label}`);
+    assert.deepEqual(c.sent, []);
+  }
+});
+
+test("1.18.0: which checklist fits asks what kind of business, with a link to each trade's page, only on this site", () => {
+  const text = mountOn("visitor", "/industries", h("main"), { facts: { trades: TRADES } }).answer("Which checklist fits me?");
+  assert.match(text, /^\*\*What kind of business is it\?\*\*/);
+  assert.deepEqual(linksIn(text), ["/industries/restoarmor", "/for/salons-and-barbershops", "/industries", "/demo"]);
+  assert.ok(!text.includes("evil"));
+});
+
+test("1.18.0: which plan fits compares the plans from the app's own data, and the yearly price says 'a year' once", () => {
+  const facts = { pro_summary: "the tracker", plus_summary: "the tracker and the Academy", pro_yearly: "PRO-YEAR", free_label: "2 months free" };
+  const biz = mountOn("visitor", "/", h("main"), { facts }).answer("Which plan fits me?");
+  assert.match(biz, /\*\*Pro\*\* \(PRO-PRICE, or PRO-YEAR \(2 months free\)\): the tracker\./);
+  assert.match(biz, /\*\*Plus\*\* \(PLUS-PRICE\): the tracker and the Academy\./);
+  assert.match(biz, /14 days free, no card/);
+  const school = mountOn("teacher", "/app/settings", h("main"), { facts: { classroom_price: "$299 a year", school_price: "$1,490 a year" } });
+  const plans = school.answer("Classroom or Whole school?");
+  assert.match(plans, /\*\*Classroom\*\* \(\$299 a year\): One class\./);
+  assert.ok(!/a year a year/.test(plans), plans);
+  assert.match(mountOn("visitor", "/classrooms", h("main")).answer("Classroom or Whole school?"), /\*\*Whole school\*\* \(SCHOOL-PRICE a year\)/);
+});
+
+test("1.18.0: explain this page says what it's for and lists its parts, from its own headings, never a private name", () => {
+  const page = h("main", {}, h("div", { class: "page-head" }, h("h1", {}, "Try OmniArmor"),
+    h("p", { class: "sub" }, "Click around a workspace that's already in use.")), h("h2", {}, "For a business"), h("h2", {}, "For a class"),
+  h("h2", {}, h("span", { "data-pilot-private": "" }, "Jordan Lee")));
+  const text = mountOn("visitor", "/demo", page).answer("Explain this page");
+  assert.match(text, /^\*\*Demos: try OmniArmor without signing up\*\*: Try OmniArmor/);
+  assert.match(text, /Click around a workspace that's already in use\./);
+  assert.match(text, /\*\*On this page:\*\*\n- For a business\n- For a class/);
+  assert.ok(!text.includes("Jordan"));
+});
+
+test("1.18.0: a teacher's Add students goes to the class page's box and puts the cursor in it, or links to it", () => {
+  const focused = [];
+  const box = h("textarea", { name: "names" });
+  box.focus = () => focused.push("names");
+  box.scrollIntoView = () => {};
+  const page = h("main", {}, h("form", { id: "add-students" }, box));
+  const c = mountOn("teacher", "/app/academy/classes/12", page, { classes: [{ id: 12, name: "Room 12" }] });
+  assert.match(c.answer("Add students"), /The \*\*Add students\*\* box is open on this page/);
+  assert.deepEqual(focused, ["names"]);
+  assert.equal(c.closed.length, 1, "Pilot steps aside so the box shows");
+  const other = mountOn("teacher", "/app/settings", h("main"), { classes: [{ id: 12, name: "Room 12" }] });
+  assert.deepEqual(linksIn(other.answer("Add students")), ["/app/academy/classes/12#add-students"]);
+  const two = mountOn("teacher", "/app/settings", h("main"), { classes: [{ id: 12, name: "Room 12" }, { id: 14, name: "Art" }] });
+  assert.deepEqual(linksIn(two.answer("Add students")), ["/app/academy/classes/12#add-students", "/app/academy/classes/14#add-students"]);
+  assert.deepEqual(linksIn(mountOn("teacher", "/app/settings", h("main")).answer("Add students")), ["/app/academy/classes#add-class"]);
+});
+
+test("1.18.0: plan a week is five days from the Classroom worlds, in order, with lessons, minutes and a question", () => {
+  const text = mountOn("teacher", "/app/academy/classes", h("main"), { facts: { class_plan: CLASS_PLAN } }).answer("Plan a week of lessons");
+  assert.match(text, /- \*\*Monday: Meet the Class Stand\.\*\* 5 lessons, about 15 minutes\. Talk: "What would we sell\?"/);
+  assert.match(text, /- \*\*Friday: Talk Like a Pro\.\*\* 7 lessons, about 21 minutes\./);
+  assert.match(text, /- \*\*Thursday: Money at the Stand\.\*\* 6 lessons, about 18 minutes\.\n/);
+  assert.ok(!text.includes("Work as a Team"), "five days, five worlds");
+  assert.deepEqual(linksIn(text), ["/classrooms/guide"]);
+});
+
+test("1.18.0: summarise my report counts every check and says what to fix first, with links, and never a name", () => {
+  const row = (title, level, due, days, href) => h("tr", { "data-check": href, ...(days === null ? {} : { "data-days": String(days) }) },
+    h("td", {}, title), h("td", {}, h("span", { class: `tag ${level}` }, level)), h("td", {}, "—"), h("td", {}, due),
+    h("td", {}, "Rule"), h("td", {}, "Nov 2", h("span", { "data-pilot-private": "" }, " · Jordan Lee")));
+  const page = h("main", {}, h("table", { "data-report-table": "" }, h("tbody", {},
+    row("Hood cleaning", "BLOCKED", "2026-11-18", -4, "/app/industry/2#rule-hood"),
+    row("Walk-in fridge", "WARNING", "2026-11-25", 3, "/app/industry/2#rule-fridge"),
+    row("Health permit", "CLEARED", "2027-01-01", 40, "/app/industry/2#rule-permit"),
+    row("Hand sink", "NONE", "—", null, "/app/industry/2#rule-sink"))));
+  const text = mountOn("business", "/app/report", page).answer("Summarise my report");
+  assert.match(text, /^\*\*Your report: 4 checks\.\*\* 1 blocked, 1 warning, 1 cleared, 1 with no reading\./);
+  assert.match(text, /\*\*Fix first \(blocked\):\*\*\n- \[Hood cleaning\]\(\/app\/industry\/2#rule-hood\): overdue, it was due 2026-11-18/);
+  assert.match(text, /\*\*Next \(close to a limit or a date\):\*\*\n- \[Walk-in fridge\]\(\/app\/industry\/2#rule-fridge\): due 2026-11-25/);
+  assert.match(text, /1 check still has no reading: start with \[Hand sink\]/);
+  assert.ok(!text.includes("Jordan"));
+  // Away from the report: a link to it.
+  assert.ok(linksIn(mountOn("business", "/app", h("main")).answer("Summarise my report")).includes("/app/report"));
+});
+
+test("1.18.0: explain this check says a sentence once, not under both 'Why it matters' and 'If it's missed'", () => {
+  const page = h("main", {}, h("ul", {}, h("li", { class: "rule", id: "rule-hood", "data-level": "BLOCKED", "data-days": "-3", rect: { top: 200, bottom: 500 } },
+    h("h2", {}, "Hood cleaning"), h("span", { class: "tag BLOCKED" }, "BLOCKED"),
+    h("p", { class: "why-line" }, h("span", { class: "top-n" }, "Top 3 · #1"), "Why this matters: Grease fires spread fast."),
+    h("details", {}, h("summary", {}, "Rule and source"), h("div", { class: "why" }, h("p", {}, "Grease fires spread fast."),
+      h("p", { class: "mono" }, "NFPA 96"))))));
+  const text = mountOn("business", "/app/industry/2", page).answer("Explain this check");
+  assert.equal(text.split("Grease fires spread fast").length - 1, 1, text);
+  assert.match(text, /- \*\*If it's missed:\*\* Grease fires spread fast\./);
+});
+
+test("1.18.0: the window wears OmniArmor's colours through the app's own theme class, not the core's files", () => {
+  const c = mountFor("visitor", "/");
+  assert.equal(c.themeClass, "omni-pilot");
+  const css = fs.readFileSync(site("app.css"), "utf8");
+  assert.ok(css.includes(".pilot-root.omni-pilot{--pilot-blue:#F7743A"));
+  assert.ok(css.includes(".pilot-root.omni-pilot .pilot-panel{"));
 });

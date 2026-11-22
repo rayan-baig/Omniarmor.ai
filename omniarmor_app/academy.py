@@ -33,6 +33,7 @@ teacher adds a class the same way, by first name or nickname only
 import dataclasses
 import difflib
 import functools
+import itertools
 import math
 import random
 import re
@@ -44,7 +45,10 @@ from omni_armor_rules.rule import _fmt as format_quantity
 
 from .academy_bank import basics as _basics
 from .academy_bank import load_expansions, load_worlds
+from .academy_bank.sorting import SORT_SETS
+from .academy_bank.word_ideas import WORD_IDEAS, kindred
 from .catalog import INDUSTRIES, counts_first_day, date_mode, date_unit
+from .words import plural
 
 PASS_RATE = 0.6
 MAX_LEARNERS = 12
@@ -185,7 +189,7 @@ GRIT = [
      "Stop after the first try, since some people just aren't good at things",
      "Skills grow with practice. Asking for help is smart, not weak."),
     ("What does perseverance mean?",
-     "Keeping going when things get hard",
+     "Not quitting when it gets tough",
      "Always choosing the easiest job so you never have to struggle",
      "Doing everything perfectly on the very first try, every time",
      "Perseverance is sticking with a goal through tough times."),
@@ -404,14 +408,33 @@ MOVES = [
 ]
 
 
+# A choice question that sets a scene and asks what to do (1.18.0): the quiz
+# shows it as a scenario, with its own look.
+SCENARIO = re.compile(
+    r"\b(what (should|would|could|do) you|what('s| is) (the )?(best|smartest|right|fair|honest|safest|professional)"
+    r"|how should you|what do you (say|do)|best first step|best way to|which is the (best|right|fairest) (move|thing))\b",
+    re.I)
+
+
 @dataclass
 class Question:
     prompt: str
     options: list
     answer: int
     explain: str
-    kind: str = "choice"  # "choice", "light" or "truefalse"
+    kind: str = "choice"  # "choice", "light", "truefalse", or (1.18.0) "match" and "sort"
     review: bool = False
+    # 1.18.0: a match or sort question's pieces, for the page: {"title", "left",
+    # "right", "codes"} (match: each word, then each idea; codes: which idea
+    # each word goes with) or {"title", "items", "bins", "codes"} (sort: which
+    # bin each item goes in). One option per code, so it is graded like any
+    # other question: one right option.
+    parts: object = None
+    look: str = ""        # "scenario": a choice question that sets a scene
+
+    def __post_init__(self):
+        if not self.look and self.kind == "choice" and SCENARIO.search(self.prompt):
+            self.look = "scenario"
 
 
 @dataclass(frozen=True)
@@ -1159,8 +1182,8 @@ def _rule_questions(rng, industry_id, index):
         done = rng.randint(1, limit - 1)
         left = limit - done
         facts.append(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done "
-                                  f"{done} days ago. How many days are left?", str(left),
-                             [str(limit + done), str(left + 10)], f"{limit} − {done} = {left} days left."))
+                                  f"{plural(done, 'day')} ago. How many days are left?", str(left),
+                             [str(limit + done), str(left + 10)], f"{limit} − {done} = {plural(left, 'day')} left."))
     rng.shuffle(lights)
     rng.shuffle(facts)
     # Two light questions first, so a short lesson still has one of each kind.
@@ -1413,18 +1436,18 @@ def _calendar_items(rng, company, ids):
         done = rng.randint(1, limit - 1)
         left = limit - done
         wrong = [w for w in {limit + done, done, abs(left - 7) or left + 3, left + 10} if w != left and w >= 0]
-        add(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done {done} days"
-                         " ago. How many days are left?", str(left), [str(w) for w in sorted(wrong)[:2]],
-                    f"{limit} − {done} = {left} days left."))
+        add(_choice(rng, f"\"{rule.title}\" must be done at least every {limit} days. It was last done"
+                         f" {plural(done, 'day')} ago. How many days are left?", str(left),
+                    [str(w) for w in sorted(wrong)[:2]], f"{limit} − {done} = {plural(left, 'day')} left."))
     for k in range(LATE_QUESTIONS):
         rule = pool[(n + k) % len(pool)]
         limit = int(rule.limit)
         late = k % 2 == 0
         ago = limit + rng.randint(1, 20) if late else rng.randint(1, limit - 1)
-        add(_choice(rng, f"\"{rule.title}\" must be done every {limit} days. It was last done {ago} days ago."
-                         " Is it late?", "Yes, it's overdue" if late else "No, there's still time",
+        add(_choice(rng, f"\"{rule.title}\" must be done every {limit} days. It was last done {plural(ago, 'day')}"
+                         " ago. Is it late?", "Yes, it's overdue" if late else "No, there's still time",
                     ["No, there's still time" if late else "Yes, it's overdue"],
-                    f"{ago} days is {'more' if late else 'less'} than {limit} days."))
+                    f"{plural(ago, 'day')} is {'more' if late else 'less'} than {limit} days."))
     starts = rng.sample(range(7), WEEKDAY_QUESTIONS)
     for k, start in enumerate(starts):
         ahead = 2 + k + rng.randint(0, 3)
@@ -1492,16 +1515,28 @@ def _team_items(rng, company, ids):
     return _rows(rng, _TEAM_ROWS + _basics.TEAM, company), TEAM_FACTS + _basics.TEAM_FACTS
 
 
+def _word_question(rng, word, meaning, words, n):
+    """'What does "Revenue" mean?' (1.18.0): the card and the Word Bank give its
+    meaning; the right answer says the same idea in other words (WORD_IDEAS),
+    and the wrong answers are other words' ideas, never a kindred word's."""
+    right = WORD_IDEAS[word]
+    others = [WORD_IDEAS[w] for w, _ in words if w != word and not kindred(word, w)]
+    wrong = _wrong_answers(rng, right, others, below=n)
+    return _choice(rng, f"What does \"{word}\" mean?", right, wrong, f"{word}: {meaning}")
+
+
+def _quiz_words(words):
+    """The Word Bank's words the quiz asks about: those with an idea in other words."""
+    return [(w, m) for w, m in words if w in WORD_IDEAS]
+
+
 def _words_items(rng, company, ids):
-    words = list(GLOSSARY)
+    words = _quiz_words(GLOSSARY)
     rest = words[16:]
     rng.shuffle(rest)
-    meanings = [m for _, m in words]
     items = []
     for n, (word, meaning) in enumerate(words[:16] + rest):
-        wrong = _wrong_answers(rng, meaning, [m for m in meanings if m != meaning], below=n)
-        items.append((_choice(rng, f"What does \"{word}\" mean?", meaning, wrong, f"{word}: {meaning}"),
-                      1 if n < 16 else 2))
+        items.append((_word_question(rng, word, meaning, words, n), 1 if n < 16 else 2))
     return items, []
 
 
@@ -1538,6 +1573,93 @@ def _world_items(w, rng, company, ids):
     return [(_row_choice(rng, row, company), 1) for row in _SCENARIO_POOLS[w.key]], []
 
 
+# --- Lesson formats (1.18.0) ---------------------------------------------------
+# A lesson mixes its kinds of question: multiple choice (a scenario when it
+# sets a scene), true or false, and in some worlds a matching game (Business
+# Words: three words to their ideas) and a sorting game (safe or unsafe,
+# honest or not, safe online or risky). They take the place of a question the
+# lesson already had, so every world keeps its number of lessons.
+
+def _code_label(names, picks, sep=" → "):
+    return "; ".join(f"{n}{sep}{p}" for n, p in zip(names, picks))
+
+
+def _match_question(q, rng):
+    """A word question turned into a matching game: the word asked about and
+    the two words whose ideas were its wrong answers, each to its idea."""
+    idea_of = {idea: w for w, idea in WORD_IDEAS.items()}
+    word = re.match(r'What does "(.+)" mean\?$', q.prompt)
+    if not word or any(o not in idea_of for o in q.options):
+        return q
+    words = [word.group(1)] + [idea_of[o] for o in q.options if idea_of[o] != word.group(1)]
+    ideas = list(q.options)
+    rng.shuffle(ideas)
+    codes = list(itertools.permutations(range(3)))
+    labels = [_code_label(words, [ideas[i] for i in code]) for code in codes]
+    truth = tuple(ideas.index(WORD_IDEAS[w]) for w in words)
+    explain = " ".join(f"{w}: {m.rstrip('.')}." for w, m in ((w, dict(GLOSSARY)[w]) for w in words))
+    parts = {"title": "Match each word to its idea.", "left": words, "right": ideas,
+             "codes": [",".join(map(str, c)) for c in codes]}
+    return Question(f"Match the words to their ideas: {', '.join(words)}", labels, codes.index(truth), explain,
+                    "match", parts=parts)
+
+
+def _sort_questions(key, rng):
+    """The world's sorting games: three items each, never all in one bin, and
+    no item twice in the world."""
+    left, right, title, items = SORT_SETS[key]
+    items = list(items)
+    rng.shuffle(items)
+    out = []
+    while len(items) >= 3:
+        group = items[:3]
+        if len({b for _, b, _ in group}) == 1:
+            other = next((i for i, it in enumerate(items[3:], start=3) if it[1] != group[0][1]), None)
+            if other is None:
+                break
+            group[2], items[other] = items[other], group[2]
+        del items[:3]
+        codes = list(itertools.product(range(2), repeat=3))
+        names = [text for text, _, _ in group]
+        labels = []
+        for code in codes:
+            a = [n for n, c in zip(names, code) if c == 0] or ["none"]
+            b = [n for n, c in zip(names, code) if c == 1] or ["none"]
+            labels.append(f"{left}: {'; '.join(a)}. {right}: {'; '.join(b)}.")
+        truth = tuple(b for _, b, _ in group)
+        parts = {"title": title, "items": names, "bins": [left, right], "codes": [",".join(map(str, c)) for c in codes]}
+        out.append(Question(f"{left} or {right.lower()}? {'; '.join(names)}", labels, codes.index(truth),
+                            " ".join(why for _, _, why in group), "sort", parts=parts))
+    return out
+
+
+def _mix_formats(key, questions, size):
+    """The world's questions, lesson by lesson, with a sorting game (while
+    its items last) in place of each lesson's true-or-false question (or its
+    last plain multiple-choice one) after the first, where the world has a
+    sorting set, and, in Business Words, a matching game in every second
+    lesson. The same every time (a fixed seed per world)."""
+    if key not in SORT_SETS and key != "words":
+        return questions
+    rng = random.Random(f"formats:{key}:{size}")
+    out = list(questions)
+    sorts = _sort_questions(key, rng) if key in SORT_SETS else []
+    for n in range(len(out) // size):
+        chunk = range(n * size, (n + 1) * size)
+        if sorts and n >= 1:
+            # The lesson's true-or-false question, or else its last plain multiple-choice one.
+            spot = next((i for i in chunk if out[i].kind == "truefalse"), None)
+            if spot is None:
+                spot = next((i for i in reversed(chunk) if out[i].kind == "choice" and not out[i].look), None)
+            if spot is not None:
+                out[spot] = sorts.pop(0)
+        if key == "words" and n % 2 == 1:
+            spot = next((i for i in reversed(chunk) if out[i].kind == "choice"), None)
+            if spot is not None:
+                out[spot] = _match_question(out[spot], rng)
+    return tuple(out)
+
+
 def _lessons(choices, facts, size, lesson):
     """Up to size items in lessons of `lesson`: one true-or-false fact in
     each lesson while there are facts, the rest multiple choice, in order.
@@ -1568,7 +1690,7 @@ def _family_pool(track_key, world_number, company, ids):
     rng.shuffle(facts)
     tf = [_truefalse(*f) for f in _balanced(facts)]
     lesson = t.min_questions
-    return tuple(_lessons([q for q, _ in items], tf, FAMILY_MAX_LESSONS * lesson, lesson))
+    return _mix_formats(w.key, tuple(_lessons([q for q, _ in items], tf, FAMILY_MAX_LESSONS * lesson, lesson)), lesson)
 
 
 def family_pool(t, world_number, company, industry_ids):
@@ -1988,7 +2110,7 @@ _STAND_RULE_FACTS = [
 _STAND_MONEY = [
     (f"{CLASS_BUSINESS} sold 10 cups at $1 each. How much money came in?", "$10", "$1", "$11",
      "10 cups × $1 = $10. That's the stand's revenue: all the money customers paid."),
-    ("What is revenue?", "All the money customers pay", "The money left after paying for supplies",
+    ("What is revenue?", "Every dollar coming in from sales", "The money left after paying for supplies",
      "The money spent on lemons and cups", "Revenue is all the money that comes in from sales."),
     ("What is a cost?", "Money the business spends", "Money customers pay the business",
      "Money saved for next week", "Costs are what a business pays for, like lemons and cups, so it can sell."),
@@ -2262,7 +2384,7 @@ def classroom_pool(world_number):
         choices = [_choice(rng, p, best, [w1, w2], why) for p, best, w1, w2, why in rows]
         tf = [_truefalse(*f) for f in _balanced(list(facts))]
         rng.shuffle(choices)
-        return tuple(_interleave(choices, tf, size))
+        return _mix_formats(w.key, tuple(_interleave(choices, tf, size)), LESSON_QUESTIONS)
     if w.key in _BANK:
         bank = _BANK[w.key]
         rows = [q for q in bank["questions"] if _for_class(*q[:5])]
@@ -2273,16 +2395,12 @@ def classroom_pool(world_number):
         facts = [f for f in bank["facts"] if _for_class(f[0], f[2])]
         rng.shuffle(facts)
         tf = [_truefalse(*f) for f in _balanced(facts)]
-        return tuple(_interleave(choices, tf, size))
+        return _mix_formats(w.key, tuple(_interleave(choices, tf, size)), LESSON_QUESTIONS)
     if w.key == "words":
-        words = [(word, meaning) for word, meaning in GLOSSARY if _for_class(word, meaning)]
+        words = _quiz_words((word, meaning) for word, meaning in GLOSSARY if _for_class(word, meaning))
         picked = words[:16] + rng.sample(words[16:], max(0, min(len(words) - 16, size - 16)))
-        meanings = [m for _, m in words]
-        out = []
-        for n, (word, meaning) in enumerate(picked[:size]):
-            wrong = _wrong_answers(rng, meaning, [m for m in meanings if m != meaning], below=n)
-            out.append(_choice(rng, f"What does \"{word}\" mean?", meaning, wrong, f"{word}: {meaning}"))
-        return tuple(out)
+        out = [_word_question(rng, word, meaning, words, n) for n, (word, meaning) in enumerate(picked[:size])]
+        return _mix_formats(w.key, tuple(out[:len(out) // LESSON_QUESTIONS * LESSON_QUESTIONS]), LESSON_QUESTIONS)
     pools = {"talk": PRO_TALK, "ownit": OWN_IT, "grit": GRIT, "respect": RESPECT, "customers": CUSTOMERS,
              "compete": COMPETE, "moves": MOVES, "hiring": HIRING}
     rows = [r for r in pools[w.key] if _for_class(*r)]
@@ -2301,8 +2419,9 @@ def _fresh(q, rng):
     """A copy of a pool question with its options in a new order (a true or
     false question keeps True first, and a light question keeps green,
     yellow, red: the order of a traffic light)."""
-    if q.kind in ("truefalse", "light"):
-        return Question(q.prompt, list(q.options), q.answer, q.explain, q.kind)
+    if q.kind in ("truefalse", "light", "match", "sort"):
+        # A match or sort question keeps its pieces in place: its options are their codes.
+        return Question(q.prompt, list(q.options), q.answer, q.explain, q.kind, parts=q.parts)
     right = q.options[q.answer]
     options = list(q.options)
     rng.shuffle(options)

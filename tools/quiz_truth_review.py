@@ -18,6 +18,11 @@ and flags the patterns that have slipped through before:
                 shortest, in more than MAX_SHAPE_SHARE of its worded
                 questions, so a kid could pass by picking on length alone
                 (chance, with three options, is one in three)
+- word-for-word a question's right answer (four words or more, not a
+                number) is written word for word on its own lesson's cards,
+                so the quiz asks the kid to spot a sentence, not to use the
+                idea (1.18.0). Naming the company's own checks is the point
+                of those questions, so they are left out.
 
 Run it from the project folder:
 
@@ -127,6 +132,31 @@ def shape_flags(where, questions):
     return flags
 
 
+_NAMING = ("own checklist?", "really follows?")
+
+
+def _plain(text):
+    return " ".join(re.sub(r"[^a-z0-9$% ]", " ", str(text).lower()).split())
+
+
+def word_for_word_flags(t, company, ids):
+    """Questions whose right answer is copied from their own lesson's cards."""
+    flags = []
+    for w in t.worlds:
+        if w.kind == "industry":
+            continue
+        for stage in range(1, t.stages(w) + 1):
+            said = _plain(" ".join(f"{a} {b}" for a, b in academy.story(t, w.number, stage, company, ids)))
+            for q in academy.quiz(t, w.number, stage, company, ids, "review"):
+                if q.kind != "choice" or q.prompt.endswith(_NAMING):
+                    continue
+                right = _plain(q.options[q.answer])
+                if len(right.split()) >= 4 and not any(ch.isdigit() for ch in right) and right in said:
+                    flags.append(("word-for-word", f"{company}: {t.name} · {w.title} · stage {stage}", q.prompt,
+                                  q.options[q.answer]))
+    return flags
+
+
 def review(companies=None, tracks=None):
     """Every flag, as (pattern, where, question prompt, the option); for a
     shape flag, (pattern, where, what was found, the limit)."""
@@ -159,6 +189,7 @@ def review(companies=None, tracks=None):
                         flags.append(("only-one", f"{company}: {where}", q.prompt, right))
             for world, questions in by_world.items():
                 flags += shape_flags(f"{company}: {world}", questions.values())
+            flags += word_for_word_flags(t, company, ids)
         for prompt, wrongs in wrong_for.items():
             for option, (where, shown) in wrongs.items():
                 if option in right_for.get(prompt, ()):
@@ -170,7 +201,9 @@ def main(argv):
     quick = "--quick" in argv
     flags = review(COMPANIES[:1] if quick else None)
     for pattern, where, prompt, option in flags:
-        if pattern == "shape":
+        if pattern == "word-for-word":
+            print(f"[{pattern}] {where}\n    Q: {prompt}\n    right answer copied from its card: {option}")
+        elif pattern == "shape":
             print(f"[shape] {where}\n    {prompt} ({option})")
         else:
             print(f"[{pattern}] {where}\n    Q: {prompt}\n    marked wrong: {option}")

@@ -134,7 +134,28 @@ def facts(who):
         "support": pf["support_email"],
         # 1.17.0: for the answers Pilot gives with no AI key (join codes).
         "join_code_days": JOIN_CODE_DAYS, "join_path": url_for("kids.join"),
+        # 1.18.0: also "Which plan fits me?" (the plans' own words) ...
+        "pro_summary": "the compliance tracker: every check, reminder emails, reports and exports, and your whole team",
+        "plus_summary": "everything in Pro, and the whole Future Owner Academy for your kids at no extra cost",
+        "security_path": url_for("public.security"),
     }
+    # ... "Which checklist fits me?" (the trades the industry list leads with,
+    # each with its page, then the other trade pages) ...
+    if who == "visitor":
+        from .trades import TRADES, lead_trades
+        listed = [{"name": name, "path": url_for(endpoint, **args)} for name, endpoint, args, _ in lead_trades()]
+        paths = {t["path"] for t in listed}
+        listed += [{"name": t.name, "path": url_for("public.trade_page", slug=t.slug)} for t in TRADES
+                   if url_for("public.trade_page", slug=t.slug) not in paths]
+        data["trades"] = listed
+    # ... and "Plan a week of lessons": the Classroom track's worlds in order,
+    # with their lessons and a question to talk about (the teacher guide's).
+    if who == "teacher" or (who == "visitor" and (request.endpoint or "").startswith(("public.academy_schools",
+                                                                                     "public.class_guide"))):
+        from .academy import LESSON_MINUTES, class_guide
+        data["class_plan"] = [{"title": item["world"].title, "lessons": item["lessons"], "talk": item["talk"][0]}
+                              for item in class_guide()]
+        data["lesson_minutes"] = LESSON_MINUTES
     # The checklists this workspace keeps (names and page numbers only), for
     # the tools that read its own pages. Never sent to the AI by itself.
     checklists = []

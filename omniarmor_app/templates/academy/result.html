@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "academy/_art.html" import armo, avatar, hue, stars %}
+{% from "academy/_art.html" import armo, avatar, hue, level_icon, star, stars %}
 {% block title %}{{ world.title }}, stage {{ stage }} results{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
@@ -14,6 +14,32 @@
       shows it over the page until "Keep going" or Escape, then it is gone (without the script the results'
       own card, with its confetti, is the celebration). Less motion is respected (academy.css), and the sound
       is off until someone switches it on, on this device. -#}
+  {#- 1.18.0: clearing a whole world (its last stage passed for the first time) has a bigger moment of its own: a
+      trophy with the learner's picture, the stars of every stage and the world's total, and what comes next. A
+      boss round's clear is bigger again (more sparks, a gold glow, "Boss beaten!"). -#}
+  {% if world_clear %}
+  <section class="ac-celebrate ac-celebrate-world{{ ' ac-celebrate-boss' if boss }}" data-celebrate data-world-clear aria-labelledby="celebrate-title" tabindex="-1" hidden>
+    <div class="ac-celebrate-card">
+      <div class="ac-celebrate-rays" aria-hidden="true"></div>
+      <div class="ac-celebrate-sparks" aria-hidden="true">{% for i in range(28 if boss else 20) %}<i></i>{% endfor %}</div>
+      <div class="ac-trophy" aria-hidden="true">
+        <span class="ac-trophy-cup">{{ level_icon('trophy', 104 if boss else 88) }}</span>
+        <span class="ac-celebrate-pic ac-trophy-pic">{{ avatar(learner.avatar, avatars, 60, summary.tier) }}</span>
+      </div>
+      <p class="ac-kicker">{{ world.title }} · {{ 'boss round' if boss else 'all ' ~ world_clear.stages|length ~ ' stages' }}</p>
+      <h2 class="ac-title" id="celebrate-title">{{ 'Boss beaten!' if boss else 'World cleared!' }}</h2>
+      <p class="ac-world-total" data-world-stars="{{ world_clear.stars }}">{{ star(true, 30) }} <strong>{{ world_clear.stars }}</strong> of {{ world_clear.most }} stars in {{ world.title }}</p>
+      <ol class="ac-world-stages" aria-label="Stars for each stage">
+        {% for got in world_clear.stages %}<li><span class="ac-world-stage-n">{{ loop.index }}</span>{{ stars(got, 14) }}</li>{% endfor %}
+      </ol>
+      <p class="ac-lead">{% if new_rank %}And your picture grew: you're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}! {% endif %}{% if world_clear.next %}Next up: <strong>{{ world_clear.next.title }}</strong>.{% else %}{{ learner.nickname }} cleared every stage of {{ world.title }}.{% endif %}</p>
+      <div class="ac-actions">
+        <button type="button" class="btn ac-btn" data-celebrate-close>Keep going</button>
+        <button type="button" class="btn quiet ac-sound" data-sound aria-pressed="false">Sound: off</button>
+      </div>
+    </div>
+  </section>
+  {% else %}
   <section class="ac-celebrate" data-celebrate aria-labelledby="celebrate-title" tabindex="-1" hidden>
     <div class="ac-celebrate-card">
       <div class="ac-celebrate-rays" aria-hidden="true"></div>
@@ -29,6 +55,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
   {% endif %}
   <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
     {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}

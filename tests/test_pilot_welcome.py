@@ -79,7 +79,13 @@ class TestTheStylesheet(unittest.TestCase):
         # called it 'pilot-hello', which is also the chat window's greeting bubble, so this stylesheet must
         # never use that name to mean the first look.
         self.assertIn(":not(.pilot-revealing) .pilot-launcher{", phone_block(self.css))
-        self.assertNotIn("pilot-hello", self.css)
+        # 1.18.0: the only use of the name is the greeting bubble's colours, in OmniArmor's theme.
+        # (core 1.4.1's --pilot-hello-* theme variables are only names of colours.)
+        for selector in re.findall(r"([^{}]*pilot-hello[^{]*)\{", re.sub(r"--pilot-hello[\w-]*", "", self.css)):
+            for part in selector.split(","):
+                if "pilot-hello" in part:
+                    self.assertIn(".pilot-root.omni-pilot .pilot-hello", part)
+        self.assertNotIn("pilot-hello .pilot-launcher", self.css)
         with open(os.path.join(ROOT, "omniarmor_app", "static", "pilot", "pilot.js"), encoding="utf-8") as f:
             self.assertIn('rootEl.classList.add("pilot-revealing")', f.read())
 

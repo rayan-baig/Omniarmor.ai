@@ -19,7 +19,7 @@ WORLDS = [
              "Be better at selling cupcakes", "A specific goal says what, how much and by when, so you know exactly when you reach it.", 1),
             ("What does a deadline add to a goal?", "A date to finish it by", "A prize for finishing it",
              "A partner to help with it", "A deadline gives your goal a finish line in time. That helps you plan and stops the goal from drifting into someday.", 1),
-            ("What is a milestone?", "A checkpoint on the way to a big goal", "The final step that finishes the whole goal",
+            ("What is a milestone?", "A stop that marks progress toward a goal", "The final step that finishes the whole goal",
              "A reason to stop working on a goal", "Milestones are smaller targets along the way, like selling 50 of your 200 cookies. They show you are on track.", 1),
             ("Your goal is to read 10 books this summer. What is a good first small step?", "Pick the first book and read one chapter",
              "Wait until you really feel like reading", "Make a list of 50 books you might like to read", "A small first step gets you moving right away. Starting is often the hardest part, so make it easy.", 1),
@@ -299,7 +299,7 @@ WORLDS = [
             # Level 3
             ("You sell 10 cups a day. You test a new flavor for one day and sell 15 cups. What is the smartest next step?", "Test it a few more days to be sure",
              "Spend all your money on the new flavor", "Stop selling the old flavor right away", "One good day could be luck. More tests show if the idea really works before you bet big on it.", 3),
-            ("Customers say they want lower prices, but they keep buying your pricier deluxe cookies. What should you trust more?", "What they actually buy",
+            ("Customers say they want lower prices, but they keep buying your pricier deluxe cookies. What should you trust more?", "What they really pick",
              "What they say they want", "What your friends think", "Actions often show what people really value. Watch what customers do, not only what they say.", 3),
             ("Your phone case shop gets lots of returns. What is the best first step?", "Find out why people return them",
              "Lower the price on every case", "Stop letting people return cases", "You need the cause before the fix. Maybe the cases don't fit, which a price cut would not solve.", 3),

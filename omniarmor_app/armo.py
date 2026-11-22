@@ -14,6 +14,7 @@ from flask import url_for
 from .armo_lines import PERSONALITIES
 from .db import iso, utcnow
 from .tracking import states_for_org
+from .words import plural
 
 UPCOMING_DAYS = 30
 FAILED_EMAIL_DAYS = 7
@@ -36,7 +37,7 @@ def voice(key):
 
 
 def _plural(n, word):
-    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+    return plural(n, word)
 
 
 def live_issues(conn, org):

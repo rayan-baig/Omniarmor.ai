@@ -389,7 +389,7 @@ WORLDS = [
              "Lenders check a credit score to guess how likely you are to pay back a loan on time.", 1),
             ("Before you sign a loan, what should you do?", "Read all of it, even the fine print", "Sign fast so the bank does not wait", "Read only the first line of the page",
              "The small print holds the fees, the rate and the rules for late payments. Know them before you agree.", 1),
-            ("Which is a smart rule for borrowing?", "Never borrow more than you can repay", "Borrow as much as the bank will allow you", "Borrow again to pay old loans",
+            ("Which is a smart rule for borrowing?", "Only borrow what you can surely pay back", "Borrow as much as the bank will allow you", "Borrow again to pay old loans",
              "If you cannot repay, debt grows with fees and interest. Borrow only what your plan can pay back.", 1),
             ("What often happens if you pay a loan late?", "You may pay fees and hurt your credit", "The bank gives you a reward for waiting", "Nothing at all if you pay it someday",
              "Late payments often bring fees and can lower your credit score, which makes future loans harder or pricier.", 1),

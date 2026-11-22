@@ -32,6 +32,7 @@ from . import plans
 from .db import iso, now_iso, utcnow
 from .notify import notify, send_email
 from .tracking import org_today, states_for_org, tally
+from .words import plural
 
 log = logging.getLogger("omniarmor.reminders")
 
@@ -79,7 +80,7 @@ def build_digest(org, triggered, all_states, base_url, today):
     if soon:
         lines += ["COMING DUE"] + [_line(s) for s in sorted(soon, key=lambda s: s.days_left)] + [""]
     lines += [
-        f"Right now: {counts['BLOCKED']} blocked, {counts['WARNING']} warnings, {counts['CLEARED']} cleared,"
+        f"Right now: {counts['BLOCKED']} blocked, {plural(counts['WARNING'], 'warning')}, {counts['CLEARED']} cleared,"
         f" {counts['NONE']} without a reading.",
         f"Open your checks: {base_url}/app",
         "",

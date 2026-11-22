@@ -101,7 +101,7 @@ WORLDS = [
             ("Which best describes a whistleblower?", "Someone who reports wrongdoing to stop it",
              "Someone who blows a whistle to start a sports game", "Someone who spreads rumors about coworkers",
              "Whistleblowers speak up about real problems like cheating or danger. Many places have rules that protect them.", 3),
-            ("You see an adult at work hiding broken safety gear so an inspector won't see it. What should you do?", "Tell a trusted adult or the right person in charge",
+            ("You see an adult at work hiding broken safety gear so an inspector won't see it. What should you do?", "Speak up to someone in charge you trust",
              "Help hide it so nobody gets in trouble", "Keep quiet because it is not your business",
              "Hiding safety problems can get people hurt. Telling a trusted adult or the right person is the brave and right choice.", 3),
             ("A big customer offers a huge order if you skip a safety check. What is best?", "Keep the safety check and explain why",
@@ -171,7 +171,7 @@ WORLDS = [
         ],
         "questions": [
             # Level 1
-            ("What is a contract?", "An agreement the law can enforce",
+            ("What is a contract?", "A deal a court can make both sides keep",
              "A thank-you note you send after a sale", "A list of things you want to buy someday",
              "Contracts turn promises into agreements with rules. If one side breaks it, the other can ask for help to make it right.", 1),
             ("Before you sign a paper, what should you do first?", "Read it all and ask about anything unclear",
@@ -183,7 +183,7 @@ WORLDS = [
             ("For a contract to work, who must agree to it?", "Both sides",
              "Only the side that pays", "Only the side that wrote it",
              "A contract needs both sides to agree to the same terms. One side cannot force a deal on the other.", 1),
-            ("Which three things should a good deal make clear?", "What, how much, and when",
+            ("Which three things should a good deal make clear?", "The job, the price and the date",
              "Who is older, taller, and smarter", "The weather, the music, and the snacks",
              "Clear terms say what is being done, the price, and the deadline. That stops confusion later.", 1),
             ("You agreed to bake 20 cupcakes for a party by Friday. What should you do?", "Deliver 20 cupcakes by Friday",
@@ -516,7 +516,7 @@ WORLDS = [
             ("What is two-step login?", "A password plus a second proof, like a phone code",
              "Typing the same password two times in a row", "Logging in on two different computers at the same time",
              "The second step means a stolen password alone is not enough to break in.", 1),
-            ("You see a message at work that seems strange. Who should you tell?", "An adult or your manager",
+            ("You see a message at work that seems strange. Who should you tell?", "A grown-up or your boss",
              "Nobody, just ignore it", "Only your friends online",
              "Telling a manager or adult helps protect the whole business, since others may get the same trick.", 1),
             # Level 2

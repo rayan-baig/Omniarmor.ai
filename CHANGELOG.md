@@ -3,6 +3,67 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.18.0 (22 November 2026)
+
+Fixes from a strict eighth review: Pilot answers every welcome button on its
+own, the Academy's lessons have more kinds of question, and a parent's or
+teacher's device keeps the child's map closed.
+
+- **Every Pilot button works before an AI key.** Pressing any welcome button
+  now answers at once, from the page and the site's own facts:
+  - **Which checklist fits me?** asks what kind of business it is, with a
+    link to each trade's page (and to every industry).
+  - **Which plan fits me?** puts the plans side by side, with their real
+    names and prices (for a class: Classroom or Whole school).
+  - **Explain this page** says what the page is for and what is on it.
+  - A teacher's **Add students** puts the cursor in the class page's Add
+    students box (or links to it), and **Plan a week of lessons** gives five
+    days of the Classroom track, a world a day, with its lessons, how long
+    they take and a question to talk about.
+  - **Summarise my report** counts every check and says what to fix first,
+    with a link to each.
+  - The page suggestions answer too (History, exporting, reminders,
+    inviting a colleague, choosing your emails, the demos).
+  - "Classroom ($299 a year a year)" now says "a year" once, and "Explain
+    this check" no longer says the same sentence twice.
+- **Pilot core 1.4.1**, the same core as the MTRX Horizyn site: the welcome's
+  buttons come back as a small row under each answer (no more clearing the
+  chat to ask the next question), a long answer opens at its first line, an
+  answer built from the page is never sent to an AI company, and on a phone
+  the robot fades out rather than cover a link or a box being typed in, and
+  keeps to one bottom corner while the page scrolls. The robot is sharper on
+  phones (pictures at the sizes it is drawn).
+- **Pilot looks like OmniArmor:** its window is OmniArmor's warm black with
+  the orange-to-red edge. On a phone the framed box behind the tucked robot
+  is gone, so it no longer covers the end of the page ("Lost the slips?" on
+  the join codes page); when its corner is busy the robot steps to the edge.
+- **More kinds of question in the Academy.** Lessons now mix multiple
+  choice, scenarios ("what would you do?"), true or false, a matching game
+  (three business words to their ideas) and a sorting game (safe or unsafe,
+  honest or not, safe online or risky). Each game is one question. The
+  number of lessons is unchanged.
+- **Quizzes ask the idea in other words.** The Business Words quiz no longer
+  repeats its card word for word, and the quiz checker now flags any right
+  answer copied from its own lesson's card.
+- **The map is a path:** each world is a stop on a winding road, the stretch
+  already walked drawn solid.
+- **Clearing a world is a moment of its own:** a trophy with the learner's
+  picture, the stars of every stage and the world's total, and what comes
+  next. Beating a boss round is bigger again.
+- **A child's map on a parent's or teacher's device** is the child's screen,
+  like their lessons: no grown-up tab bar, menu or trial banner, and
+  "Grown-up? Hold to exit" at the bottom (press and hold to go back).
+- **A shorter first screen on a phone:** the home page's opening line is one
+  short sentence, so the picture's Blocked and Warning rows show without
+  scrolling.
+- **Counts read right everywhere:** "1 warning", "at 1 lesson", "1 star",
+  "1 day ago" (the reminder email's "1 warnings" and its picture too), and
+  Home says "without a reading" instead of "unread".
+- **New page: Security and your data** (`/security`): where the data lives,
+  backups, who can see a student's name, how to delete it, and who to write
+  to. It is linked from every page's footer, the Privacy and Help pages, and
+  Pilot's "Is it safe for students?".
+
 ## 1.17.0 (22 November 2026)
 
 Pilot, the helper, is useful before anyone adds an AI key.

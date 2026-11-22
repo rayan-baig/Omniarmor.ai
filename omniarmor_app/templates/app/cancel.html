@@ -51,7 +51,7 @@
           <li>You aren't charged.</li>
           <li>Reminder emails and alerts stop.</li>
           <li>Your records are kept. You can see, print and download them, but new checks can't be saved.</li>
-          <li>It starts again by itself on the date below. We email you {{ notice_days }} days before.</li>
+          <li>It starts again by itself on the date below. We email you {{ notice_days|plural('day') }} before.</li>
         </ul>
         <div class="offer-actions">
           {% for m in o.pause_months %}

@@ -83,7 +83,7 @@
   {% endif %}
   {% if pilot.state == 'none' and not limits.active and pilot_available %}
     <section class="ac-card mt" id="pilot" data-pilot-offer>
-      <h2 class="ac-h3">Try it free for {{ facts.pilot_days }} days</h2>
+      <h2 class="ac-h3">Try it free for {{ facts.pilot_days|plural('day') }}</h2>
       <p>One class of up to {{ facts.class_size }} students and the whole Academy. No card needed. At the end you get a one-page trial report to hand to the school office: how many students, how many lessons finished, and the topics covered.</p>
       {% if g.role == 'owner' %}
         <form method="post" action="{{ url_for('classes.start_pilot') }}">

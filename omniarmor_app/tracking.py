@@ -25,6 +25,7 @@ from omni_armor_rules.rule import _fmt as format_quantity
 from .catalog import (FIRST_ENTRY, ILLNESS_LOG_CHECKS, INDUSTRIES, can_override, counts_first_day, counts_time,
                       date_mode, date_unit, effective_rule, find_rule, multi_check, rules_for)
 from .db import iso, now_iso, record_audit, user_name, utcnow
+from .words import plural
 
 LEVEL_ORDER = {"BLOCKED": 0, "WARNING": 1, "NONE": 2, "CLEARED": 3}
 LEVEL_LABEL = {"BLOCKED": "Blocked", "WARNING": "Warning", "CLEARED": "Cleared", "NONE": "No reading"}
@@ -77,7 +78,7 @@ def _duration(minutes):
 
 
 def _plural_days(n):
-    return f"{n} day{'s' if n != 1 else ''}"
+    return plural(n, "day")
 
 
 @dataclass

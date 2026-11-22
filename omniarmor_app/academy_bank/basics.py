@@ -240,7 +240,7 @@ CALENDAR_FACTS = [
 ]
 
 MONEY = [
-    ("What is revenue?", "All the money customers pay", "Money left after paying every bill",
+    ("What is revenue?", "Every dollar coming in from sales", "Money left after paying every bill",
      "Money the business owes its bank", "Revenue is all the money that comes in from sales.", 1),
     ("What is a budget?", "A plan for spending money", "A record of last year's sales",
      "A loan from a bank to a business", "A budget plans how much to spend on each thing, before spending.", 1),

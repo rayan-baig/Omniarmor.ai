@@ -188,7 +188,9 @@ class TestArmoKeepsClear(AppTestCase):
         # 1.16.0: on a phone he no longer takes room down the page's right; he has a reserved corner above
         # the tab bar, where he keeps his size (tests/test_round7_fixes.py).
         self.assertNotIn("main > .wrap{padding-right:max(42px", css)
-        self.assertIn("body.has-tabs .companion.armo-tucked .companion-armo svg{width:52px;height:52px}", css)
+        # 1.18.0: the corner's framed box is gone, so tucked he steps aside to the screen's edge instead.
+        self.assertNotIn("body.has-tabs .companion.armo-tucked .companion-armo svg{width:52px;height:52px}", css)
+        self.assertIn("body.has-tabs .companion.armo-tucked{right:max(3px,env(safe-area-inset-right))}", css)
 
     def test_ask_pilot_in_armo_s_bubble_where_the_page_has_pilot(self):
         self.signup()
@@ -301,7 +303,8 @@ class TestLessonsOnAGrownUpsDevice(ProgressCase):
         self.assertNotIn("<span>Report</span>", result)
 
     def test_the_grown_up_s_own_pages_keep_their_tabs(self):
-        for path in ("/app", "/app/academy", "/app/academy/1"):
+        # 1.18.0: the learner's map (/app/academy/1) is the kid's screen too (tests/test_round8_fixes.py).
+        for path in ("/app", "/app/academy", "/app/academy/1/progress"):
             page = self.client.get(path).data.decode()
             self.assertNotIn("data-lessonbar", page, path)
             self.assertIn("<span>Report</span>", page, path)

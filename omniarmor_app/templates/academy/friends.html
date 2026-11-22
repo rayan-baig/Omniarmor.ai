@@ -48,7 +48,7 @@
           {{ avatar(s.learner.avatar, avatars, 52, s.tier) }}
           <span class="ac-board-text">
             <span class="ac-board-name">{{ s.learner.nickname }}{% if s.learner.id == learner.id %} (you){% endif %}</span>
-            <span class="ac-board-meta">{{ s.track.name }} · {{ s.rank }} · {{ s.done }} levels · {{ star(true, 13) }} {{ s.stars }}</span>
+            <span class="ac-board-meta">{{ s.track.name }} · {{ s.rank }} · {{ s.done|plural('level') }} · {{ star(true, 13) }} {{ s.stars }}</span>
           </span>
           {% if s.learner.id != learner.id and duel_worlds %}
             <form class="ac-challenge" method="post" action="{{ url_for('academy.new_duel', learner_id=learner.id) }}">
@@ -79,7 +79,7 @@
           <p class="ac-code" aria-label="Friend code">{{ code.code }}</p>
           <p class="hint">Works once, until {{ code.expires_at|local_date }}.</p>
         {% else %}
-          <p class="hint">Codes work once and last {{ code_days }} days.</p>
+          <p class="hint">Codes work once and last {{ code_days|plural('day') }}.</p>
         {% endif %}
         <form method="post" action="{{ url_for('academy.friend_code', learner_id=learner.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

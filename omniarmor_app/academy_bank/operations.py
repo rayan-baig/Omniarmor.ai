@@ -255,7 +255,7 @@ WORLDS = [
             # Level 1
             ("What is demand?", "How much of something people want to buy", "How much a seller has in the storeroom",
              "How much it costs a business to make each product", "Demand is about buyers. When lots of people want something, demand is high.", 1),
-            ("What is supply?", "How much of something is available to sell", "How much customers want to buy",
+            ("What is supply?", "How many items sellers have ready to sell", "How much customers want to buy",
              "How much money a store has saved up in the bank", "Supply is about sellers: how many items are out there for people to buy.", 1),
             ("When is a lemonade stand likely to sell the most?", "On a hot, sunny day", "On a cold, rainy day",
              "In the middle of the night", "People want cold drinks when it is hot. Weather changes demand.", 1),

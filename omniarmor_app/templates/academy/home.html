@@ -46,7 +46,7 @@
             {{ avatar(s.learner.avatar, avatars, 76, s.tier) }}
             <span class="ac-learner-name">{{ s.learner.nickname }}</span>
             <span class="ac-learner-meta">{{ s.track.name }} · {{ s.rank }}</span>
-            <span class="ac-learner-meta" data-lesson-count="{{ s.total }}">{{ s.done }}/{{ "{:,}".format(s.total) }} lessons{% if s.quests %} · {{ plus_quests(s.quests) }}{% endif %} · {{ s.stars }} stars{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
+            <span class="ac-learner-meta" data-lesson-count="{{ s.total }}">{{ s.done }}/{{ "{:,}".format(s.total) }} lessons{% if s.quests %} · {{ plus_quests(s.quests) }}{% endif %} · {{ s.stars|plural('star') }}{% if s.streak %} · {{ s.streak }}-day streak{% endif %}</span>
             {% if s.certificate %}<span class="ac-badge">{{ s.certificate }}</span>{% endif %}
           </a>
         </li>

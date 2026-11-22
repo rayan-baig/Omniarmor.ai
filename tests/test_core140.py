@@ -43,15 +43,16 @@ def pilot_data(page):
 
 
 class TestCoreFiles(unittest.TestCase):
-    def test_all_thirteen_core_files_are_core_1_4_0(self):
+    def test_all_thirteen_core_files_are_core_1_4_1(self):
+        # 1.18.0: core 1.4.1 (MTRX Horizyn f221ffc), copied byte for byte.
         folder = os.path.join(STATIC, "pilot")
         self.assertEqual(sorted(n for n in os.listdir(folder) if n.endswith((".js", ".css"))), sorted(CORE))
         for name in CORE:
             text = read("omniarmor_app", "static", "pilot", name)
-            self.assertRegex(text.splitlines()[0], r"^(//|/\*) Pilot core 1\.4\.0 · " + re.escape(name), name)
+            self.assertRegex(text.splitlines()[0], r"^(//|/\*) Pilot core 1\.4\.1 · " + re.escape(name), name)
             version = re.search(r'const VERSION = "([\d.]+)"', text)
             if version:
-                self.assertEqual(version.group(1), "1.4.0", name)
+                self.assertEqual(version.group(1), "1.4.1", name)
 
     def test_the_core_knows_links_and_answers(self):
         panel = read("omniarmor_app", "static", "pilot", "pilot-panel.js")
@@ -141,7 +142,7 @@ class TestTheAcademyPageSpeaksToTheGrownUp(AppTestCase):
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.17.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 17, 0))
         log = read("CHANGELOG.md")
         top = log[log.index("## 1.17.0"):log.index("## 1.16.0")]
         for said in ("Pilot core 1.4.0", "without an AI key", "join codes", "certificates", "never names a student",

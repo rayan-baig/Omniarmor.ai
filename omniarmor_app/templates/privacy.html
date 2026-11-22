@@ -18,6 +18,7 @@
   <li>We don't sell your data. We don't show ads. We don't use tracking or analytics tools.</li>
   <li>A few outside companies help run the site. They are all listed below.</li>
   <li>A workspace owner can download everything and delete the whole workspace at any time, with or without a plan. (Cancel a paid plan first.)</li>
+  <li>Where your data lives, backups and who can see a student's name, on one page: <a href="{{ url_for('public.security') }}">Security and your data</a>.</li>
 </ul>
 
 <h2 id="collect">What we collect</h2>
@@ -50,7 +51,7 @@
 
 <h2 id="cookies">Cookies</h2>
 <ul>
-  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: MTRX Horizyn's other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days }} days from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
+  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: MTRX Horizyn's other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days|plural('day') }} from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
   <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
   <li>Pilot keeps its chat, its settings and your AI key (if you added one) in your browser: for that tab only, unless you choose to remember them on that device. The corner you drag Pilot's robot to, and its look, are kept on that device. None of it is a cookie, and none of it is sent to us.</li>
   <li>No ad cookies. No tracking cookies.</li>
@@ -87,12 +88,12 @@
 <ul>
   <li><strong>Your account, workspace, readings, audit trail, email copies and kids' Academy profiles:</strong> until they are deleted (see below). Nothing here deletes itself, not even when a trial or a plan ends.</li>
   <li><strong>Wrong password tries, reset requests, sign-ups, join code and friend code tries, and the addresses CyberLogix reports came from:</strong> deleted within 2 days.</li>
-  <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days }} days.</li>
-  <li><strong>Kid join codes</strong> work for {{ facts.join_code_days }} days and <strong>friend codes</strong> for {{ facts.friend_code_days }} days. Then they are deleted.</li>
-  <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days }} days.</li>
-  <li><strong>Error reports:</strong> {{ facts.error_days }} days in the app. A copy emailed to the people who run OmniArmor stays in their inbox.</li>
+  <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days|plural('day') }}.</li>
+  <li><strong>Kid join codes</strong> work for {{ facts.join_code_days|plural('day') }} and <strong>friend codes</strong> for {{ facts.friend_code_days|plural('day') }}. Then they are deleted.</li>
+  <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days|plural('day') }}.</li>
+  <li><strong>Error reports:</strong> {{ facts.error_days|plural('day') }} in the app. A copy emailed to the people who run OmniArmor stays in their inbox.</li>
   {% if facts.backup_keep > 0 %}
-  <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep }} days.</li>
+  <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep|plural('day') }}.</li>
   {% else %}
   <li><strong>Backups:</strong> we copy the whole database once a day and check each copy before we keep it. Old copies are not deleted by themselves, so something you delete can stay in a backup.</li>
   {% endif %}

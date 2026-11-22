@@ -29,6 +29,7 @@ from .redact import RedactingFilter, redact
 from .security import check_csrf, csrf_token, home_url, load_user, security_headers
 from .tracking import format_quantity, local_date
 from .version import __version__
+from .words import plural, plural_word
 
 SLOGAN = "Catch the fine before it catches you."
 
@@ -131,6 +132,8 @@ def class_guide():
 
 # The date the Terms and Privacy pages last changed. Update it with them.
 RULES_UPDATED = "20 November 2026"
+# The date the Security and your data page last changed (1.18.0).
+SECURITY_UPDATED = "22 November 2026"
 
 
 def _rules_facts():
@@ -163,12 +166,21 @@ def _rules_facts():
         "alert_minutes": max(1, ALERTS_EVERY_SECONDS // 60),
         "signature_minutes": int(SIGNATURE_MEMORY.total_seconds() // 60),
         "pause_most": max(PAUSE_MONTHS),
+        "support_email": support_email(cfg),
+        "security_updated": SECURITY_UPDATED,
     }
 
 
 @public.route("/privacy")
 def privacy():
     return render_template("privacy.html", facts=_rules_facts())
+
+
+@public.route("/security", endpoint="security")
+def security_page():
+    """Security and your data (1.18.0): where the data lives, backups, who can
+    see a student's name, how to delete it and who to write to."""
+    return render_template("security.html", facts=_rules_facts())
 
 
 @public.route("/terms")
@@ -217,7 +229,8 @@ def help_page():
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
 PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page",
-                "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.help", "auth.signup", "auth.login"}
+                "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.security", "public.help", "auth.signup",
+                "auth.login"}
 # Addresses that are not pages: they get no noindex header.
 NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
@@ -274,7 +287,7 @@ def sitemap():
     paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
     paths += [url_for("public.academy_schools"), url_for("public.class_guide")]
     paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
-              url_for("public.privacy")]
+              url_for("public.privacy"), url_for("public.security")]
     if current_app.config.get("NOINDEX"):
         paths = []
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -436,10 +449,13 @@ def create_app(**overrides):
     app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config),
-                                pilot_tag=pilot.pilot_tag, lesson_view=academy_views.lesson_view,
+                                pilot_tag=pilot.pilot_tag, lesson_view=academy_views.lesson_view, kid_exit_url=academy_views.kid_exit_url,
                                 shot=shots.shot, shot_kind=shots.kind_for)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["pct"] = percent
+    # "1 warning", "2 warnings" (words.py, 1.18.0): {{ n|plural('warning') }}.
+    app.jinja_env.filters["plural"] = plural
+    app.jinja_env.filters["plural_word"] = plural_word
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))
 
     # Browsers keep CSS, JS and images for a year, so repeat visits cost no

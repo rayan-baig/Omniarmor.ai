@@ -31,6 +31,7 @@ from .redact import redact
 from .db import connect, iso, migrate, now_iso, utcnow
 from .auth import RESET_HOURS
 from .notify import send_email
+from .words import plural
 
 log = logging.getLogger("omniarmor.autopilot")
 
@@ -152,7 +153,7 @@ def find_problems(conn, cfg, deep=False):
     if cfg["DATABASE"] != ":memory:" and _has_daily_history(cfg):
         age = backup_age(cfg)
         if age is None or age > BACKUP_MAX_AGE.total_seconds() + 3600:
-            when = "no backup exists yet" if age is None else f"the newest is {int(age // 3600)} hours old"
+            when = "no backup exists yet" if age is None else f"the newest is {plural(int(age // 3600), 'hour')} old"
             found.append(Finding("backup", "Backups are failing",
                                  f"Autopilot tried to make one and couldn't: {when}. Backup folder: {cfg['BACKUP_DIR']}.",
                                  "Check that the backup folder exists, is writable and has free space. "
@@ -178,7 +179,7 @@ def find_problems(conn, cfg, deep=False):
     stuck = conn.execute("SELECT COUNT(*), MAX(error) FROM notifications WHERE status = 'failed' AND attempts > ?"
                          " AND created_at >= ?", (len(EMAIL_RETRY_AFTER), iso(now - timedelta(days=1)))).fetchone()
     if stuck[0] >= EMAIL_FAILURES_ALERT:
-        found.append(Finding("email", f"{stuck[0]} emails failed even after {len(EMAIL_RETRY_AFTER)} retries",
+        found.append(Finding("email", f"{plural(stuck[0], 'email')} failed even after {len(EMAIL_RETRY_AFTER)} retries",
                              f"Last error: {stuck[1] or 'unknown'}. Customers may be missing reminders.",
                              "Check the SMTP settings and your email provider's dashboard (sending limits, "
                              "a changed password, an unverified sender)."))

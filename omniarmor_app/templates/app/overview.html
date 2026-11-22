@@ -110,7 +110,7 @@
   {% for item in by_industry %}
     <li><a class="row" href="{{ url_for('app.industry', industry_id=item.industry.id) }}">
       <span><span class="title">{{ item.industry.brand }}</span><span class="meta"> · {{ item.industry.sector }}</span></span>
-      <span class="meta">{{ item.counts.BLOCKED }} blocked · {{ item.counts.WARNING }} {{ 'warning' if item.counts.WARNING == 1 else 'warnings' }} · {{ item.counts.NONE }} unread</span>
+      <span class="meta">{{ item.counts.BLOCKED }} blocked · {{ item.counts.WARNING|plural('warning') }} · {{ item.counts.NONE }} without a reading</span>
     </a></li>
   {% endfor %}
 </ul>

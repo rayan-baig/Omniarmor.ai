@@ -46,6 +46,58 @@
     chime(soundOn);
   });
 
+  // --- "Grown-up? Hold to exit" on a learner's map (base.html, 1.18.0) ------
+  // A grown-up presses and holds it (about a second and a half) to leave the
+  // kid's screen; a quick tap only says to keep holding, so a kid tapping
+  // around stays on their map. Space or Enter held down works the same.
+  var HOLD_MS = 1500;
+  document.addEventListener("DOMContentLoaded", function () {
+    var exit = document.querySelector("[data-hold-exit]");
+    if (!exit) return;
+    var label = exit.querySelector("[data-hold-label]");
+    var said = label ? label.textContent : "";
+    var timer = null;
+    var hintTimer = null;
+    var start = function () {
+      if (timer) return;
+      exit.classList.add("holding");
+      timer = setTimeout(function () {
+        timer = null;
+        exit.classList.remove("holding");
+        exit.classList.add("held");
+        window.location.assign(exit.getAttribute("href"));
+      }, HOLD_MS);
+    };
+    var stop = function (tapped) {
+      if (timer) { clearTimeout(timer); timer = null; }
+      exit.classList.remove("holding");
+      if (tapped && label) {
+        label.textContent = exit.getAttribute("data-hold-hint") || said;
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(function () { label.textContent = said; }, 1800);
+      }
+    };
+    exit.addEventListener("click", function (e) { e.preventDefault(); });
+    exit.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    exit.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      try { exit.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+      start();
+    });
+    exit.addEventListener("pointerup", function () { stop(Boolean(timer)); });
+    exit.addEventListener("pointercancel", function () { stop(false); });
+    exit.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      start();
+    });
+    exit.addEventListener("keyup", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      stop(Boolean(timer));
+    });
+    exit.addEventListener("blur", function () { stop(false); });
+  });
+
   // A short rising chime (made here, no sound file), only when sound is on.
   var audio = null;
   var chimed = false;
@@ -112,7 +164,7 @@
           story.classList.add("all");
           nav.hidden = true;
           cards.forEach(function (card) { card.classList.add("active"); });
-          var first = quiz.querySelector("input[type=radio]");
+          var first = quiz.querySelector(".ac-q:not(.game-on) input[type=radio], .ac-q.game-on [data-game] button, .ac-q.game-on .ac-game button");
           quiz.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
           if (first) first.focus({ preventScroll: true });
         }
@@ -210,6 +262,7 @@
         else if (Number(other.value) === verdict.chosen) label.classList.add("wrong");
         if (Number(other.value) === verdict.chosen) other.checked = true;
       });
+      revealGame(q, verdict);
       var explain = q.querySelector("[data-explain]");
       if (explain && verdict.explain) {
         explain.textContent = verdict.explain;
@@ -256,8 +309,139 @@
         });
       });
     });
+    Array.prototype.forEach.call(quiz.querySelectorAll("[data-game]"), setupGame);
     updateCount();
   });
+
+  // --- Matching and sorting games (1.18.0) -----------------------------------
+  // Each game is one question. Its radio buttons stay in the page (hidden):
+  // when every piece has a place, "Check" picks the radio whose code says where
+  // each piece went (match: which idea each word goes with; sort: which bin each
+  // item goes in), and the quiz checks it like any other answer.
+  function setupGame(q) {
+    var kind = q.getAttribute("data-game");
+    var box = q.querySelector(kind === "match" ? "[data-match]" : "[data-sort]");
+    var radios = Array.prototype.slice.call(q.querySelectorAll("input[type=radio][data-code]"));
+    if (!box || !radios.length) return;
+    box.hidden = false;
+    q.classList.add("game-on");
+    radios.forEach(function (r) { r.required = false; });
+    var check = box.querySelector("[data-game-check]");
+    var help = box.querySelector("[data-game-help]");
+    var picks = [];
+    var choose = function () {
+      var code = picks.join(",");
+      var radio = radios.filter(function (r) { return r.getAttribute("data-code") === code; })[0];
+      if (!radio) return;
+      box.classList.add("done");
+      if (help) help.hidden = true;
+      Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) { b.disabled = true; });
+      radio.checked = true;
+      radio.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    if (kind === "match") {
+      var words = Array.prototype.slice.call(box.querySelectorAll("[data-left]"));
+      var ideas = Array.prototype.slice.call(box.querySelectorAll("[data-right]"));
+      picks = words.map(function () { return null; });
+      var current = null;
+      var draw = function () {
+        words.forEach(function (w, i) {
+          var paired = picks[i] !== null;
+          w.className = "ac-chip ac-chip-word" + (paired ? " paired pair-" + i : "") + (current === i ? " picked" : "");
+          w.setAttribute("aria-pressed", current === i ? "true" : "false");
+          w.querySelector(".ac-pair").textContent = paired ? String(i + 1) : "";
+        });
+        ideas.forEach(function (idea, j) {
+          var owner = picks.indexOf(j);
+          idea.className = "ac-chip" + (owner >= 0 ? " paired pair-" + owner : "");
+          idea.setAttribute("aria-pressed", owner >= 0 ? "true" : "false");
+          idea.querySelector(".ac-pair").textContent = owner >= 0 ? String(owner + 1) : "";
+        });
+        var ready = picks.every(function (p) { return p !== null; });
+        if (check) check.disabled = !ready;
+        if (help) help.textContent = ready ? "All matched. Check them, or tap a word to change it."
+          : current !== null ? "Now tap the idea that goes with \u201c" + words[current].textContent.trim() + "\u201d."
+          : "Tap a word, then the idea that goes with it.";
+      };
+      words.forEach(function (w, i) {
+        w.addEventListener("click", function () { current = i; draw(); });
+      });
+      ideas.forEach(function (idea, j) {
+        idea.addEventListener("click", function () {
+          if (current === null) {
+            var owner = picks.indexOf(j);
+            if (owner >= 0) { current = owner; draw(); }
+            return;
+          }
+          var before = picks.indexOf(j);
+          if (before >= 0) picks[before] = null;
+          picks[current] = j;
+          var next = picks.indexOf(null);
+          current = next >= 0 ? next : null;
+          draw();
+        });
+      });
+      draw();
+    } else {
+      var items = Array.prototype.slice.call(box.querySelectorAll("[data-item]"));
+      picks = items.map(function () { return null; });
+      var drawSort = function () {
+        items.forEach(function (item, i) {
+          item.className = "ac-sort-item" + (picks[i] !== null ? " in-bin bin-" + picks[i] : "");
+          Array.prototype.forEach.call(item.querySelectorAll("[data-bin]"), function (b) {
+            b.setAttribute("aria-pressed", String(picks[i] !== null && Number(b.getAttribute("data-bin")) === picks[i]));
+          });
+        });
+        var ready = picks.every(function (p) { return p !== null; });
+        if (check) check.disabled = !ready;
+        if (help) help.textContent = ready ? "All sorted. Check them, or change one." : "Put each one in a bin.";
+      };
+      items.forEach(function (item, i) {
+        Array.prototype.forEach.call(item.querySelectorAll("[data-bin]"), function (b) {
+          b.addEventListener("click", function () { picks[i] = Number(b.getAttribute("data-bin")); drawSort(); });
+        });
+      });
+      drawSort();
+    }
+    if (check) check.addEventListener("click", choose);
+  }
+
+  // The verdict on a game: each piece right or wrong, and where a wrong one goes.
+  function revealGame(q, verdict) {
+    var kind = q.getAttribute("data-game");
+    if (!kind) return;
+    var radios = Array.prototype.slice.call(q.querySelectorAll("input[type=radio][data-code]"));
+    var right = radios.filter(function (r) { return Number(r.value) === verdict.answer; })[0];
+    var chosen = radios.filter(function (r) { return Number(r.value) === verdict.chosen; })[0];
+    if (!right) return;
+    var truth = right.getAttribute("data-code").split(",").map(Number);
+    var mine = (chosen ? chosen.getAttribute("data-code") : "").split(",").map(Number);
+    if (kind === "match") {
+      var ideas = Array.prototype.slice.call(q.querySelectorAll("[data-right]"));
+      Array.prototype.forEach.call(q.querySelectorAll("[data-left]"), function (w, i) {
+        var ok = mine[i] === truth[i];
+        w.classList.add(ok ? "right" : "wrong");
+        if (!ok && ideas[truth[i]]) {
+          var fix = document.createElement("span");
+          fix.className = "ac-fix";
+          fix.textContent = "goes with: " + ideas[truth[i]].textContent.trim();
+          w.appendChild(fix);
+        }
+      });
+    } else {
+      var bins = Array.prototype.map.call(q.querySelectorAll(".ac-sort-item:first-child [data-bin]"), function (b) { return b.textContent.trim(); });
+      Array.prototype.forEach.call(q.querySelectorAll("[data-item]"), function (item, i) {
+        var ok = mine[i] === truth[i];
+        item.classList.add(ok ? "right" : "wrong");
+        if (!ok && bins[truth[i]]) {
+          var fix = document.createElement("span");
+          fix.className = "ac-fix";
+          fix.textContent = "belongs in: " + bins[truth[i]];
+          item.appendChild(fix);
+        }
+      });
+    }
+  }
 
   // A little burst of sparks from a right answer.
   function burst(label) {

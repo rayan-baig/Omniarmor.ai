@@ -3,17 +3,27 @@
 {% block title %}{{ summary.learner.nickname }}'s adventure{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+<script src="{{ url_for('static', filename='academy.js') }}" defer></script>
 {% endblock %}
-{% macro world_card(card, learner_id, number=None) -%}
+{#- 1.18.0: the topic worlds and the Challenge are a path: each world a node on a winding road (an SVG line from
+    its node to the next one's, done stretches solid), with its card beside it. pos is the node's place across the
+    road (0 to 3: left, middle, right, middle; 26%, 50%, 74%) and next_pos the next node's, or none at the end of a stretch. The
+    Rule Quests stay a grid of cards (pos none). -#}
+{% macro world_card(card, learner_id, number=None, pos=None, next_pos=None) -%}
+{% set ROAD_X = [26, 50, 74, 50] %}
 {% set w = card.world %}
 {% set state = 'paid' if card.paid else ('done' if card.done == card.stages else ('open' if card.open else 'locked')) %}
 {% set clickable = card.open and not card.paid %}
+{#- On a kid's screen (their own device, or their map on a grown-up's: 1.18.0) a Plus world is only locked. -#}
+{% set kid_like = g.kid or lesson_view() %}
 {% set here = up_next and up_next.world.number == w.number %}
-<li class="ac-world {{ state }} {{ hue(w) }}{{ ' started' if card.done and card.done < card.stages else '' }}{{ ' here' if here }}"{% if here %} data-you-are-here{% endif %}>
+<li class="ac-world {{ state }} {{ hue(w) }}{{ ' started' if card.done and card.done < card.stages else '' }}{{ ' here' if here }}{% if pos is not none %} p-{{ pos }}{% endif %}{% if w.kind == 'final' %} boss{% endif %}"{% if here %} data-you-are-here{% endif %}>
+  {% if pos is not none and next_pos is not none %}<svg class="ac-road" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M{{ ROAD_X[pos] }} 0 C{{ ROAD_X[pos] }} 55 {{ ROAD_X[next_pos] }} 45 {{ ROAD_X[next_pos] }} 100"/></svg>{% endif %}
   {% if clickable %}<a href="{{ url_for('academy.world_page', learner_id=learner_id, world_number=w.number) }}">
-  {% elif card.paid and not g.kid %}<a href="{{ url_for('plan.plan_page') }}">
+  {% elif card.paid and not kid_like %}<a href="{{ url_for('plan.plan_page') }}">
   {% else %}<span aria-disabled="true">{% endif %}
-    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}<span class="ac-shine"></span>{{ sticker(state) }}{% if here %}<span class="ac-here-pin" title="You are here">{{ avatar(summary.learner.avatar, avatars, 30, summary.tier) }}</span>{% endif %}</span>
+    <span class="ac-world-node"><span class="ac-world-badge">{{ level_icon(w.icon, 34) }}<span class="ac-shine"></span>{{ sticker(state) }}{% if here %}<span class="ac-here-pin" title="You are here">{{ avatar(summary.learner.avatar, avatars, 30, summary.tier) }}</span>{% endif %}</span></span>
+    <span class="ac-world-card">
     <span class="ac-world-text">
       <span class="ac-world-num">{% if w.kind == 'topic' %}World {{ number }}{% elif w.kind == 'final' %}Boss world{% else %}Rule Quest{% endif %}{% if card.paid %} · Plus{% elif not card.open %} · locked{% endif %}</span>
       <span class="ac-world-title">{{ w.title }}</span>
@@ -23,14 +33,16 @@
       <span class="ac-meter"><span class="ac-meter-fill pct-{{ card.done|pct(card.stages) }}"></span></span>
       <span class="ac-world-count">{{ card.done }}/{{ card.stages }} · {{ star(true, 14) }} {{ card.stars }}</span>
     </span>
-  {% if clickable or (card.paid and not g.kid) %}</a>{% else %}</span>{% endif %}
+    </span>
+  {% if clickable or (card.paid and not kid_like) %}</a>{% else %}</span>{% endif %}
 </li>
 {%- endmacro %}
 {% block content %}
 {% set buddy = armo_personality(summary.learner.armo, 'sweet') %}
 {% set lid = summary.learner.id %}
+{% set kid_like = g.kid or lesson_view() %}
 <div class="ac">
-  {% if not g.kid %}<p class="ac-crumb">{% if summary.learner.class_id %}<a href="{{ url_for('classes.class_page', class_id=summary.learner.class_id) }}">← The class</a>{% else %}<a href="{{ url_for('academy.home') }}">← All learners</a>{% endif %}</p>{% endif %}
+  {% if not kid_like %}<p class="ac-crumb">{% if summary.learner.class_id %}<a href="{{ url_for('classes.class_page', class_id=summary.learner.class_id) }}">← The class</a>{% else %}<a href="{{ url_for('academy.home') }}">← All learners</a>{% endif %}</p>{% endif %}
   <section class="ac-player">
     {#- The learner's picture grows with them (1.16.0): bigger at each rank, with its rings, sparkles, crown,
         wings and aura, and the forms still to come shown under the progress bar. -#}
@@ -46,11 +58,11 @@
           {% set reached = loop.index0 <= summary.tier %}
           <li class="{{ 'now' if loop.index0 == summary.tier else ('got' if reached else 'later') }}"{% if loop.index0 == summary.tier %} aria-current="step"{% endif %}>
             {{ avatar(summary.learner.avatar, avatars, 34 if loop.index0 == summary.tier else 26, loop.index0) }}
-            <span class="sr">{{ title }}{% if not reached %}, at {{ goal }} lessons{% endif %}</span>
+            <span class="sr">{{ title }}{% if not reached %}, at {{ goal|plural('lesson') }}{% endif %}</span>
           </li>
         {% endfor %}
       </ol>
-      <p class="ac-xp-label" data-lesson-count="{{ summary.total }}">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons{% if summary.quests %} · <span data-quest-count="{{ summary.quests }}">{{ plus_quests(summary.quests) }}</span>{% endif %} · {{ summary.stars }} stars
+      <p class="ac-xp-label" data-lesson-count="{{ summary.total }}">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons{% if summary.quests %} · <span data-quest-count="{{ summary.quests }}">{{ plus_quests(summary.quests) }}</span>{% endif %} · {{ summary.stars|plural('star') }}
         {% if summary.next_rank %} · {{ summary.to_next }} more to {{ summary.next_rank[1] }}, when your picture grows again{% endif %}</p>
     </div>
     {% if track.rule_quests %}
@@ -65,13 +77,13 @@
   <ul class="ac-stats" aria-label="Your stats">
     <li class="ac-streak{{ ' hot' if summary.streak }}"><span class="ac-stat-num">{{ level_icon('flame', 26) }} {{ summary.streak }}</span><span class="ac-stat-label">day streak</span></li>
     <li><span class="ac-stat-num">{{ [summary.today, daily_goal]|min }}/{{ daily_goal }}</span><span class="ac-stat-label">today's goal{% if summary.today >= daily_goal %} · done!{% endif %}</span></li>
-    <li><span class="ac-stat-num">{{ summary.stars }}</span><span class="ac-stat-label">stars</span></li>
+    <li><span class="ac-stat-num">{{ summary.stars }}</span><span class="ac-stat-label">{{ summary.stars|plural_word('star') }}</span></li>
   </ul>
 
-  {% if plan.access == 'trial' and not g.kid %}
+  {% if plan.access == 'trial' and not kid_like %}
     <p class="ac-banner">Free trial: {{ plan.trial_days }} day{{ 's' if plan.trial_days != 1 }} of the full Academy left. <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
   {% elif plan.access == 'free' %}
-    <p class="ac-banner">{% if g.kid %}Some worlds are locked. {{ 'Ask your teacher!' if summary.learner.class_id else 'Ask a grown-up about Plus!' }}{% elif summary.learner.class_id %}The class's free trial or plan has ended: the first {{ free_world_count }} worlds stay open. <a href="{{ url_for('plan.plan_page') }}">See the classroom plans</a>{% else %}You're on the free Academy: the first {{ free_world_count }} {{ free_track_name }} worlds. <a href="{{ url_for('plan.plan_page') }}">Unlock everything</a>{% endif %}</p>
+    <p class="ac-banner">{% if kid_like %}Some worlds are locked. {{ 'Ask your teacher!' if summary.learner.class_id else 'Ask a grown-up about Plus!' }}{% elif summary.learner.class_id %}The class's free trial or plan has ended: the first {{ free_world_count }} worlds stay open. <a href="{{ url_for('plan.plan_page') }}">See the classroom plans</a>{% else %}You're on the free Academy: the first {{ free_world_count }} {{ free_track_name }} worlds. <a href="{{ url_for('plan.plan_page') }}">Unlock everything</a>{% endif %}</p>
   {% endif %}
 
   {% if up_next %}
@@ -104,12 +116,12 @@
         </div>
       </div>
     </header>
-    <ol class="ac-worlds">
-      {% for card in unit.cards %}{% set ns.n = ns.n + 1 %}{{ world_card(card, lid, ns.n) }}{% endfor %}
+    <ol class="ac-worlds ac-path">
+      {% for card in unit.cards %}{% set ns.n = ns.n + 1 %}{{ world_card(card, lid, ns.n, (ns.n - 1) % 4, ns.n % 4 if not loop.last else none) }}{% endfor %}
     </ol>
   {% endfor %}
   <h2 class="ac-h2">{{ "The Owner's Challenge" if track.rule_quests else 'The Class Challenge' }}</h2>
-  <ol class="ac-worlds">{{ world_card(final, lid) }}</ol>
+  <ol class="ac-worlds ac-path ac-path-end">{{ world_card(final, lid, none, 1) }}</ol>
 
   {% if mine %}
     <h2 class="ac-h2">{{ g.org.name }}'s Rule Quests</h2>
@@ -156,8 +168,9 @@
       <button class="linkbtn" type="submit">Leave the Academy on this device</button>
     </form>
   {% else %}
-    <section class="ac-card ac-grownups" id="grown-ups">
-      <h2 class="ac-h3">{{ 'For the teacher' if summary.learner.class_id else 'For grown-ups' }}</h2>
+    {#- On the kid's screen (1.18.0) the grown-ups' part is folded away at the bottom. -#}
+    <details class="ac-card ac-grownups" id="grown-ups"{% if join %} open{% endif %}>
+      <summary><span class="ac-h3">{{ 'For the teacher' if summary.learner.class_id else 'For grown-ups' }}</span></summary>
       <p class="hint">Lessons, quiz scores and certificates on every track: <a href="{{ url_for('academy.progress_report', learner_id=lid) }}">{{ summary.learner.nickname }}'s progress report</a>.</p>
       <h3 class="ac-h3 mt-s">{{ summary.learner.nickname }}'s own device</h3>
       {% if summary.learner.class_id %}
@@ -179,7 +192,7 @@
           <button class="linkbtn" type="submit">Sign {{ summary.learner.nickname }} out on every device</button>
         </form>
       </div>
-    </section>
+    </details>
   {% endif %}
 </div>
 {% endblock %}

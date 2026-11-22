@@ -18,15 +18,46 @@
       </div>
       <p class="ac-toast" data-toast aria-live="polite"></p>
     </div>
+    {#- 1.18.0: a lesson mixes its kinds of question. A scenario (a choice question that sets a scene) has its own
+        look. A matching game (three words to their ideas) and a sorting game (three things into two bins) are one
+        question each: academy.js turns them into taps, then picks the radio button whose code says where each
+        piece went, so they are checked and graded like any other question. Without the script the radio buttons
+        show, each one spelling out a whole answer. -#}
     {% for q in questions %}
       {% set qi = loop.index0 %}
-      <fieldset class="ac-q ac-q-{{ q.kind }}" data-index="{{ qi }}">
-        <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %} {{ q.prompt }}</legend>
-        <div class="ac-options">
+      {% set game = q.kind in ('match', 'sort') and q.parts %}
+      <fieldset class="ac-q ac-q-{{ q.kind }}{% if q.look %} ac-q-{{ q.look }}{% endif %}" data-index="{{ qi }}"{% if game %} data-game="{{ q.kind }}"{% endif %}>
+        <legend><span class="ac-qnum">{{ loop.index }}</span>{% if q.review %} <span class="ac-tag">Review</span>{% endif %}{% if q.look == 'scenario' %} <span class="ac-tag ac-tag-scene">Scenario</span>{% elif game %} <span class="ac-tag ac-tag-game">{{ 'Match it' if q.kind == 'match' else 'Sort it' }}</span>{% endif %} {{ q.parts.title if game else q.prompt }}</legend>
+        {% if game and q.kind == 'match' %}
+        <div class="ac-game ac-match" data-match hidden>
+          <ul class="ac-match-col" aria-label="Words">
+            {% for word in q.parts.left %}<li><button type="button" class="ac-chip ac-chip-word" data-left="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span>{{ word }}</span></button></li>{% endfor %}
+          </ul>
+          <ul class="ac-match-col" aria-label="Ideas">
+            {% for idea in q.parts.right %}<li><button type="button" class="ac-chip" data-right="{{ loop.index0 }}" aria-pressed="false"><span class="ac-pair" aria-hidden="true"></span><span>{{ idea }}</span></button></li>{% endfor %}
+          </ul>
+          <p class="ac-game-help" data-game-help aria-live="polite">Tap a word, then the idea that goes with it.</p>
+          <button type="button" class="btn ac-btn ac-game-check" data-game-check disabled>Check my matches</button>
+        </div>
+        {% elif game and q.kind == 'sort' %}
+        <div class="ac-game ac-sort" data-sort hidden>
+          <ul class="ac-sort-items">
+            {% for item in q.parts['items'] %}
+            <li class="ac-sort-item" data-item="{{ loop.index0 }}">
+              <span class="ac-sort-text">{{ item }}</span>
+              <span class="ac-bins" role="group" aria-label="{{ item }}">{% for bin in q.parts.bins %}<button type="button" class="ac-bin ac-bin-{{ loop.index0 }}" data-bin="{{ loop.index0 }}" aria-pressed="false">{{ bin }}</button>{% endfor %}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          <p class="ac-game-help" data-game-help aria-live="polite">Put each one in a bin.</p>
+          <button type="button" class="btn ac-btn ac-game-check" data-game-check disabled>Check my sorting</button>
+        </div>
+        {% endif %}
+        <div class="ac-options"{% if game %} data-game-options{% endif %}>
           {% for opt in q.options %}
             <label class="ac-opt{% if q.kind == 'light' %} ac-light-{{ loop.index0 }}{% endif %}">
-              <input type="radio" name="q{{ qi }}" value="{{ loop.index0 }}" required>
-              {% if q.kind != 'light' %}<span class="ac-letter" aria-hidden="true">{{ "ABCDEF"[loop.index0] }}</span>{% endif %}
+              <input type="radio" name="q{{ qi }}" value="{{ loop.index0 }}" required{% if game %} data-code="{{ q.parts.codes[loop.index0] }}"{% endif %}>
+              {% if q.kind != 'light' %}<span class="ac-letter" aria-hidden="true">{{ "ABCDEFGH"[loop.index0] }}</span>{% endif %}
               <span>{{ opt }}</span>
             </label>
           {% endfor %}

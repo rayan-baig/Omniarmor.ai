@@ -168,7 +168,7 @@ WORLDS = [
             ("What is a business plan?", "A written map of how a business will work",
              "A list of your favorite snacks", "A drawing of what the store's front door and sign will look like",
              "A business plan explains what you sell, who buys it and how you will make money, so you can make smart choices.", 1),
-            ("What does a mission statement tell people?", "What the business does and why",
+            ("What does a mission statement tell people?", "Its purpose and what it offers",
              "How much the owner earns each year", "The address of every customer",
              "A mission explains your purpose, like 'We bake fresh, healthy bread for our neighborhood every morning.'", 1),
             ("Who are a business's customers?", "The people who buy its products",
@@ -349,7 +349,7 @@ WORLDS = [
             ("Costs were $80 in March and $60 in April. Did costs go up or down, and by how much?", "Down by $20",
              "Up by $20", "Down by $140",
              "$80 minus $60 is $20, and April is lower, so costs went down by $20.", 1),
-            ("What is a 'trend' in business numbers?", "The direction numbers move over time",
+            ("What is a 'trend' in business numbers?", "Which way the numbers head over time",
              "A single number from one day", "A brand new style of clothing",
              "A trend shows a pattern, like sales rising for several months, not just one day's result.", 1),
 
