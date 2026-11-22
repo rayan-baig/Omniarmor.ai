@@ -5,6 +5,74 @@
   "use strict";
   document.documentElement.classList.add("js");
 
+  // --- The celebration when a stage is passed (result.html, 1.16.0) ---------
+  // It covers the results until "Keep going" (or Escape). The chime plays only
+  // if sound was switched on, on this device; it starts off.
+  var SOUND_KEY = "omniarmor-academy-sound";
+  document.addEventListener("DOMContentLoaded", function () {
+    var party = document.querySelector("[data-celebrate]");
+    if (!party) return;
+    var close = party.querySelector("[data-celebrate-close]");
+    var sound = party.querySelector("[data-sound]");
+    var soundOn = false;
+    try { soundOn = window.localStorage.getItem(SOUND_KEY) === "on"; } catch (e) { soundOn = false; }
+    var showSound = function () {
+      if (!sound) return;
+      sound.textContent = soundOn ? "Sound: on" : "Sound: off";
+      sound.setAttribute("aria-pressed", soundOn ? "true" : "false");
+    };
+    var done = function () {
+      party.classList.remove("show");
+      document.removeEventListener("keydown", onKey);
+      var result = document.querySelector(".ac-result");
+      if (result) { result.setAttribute("tabindex", "-1"); result.focus({ preventScroll: true }); }
+    };
+    var onKey = function (e) { if (e.key === "Escape") done(); };
+    party.classList.add("show");
+    if (close) { close.hidden = false; close.addEventListener("click", function () { chime(soundOn); done(); }); }
+    if (sound) {
+      sound.hidden = false;
+      showSound();
+      sound.addEventListener("click", function () {
+        soundOn = !soundOn;
+        try { window.localStorage.setItem(SOUND_KEY, soundOn ? "on" : "off"); } catch (e) { /* not kept */ }
+        showSound();
+        chime(soundOn);
+      });
+    }
+    document.addEventListener("keydown", onKey);
+    party.focus({ preventScroll: true });
+    chime(soundOn);
+  });
+
+  // A short rising chime (made here, no sound file), only when sound is on.
+  var audio = null;
+  var chimed = false;
+  function chime(on) {
+    if (!on || chimed) return;
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    try {
+      audio = audio || new Ctx();
+      if (audio.state === "suspended") { audio.resume(); if (audio.state === "suspended") return; }
+      chimed = true;
+      var t = audio.currentTime;
+      [523.25, 659.25, 783.99, 1046.5].forEach(function (freq, n) {
+        var osc = audio.createOscillator();
+        var gain = audio.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t + n * 0.11);
+        gain.gain.exponentialRampToValueAtTime(0.18, t + n * 0.11 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + n * 0.11 + 0.35);
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start(t + n * 0.11);
+        osc.stop(t + n * 0.11 + 0.4);
+      });
+    } catch (e) { /* no sound: fine */ }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var story = document.querySelector("[data-story]");
     var quiz = document.querySelector("[data-quiz]");

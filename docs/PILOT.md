@@ -75,9 +75,13 @@ Armo lives in the bottom-left corner and the robot in the bottom-right on a wide
   every status tag (No reading, Blocked and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a
   check's message, an entry's name and tag, a flash or banner, a learner's badge, Armo's bubble, "Fix
   it" and badge, the "First name only?" card and the menu at the top (with Sign out) are never covered.
+  1.16.0 adds `".lockup"`, a check's "Select" box (`".pick"`) and the teacher guide's lines, headings and list
+  items (`"[data-teacher-guide] p"`, `li`, `h2`, `h3`), which the robot still touched.
 - `gutter: ["main > .wrap"]` (1.14.0): on a phone the page's column keeps the core's side room (30 px,
   for the small tucked-away robot), so line ends stop before it. `main` itself has no side padding; its
   `.wrap` does, so that is the column. (1.13.0 had `gutter: false`, when the robot never tucked on a phone.)
+  1.16.0: on a signed-in page (a tab bar) it is `false` again, because the robot has its own reserved
+  corner above the tab bar there (app.css), so the column keeps its own even room.
 - No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs (Armo's bubble is a helper's, and is
   in `yieldTo`), and the core already steps back for any page-covering layer.
 
@@ -130,7 +134,8 @@ beside the key settings and in help).
 (`window.Pilot.open()`), since Pilot steps back while Armo's badge has a count. Armo keeps clear of the
 page the way Pilot does: `armo.js` (`keepClear`) checks a grid of points under him for controls, status
 tags, notices and words, and shrinks him into his corner (`armo-tucked`) where he would cover one; on a
-phone the page's column keeps 42 px at its right while he shows. On a computer (1100 px and wider) the
+phone (1.16.0) he and Pilot share a reserved corner above the tab bar instead, so the column stays centred
+and he keeps his size there. On a computer (1100 px and wider) the
 sections are a side bar, so Pilot's corners there use the core's own 16 px gap.
 
 Questions are sent at once (each has a tool or the pack's answer); "Explain this check" and "Add

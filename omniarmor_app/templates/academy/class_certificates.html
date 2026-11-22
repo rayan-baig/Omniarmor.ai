@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='certificate-print.css') }}" media="print">
 {% endblock %}
 {% block content %}
-<div class="ac">
+<div class="ac ac-grown" data-grown-up>
   <div class="no-print">
     <p class="ac-crumb"><a href="{{ url_for('classes.class_page', class_id=cls.id) }}">← {{ cls.name }}</a></p>
     <h1 class="ac-title">Certificates for {{ cls.name }}</h1>

@@ -3,6 +3,44 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.16.0 (22 November 2026)
+
+Fixes from a strict sixth review: sharper pictures that show sooner on a
+phone, one grown-up look, kinder lessons with a real celebration, and
+kids' screens with no way out to the grown-up pages.
+
+- **See the app on the first screen of a phone.** On a phone the
+  picture of the app now sits right under the buttons at the top, before
+  the prices, and every picture is twice as sharp. A trade's picture
+  shows that trade's own checks, the schools page shows the school
+  safety checklist, and the third classroom step shows the one-page class
+  report.
+- **One look for grown-ups.** The classes page, a class, its join codes,
+  certificates and report, and the Academy page for a business now look
+  like the rest of the business pages. The playful look is only on the
+  kid's own screens. On a computer the OmniArmor name sits at the top of
+  the side bar.
+- **The page stays centred on a phone.** Nothing is kept down the right
+  of every page for Armo any more: the helper has its own small corner
+  just above the tab bar.
+- **Lessons give hints, not answers.** The first lesson no longer lists
+  the quiz's answers before it starts; it gives a hint on how to think
+  instead, and the fact still shows the moment you answer.
+- **A celebration when a stage is passed,** with stars and the learner's
+  picture, and a chime if Sound is switched on (it starts off). Less
+  motion is respected.
+- **The picture grows on the map.** It gets bigger at each rank, the
+  forms still to come show in a row, and it is pinned on the world
+  played next.
+- **No way out of a kid's screen.** A lesson on a grown-up's device has
+  only the OmniArmor name (not a link) and "Back to map": no checklist,
+  menu or Sign out. A student who joined on their own device and opens a
+  grown-up page goes back to their own map.
+- **Smaller things.** Escape or a tap outside closes the phone's menu;
+  the report has a Print button; the Kitchen Safety Bundle offer moved
+  from a new user's first checklist to Settings, Connections; Pilot keeps
+  off the "Select" boxes and the teacher guide's words.
+
 ## 1.15.0 (22 November 2026)
 
 Fixes from a strict fifth review: pictures of the app, fair quizzes, the

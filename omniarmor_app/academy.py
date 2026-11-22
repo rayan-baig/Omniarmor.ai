@@ -695,6 +695,12 @@ def rank_tier(levels_done, t=None):
     return RANK_TIERS.index(rank_for(levels_done, t))
 
 
+def rank_ladder(t=None):
+    """Every rank on a track, in order, as (lessons needed, title): the forms a
+    learner's picture grows through on the map (1.16.0)."""
+    return _scaled(t or TRACKS[DEFAULT_TRACK], RANKS)
+
+
 def next_rank(levels_done, t=None):
     for needed, title in _scaled(t or TRACKS[DEFAULT_TRACK], RANKS):
         if levels_done < needed:
@@ -1673,14 +1679,15 @@ def story(t, world_number, stage, company, industry_ids):
     else:
         cards = _CONTENT[w.key](company, list(industry_ids))
     if stage == 1:
-        # The first lesson stays short: what its cards don't already teach
-        # goes on its last card, under "Before the quiz".
+        # The first lesson stays short. When it asks something its cards
+        # don't already teach in so many words, its last card ends with a
+        # hint on how to think, never the answers (1.16.0: the old "Before
+        # the quiz" line listed them): the fact shows the moment the question
+        # is answered, and a miss comes back in practice.
         said = " ".join(f"{a} {b}" for a, b in cards).lower()
-        extra = teaching_cards([q for q in lesson if not _taught(q, said)])
-        if not extra:
+        if not any(not _taught(q, said) for q in lesson):
             return cards
-        facts = " ".join(f"{h}: {b}" if h != "Good to know" else b for h, b in extra)
-        return cards[:-1] + [(cards[-1][0], f"{cards[-1][1]} Before the quiz: {facts}")]
+        return cards[:-1] + [(cards[-1][0], f"{cards[-1][1]} {QUIZ_HINT}: {quiz_hint()}")]
     teach = teaching_cards(lesson)
     if is_boss(t, w, stage):
         head = (f"Stage {stage}: boss round!", "The last lesson of this world, with its highest pass mark. "
@@ -1689,6 +1696,16 @@ def story(t, world_number, stage, company, industry_ids):
         head = (f"Stage {stage}: learn, then play", f"Read these {len(teach)} short cards. The quiz asks about"
                                                     f" {'each one' if len(teach) > 1 else 'it'}.")
     return [head] + teach
+
+
+QUIZ_HINT = "Quiz hint"
+
+
+def quiz_hint():
+    """The end of a first lesson's last card, when its quiz asks something
+    the cards don't teach in so many words: how to think, not the answers."""
+    return ("read every answer before you pick. When a question asks what to do, the safest, fairest and most"
+            " honest choice is usually right, and Armo shows you the fact as soon as you answer.")
 
 
 def _taught(q, said):

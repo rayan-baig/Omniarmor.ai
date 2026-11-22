@@ -227,15 +227,21 @@
     // edge until tapped, shrunk into its corner (keepInViewport). The tab bar
     // is kept clear by app.css, which puts the robot's bottom corners above it.
     yieldTo: [".companion"],
+    // 1.16.0: also a check's "Select" box (.pick), and the teacher guide's
+    // lines, headings and list items, where the core's own sense of the
+    // page's words still let the robot touch them.
     avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
-      ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav", ".lockup"],
+      ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav", ".lockup",
+      ".pick", "[data-teacher-guide] p", "[data-teacher-guide] li", "[data-teacher-guide] h2", "[data-teacher-guide] h3"],
     // On a phone the robot stays in the bottom-right corner, the one corner
     // it shares with Armo, and only one of them shows (app.css, "One helper,
     // one corner"); tucked away it shrinks there, never off the edge. The
     // page's column keeps the core's side room (30px on a phone) so line ends
     // stop before the small robot. The column is main's .wrap (main itself
-    // has no side padding).
-    gutter: ["main > .wrap"],
+    // has no side padding). On a signed-in page (the tab bar) the robot has
+    // its own corner above the tab bar instead (app.css, 1.16.0), so the
+    // column keeps its own even room and no side room is added.
+    gutter: document.body && document.body.classList.contains("has-tabs") ? false : ["main > .wrap"],
     screen,
     chips,
     taskPrompt,

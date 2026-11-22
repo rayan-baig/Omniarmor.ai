@@ -49,8 +49,8 @@ class TestTheConfig(unittest.TestCase):
         self.assertNotIn('tagline: "Your AI copilot. Powered by you."', self.config)
 
     def test_the_column_keeps_the_core_s_side_room_for_the_small_robot(self):
-        self.assertIn('gutter: ["main > .wrap"],', self.config)
-        self.assertNotIn("gutter: false", self.config)
+        # On a public page; on a signed-in page (1.16.0) the robot has its own corner above the tab bar.
+        self.assertIn('gutter: document.body && document.body.classList.contains("has-tabs") ? false : ["main > .wrap"],', self.config)
         self.assertIn('<main id="main" tabindex="-1">\n  <div class="wrap">', read("omniarmor_app", "templates", "base.html"))
 
 

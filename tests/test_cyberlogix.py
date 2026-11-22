@@ -485,12 +485,12 @@ class TestNoTemperatureCheck(AppTestCase):
 
 
 class TestTheBundleNoteOnTheCheck(BundleCase):
-    def test_before_connecting_it_links_to_connections(self):
+    def test_before_connecting_the_offer_is_in_settings_not_on_the_check(self):
+        # 1.16.0: a new user's first checklist carries no upsell; the offer lives in Settings, Connections.
         page = self.client.get(f"/app/industry/{RESTO}").get_data(as_text=True)
-        self.assertIn("Kitchen Safety Bundle", page)
-        self.assertIn("Let CyberLogix fill this in automatically", page)
-        self.assertIn('href="/app/settings#connections"', page)
-        self.assertEqual(page.count("data-bundle>"), 1, "only on the temperature check")
+        self.assertNotIn("Let CyberLogix fill this in automatically", page)
+        self.assertEqual(page.count("data-bundle>"), 0)
+        self.assertIn("Let CyberLogix fill this in automatically", self.client.get("/app/settings").get_data(as_text=True))
         self.assertNotIn("Kitchen Safety Bundle", self.client.get("/app/industry/1").get_data(as_text=True))
 
 

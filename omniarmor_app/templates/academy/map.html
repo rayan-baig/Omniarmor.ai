@@ -8,11 +8,12 @@
 {% set w = card.world %}
 {% set state = 'paid' if card.paid else ('done' if card.done == card.stages else ('open' if card.open else 'locked')) %}
 {% set clickable = card.open and not card.paid %}
-<li class="ac-world {{ state }} {{ hue(w) }}{{ ' started' if card.done and card.done < card.stages else '' }}">
+{% set here = up_next and up_next.world.number == w.number %}
+<li class="ac-world {{ state }} {{ hue(w) }}{{ ' started' if card.done and card.done < card.stages else '' }}{{ ' here' if here }}"{% if here %} data-you-are-here{% endif %}>
   {% if clickable %}<a href="{{ url_for('academy.world_page', learner_id=learner_id, world_number=w.number) }}">
   {% elif card.paid and not g.kid %}<a href="{{ url_for('plan.plan_page') }}">
   {% else %}<span aria-disabled="true">{% endif %}
-    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}<span class="ac-shine"></span>{{ sticker(state) }}</span>
+    <span class="ac-world-badge">{{ level_icon(w.icon, 34) }}<span class="ac-shine"></span>{{ sticker(state) }}{% if here %}<span class="ac-here-pin" title="You are here">{{ avatar(summary.learner.avatar, avatars, 30, summary.tier) }}</span>{% endif %}</span>
     <span class="ac-world-text">
       <span class="ac-world-num">{% if w.kind == 'topic' %}World {{ number }}{% elif w.kind == 'final' %}Boss world{% else %}Rule Quest{% endif %}{% if card.paid %} · Plus{% elif not card.open %} · locked{% endif %}</span>
       <span class="ac-world-title">{{ w.title }}</span>
@@ -31,15 +32,26 @@
 <div class="ac">
   {% if not g.kid %}<p class="ac-crumb">{% if summary.learner.class_id %}<a href="{{ url_for('classes.class_page', class_id=summary.learner.class_id) }}">← The class</a>{% else %}<a href="{{ url_for('academy.home') }}">← All learners</a>{% endif %}</p>{% endif %}
   <section class="ac-player">
-    {{ avatar(summary.learner.avatar, avatars, 88, summary.tier) }}
+    {#- The learner's picture grows with them (1.16.0): bigger at each rank, with its rings, sparkles, crown,
+        wings and aura, and the forms still to come shown under the progress bar. -#}
+    <span class="ac-grow ac-grow-{{ summary.tier }}" data-picture-tier="{{ summary.tier }}">{{ avatar(summary.learner.avatar, avatars, 140, summary.tier) }}</span>
     <div class="ac-player-text">
       <p class="ac-kicker">{{ summary.rank }}{% if summary.certificate %} · {{ summary.certificate }}{% endif %}</p>
       <h1 class="ac-title">{{ summary.learner.nickname }}'s adventure</h1>
       <div class="ac-xp" role="img" aria-label="{{ summary.done }} of {{ summary.total }} lessons done">
         <span class="ac-xp-fill pct-{{ summary.done|pct(summary.total, 1) }}"></span>
       </div>
+      <ol class="ac-evolve" aria-label="How {{ summary.learner.nickname }}'s picture grows">
+        {% for goal, title in summary.ladder %}
+          {% set reached = loop.index0 <= summary.tier %}
+          <li class="{{ 'now' if loop.index0 == summary.tier else ('got' if reached else 'later') }}"{% if loop.index0 == summary.tier %} aria-current="step"{% endif %}>
+            {{ avatar(summary.learner.avatar, avatars, 34 if loop.index0 == summary.tier else 26, loop.index0) }}
+            <span class="sr">{{ title }}{% if not reached %}, at {{ goal }} lessons{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ol>
       <p class="ac-xp-label" data-lesson-count="{{ summary.total }}">{{ summary.done }} / {{ "{:,}".format(summary.total) }} lessons{% if summary.quests %} · <span data-quest-count="{{ summary.quests }}">{{ plus_quests(summary.quests) }}</span>{% endif %} · {{ summary.stars }} stars
-        {% if summary.next_rank %} · {{ summary.to_next }} more to {{ summary.next_rank[1] }}{% endif %}</p>
+        {% if summary.next_rank %} · {{ summary.to_next }} more to {{ summary.next_rank[1] }}, when your picture grows again{% endif %}</p>
     </div>
     {% if track.rule_quests %}
     <a class="ac-track-chip" href="{{ url_for('academy.choose_track', learner_id=lid) }}" title="Change track">

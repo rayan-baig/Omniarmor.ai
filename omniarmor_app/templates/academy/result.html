@@ -8,6 +8,27 @@
 {% block content %}
 {% set buddy = armo_personality(learner.armo, 'sweet') %}
 <div class="ac {{ hue(world) }}">
+  {% if passed %}
+  {#- The celebration (1.16.0): a screen of its own over the results when a stage is passed, with the learner's
+      picture (bigger when they ranked up), stars bursting out and a chime if sound is switched on. Without the
+      script it is simply the top of the page; with it, it covers the page until "Keep going". Less motion is
+      respected (academy.css), and the sound is off until someone switches it on, on this device. -#}
+  <section class="ac-celebrate" data-celebrate aria-labelledby="celebrate-title" tabindex="-1">
+    <div class="ac-celebrate-card">
+      <div class="ac-celebrate-rays" aria-hidden="true"></div>
+      <div class="ac-celebrate-sparks" aria-hidden="true">{% for i in range(14) %}<i></i>{% endfor %}</div>
+      <span class="ac-celebrate-pic{{ ' grew' if new_rank }}">{{ avatar(learner.avatar, avatars, 112, summary.tier) }}</span>
+      <p class="ac-kicker">{{ world.title }} · stage {{ stage }}</p>
+      <h2 class="ac-title" id="celebrate-title">{{ 'Perfect!' if earned_stars == 3 else 'Stage passed!' }}</h2>
+      <div class="ac-big-stars ac-celebrate-stars">{{ stars(earned_stars, 44) }}</div>
+      <p class="ac-lead">{% if new_rank %}Your picture grew: you're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!{% elif first_clear and next_stage %}Stage {{ next_stage }} is open.{% elif first_clear %}You cleared all of {{ world.title }}!{% else %}{{ score }} of {{ total }} right.{% endif %}</p>
+      <div class="ac-actions">
+        <button type="button" class="btn ac-btn" data-celebrate-close hidden>Keep going</button>
+        <button type="button" class="btn quiet ac-sound" data-sound aria-pressed="false" hidden>Sound: off</button>
+      </div>
+    </div>
+  </section>
+  {% endif %}
   <section class="ac-result {{ 'win' if passed else 'retry' }}" aria-live="polite">
     {% if passed %}<div class="ac-confetti" aria-hidden="true">{% for i in range(18) %}<i></i>{% endfor %}</div>{% endif %}
     {{ armo(120, 'cheer' if passed else 'think', buddy.accessory) }}

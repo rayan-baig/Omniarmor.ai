@@ -639,7 +639,6 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 @media (max-width:720px){
   .companion.armo-tucked{right:max(3px,env(safe-area-inset-right))}
   .companion.armo-tucked .companion-armo svg{width:36px;height:36px}
-  body:has(> .companion .companion-badge:not([hidden])) main > .wrap{padding-right:max(42px,env(safe-area-inset-right))}
 }
 .companion-pilot{min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
 .companion-pilot:hover{background:var(--hover)}
@@ -684,4 +683,40 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   .nav a.btn{padding:0 10px;font-size:14px}
   .topbar .wrap{gap:6px}
   .nav{gap:6px}
+}
+
+/* The OmniArmor name at the top of the computer's side bar (1.16.0); the top bar then keeps only its links. */
+.tab-logo{display:none}
+@media (min-width:1100px){
+  body.has-tabs:not(.lesson-view) .tab-logo{display:inline-flex;align-items:center;gap:10px;min-height:48px;margin:0 2px 14px;padding:0 12px;color:var(--ink);text-decoration:none}
+  body.has-tabs:not(.lesson-view) .tab-logo .wordmark{font-size:23px}
+  body.has-tabs:not(.lesson-view) .topbar .lockup{display:none}
+  body.has-tabs:not(.lesson-view) .topbar .wrap{justify-content:flex-end}
+}
+
+/* The helpers' own corner on a phone (1.16.0). The page's column stays centred, with the same room at both
+   sides: nothing is kept down its right for Armo any more. Instead the bottom-right corner just above the tab bar
+   is reserved for the one helper that shows there (Armo while something needs doing, else Pilot): the tab bar
+   grows a small raised corner for it, the page scrolls behind it as it does behind the tab bar, and the page's
+   bottom room lets its last lines end above it. Pilot then needs no side room on these pages either
+   (pilot-omniarmor.js). On a kid's lesson screen there is no helper and no corner. */
+@media (max-width:720px){
+  body.has-tabs:not(.lesson-view):has(> .pilot-root, > .companion .companion-badge:not([hidden]))::after{
+    content:"";position:fixed;z-index:51;right:max(4px,env(safe-area-inset-right));bottom:calc(64px + env(safe-area-inset-bottom));
+    width:72px;height:74px;border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;
+    background:rgba(15,14,13,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
+  body.has-tabs:not(.lesson-view):has(:is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=submit]),textarea,select):focus)::after{display:none}
+  /* In the corner Armo keeps his size: it is his, so there is nothing of the page's to shrink away from. */
+  body.has-tabs .companion.armo-tucked{right:max(12px,env(safe-area-inset-right))}
+  body.has-tabs .companion.armo-tucked .companion-armo svg{width:52px;height:52px}
+  body.has-tabs .companion.armo-tucked .companion-badge{top:2px;right:0}
+  body.has-tabs .companion.armo-tucked .companion-stage{animation:armo-breathe 4s ease-in-out infinite}
+}
+
+/* The picture by the headline (1.16.0): beside it on a computer; on a phone or a tablet right under the
+   headline's buttons, before the prices, so the app shows on the first screen. */
+.hero-shot-phone{display:none}
+@media (max-width:959px){
+  .hero-shot-side{display:none}
+  .hero .hero-shot-phone{display:flex;width:min(100%,360px);margin:4px 0 4px;justify-self:auto;align-self:center}
 }

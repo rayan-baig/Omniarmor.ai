@@ -203,10 +203,21 @@ def start_kid_session(learner):
     _session_csrf()
 
 
+def _kid_home():
+    """A student who joined on this device (g.kid) opening a grown-up's page
+    goes back to their own map, never to the business sign-in (1.16.0)."""
+    if g.get("kid") is not None and request.method == "GET":
+        return redirect(url_for("academy.level_map", learner_id=g.kid["id"]))
+    return None
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if g.get("user") is None:
+            back = _kid_home()
+            if back is not None:
+                return back
             return redirect(url_for("auth.login", next=request.full_path if request.method == "GET" else None))
         return view(*args, **kwargs)
     return wrapped
@@ -216,7 +227,7 @@ def owner_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if g.get("user") is None:
-            return redirect(url_for("auth.login"))
+            return _kid_home() or redirect(url_for("auth.login"))
         if g.role != "owner":
             abort(403)
         return view(*args, **kwargs)

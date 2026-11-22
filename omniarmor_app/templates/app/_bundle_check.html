@@ -1,13 +1,14 @@
-{# The Kitchen Safety Bundle on a temperature check: CyberLogix's status, and its notes for a person to review. #}
+{# The Kitchen Safety Bundle on a temperature check: CyberLogix's status, and its notes for a person to review.
+   Before a connection there is nothing here (1.16.0): the offer to connect CyberLogix lives in Settings,
+   Connections, not on a new user's first checklist. #}
 {% set latest = bundle.latest[r.key] %}
+{% if bundle.connected or bundle.notes[r.key] %}
 <div class="bundle" data-bundle>
   {% if bundle.connected and bundle.last_report %}
     <p class="bundle-status"><span class="bundle-dot on"></span>Connected to CyberLogix · last report <span class="nowrap">{{ bundle.last_report }}</span>{% if latest and latest.log_url %} · <a href="{{ latest.log_url }}" rel="noopener noreferrer nofollow" target="_blank">CyberLogix log</a>{% endif %}</p>
     {% if latest and latest.outcome in ('ticked', 'confirmed') %}<p class="bundle-line">{{ latest.summary }}.</p>{% endif %}
   {% elif bundle.connected %}
     <p class="bundle-status"><span class="bundle-dot"></span>Connected to CyberLogix · waiting for the first report</p>
-  {% else %}
-    <p class="bundle-status"><span class="bundle-tag">Kitchen Safety Bundle:</span> Let CyberLogix fill this in automatically. <a href="{{ url_for('app.settings', _anchor='connections') }}">Connections</a></p>
   {% endif %}
   {% for n in bundle.notes[r.key] %}
     <div class="bundle-note" data-bundle-note>
@@ -23,3 +24,4 @@
     </div>
   {% endfor %}
 </div>
+{% endif %}

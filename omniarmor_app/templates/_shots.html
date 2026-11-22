@@ -4,16 +4,30 @@
 <img src="{{ s.src }}" width="{{ s.width }}" height="{{ s.height }}" alt="{{ alt }}"{% if lazy %} loading="lazy"{% endif %} decoding="async"{% if cls %} class="{{ cls }}"{% endif %}>
 {%- endmacro %}
 
-{# Beside the headline: the overview (a business, a trade) or the class progress page (a school). #}
-{% macro hero_shot(kind) -%}
-<figure class="shot hero-shot" data-hero-shot="{{ kind }}">
+{# Beside the headline: the overview (a business, a trade), the class progress page (the Academy for schools) or
+   the school safety checklist (the schools page). On a computer it sits beside the headline (hero_shot); on a
+   phone or a tablet (1.16.0) it sits right under the headline's buttons, before the prices (phone_shot, placed
+   in the hero by each page). Both are the same file, so a browser fetches it once. #}
+{% macro _hero_picture(kind) -%}
   {% if kind == 'class' %}
   {{ picture('class-progress', 'The class progress page in the classroom demo: 8 students, 54 lessons done, and each student\'s lessons and certificate.', lazy=false) }}
   <figcaption>The class progress page, in the classroom demo (pretend first names).</figcaption>
+  {% elif kind == 'school' %}
+  {{ picture('school-checklist', 'The school safety checklist in a school\'s workspace: fire drills, the AED, first-aid kits and the playground, each with its status and when it is next due.', lazy=false) }}
+  <figcaption>The school safety checklist, in a school's workspace (pretend data).</figcaption>
   {% else %}
   {{ picture(kind ~ '-overview', 'The overview in the demo: what is blocked, what is close to a limit, and what is coming due, each with what to do.', lazy=false) }}
   <figcaption>The overview, in the demo (pretend data).</figcaption>
   {% endif %}
+{%- endmacro %}
+{% macro hero_shot(kind) -%}
+<figure class="shot hero-shot hero-shot-side" data-hero-shot="{{ kind }}">
+  {{ _hero_picture(kind) }}
+</figure>
+{%- endmacro %}
+{% macro phone_shot(kind) -%}
+<figure class="shot hero-shot hero-shot-phone" data-hero-shot-phone="{{ kind }}">
+  {{ _hero_picture(kind) }}
 </figure>
 {%- endmacro %}
 
@@ -22,7 +36,7 @@
 <section class="how" aria-labelledby="how-it-works" data-how-it-works="{{ kind }}">
   <h2 id="how-it-works">How it works</h2>
   <ol class="how-steps">
-    {% if kind == 'class' %}
+    {% if kind in ('class', 'school') %}
     <li>
       <figure class="shot">{{ picture('class-add', 'The Add students box on the class page: first names or nicknames, one on each line.') }}</figure>
       <h3><span class="how-num" aria-hidden="true">1</span>Add your class</h3>
@@ -34,7 +48,7 @@
       <p>Print one code per student. Each student types theirs once on a school device, and plays short lessons.</p>
     </li>
     <li>
-      <figure class="shot">{{ picture('class-progress', 'The class progress page: lessons done by each student and the class total.') }}</figure>
+      <figure class="shot">{{ picture('class-report', 'The one-page class report: how many students joined, the lessons they finished and the class total, ready to print for the office.') }}</figure>
       <h3><span class="how-num" aria-hidden="true">3</span>Watch the class progress</h3>
       <p>See each student's lessons and the class total, print certificates, and take the one-page report to the office.</p>
     </li>

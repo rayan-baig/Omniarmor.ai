@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
-<div class="ac ac-pilot-report" data-pilot-report>
+<div class="ac ac-grown ac-pilot-report" data-pilot-report data-grown-up>
   <p class="ac-crumb no-print"><a href="{{ url_for('classes.class_page', class_id=r.class.id) }}">← {{ r.class.name }}</a> · Use your browser's Print to print it on one page.</p>
   <p class="ac-kicker">Future Owner Academy · {{ g.org.name }}</p>
   <h1 class="ac-title">{{ 'Trial report' if r.pilot.state != 'none' else 'Class report' }}</h1>

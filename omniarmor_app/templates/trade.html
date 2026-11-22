@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ trade.title }}{% endblock %}
 {% block description %}{{ trade.description }}{% endblock %}
-{% from "_shots.html" import hero_shot, how_it_works %}
+{% from "_shots.html" import hero_shot, phone_shot, how_it_works %}
 {% block content %}
 {% set days = facts.reminder_days %}
 {% set pics = shot_kind(trade.slug, trade.academy) %}
@@ -17,6 +17,7 @@
     <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow" data-demo-link>See the classroom demo</a>
     <a class="btn quiet" href="#checklists">See the checklists</a>
   </div>
+  {{ phone_shot(pics) }}
   <p class="hint" data-demo-hint>The classroom demo is a sample class with pretend first names: the class progress view, join codes and a sample lesson, no sign-up.</p>
   <div class="plans" data-trade-classrooms>
     <div data-plan="pilot">
@@ -37,6 +38,7 @@
     <a class="btn ghost" href="{{ url_for('demo.start', kind=demo_kind) }}" rel="nofollow" data-demo-link>See a demo</a>
     <a class="btn quiet" href="#checklists">See the checklists</a>
   </div>
+  {{ phone_shot(pics) }}
   <p class="hint" data-demo-hint>The demo is {{ demo_name.replace('a ', 'a pretend ', 1) }} with a few checks done, so you can see how it works before you sign up.</p>
   {% include "_plan_summary.html" %}
   {% endif %}

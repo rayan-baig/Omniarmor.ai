@@ -329,7 +329,8 @@ class TestPilotSecurity(PilotCase):
         # 1.12.0: every status tag, badge and note, not just a Blocked status.
         self.assertRegex(config, r'avoid: \[".tag", ".top-n", ".bundle", ".msg",')
         self.assertIn('".companion-bubble", ".companion-fix", ".companion-badge"', config)
-        self.assertIn('".topbar .nav", ".lockup"]', config)   # 1.15.0: and the OmniArmor name
+        self.assertIn('".topbar .nav", ".lockup",', config)   # 1.15.0: and the OmniArmor name
+        self.assertIn('".pick", "[data-teacher-guide] p"', config)   # 1.16.0: the Select boxes, the teacher guide
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
             css = f.read()
         # Above the tab bar, and measured there by the core: --pilot-gap is a plain length.

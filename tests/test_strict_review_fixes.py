@@ -261,6 +261,11 @@ class TestLessonsTeachWhatTheyAsk(unittest.TestCase):
                 for stage in range(1, t.stages(w) + 1):
                     cards = academy.story(t, w.number, stage, company, ids)
                     said = " ".join(f"{a} {b}" for a, b in cards).lower()
+                    # 1.16.0: a first lesson no longer lists its quiz's answers before it starts. What
+                    # its cards don't teach in so many words, its last card hints at instead (and the
+                    # fact shows the moment the question is answered): tests/test_round7_fixes.py.
+                    if stage == 1 and f"{academy.QUIZ_HINT.lower()}:" in said:
+                        continue
                     for q in academy.quiz(t, w.number, stage, company, ids, "x"):
                         explain = q.explain.lower().strip(" .")
                         head, _, rest = q.explain.partition(": ")

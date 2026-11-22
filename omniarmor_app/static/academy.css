@@ -572,3 +572,83 @@
 .ac-confirm{margin:14px 0 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;max-width:640px}
 .ac-confirm legend{padding:0 6px;font-weight:700}
 .ac-confirm-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+
+/* One grown-up look (1.16.0). The pages a teacher or a parent uses (the classes page, a class, its join
+   codes, certificates and report, the Academy's own page for a business and a learner's progress report)
+   wear the business pages' look: the plain face, the tall uppercase titles, the small mono kickers, square
+   buttons and cards. The rounded game look stays on the kid's own screens (the map, lessons, results). */
+.ac.ac-grown{--kid:var(--sans);font-size:16px}
+.ac-grown .ac-title{font-family:var(--display);font-weight:800;font-size:44px;line-height:.98;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance;margin:6px 0 10px}
+.ac-grown .ac-kicker{font-family:var(--mono);font-weight:400;font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--muted)}
+.ac-grown .ac-lead{font-size:17px}
+.ac-grown .ac-h2{font-weight:600;font-size:19px;margin:36px 0 12px}
+.ac-grown .ac-h3{font-weight:600;font-size:17px}
+.ac-grown .ac-btn{font-size:15px;font-weight:600;min-height:44px;padding:0 18px;border-radius:8px}
+.ac-grown .ac-card,.ac-grown .ac-learner,.ac-grown .ac-stats li,.ac-grown .ac-tracks-mini li,.ac-grown .ac-codes li,
+.ac-grown .ac-confirm,.ac-grown .ac-armo-pick,.ac-grown .ac-track-pick,.ac-grown .ac-avatar-pick{border-radius:12px}
+.ac-grown .ac-card,.ac-grown .ac-learner,.ac-grown .ac-stats li,.ac-grown .ac-tracks-mini li,.ac-grown .ac-codes li{background:var(--raise)}
+.ac-grown .ac-banner{border-radius:8px}
+.ac-grown .ac-learner-name,.ac-grown .ac-tracks-mini strong,.ac-grown .ac-code-name{font-weight:600}
+.ac-grown .ac-learner-name{font-size:18px}
+.ac-grown .ac-tracks-mini strong,.ac-grown .ac-code-name{font-size:16px}
+.ac-grown .ac-stat-num{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.02em}
+.ac-grown .ac-learner:hover{transform:none}
+.ac-grown .ac-hero{padding-block:4px 0}
+.ac-grown .ac-hero .armo{display:none}
+@media (max-width:560px){
+  .ac-grown .ac-title{font-size:36px}
+  .ac-grown .ac-stat-num{font-size:24px}
+}
+
+/* The learner's picture grows on the map (1.16.0): bigger at each rank (Rookie 72px up to Tycoon 128px), with
+   a little pop when the map opens, a row of the forms still to come, and a small copy of it pinned on the
+   world they're playing next ("You are here"). */
+.ac-grow{flex:none;display:block;line-height:0;--s:72px;transform-origin:50% 80%;animation:ac-grow-pop .7s cubic-bezier(.3,1.5,.5,1) both}
+.ac-grow svg{width:var(--s);height:var(--s)}
+.ac-grow-1{--s:80px}.ac-grow-2{--s:88px}.ac-grow-3{--s:96px}.ac-grow-4{--s:104px}.ac-grow-5{--s:112px}.ac-grow-6{--s:120px}.ac-grow-7{--s:128px}
+@keyframes ac-grow-pop{0%{transform:scale(.6)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+.ac-evolve{list-style:none;display:flex;align-items:flex-end;flex-wrap:wrap;gap:4px 6px;margin:8px 0 6px;padding:0}
+.ac-evolve li{display:flex;line-height:0}
+.ac-evolve li.later{filter:grayscale(1) brightness(.45);opacity:.7}
+.ac-evolve li.now{filter:drop-shadow(0 0 8px rgba(255,194,75,.55))}
+.ac-world-badge{position:relative}
+.ac-here-pin{position:absolute;right:-12px;top:-12px;line-height:0;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));animation:ac-here 2.4s ease-in-out infinite}
+@keyframes ac-here{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.ac-grow,.ac-here-pin{animation:none}}
+
+/* The celebration when a stage is passed (1.16.0, result.html). Without the script: a bright card at the top
+   of the results. With it (.show): a screen of its own over the page, with rays turning behind the learner's
+   picture and stars bursting out, until "Keep going". Less motion: no rays turning, no bursts. */
+.ac-celebrate{margin:0 0 18px}
+.ac-celebrate:focus{outline:none}
+.ac-celebrate-card{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:28px 18px;border-radius:28px;border:1px solid var(--accent);background:radial-gradient(circle at 50% 30%,rgba(255,194,75,.18),transparent 60%),var(--card)}
+.ac-celebrate-card .ac-title{margin:4px 0 0}
+.ac-celebrate-card .ac-kicker{margin:6px auto 0}
+.ac-celebrate-pic{position:relative;z-index:1;line-height:0;animation:ac-pop-in .8s cubic-bezier(.3,1.6,.5,1) both}
+.ac-celebrate-pic.grew{animation:ac-grow-up 1.4s cubic-bezier(.3,1.4,.5,1) both}
+.ac-celebrate-rays{position:absolute;left:50%;top:84px;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;
+  background:repeating-conic-gradient(rgba(255,194,75,.16) 0 10deg,transparent 10deg 30deg);animation:ac-spin 14s linear infinite;pointer-events:none}
+.ac-celebrate-sparks{position:absolute;left:50%;top:84px;width:0;height:0;pointer-events:none}
+.ac-celebrate-sparks i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:2px;background:var(--sun);opacity:0;animation:ac-spark 1.3s ease-out .25s forwards}
+.ac-celebrate-sparks i:nth-child(3n+1){background:#E5261C}.ac-celebrate-sparks i:nth-child(3n+2){background:#F59234}
+.ac-celebrate-sparks i:nth-child(1){--x:-130px;--y:-60px}.ac-celebrate-sparks i:nth-child(2){--x:120px;--y:-80px}
+.ac-celebrate-sparks i:nth-child(3){--x:-90px;--y:-120px}.ac-celebrate-sparks i:nth-child(4){--x:80px;--y:-130px}
+.ac-celebrate-sparks i:nth-child(5){--x:-150px;--y:10px}.ac-celebrate-sparks i:nth-child(6){--x:150px;--y:0}
+.ac-celebrate-sparks i:nth-child(7){--x:-40px;--y:-150px}.ac-celebrate-sparks i:nth-child(8){--x:30px;--y:-155px}
+.ac-celebrate-sparks i:nth-child(9){--x:-120px;--y:70px}.ac-celebrate-sparks i:nth-child(10){--x:125px;--y:65px}
+.ac-celebrate-sparks i:nth-child(11){--x:-60px;--y:110px}.ac-celebrate-sparks i:nth-child(12){--x:60px;--y:115px}
+.ac-celebrate-sparks i:nth-child(13){--x:-170px;--y:-100px}.ac-celebrate-sparks i:nth-child(14){--x:170px;--y:-110px}
+.ac-celebrate-stars .star{animation:ac-pop-in .5s cubic-bezier(.3,1.6,.5,1) both}
+.ac-celebrate-stars .star:nth-child(2){animation-delay:.15s}.ac-celebrate-stars .star:nth-child(3){animation-delay:.3s}
+.ac-celebrate .ac-actions{position:relative;z-index:1;justify-content:center}
+.ac-celebrate.show{position:fixed;inset:0;z-index:2147483600;margin:0;display:grid;place-items:center;padding:16px;background:rgba(15,14,13,.88);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:ac-fade .25s ease-out both}
+.ac-celebrate.show .ac-celebrate-card{width:min(440px,100%);padding:34px 20px 26px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+@keyframes ac-pop-in{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes ac-grow-up{0%{transform:scale(.45)}55%{transform:scale(1.18)}75%{transform:scale(.94)}100%{transform:scale(1)}}
+@keyframes ac-spin{to{transform:rotate(360deg)}}
+@keyframes ac-spark{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(200deg)}}
+@keyframes ac-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .ac-celebrate-rays,.ac-celebrate-pic,.ac-celebrate-pic.grew,.ac-celebrate-stars .star,.ac-celebrate.show{animation:none}
+  .ac-celebrate-sparks{display:none}
+}

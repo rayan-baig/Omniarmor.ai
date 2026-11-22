@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
 {% endblock %}
 {% block content %}
-<div class="ac">
+<div class="ac ac-grown" data-grown-up>
   <p class="ac-crumb no-print"><a href="{{ url_for('classes.index') }}">← All classes</a></p>
   <p class="ac-kicker">Class progress · for teachers</p>
   <h1 class="ac-title">{{ cls.name }}</h1>

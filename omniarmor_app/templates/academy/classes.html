@@ -6,7 +6,7 @@
 {% endblock %}
 {% block content %}
 {% set pilot = limits.pilot %}
-<div class="ac">
+<div class="ac ac-grown" data-grown-up>
   {% if not class_workspace %}<p class="ac-crumb"><a href="{{ url_for('academy.home') }}">← Future Owner Academy</a></p>{% endif %}
   {% if steps %}
   <section class="ac-card checklist ac-start" aria-labelledby="teacher-start" data-getting-started="teacher">

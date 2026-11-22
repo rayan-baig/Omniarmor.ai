@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Pictures of the app on the public pages (static/shots/): real screenshots
-of the demo, with its pretend data, as small WebP files. The home page, the
-Academy for schools page and each trade page show one beside the headline
-and three under "How it works" (templates/_shots.html).
+of the demo (the school checklist: of a school's workspace), with pretend
+data, as small WebP files taken at twice the size they show on a phone, so
+they stay sharp. The home page, the Academy for schools page and each trade
+page show one by the headline (beside it on a computer, under its buttons on
+a phone) and three under "How it works" (templates/_shots.html).
 
 Each picture's width and height are read from its file, so the page keeps
 their room while they load and nothing jumps.
@@ -14,9 +16,9 @@ import struct
 
 from flask import current_app, url_for
 
-# Which pictures a page shows: the one beside the headline, and the three
-# steps. A trade page uses its own demo's; any other business page the
-# restaurant's; a school's the classroom demo's.
+# Which pictures a page shows: the one by the headline, and the three steps.
+# A trade page uses its own demo's; any other business page the restaurant's;
+# the schools page the school checklist and the classroom demo's steps.
 TRADE_SHOTS = {"salons-and-barbershops": "salon", "tattoo-and-piercing-studios": "tattoo",
                "gyms-and-fitness-studios": "gym", "shops-and-retail-stores": "shop"}
 
@@ -51,7 +53,9 @@ def shot(name):
 
 
 def kind_for(trade_slug=None, school=False):
-    """Which demo's pictures a page shows: "class", a trade's, or "biz"."""
+    """Which pictures a page shows: "school" (the schools page: the school
+    safety checklist by the headline, the classroom steps under it), a
+    trade's, or "biz". The Academy for schools page uses "class"."""
     if school:
-        return "class"
+        return "school"
     return TRADE_SHOTS.get(trade_slug or "", "biz")

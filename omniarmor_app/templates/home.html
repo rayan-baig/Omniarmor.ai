@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Compliance checks for {{ facts.industries }} industries{% endblock %}
-{% from "_shots.html" import hero_shot, how_it_works %}
+{% from "_shots.html" import hero_shot, phone_shot, how_it_works %}
 {% block content %}
 <div class="hero-split">
 <section class="hero">
@@ -12,6 +12,7 @@
     <a class="btn ghost" href="{{ url_for('demo.start', kind='business') }}" rel="nofollow" data-demo-link>See a demo</a>
     <a class="btn quiet" href="{{ url_for('public.industries') }}">Find your industry</a>
   </div>
+  {{ phone_shot('biz') }}
   <p class="hint" data-demo-hint>The demo is a pretend restaurant you can click around, no sign-up.</p>
   {% include "_plan_summary.html" %}
 </section>

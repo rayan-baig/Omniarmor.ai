@@ -169,6 +169,8 @@ def _summary(learner, progress=None, t=None):
         "done": t.lessons_done(passed),
         "rank": academy.rank_for(done, t),
         "tier": academy.rank_tier(done, t),
+        "ladder": academy.rank_ladder(t),
+        "levels": done,
         "next_rank": upcoming,
         "to_next": upcoming[0] - done if upcoming else 0,
         "certificate": academy.certificate_for(done, final_passed, t),
