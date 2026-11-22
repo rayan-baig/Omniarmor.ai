@@ -14,7 +14,6 @@ import re
 import subprocess
 import sys
 import unittest
-from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_classroom_review import SCHOOL, SchoolCase, words  # noqa: E402
@@ -25,7 +24,7 @@ from omniarmor_app import academy, armo, classrooms, demo_mode, errormail  # noq
 from omniarmor_app.academy_views import result_band, retry_lines  # noqa: E402
 from omniarmor_app.catalog import find_rule  # noqa: E402
 from omniarmor_app.db import now_iso  # noqa: E402
-from omniarmor_app.tracking import checklist_ids, states_for_org  # noqa: E402
+from omniarmor_app.tracking import checklist_ids, org_today, states_for_org  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "omniarmor_app", "static")
@@ -333,20 +332,27 @@ class TestEntriesAndEmails(AppTestCase):
         super().setUp()
         self.signup(industries=(2,))
 
+    def today(self):
+        # The workspace's own today, not this machine's: just after midnight UTC
+        # it is still yesterday in the workspace's time zone, and its "today"
+        # would be a date in the future.
+        with self.db() as conn:
+            return org_today(conn.execute("SELECT * FROM orgs WHERE id = 1").fetchone()).isoformat()
+
     def add(self, label, day):
         return self.post("/app/industry/2/rule/date_marking/entries", {"action": "add", "label": label, "date": day})
 
     def test_a_food_batch_says_made_or_opened_not_last_done(self):
-        self.add("Pico de gallo", date.today().isoformat())
+        self.add("Pico de gallo", self.today())
         page = self.client.get("/app/industry/2").data.decode()
         self.assertIn("Made or opened ", page)
         self.assertNotIn("Last done ", page)
         self.assertIn("The date it was made or opened", page)
 
     def test_a_duplicate_name_is_refused_kindly(self):
-        self.add("Pico de gallo", date.today().isoformat())
-        self.add("Pico de gallo", date.today().isoformat())
-        self.add("pico de GALLO", date.today().isoformat())
+        self.add("Pico de gallo", self.today())
+        self.add("Pico de gallo", self.today())
+        self.add("pico de GALLO", self.today())
         with self.db() as conn:
             count = conn.execute("SELECT COUNT(*) FROM check_entries WHERE rule_key = 'date_marking'").fetchone()[0]
             first = conn.execute("SELECT label FROM items WHERE rule_key = 'date_marking'").fetchone()["label"]
