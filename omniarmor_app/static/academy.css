@@ -616,9 +616,9 @@
 @keyframes ac-here{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.ac-grow,.ac-here-pin{animation:none}}
 
-/* The celebration when a stage is passed (1.16.0, result.html). Without the script: a bright card at the top
-   of the results. With it (.show): a screen of its own over the page, with rays turning behind the learner's
-   picture and stars bursting out, until "Keep going". Less motion: no rays turning, no bursts. */
+/* The celebration when a stage is passed (1.16.0, result.html): academy.js shows it (.show) as a screen of its
+   own over the page, with rays turning behind the learner's picture and stars bursting out, until "Keep going".
+   Less motion: no rays turning, no bursts. */
 .ac-celebrate{margin:0 0 18px}
 .ac-celebrate:focus{outline:none}
 .ac-celebrate-card{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:28px 18px;border-radius:28px;border:1px solid var(--accent);background:radial-gradient(circle at 50% 30%,rgba(255,194,75,.18),transparent 60%),var(--card)}

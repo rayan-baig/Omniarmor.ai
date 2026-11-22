@@ -195,8 +195,9 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         party = page[page.index("data-celebrate"):page.index('<section class="ac-result')]
         self.assertIn("Perfect!", party)
         self.assertIn('class="avatar', party)
-        self.assertIn("data-celebrate-close hidden>Keep going", party)
-        self.assertIn('data-sound aria-pressed="false" hidden>Sound: off', party)
+        self.assertIn('tabindex="-1" hidden>', party)   # shown by academy.js, gone after "Keep going"
+        self.assertIn("data-celebrate-close>Keep going", party)
+        self.assertIn('data-sound aria-pressed="false">Sound: off', party)
         self.assertNotIn("Your picture grew", party)   # 1 lesson: still a Rookie
 
     def test_a_rank_up_says_the_picture_grew(self):

@@ -23,15 +23,16 @@
     };
     var done = function () {
       party.classList.remove("show");
+      party.hidden = true;
       document.removeEventListener("keydown", onKey);
       var result = document.querySelector(".ac-result");
       if (result) { result.setAttribute("tabindex", "-1"); result.focus({ preventScroll: true }); }
     };
     var onKey = function (e) { if (e.key === "Escape") done(); };
+    party.hidden = false;
     party.classList.add("show");
-    if (close) { close.hidden = false; close.addEventListener("click", function () { chime(soundOn); done(); }); }
+    if (close) close.addEventListener("click", function () { chime(soundOn); done(); });
     if (sound) {
-      sound.hidden = false;
       showSound();
       sound.addEventListener("click", function () {
         soundOn = !soundOn;
