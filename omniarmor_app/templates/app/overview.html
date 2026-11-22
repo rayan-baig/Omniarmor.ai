@@ -57,7 +57,10 @@
 </section>
 {% endif %}
 
-<h2>Needs attention</h2>
+{# On a computer the two lists sit side by side (app.css, .ov-cols); on a phone one under the other. #}
+<div class="ov-cols">
+<section class="ov-col" aria-labelledby="needs-attention" data-needs-attention>
+<h2 id="needs-attention">Needs attention</h2>
 {% if problems %}
   <ul class="list">
     {% for s in problems %}
@@ -79,7 +82,9 @@
   <p class="empty">Nothing blocked or close to a limit. Nice work.</p>
 {% endif %}
 
-<h2>Coming due in the next 60 days</h2>
+</section>
+<section class="ov-col" aria-labelledby="coming-due" data-coming-due>
+<h2 id="coming-due">Coming due in the next 60 days</h2>
 {% if upcoming %}
   <ul class="list">
     {% for s in upcoming %}
@@ -96,6 +101,9 @@
 {% else %}
   <p class="empty">No tracked deadlines in the next 60 days.</p>
 {% endif %}
+
+</section>
+</div>
 
 <h2>Your industries</h2>
 <ul class="list">

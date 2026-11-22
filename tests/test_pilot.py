@@ -110,8 +110,15 @@ class TestWherePilotIs(PilotCase):
             page = self.page(path)
             self.assertTrue(has_pilot(page), path)
             self.assertIn('data-who="teacher"', page, path)
+        # 1.15.0 (the owner's call): the class page, its join codes and the teacher guide have Pilot too,
+        # with every student's name marked private, so "Explain this page" never sends one
+        # (tests/test_round6_fixes.py). The certificates and the report still have none.
         for path in (f"/app/academy/classes/{class_id}", f"/app/academy/classes/{class_id}/join-codes",
-                     f"/app/academy/classes/{class_id}/certificates", f"/app/academy/classes/{class_id}/report"):
+                     "/classrooms/guide"):
+            page = self.client.get(path).data.decode()
+            self.assertTrue(has_pilot(page), path)
+            self.assertIn('data-who="teacher"', page, path)
+        for path in (f"/app/academy/classes/{class_id}/certificates", f"/app/academy/classes/{class_id}/report"):
             self.assertFalse(has_pilot(self.client.get(path).data.decode()), path)
 
     def test_never_on_a_page_a_student_uses(self):
@@ -414,7 +421,7 @@ class TestPilotFiles(unittest.TestCase):
 class TestPilotPrivacyPage(PilotCase):
     def test_the_privacy_page_says_what_pilot_sends_and_to_whom(self):
         text = words(self.page("/privacy"))
-        for said in ("Pilot", "your own AI key", "never sees your key", "never on a page a student uses",
+        for said in ("Pilot", "your own AI key", "never sees your AI key", "never on a page a student uses",
                      "only to the AI company you chose", "AI keys are for grown-ups"):
             self.assertIn(said, text)
 

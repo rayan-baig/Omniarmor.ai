@@ -1,0 +1,60 @@
+{#- Pictures of the app (shots.py): real screenshots of the demo, with its pretend data. -#}
+{% macro picture(name, alt, cls='', lazy=true) -%}
+{%- set s = shot(name) -%}
+<img src="{{ s.src }}" width="{{ s.width }}" height="{{ s.height }}" alt="{{ alt }}"{% if lazy %} loading="lazy"{% endif %} decoding="async"{% if cls %} class="{{ cls }}"{% endif %}>
+{%- endmacro %}
+
+{# Beside the headline: the overview (a business, a trade) or the class progress page (a school). #}
+{% macro hero_shot(kind) -%}
+<figure class="shot hero-shot" data-hero-shot="{{ kind }}">
+  {% if kind == 'class' %}
+  {{ picture('class-progress', 'The class progress page in the classroom demo: 8 students, 54 lessons done, and each student\'s lessons and certificate.', lazy=false) }}
+  <figcaption>The class progress page, in the classroom demo (pretend first names).</figcaption>
+  {% else %}
+  {{ picture(kind ~ '-overview', 'The overview in the demo: what is blocked, what is close to a limit, and what is coming due, each with what to do.', lazy=false) }}
+  <figcaption>The overview, in the demo (pretend data).</figcaption>
+  {% endif %}
+</figure>
+{%- endmacro %}
+
+{# How it works, in three steps with a picture each. #}
+{% macro how_it_works(kind, days) -%}
+<section class="how" aria-labelledby="how-it-works" data-how-it-works="{{ kind }}">
+  <h2 id="how-it-works">How it works</h2>
+  <ol class="how-steps">
+    {% if kind == 'class' %}
+    <li>
+      <figure class="shot">{{ picture('class-add', 'The Add students box on the class page: first names or nicknames, one on each line.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">1</span>Add your class</h3>
+      <p>Type each student's first name or nickname, one on each line. No email, no birthdate, no photo.</p>
+    </li>
+    <li>
+      <figure class="shot">{{ picture('class-codes', 'The join codes page: one code for each student, ready to print and cut into slips.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">2</span>Hand out join codes</h3>
+      <p>Print one code per student. Each student types theirs once on a school device, and plays short lessons.</p>
+    </li>
+    <li>
+      <figure class="shot">{{ picture('class-progress', 'The class progress page: lessons done by each student and the class total.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">3</span>Watch the class progress</h3>
+      <p>See each student's lessons and the class total, print certificates, and take the one-page report to the office.</p>
+    </li>
+    {% else %}
+    <li>
+      <figure class="shot">{{ picture(kind ~ '-check', 'One check in the demo: what to do, why it matters, the date it was last done and when it is due.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">1</span>Enter a date once</h3>
+      <p>Each check says what to do and the rule it comes from. Enter when it was last done, or answer yes or no, and OmniArmor counts the days from then on.</p>
+    </li>
+    <li>
+      <figure class="shot">{{ picture(kind ~ '-reminder', 'A reminder email in the demo: what is overdue and what is coming due, with what to do.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">2</span>Get reminded before it's late</h3>
+      <p>Your team gets an email {{ days[:-1]|join(', ') }} and {{ days[-1] }} day{{ 's' if days[-1] != 1 }} before each deadline, on the day, and each week it stays overdue.</p>
+    </li>
+    <li>
+      <figure class="shot">{{ picture(kind ~ '-report', 'The compliance report in the demo: every check with its status, reading, due date and rule.') }}</figure>
+      <h3><span class="how-num" aria-hidden="true">3</span>Show the record</h3>
+      <p>Every check's status in one report, with who changed what and when. Print it or download it when an inspector asks.</p>
+    </li>
+    {% endif %}
+  </ol>
+</section>
+{%- endmacro %}

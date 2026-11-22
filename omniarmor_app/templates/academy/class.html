@@ -29,17 +29,17 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="for" value="missing">
     <span><strong>{{ missing|length }} student{{ 's have' if missing|length != 1 else ' has' }} no code yet</strong>{% if codes %}: the slips you already handed out keep working{% endif %}.</span>
-    <button class="btn ac-btn" type="submit">Make codes for {{ 'them' if missing|length != 1 else missing[0].nickname }}</button>
+    <button class="btn ac-btn" type="submit">Make codes for {% if missing|length != 1 %}them{% else %}<span data-pilot-private>{{ missing[0].nickname }}</span>{% endif %}</button>
   </form>
   {% endif %}
 
   {% if ask %}
-  <form class="ac-card mt no-print" id="confirm-names" data-confirm-names method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
+  <form class="ac-card mt no-print" id="confirm-names" data-confirm-names data-pilot-private method="post" action="{{ url_for('classes.add_students', class_id=cls.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="confirmed" value="1">
     <input type="hidden" name="asked" value="{{ ask|length }}">
     <h2 class="ac-h3">First name only?</h2>
-    <p>{{ 'These look' if ask|length > 1 else 'This looks' }} like a first and last name. Students need only a first name, or a first name and last initial. Nothing is added until you choose.</p>
+    <p>{{ 'These look' if ask|length > 1 else 'This looks' }} like a first and last name. Students need only a first name, or a first name and last initial. Nothing is added until you choose, and {{ 'they wait' if ask|length > 1 else 'it waits' }} here until you do.</p>
     {% for name, short in ask %}
     <fieldset class="ac-confirm" data-ask>
       <legend>{{ name }}</legend>
@@ -48,13 +48,16 @@
       <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value=""> Don't add</label>
     </fieldset>
     {% endfor %}
-    <button class="btn ac-btn" type="submit">Add {{ 'these students' if ask|length > 1 else 'this student' }}</button>
+    <p class="ac-confirm-actions">
+      <button class="btn ac-btn" type="submit">Add {{ 'these students' if ask|length > 1 else 'this student' }}</button>
+      <button class="btn quiet" type="submit" name="skip" value="all" data-skip-names>Don't add {{ 'any of them' if ask|length > 1 else 'it' }}</button>
+    </p>
   </form>
   {% endif %}
   <h2 class="ac-h2">Students</h2>
   {% if view.students %}
     <div class="table-wrap">
-    <table class="ac-report" data-class-progress>
+    <table class="ac-report" data-class-progress data-pilot-private>
       <thead><tr><th>Student</th><th>Lessons done</th><th class="ac-wide-only">Stars</th><th class="ac-wide-only">Last played</th><th>Certificate</th></tr></thead>
       <tbody>
         {% for s in view.students %}
@@ -80,7 +83,7 @@
   {% if rejected %}
   <section class="ac-card mt no-print" data-not-added>
     <h2 class="ac-h3">Not added yet</h2>
-    <ul class="list">
+    <ul class="list" data-pilot-private>
       {% for typed, why in rejected %}<li data-rejected>{{ typed[:60] }}{% if why %}: {{ why }}{% endif %}</li>{% endfor %}
     </ul>
     {% if room %}<p class="hint">They're back in the box below. Fix them and press Add students again.</p>{% endif %}
@@ -119,7 +122,7 @@
       <label class="field"><span>Rename the class</span><input type="text" name="name" maxlength="40" required value="{{ cls.name }}"></label>
       <button class="btn quiet" type="submit">Rename</button>
     </form>
-    <ul class="list">
+    <ul class="list" data-pilot-private>
       {% for s in view.students %}
         <li class="row">
           <span>{{ s.learner.nickname }}</span>

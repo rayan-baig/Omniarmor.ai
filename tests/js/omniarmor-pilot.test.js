@@ -396,15 +396,15 @@ test("1.14.0 welcome: a teacher gets their class's five pills and tagline, on ev
   assert.match(pills[0].action, /first names only\): $/);
 });
 
-test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on", () => {
+test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on (1.15.0: under \"Your OmniArmor helper\")", () => {
   for (const where of ["/", "/industries", "/for/salons-and-barbershops", "/demo"]) {
     const c = mountFor("visitor", where);
-    assert.equal(c.tagline, "Your checklist helper", where);
+    assert.equal(c.tagline, "Your OmniArmor helper", where);
     assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "Which plan fits me?", "Explain this page", "Add my AI key"], where);
   }
   for (const where of ["/classrooms", "/classrooms/guide"]) {
     const c = mountFor("visitor", where);
-    assert.equal(c.tagline, "Your classroom helper", where);
+    assert.equal(c.tagline, "Your OmniArmor helper", where);
     assert.deepEqual(labels(c), ["Is it safe for students?", "How does the free trial work?", "Plan a week of lessons", "Explain this page", "Add my AI key"], where);
   }
 });
@@ -448,4 +448,20 @@ test("1.14.0 welcome: never on a student's page or a kid's device, whatever the 
   assert.equal(mountFor("kid", "/").kidView(), true);
   assert.equal(mountFor("teacher", "/app/academy/classes").kidView(), false);
   assert.equal(mountFor("business", "/app").kidView(), false);
+});
+
+test("1.15.0: Print certificates shows sheets of paper, not a chart; the welcome's grown-ups note is one line", () => {
+  const c = mountFor("teacher", "/app/academy/classes");
+  const pills = cleaned(c.welcomePills);
+  const certs = pills.find((p) => p.label === "Print certificates");
+  assert.equal(certs.icon, "copy");
+  assert.notEqual(certs.icon, "bars");
+  // Only Summarise my report is a chart.
+  for (const who of ["business", "teacher", "visitor"]) {
+    for (const p of cleaned(mountFor(who, "/").welcomePills)) {
+      if (p.icon === "bars") assert.match(p.label, /report|page/i, `${who}: ${p.label}`);
+    }
+  }
+  assert.equal(c.keyNoteShort, "AI keys are for grown-ups (18+).");
+  assert.ok(!/\bAPI key\b/.test(c.keyNote + c.keyNoteShort));
 });

@@ -14,6 +14,10 @@ and flags the patterns that have slipped through before:
                 nearly every business follows, with one trade as the answer
 - both-ways     the same question has an answer marked right in one place
                 and wrong in another
+- shape         in one world, the right answer is the longest option, or the
+                shortest, in more than MAX_SHAPE_SHARE of its worded
+                questions, so a kid could pass by picking on length alone
+                (chance, with three options, is one in three)
 
 Run it from the project folder:
 
@@ -83,8 +87,49 @@ def _lessons(t, company, ids):
                 yield f"{t.name} · {w.title} · stage {stage}", q
 
 
+# The shape rule: in a world with at least MIN_SHAPE_QUESTIONS worded
+# questions, the right answer may be the longest option, or the shortest, in
+# at most this share of them. A reviewer once found the shortest answer right
+# 10 times in 14.
+MAX_SHAPE_SHARE = 0.45
+MIN_SHAPE_QUESTIONS = 10
+
+
+def _worded(q):
+    """A choice question whose options are words, not amounts or counts."""
+    return q.kind == "choice" and not all(any(ch.isdigit() for ch in o) for o in q.options)
+
+
+def shape_counts(questions):
+    """(worded questions, right is the longest, right is the shortest), each
+    counted only where that option is the one longest or shortest."""
+    worded = longest = shortest = 0
+    for q in questions:
+        if not _worded(q):
+            continue
+        lengths = [len(o) for o in q.options]
+        mine = lengths[q.answer]
+        worded += 1
+        longest += mine == max(lengths) and lengths.count(mine) == 1
+        shortest += mine == min(lengths) and lengths.count(mine) == 1
+    return worded, longest, shortest
+
+
+def shape_flags(where, questions):
+    """The shape flags for one world's questions (each prompt once)."""
+    worded, longest, shortest = shape_counts(questions)
+    flags = []
+    if worded >= MIN_SHAPE_QUESTIONS:
+        for name, hits in (("longest", longest), ("shortest", shortest)):
+            if hits / worded > MAX_SHAPE_SHARE:
+                flags.append(("shape", where, f"the {name} option is right in {hits} of {worded} questions",
+                              f"at most {MAX_SHAPE_SHARE:.0%}"))
+    return flags
+
+
 def review(companies=None, tracks=None):
-    """Every flag, as (pattern, where, question prompt, the option)."""
+    """Every flag, as (pattern, where, question prompt, the option); for a
+    shape flag, (pattern, where, what was found, the limit)."""
     flags = []
     universal = _universal_titles()
     # Titles also in an employer's, a payments or a privacy checklist.
@@ -95,7 +140,9 @@ def review(companies=None, tracks=None):
         right_for = {}
         wrong_for = {}
         for t in tracks:
+            by_world = {}
             for where, q in _lessons(t, company, ids):
+                by_world.setdefault(where.rsplit(" · stage ", 1)[0], {})[q.prompt] = q
                 right = q.options[q.answer]
                 right_for.setdefault(_norm(q.prompt), set()).add(_norm(right))
                 for n, option in enumerate(q.options):
@@ -110,6 +157,8 @@ def review(companies=None, tracks=None):
                     title = q.prompt[len(_FOLLOWS):].rstrip("?\"")
                     if _norm(title) in universal or _norm(title) in shared_universal:
                         flags.append(("only-one", f"{company}: {where}", q.prompt, right))
+            for world, questions in by_world.items():
+                flags += shape_flags(f"{company}: {world}", questions.values())
         for prompt, wrongs in wrong_for.items():
             for option, (where, shown) in wrongs.items():
                 if option in right_for.get(prompt, ()):
@@ -121,7 +170,10 @@ def main(argv):
     quick = "--quick" in argv
     flags = review(COMPANIES[:1] if quick else None)
     for pattern, where, prompt, option in flags:
-        print(f"[{pattern}] {where}\n    Q: {prompt}\n    marked wrong: {option}")
+        if pattern == "shape":
+            print(f"[shape] {where}\n    {prompt} ({option})")
+        else:
+            print(f"[{pattern}] {where}\n    Q: {prompt}\n    marked wrong: {option}")
     print(f"{len(flags)} flag{'s' if len(flags) != 1 else ''}.")
     return 1 if flags else 0
 

@@ -31,7 +31,7 @@ def current_state():
 def armo_context():
     return {"armo_state": current_state, "armo_personality": armo.personality, "armo_page_help": armo.page_help,
             "armo_personalities": armo.PERSONALITIES, "armo_voice": armo.voice,
-            "armo_teacher": {"idle": armo.TEACHER_IDLE, "clear": armo.TEACHER_CLEAR}}
+            "armo_teacher": {"idle": armo.TEACHER_IDLE, "clear": armo.TEACHER_CLEAR}, "armo_calm_alert": armo.CALM_ALERT}
 
 
 @bp.route("")

@@ -10,7 +10,7 @@ Everything but the student's class page is for the workspace's grown-ups
 
 from datetime import timedelta
 
-from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, session, url_for
 
 from . import academy, academy_plan, armo, classrooms, plans, usage
 from .academy_views import (JOIN_CODE_DAYS, _learner_or_404, _progress, _summary, academy_access,
@@ -29,6 +29,30 @@ def _class_or_404(class_id):
     if row is None:
         abort(404)
     return row
+
+
+# Names that look like a first and last name wait for the teacher's answer
+# ("First name only?") on the class page until they choose, even after they
+# leave the page or reload it: kept in their own signed-in session (never in
+# the database), by class, at most MAX_ADD_AT_ONCE.
+_ASKING = "names-to-check"
+
+
+def _asking(class_id):
+    return list((session.get(_ASKING) or {}).get(str(class_id), []))
+
+
+def _set_asking(class_id, names):
+    waiting = dict(session.get(_ASKING) or {})
+    names = list(dict.fromkeys(names))[:classrooms.MAX_ADD_AT_ONCE]
+    if names:
+        waiting[str(class_id)] = names
+    else:
+        waiting.pop(str(class_id), None)
+    if waiting:
+        session[_ASKING] = waiting
+    else:
+        session.pop(_ASKING, None)
 
 
 def _back(class_id=None):
@@ -177,9 +201,12 @@ def add_students(class_id):
     confirmed = request.form.get("confirmed") == "1"
     if confirmed:
         # The answers to "Is this a first and last name?": only what the
-        # teacher picked for each is added; "Don't add" leaves it out.
+        # teacher picked for each is added; "Don't add" leaves it out. Either
+        # way the question has its answer and stops waiting.
+        _set_asking(class_id, [])
         count = min(request.form.get("asked", 0, type=int), classrooms.MAX_ADD_AT_ONCE)
-        picked = [(request.form.get(f"pick-{n}") or "").strip() for n in range(max(count, 0))]
+        skip = request.form.get("skip") == "all"
+        picked = [] if skip else [(request.form.get(f"pick-{n}") or "").strip() for n in range(max(count, 0))]
         names = [(classrooms.clean_student_name(p), p) for p in picked if p]
         if not names:
             flash("Nothing was added.", "ok")
@@ -222,6 +249,8 @@ def add_students(class_id):
                     " the box, and fix it there.")
     if said:
         flash(" ".join(said), "error" if rejected and not wanted else "ok")
+    if ask:
+        _set_asking(class_id, _asking(class_id) + list(ask))
     if not rejected and not ask:
         return _back(class_id)
     return _class_view(conn.execute("SELECT * FROM classes WHERE id = ?", (class_id,)).fetchone(), rejected,
@@ -234,6 +263,7 @@ def _class_view(row, rejected=(), status=200, ask=()):
     the names that look like a first and last name, each asked about with a
     shorter one suggested ("Ava Thompson": add as Ava T?)."""
     conn = get_db()
+    ask = list(dict.fromkeys(list(ask) + _asking(row["id"])))
     return render_template("academy/class.html", cls=row, view=classrooms.class_progress(conn, row),
                            room=classrooms.room_for_students(conn, g.org, row), limits=plans.class_limits(g.org),
                            avatars=academy.AVATARS, max_name=classrooms.MAX_NAME,
@@ -321,6 +351,9 @@ def join_codes(class_id):
     conn = get_db()
     if request.method == "POST":
         everyone = request.form.get("for") == "everyone"
+        # Slips handed out before: codes still working, or students who joined with one.
+        handed_out = bool(_active_codes(conn, row)) or conn.execute(
+            "SELECT 1 FROM learners WHERE class_id = ? AND joined_at IS NOT NULL", (class_id,)).fetchone() is not None
         kids = classrooms.students(conn, class_id) if everyone else classrooms.students_without_code(conn, class_id)
         expires = iso(utcnow() + timedelta(days=JOIN_CODE_DAYS))
         for kid in kids:
@@ -336,9 +369,13 @@ def join_codes(class_id):
         if everyone and many:
             flash(f"New codes for all {many} student{'s' if many != 1 else ''}. The old slips no longer work:"
                   " print this page again.", "ok")
-        elif many:
+        elif many and handed_out:
             flash(f"Made {'a code' if many == 1 else f'{many} codes'} for {_names(kids)}. The slips you already"
                   " handed out still work.", "ok")
+        elif many:
+            # The class's first codes: there are no slips yet to speak of.
+            flash(f"Made {'a code' if many == 1 else f'{many} codes'} for {_names(kids)}. Print this page and cut"
+                  " it into slips.", "ok")
         else:
             flash("Every student already has a code or has joined.", "ok")
         return redirect(url_for("classes.join_codes", class_id=class_id))

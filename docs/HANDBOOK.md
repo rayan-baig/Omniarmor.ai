@@ -744,6 +744,17 @@ Version 1.9.0, after an honest product review.
 
 - **Pilot core 1.2.1** (`static/pilot/`, the thirteen files copied unchanged from the MTRX Horizyn site). Core 1.2.0's first look of a visit gave Pilot's root the class `pilot-hello`, which is also the chat window's greeting bubble, so opening Pilot in those 4 seconds pulled the robot out of place. The root now takes `pilot-revealing`, and `app.css`'s phone rule that holds the robot whole during the first look uses that name.
 
+### 5.20 Version 1.15.0: a strict fifth review, and Pilot core 1.3.0
+
+- **Pictures of the app** (`static/shots/`, `shots.py`, `templates/_shots.html`): real screenshots of the demo (pretend data), small WebP files of 14 to 35 KB, beside the headline of the home page, `/classrooms` and each trade page, and three under "How it works". A trade page shows its own demo's (`shots.TRADE_SHOTS`); the schools page the classroom demo's. Each picture's width and height are read from the file. To retake them, open each demo on a 390 px wide screen at 2x, hide Pilot, Armo and the demo bar, and save as WebP at 440 px (steps) or 480 px (the headline's) wide, quality about 74.
+- **The phone's menu** (`base.html`): the top links fold into a Menu button (a `<details>`, no script) with "Start free" beside it as a real button; on a computer they sit in the bar.
+- **Fair quizzes** (`academy._wrong_answers`, `tools/quiz_truth_review.py`): wrong answers are picked from the texts just shorter and just longer than the right one, and each world's builder turns round where the right one sits by length (`below`), so it is the shortest, the longest or in between about equally often. A trade's name can only be the shortest or longest of its options, so the rule's other questions keep off that place. Written rows where the right answer was always the shortest were rewritten. The review tool's `shape` check fails when the longest or the shortest answer is right in more than 45% of a world's worded questions (at least 10 of them), for every sample company and track; `tests/test_round6_fixes.py` runs it.
+- **Armo keeps clear** (`armo.js` `keepClear`, `app.css`), **Ask Pilot** in his bubble, and Pilot on a teacher's class page, join codes and guide (`pilot.TEACHER_PAGES`) with students' names marked `data-pilot-private` (docs/PILOT.md).
+- **A computer layout** (`app.css`): from 1100 px the tab bar is a side bar on the left with Armo at its foot; from 1000 px the overview's Needs attention and Coming due are side by side.
+- **A kid's lesson on a grown-up's device** (`academy_views.lesson_view`): a world's stages, a lesson and its result, practice and a duel show only "Back to map" under them.
+- **Words**: the class's first join codes say to print them, not that old slips still work; names asked about under "First name only?" wait in the teacher's session until they decide (`classroom_views._asking`), with "Don't add any of them"; Armo's alerts use `armo.CALM_ALERT` whatever his personality, and his fix link says "Open it"; the demo opens with "Update several at once" folded.
+- **Pilot core 1.3.0** (`static/pilot/`, the thirteen files copied unchanged from the MTRX Horizyn site; the pictures, layers and poses were already the same): one ask for the key, "AI key" wording, a one-line grown-ups note (`keyNoteShort`), a first look that never sits on the page's words, and a tucked-away robot never under 44 px. The core's new tests are in `tests/js/pilot.test.js`.
+
 ## 6. Autopilot and the bug finder
 
 ### 6.1 Why

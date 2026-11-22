@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}The Academy for schools and teachers{% endblock %}
 {% block description %}Run the Future Owner Academy for a whole class or entrepreneurship club: students added by first name or nickname only, a class progress view, printable certificates and a free {{ facts.pilot_days }}-day trial.{% endblock %}
+{% from "_shots.html" import hero_shot, how_it_works %}
 {% block content %}
+<div class="hero-split">
 <section class="hero">
   <p class="eyebrow">For schools and teachers</p>
   <p class="eyebrow" data-grades>{{ facts.grades }} · {{ facts.ages }}</p>
@@ -14,6 +16,10 @@
   </div>
   <p class="hint" data-demo-hint>The demo is a sample class with pretend first names: the progress view, join codes and a sample lesson, no sign-up.</p>
 </section>
+{{ hero_shot('class') }}
+</div>
+
+{{ how_it_works('class', []) }}
 
 <section class="trade-note" data-class-track>
   <p><strong>The Classroom track: {{ facts.class_worlds }} worlds, {{ facts.class_lessons }} lessons</strong></p>

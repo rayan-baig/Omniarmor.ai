@@ -124,7 +124,10 @@
   // Core 1.2.0: the welcome is OmniArmor's own (docs/PILOT.md), and fits who
   // is here: a business owner gets their checklist's questions, a teacher
   // their class's. A visitor gets the questions for the side of the site
-  // they are looking at (the schools pages, or the business pages).
+  // they are looking at (the schools pages, or the business pages), under
+  // "Your OmniArmor helper". Each pill's icon fits what it does: certificates
+  // are sheets of paper (copy), not a chart. The key pill is the welcome's
+  // one ask for a key (core 1.3.0 shows no key card beside it).
   const P = (icon, label, action, send) => ({ icon, label, action, send: Boolean(send) });
   const KEY = P("key", "Add my AI key", "settings");
   const schoolSide = who === "teacher" || (who === "visitor" && /^\/classrooms(\/|$)/.test(path));
@@ -142,11 +145,11 @@
       pills: [P("chat", "Add students", "Add these students to my class (first names only): "),
         P("help", "How do join codes work?", "How do join codes work for my students?", true),
         P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
-        P("bars", "Print certificates", "How do I print certificates for my students?", true),
+        P("copy", "Print certificates", "How do I print certificates for my students?", true),
         KEY],
     },
     school: {
-      tagline: "Your classroom helper",
+      tagline: "Your OmniArmor helper",
       pills: [P("help", "Is it safe for students?", "What does OmniArmor keep about my students?", true),
         P("bolt", "How does the free trial work?", "How does the free classroom trial work?", true),
         P("spark", "Plan a week of lessons", "Help me plan a week of Academy lessons for my class. Ask me one or two questions first.", true),
@@ -154,7 +157,7 @@
         KEY],
     },
     visitor: {
-      tagline: "Your checklist helper",
+      tagline: "Your OmniArmor helper",
       pills: [P("chat", "What does OmniArmor do?", "In plain words, what does OmniArmor do for a small business?", true),
         P("help", "Which checklist fits me?", "Which OmniArmor checklist fits my business? Ask me what kind of business it is first.", true),
         P("bolt", "Which plan fits me?", "Which OmniArmor plan would fit me? Ask me one or two questions first.", true),
@@ -206,6 +209,9 @@
     // key settings.
     keyNote: "An AI key is a private code from an AI company that lets Pilot think for you, billed to the key's owner: "
       + "a grown-up gets one by signing up on that company's website. AI keys are for grown-ups (the AI companies require 18+).",
+    // Core 1.3.0: the one line the welcome shows above the box (the full note
+    // stays beside the key settings and in help).
+    keyNoteShort: "AI keys are for grown-ups (18+).",
     audienceNote: "The people using Pilot here are grown-ups: small-business owners and their teams, and teachers or school staff. "
       + "Students never use Pilot. Never ask for or repeat students' names; a teacher may type first names for adding students, and that's all. "
       + "OmniArmor is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",

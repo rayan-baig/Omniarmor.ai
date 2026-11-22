@@ -24,6 +24,7 @@ from .catalog import INDUSTRIES, rules_for, top_checks, why_line
 from .config import SettingsError, load_config, support_email
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
+from . import shots
 from .redact import RedactingFilter, redact
 from .security import check_csrf, csrf_token, home_url, load_user, security_headers
 from .tracking import format_quantity, local_date
@@ -53,12 +54,14 @@ def _landing_facts():
     the catalog, the Academy's tracks and plan, and the settings."""
     from .academy import TRACK_LIST
     from .academy_plan import FREE_TRACK, FREE_WORLDS
+    from .reminders import REMINDER_DAYS
     cfg = current_app.config
     return {
         "industries": len(INDUSTRIES),
         "checks": sum(len(rules_for(i)) for i in INDUSTRIES),
         "per_industry": len(rules_for(next(iter(INDUSTRIES)))),
         "examples": [INDUSTRIES[i]["sector"].lower() for i in LANDING_EXAMPLES],
+        "reminder_days": REMINDER_DAYS,
         "trial_days": cfg["ACADEMY_TRIAL_DAYS"],
         "free_worlds": len(FREE_WORLDS),
         "free_track": next(t.name for t in TRACK_LIST if t.key == FREE_TRACK),
@@ -433,7 +436,8 @@ def create_app(**overrides):
     app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config),
-                                pilot_tag=pilot.pilot_tag)
+                                pilot_tag=pilot.pilot_tag, lesson_view=academy_views.lesson_view,
+                                shot=shots.shot, shot_kind=shots.kind_for)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["pct"] = percent
     app.jinja_env.filters["local_date"] = lambda text: local_date(text, g.get("org"))

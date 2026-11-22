@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Compliance checks for {{ facts.industries }} industries{% endblock %}
+{% from "_shots.html" import hero_shot, how_it_works %}
 {% block content %}
+<div class="hero-split">
 <section class="hero">
   <p class="eyebrow">{{ facts.industries }} industries · {{ facts.checks }} checks · daily reminders</p>
   <h1><span class="blend-text">Catch the fine</span> before it catches you.</h1>
@@ -12,9 +14,15 @@
   </div>
   <p class="hint" data-demo-hint>The demo is a pretend restaurant you can click around, no sign-up.</p>
   {% include "_plan_summary.html" %}
+</section>
+{{ hero_shot('biz') }}
+</div>
+<section class="hero-more">
   <p class="hint">Questions about the trial, prices, reminders or your data? <a href="{{ url_for('public.help') }}">Read the help page</a>.</p>
   <p class="trade-note" data-schools-link><strong>Teaching a class?</strong> The Future Owner Academy for schools has its own page, prices and classroom demo: <a href="{{ url_for('public.academy_schools') }}">the Academy for schools</a>.</p>
 </section>
+
+{{ how_it_works('biz', facts.reminder_days) }}
 
 <section class="features" aria-label="What OmniArmor does">
   <div>

@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ trade.title }}{% endblock %}
 {% block description %}{{ trade.description }}{% endblock %}
+{% from "_shots.html" import hero_shot, how_it_works %}
 {% block content %}
 {% set days = facts.reminder_days %}
+{% set pics = shot_kind(trade.slug, trade.academy) %}
+<div class="hero-split">
 <section class="hero">
   <p class="eyebrow">For {{ trade.name|lower }}</p>
   <h1><span class="blend-text">{{ trade.name }}</span></h1>
@@ -38,6 +41,9 @@
   {% include "_plan_summary.html" %}
   {% endif %}
 </section>
+{{ hero_shot(pics) }}
+</div>
+{{ how_it_works(pics, days) }}
 
 <h2 id="checklists">The checklists that fit {{ trade.one }}</h2>
 {% if trade.own %}

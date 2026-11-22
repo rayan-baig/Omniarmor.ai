@@ -92,7 +92,7 @@ PRO_TALK = [
      "Hello? Who is this and what do you need from us today?", "Yeah, this is the office. What is it?",
      "A friendly greeting with the company's name tells callers they reached the right place and that you're ready to help."),
     ("You're writing an email to a customer named Ms. Lopez. How should it start?",
-     "Hi Ms. Lopez,", "HEY MS. LOPEZ!!! GREAT NEWS FOR YOU!!!", "yo lopez, quick thing about your order",
+     "Hello Ms. Lopez, thank you for your order,", "HEY MS. LOPEZ!!! GREAT NEWS FOR YOU!!!", "yo lopez, quick thing about your order",
      "Use the person's name and a polite greeting. All capital letters reads like shouting."),
     ("In a meeting, you disagree with an idea. What's the best thing to say?",
      "I see your point. Could we also think about another way?",
@@ -105,7 +105,7 @@ PRO_TALK = [
      "Explain that the system was confusing, so the mistake wasn't really your fault.",
      "Owning a mistake and offering a fix builds trust. Hiding it usually makes it bigger."),
     ("A customer asks a question and you don't know the answer. What do you say?",
-     "Let me find out and get back to you by tomorrow.",
+     "I'm not sure, but I'll find out and get back to you by tomorrow morning.",
      "Give your best guess with a confident voice so you sound like an expert.",
      "Tell them that's not your department and they'll have to figure it out.",
      "It's fine not to know. Promise to find out, say when, and keep that promise."),
@@ -115,7 +115,7 @@ PRO_TALK = [
      "Start packing up and leave while the last person is still talking.",
      "Thank people for their time and say what you'll do next and when."),
     ("Which sentence sounds the most professional?",
-     "We will deliver the materials on Monday.",
+     "We will deliver all of the materials to your site on Monday morning.",
      "We'll probably bring all the stuff over to you sometime early next week, hopefully.",
      "Your things will get there whenever our truck has some free time.",
      "Clear words and a specific day help everyone plan."),
@@ -125,7 +125,7 @@ PRO_TALK = [
      "Keep walking over to their desk until they finally stop and answer you.",
      "Asking politely and respecting their time makes people glad to help."),
     ("How should you end a business email?",
-     "Thank you,\nSam", "Ok bye, talk later, have fun with the rest of your day lol", "Leave it with no ending or name at all",
+     "Thank you for your time,\nSam Rivera, Sales", "Ok bye, talk later, have fun with the rest of your day lol", "Leave it with no ending or name at all",
      "A short thank-you and your name is polite and lets the reader know who wrote it."),
     ("A customer is upset about a late delivery. What's the best first thing to say?",
      "I'm sorry about the delay. Let me look into it now.",
@@ -202,64 +202,64 @@ GRIT = [
 ]
 RESPECT = [
     ("What makes people respect a leader the moment they meet them?",
-     "Standing tall, eye contact and a calm, clear voice",
+     "Standing tall, making eye contact and speaking in a calm, clear voice",
      "Talking loudly over everyone so they know who's in charge",
      "Checking your phone so people see how busy and important you are",
      "Confident body language and calm words show you're ready to lead."),
     ("What builds respect that lasts?",
-     "Keeping your promises every time",
+     "Keeping your promises every time, even the small ones nobody checks",
      "Reminding everyone of your big wins so they know how good you are",
      "Making people a little afraid of you so they always do what you say",
      "When people know you always do what you say, they respect and trust you."),
     ("Someone is rude to you in a meeting. What does a respected leader do?",
-     "Stay calm and answer politely and firmly",
+     "Stay calm and answer politely and firmly, without raising your voice",
      "Answer back even louder so everyone sees you won't be pushed around",
      "Get up and walk out of the room to show how upset you are",
      "Staying calm under pressure is one of the strongest signs of a leader."),
     ("How should a leader treat the newest, youngest worker?",
-     "With the same respect as everyone else",
+     "With the same respect and patience you show everyone else on the team",
      "Mostly ignore them until they've been there long enough to matter",
      "Give them all the boring jobs, since new people have to earn their place",
      "Leaders who respect everyone earn respect from everyone."),
     ("You walk into a room to speak to the team. What helps you look and sound like a leader?",
-     "Be prepared, speak slowly, and look at people",
+     "Be prepared, speak slowly and clearly, and look people in the eye",
      "Read every word from your phone so you don't forget anything important",
      "Arrive a few minutes late so everyone is already waiting for you",
      "Preparation is the secret behind confidence."),
     ("Which leader do people follow most?",
-     "One who listens, decides fairly and credits the team",
+     "One who listens, decides fairly and gives the team credit for wins",
      "One who makes every decision alone and takes the credit for the wins",
      "One who changes their mind every day to keep everyone happy",
      "Fairness and giving credit make people want to follow you."),
 ]
 HIRING = [
     ("When is a good time to hire a new person?",
-     "When there's more steady work than the team can handle",
+     "When there's more steady work, week after week, than the team can handle",
      "Whenever a friend or relative asks you for a job, even if there's no work",
      "During one extra-busy week, even if it will be slow again next month",
      "Hire when the work and the money are there to support a new job."),
     ("What's the most important thing to look for in a new hire?",
-     "Honesty, a good attitude and the right skills",
+     "Honesty, a good attitude and the right skills for the job you need done",
      "Whoever is a close friend, since you already know you'll get along",
      "Whoever asks for the lowest pay, no matter how well they do the job",
      "Skills can be taught; honesty and attitude are harder to change."),
     ("What should a good job interview include?",
-     "The same fair questions for every candidate",
+     "The same fair, job-related questions for every single candidate",
      "Personal questions about their religion, family plans and age",
      "Different easy questions for the people you already like best",
      "Fair, job-related questions help you choose well and follow the law."),
     ("A new worker starts on Monday. What helps them succeed?",
-     "A welcome, clear training and a buddy to ask",
+     "A warm welcome, clear training, and a friendly buddy they can ask",
      "Leave them alone so they learn by figuring everything out themselves",
      "Give them the hardest job on day one to see if they can handle it",
      "Good training turns new hires into great teammates."),
     ("Before hiring, what should an owner check?",
-     "That the business can afford the pay every month",
+     "That the business can afford the new person's pay every month",
      "That the new person likes the same music and sports as the team",
      "Nothing much, since you can always figure out the pay later",
      "A job is a promise to pay someone, so plan the budget first."),
     ("Two people apply. One has great skills but was rude to the receptionist. What should you think about?",
-     "How they treat everyone shows who they are",
+     "How they treat everyone, not just you, shows who they truly are",
      "Skills are all that matter, so rudeness to others doesn't count",
      "Being rude shows they're bold and will be tough with customers",
      "Watch how people treat others. It's how they'll treat your team and customers."),
@@ -298,32 +298,32 @@ TOUGH_CALLS = [
 ]
 CUSTOMERS = [
     ("What makes customers come back again and again?",
-     "Great quality, friendly service and kept promises",
+     "Great quality, friendly service and promises that are always kept",
      "The lowest prices in town, even if the service is rude and slow",
      "Lots of flashy ads, even if the product often breaks quickly",
      "Happy customers return and tell their friends."),
     ("A customer has a complaint. What's the best way to handle it?",
-     "Listen, apologize, fix it fast and thank them",
+     "Listen, apologize, fix it fast and thank them for telling you",
      "Explain why they're wrong until they agree and leave you alone",
      "Leave the message unanswered and hope they forget about it",
      "A well-handled complaint can turn an upset customer into a loyal fan."),
     ("How can a business find out what customers want?",
-     "Ask them, listen, and watch what they buy",
+     "Ask them, listen closely, and watch what they buy and return",
      "Guess based on what the owner personally likes best",
      "Copy whatever the biggest company in town is selling this year",
      "The best ideas often come straight from customers."),
     ("What is word of mouth?",
-     "Customers telling others about the business",
+     "Customers telling friends and family about the business",
      "A special kind of ad that plays on the radio every morning",
      "A secret password customers say to get a discount",
      "Word of mouth is free advertising earned by treating people well."),
     ("A loyal customer has ordered for five years. What's a smart move?",
-     "Thank them and offer something special",
+     "Thank them and offer something special to show you noticed",
      "Raise their prices, since they'll probably keep ordering anyway",
      "Treat them like any new customer so everything stays fair",
      "Keeping a customer is usually cheaper than finding a new one."),
     ("What should a business promise in its ads?",
-     "Only what it can truly deliver",
+     "Only what it can truly deliver, every single time, to everyone",
      "Whatever sounds most exciting, even if it isn't quite true",
      "Free gifts forever, so lots of new customers come in the door",
      "Honest ads build trust, and false ads can break the law."),
@@ -377,7 +377,7 @@ MOVES = [
      "Read just the first page, since the rest is usually the same",
      "A contract is a promise. Know exactly what you're agreeing to."),
     ("Why should a business save money for a rainy day?",
-     "To survive slow months and surprises",
+     "To get through slow months and handle surprises without panic",
      "Saving is pointless, because spending money is how a business grows",
      "So the owner can secretly hide it from the team and the bank",
      "An emergency fund keeps the company safe when things go wrong."),
@@ -387,7 +387,7 @@ MOVES = [
      "Do whatever the loudest person in the room says you should do",
      "Good decisions come from good information."),
     ("A deal sounds too good to be true. What should you do?",
-     "Slow down and check the details carefully",
+     "Slow down and check every detail carefully before you agree",
      "Say yes right away before someone else grabs the great deal",
      "Send them the money they ask for to show you're serious",
      "If it seems too good to be true, it often is."),
@@ -397,7 +397,7 @@ MOVES = [
      "\"Have no goals, so nobody feels disappointed later\"",
      "Specific goals with deadlines turn dreams into plans."),
     ("Someone asks for a favor that would break a company rule. What's a pro move?",
-     "Politely say no and explain the rule",
+     "Politely say no and explain the rule you have to follow",
      "Say yes this one time so they keep liking you",
      "Ignore their message and hope they never ask about it again",
      "Saying a respectful no protects you and the company."),
@@ -1040,18 +1040,47 @@ def _alike(a, b):
     return matcher.real_quick_ratio() >= 0.8 and matcher.quick_ratio() >= 0.8 and matcher.ratio() >= 0.8
 
 
-def _wrong_answers(rng, right, texts, count=2):
+def _wrong_answers(rng, right, texts, count=2, group=None, below=None):
     """`count` wrong answers from texts, none of which reads like the right
     answer or like each other: two near-copies would be two right answers.
-    They are picked from the texts nearest the right answer in length, so
-    the longest option is the right one only by chance."""
-    texts = sorted(texts, key=lambda t: (abs(len(t) - len(right)), t))[:max(count * 8, 16)]
-    picked = rng.sample(texts, count)
-    for n, text in enumerate(picked):
-        if _alike(text, right) or any(_alike(text, p) for p in picked[:n]):
-            pool = [t for t in texts if not _alike(t, right) and not any(_alike(t, p) for p in picked[:n])]
-            picked[n] = rng.choice(pool)
+    They are about as long as the right answer, picked from the texts just
+    shorter and just longer than it. `below` is how many come from the
+    shorter side (random when not given): a world's builder turns it round
+    question by question, so the right answer is the shortest, the longest or
+    in between about equally often, and its length gives nothing away.
+    `group` names what two wrong answers may not share (one trade said two
+    ways)."""
+    group = group or (lambda text: text)
+    texts = [t for t in dict.fromkeys(texts) if t != right]
+    near = lambda t: (abs(len(t) - len(right)), t)  # noqa: E731
+    shorter = sorted((t for t in texts if len(t) < len(right)), key=near)
+    longer = sorted((t for t in texts if len(t) > len(right)), key=near)
+    below = rng.randint(0, count) if below is None else below % (count + 1)
+    picked = []
+
+    def fits(text):
+        return not _alike(text, right) and all(not _alike(text, p) and group(text) != group(p) for p in picked)
+
+    for side, many in ((shorter, below), (longer, count - below), (sorted(texts, key=near), count)):
+        pool = side[:max(many * 4, 8)]
+        rng.shuffle(pool)
+        for text in pool + side[len(pool):]:
+            if len(picked) >= count or many <= 0:
+                break
+            if fits(text):
+                picked.append(text)
+                many -= 1
     return picked
+
+
+def _length_place(q):
+    """Where a question's right answer sits by length: 0 the one shortest,
+    2 the one longest, 1 anywhere else."""
+    lengths = [len(o) for o in q.options]
+    mine = lengths[q.answer]
+    if lengths.count(mine) == 1 and mine in (min(lengths), max(lengths)):
+        return 0 if mine == min(lengths) else 2
+    return 1
 
 
 # Who follows a rule nearly every business follows: never "only restaurants".
@@ -1059,7 +1088,7 @@ _WHO_ALL = {30: "Any business with employees", 31: "Any business that keeps peop
             32: "Any business that takes card payments"}
 
 
-def _who_follows(rng, industry_id, rule, sector, shared):
+def _who_follows(rng, industry_id, rule, sector, shared, below=None):
     """"Which kind of business follows this rule?" For a rule nearly every
     business follows (is_universal), the answer says so, and the wrong
     answers are each one kind of business only, which can't be true."""
@@ -1067,12 +1096,19 @@ def _who_follows(rng, industry_id, rule, sector, shared):
     if is_universal(industry_id, rule) or also:
         key = industry_id if industry_id in UNIVERSAL_INDUSTRIES else (also[0] if also else None)
         everyone = _WHO_ALL.get(key, "Many kinds of business, not just one")
-        only = [f"Only {INDUSTRIES[i]['sector'].lower()}" for i in INDUSTRIES if i not in shared and i != industry_id]
-        return _choice(rng, f"Who has to follow \"{rule.title}\"?", everyone, rng.sample(only, 2),
+        # Each wrong answer is one trade only, said short or long, so the
+        # wrong answers can be about as long as the right one.
+        trades = {}
+        for i in INDUSTRIES:
+            if i not in shared and i != industry_id:
+                trade = INDUSTRIES[i]["sector"].lower()
+                trades[f"Only {trade}"] = trades[f"Only {trade}, no other business"] = trade
+        return _choice(rng, f"Who has to follow \"{rule.title}\"?", everyone,
+                       _wrong_answers(rng, everyone, list(trades), group=trades.get, below=below),
                        f"\"{rule.title}\" isn't for one trade only: {everyone[0].lower() + everyone[1:]} follows it.")
     return _choice(rng, f"Which kind of business follows \"{rule.title}\"?", sector,
-                   rng.sample([INDUSTRIES[i]["sector"] for i in INDUSTRIES
-                               if i not in shared and i not in UNIVERSAL_INDUSTRIES], 2),
+                   _wrong_answers(rng, sector, [INDUSTRIES[i]["sector"] for i in INDUSTRIES
+                                                if i not in shared and i not in UNIVERSAL_INDUSTRIES], below=below),
                    f"This rule is one of the ten that matter most in {sector.lower()}.")
 
 
@@ -1089,16 +1125,27 @@ def _rule_questions(rng, industry_id, index):
         lights = [_light_question(rule, value, found) for found, value in _light_cases(rule).items()]
     else:
         lights = [_yes_no_light(rule, True), _yes_no_light(rule, False)]
+    # Where the right answer sits by length: the shortest (0), in between (1)
+    # or the longest (2), turned round rule by rule. A trade's name can only
+    # be the shortest ("Schools") or the longest of its options, so when it
+    # is, the rule's other three questions keep off that place.
+    who = _who_follows(rng, industry_id, rule, sector, shared, below=index)
+    place = _length_place(who)
+    if place == 1:
+        places = [index, index + 1, index + 2]
+    else:
+        a, b = [p for p in (0, 1, 2) if p != place]
+        places = [a, b, a] if index % 2 else [b, a, b]
     facts = [
         _choice(rng, f"Why does \"{rule.title}\" matter?", rule.cost,
-                _wrong_answers(rng, rule.cost, [r.cost for r in others]),
+                _wrong_answers(rng, rule.cost, [r.cost for r in others], below=places[0]),
                 "Every rule protects something: people, money or the company's good name."),
         _choice(rng, f"If \"{rule.title}\" is broken, what should the team do?", rule.action,
-                _wrong_answers(rng, rule.action, [r.action for r in others]),
+                _wrong_answers(rng, rule.action, [r.action for r in others], below=places[1]),
                 "Knowing the fix ahead of time means acting fast."),
-        _who_follows(rng, industry_id, rule, sector, shared),
+        who,
         _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
-                _wrong_answers(rng, rule.input, [r.input for r in others]),
+                _wrong_answers(rng, rule.input, [r.input for r in others], below=places[2]),
                 "OmniArmor asks a simple question or reading for every rule."),
     ]
     if _counts_days_since(rule) and 7 <= rule.limit <= 3650:
@@ -1421,16 +1468,16 @@ def _money_items(rng, company, ids):
 
 
 _TEAM_ROWS = [
-    ("Why does {company} keep a record of every change?", "To show who did what, and when",
+    ("Why does {company} keep a record of every change?", "To show who did what, and on what day",
      "To catch people who make small slips", "Because inspectors type it in for you",
      "Records help the team stay honest and show inspectors that the company did its job.", 1),
-    ("A worker tells you about a safety problem. What should a good leader do?", "Thank them and get it fixed",
+    ("A worker tells you about a safety problem. What should a good leader do?", "Thank them, then get it fixed fast",
      "Wait to see whether anyone gets hurt", "Ask them to keep it quiet for now",
      "Leaders want to hear about problems early, so people stay safe.", 1),
     ("Who is the best one to ask when a rule is confusing?", "An expert, like a lawyer",
      "A friend who once worked in the business", "Whoever on the team makes the best guess",
      "Smart owners ask experts. Nobody knows everything.", 2),
-    ("What's the best way to treat customers?", "Honestly and fairly", "Extra nicely when they spend a lot",
+    ("What's the best way to treat customers?", "Honestly and fairly, whoever they are", "Extra nicely when they spend a lot",
      "The same way rival shops treat theirs", "Trust is a company's most valuable treasure.", 1),
 ]
 
@@ -1446,7 +1493,7 @@ def _words_items(rng, company, ids):
     meanings = [m for _, m in words]
     items = []
     for n, (word, meaning) in enumerate(words[:16] + rest):
-        wrong = rng.sample([m for m in meanings if m != meaning], 2)
+        wrong = _wrong_answers(rng, meaning, [m for m in meanings if m != meaning], below=n)
         items.append((_choice(rng, f"What does \"{word}\" mean?", meaning, wrong, f"{word}: {meaning}"),
                       1 if n < 16 else 2))
     return items, []
@@ -1785,7 +1832,7 @@ _STAND_QUESTIONS = [
      "A group that gives things away to help people", "Any place where people go to work",
      "A business makes products or does work that customers pay for. Many groups help people for free, and"
      " those are usually charities."),
-    (f"Who are {CLASS_BUSINESS}'s customers?", "People who buy a cup", "The students who run the stand",
+    (f"Who are {CLASS_BUSINESS}'s customers?", "People who stop and buy a cup of lemonade", "The students who run the stand",
      "The store that sells the stand its lemons", "Customers are the people who buy from a business."),
     ("What is a product?", "Something a business sells, like lemonade", "Work done for someone, like a car wash",
      "The money left after paying for supplies",
@@ -1798,7 +1845,7 @@ _STAND_QUESTIONS = [
     ("Why do customers come back to a business?", "They liked what they got and how they were treated",
      "The stand is the closest one to their house", "The stand has the brightest, biggest sign",
      "Good products and kind service make customers want to return."),
-    ("Who makes the big decisions for a business?", "The owners", "The customers who buy the most",
+    ("Who makes the big decisions for a business?", "The people who own the business", "The customers who buy the most",
      "Whoever has worked there the longest", "Owners decide what the business does and how it does it."),
     ("In a class business, who are the owners?", "The whole class, working together", "Only the student who is in charge",
      "The teacher, since it's the teacher's class",
@@ -1818,7 +1865,7 @@ _STAND_QUESTIONS = [
     ("What is a supplier?", "A business that sells you what you need", "A customer who buys a lot every week",
      "The person who counts the money at the end",
      "Suppliers sell a business the things it needs, like lemons and cups."),
-    ("Which is a supply the stand needs?", "Paper cups", "A cash register with a scanner", "A big menu board with lights",
+    ("Which is a supply the stand needs?", "Paper cups to pour lemonade in", "A cash register with a scanner", "A big menu board with lights",
      "A lemonade stand needs cups, lemons, sugar, water and ice. Fancy equipment can wait."),
     ("What does it mean to \"open for business\"?", "Start selling to customers", "Set up the table and the sign",
      "Buy the supplies you'll need",
@@ -1826,10 +1873,10 @@ _STAND_QUESTIONS = [
     ("Where is a good spot for a lemonade stand?", "Where lots of people walk by on a warm day",
      "On a quiet street with very little traffic", "In the shade behind a quiet building",
      "A busy, sunny spot brings more thirsty customers."),
-    (f"What could make {CLASS_BUSINESS} different from another stand?", "Something special, like fresh lemons",
+    (f"What could make {CLASS_BUSINESS} different from another stand?", "Something special, like fresh-squeezed lemons",
      "Charging the same price as every other stand", "Using the same sign and cups as the others",
      "Being special at something gives customers a reason to choose you."),
-    ("Which is a good goal for the stand?", "Sell 50 cups on Saturday", "Sell a lot of lemonade someday",
+    ("Which is a good goal for the stand?", "Sell 50 cups of lemonade on Saturday", "Sell a lot of lemonade someday",
      "Be the best lemonade stand in the whole world",
      "A good goal is clear and can be measured, so you know when you've reached it."),
 ]
@@ -1866,7 +1913,7 @@ _STAND_RULES = [
     ("What is a food allergy?", "When someone's body reacts badly to a food",
      "When someone doesn't like the taste of a food", "When a food has gone bad from sitting out",
      "An allergy can be serious, so food sellers say what's in their food."),
-    ("Who checks that real food businesses follow safety rules?", "Inspectors", "The town's mayor",
+    ("Who checks that real food businesses follow safety rules?", "Food safety inspectors", "The town's mayor",
      "The business's own customers", "Inspectors visit food businesses to make sure the rules are followed."),
     ("What is a fine?", "Money paid as a penalty for breaking a rule", "Money paid to the town for a permit",
      "Money a customer adds as a thank-you",
@@ -1892,19 +1939,19 @@ _STAND_RULES = [
     ("The sign says \"Fresh-squeezed\", but the lemonade is made from a powder. Is that OK?",
      "No: signs should tell the truth", "Yes, if it tastes just as good", "Yes, if the price is low",
      "Signs and ads must be honest about what you sell."),
-    ("Rules for a business are a bit like...", "The rules of a game", "A list of tips you can skip",
+    ("Rules for a business are a bit like...", "The rules of a board game", "A list of tips you can skip",
      "Suggestions from friends",
      "Like game rules, business rules keep things fair and safe, and they work because everyone follows them."),
-    ("When should safety rules be followed?", "Every day, even busy ones", "Mostly when an inspector visits",
+    ("When should safety rules be followed?", "Every day, even the busiest ones", "Mostly when an inspector visits",
      "On the first day, until everyone knows them",
      "Accidents can happen any day, so rules count every day."),
     ("Why keep raw eggs away from snacks that are ready to eat?", "Germs from raw food can spread to other food",
      "The eggs might crack if they're too close", "Raw eggs make snacks taste different",
      "Keeping raw food apart stops germs from spreading."),
-    ("What's a good way to keep the stand's area safe?", "Keep the walkway clear",
+    ("What's a good way to keep the stand's area safe?", "Keep the walkway clear of all boxes",
      "Stack spare boxes beside the table", "Put the cooler where customers walk",
      "A clear, tidy walkway keeps customers and workers from tripping."),
-    ("If someone gets hurt at the stand, what should you do first?", "Get a grown-up right away",
+    ("If someone gets hurt at the stand, what should you do first?", "Get a grown-up to help right away",
      "Find a bandage and fix it yourself", "Finish serving the customer first",
      "When someone is hurt, getting a grown-up's help comes first."),
 ]
@@ -1984,16 +2031,16 @@ _STAND_MONEY_FACTS = [
 ]
 
 _STAND_TEAM = [
-    ("Why give each person a job at the stand?", "So the work gets done and it's shared",
+    ("Why give each person a job at the stand?", "So the work gets done and is shared fairly",
      "So each person can stay at one job all day", "So the teacher can see who works hardest",
      "Sharing the jobs gets everything done and keeps it fair."),
-    ("Which job list is fair?", "Everyone takes turns at every job", "Each person keeps the job they're best at",
+    ("Which job list is fair?", "Everyone takes turns at every single job", "Each person keeps the job they're best at",
      "The first to arrive picks their job",
      "Taking turns shares the fun jobs and the hard ones, and everyone learns them all."),
     ("Two teammates want the same job. What's a fair way to decide?", "Take turns, or flip a coin",
      "Give it to whoever asked first", "Let the older one have it",
      "A fair way to decide keeps the team happy."),
-    ("A teammate has a new idea for the sign. What should a good teammate do?", "Listen and talk about it",
+    ("A teammate has a new idea for the sign. What should a good teammate do?", "Listen to the idea and then talk about it",
      "Keep the old sign, since it already works", "Say it's a good idea, then change nothing",
      "Listening to ideas helps the team find the best ones."),
     ("You finished your job early. What's a helpful thing to do?", "Ask your teammates if anyone needs help",
@@ -2007,12 +2054,12 @@ _STAND_TEAM = [
     ("A teammate looks upset. What's a kind first step?", "Ask them quietly if they're okay",
      "Give them an easier job without asking", "Let them be until they feel better",
      "Checking in shows you care about your teammates."),
-    ("Why should the team agree on a plan before opening?", "So everyone knows what to do",
+    ("Why should the team agree on a plan before opening?", "So everyone knows just what to do",
      "So the plan can't change later", "So the leader doesn't have to explain",
      "A shared plan keeps everyone on track."),
     ("How should the team treat every customer?", "Kindly and fairly, the same for all", "Extra nicely if they're a friend",
      "Quickly, so the line keeps moving", "Every customer deserves the same kind, fair service."),
-    ("A teammate keeps breaking a team rule. What's a good first step?", "Talk with them kindly",
+    ("A teammate keeps breaking a team rule. What's a good first step?", "Talk with them kindly, in private",
      "Tell the whole class about it", "Do their part of the work for them",
      "Talking calmly first is fair. Ask the teacher for help if it keeps happening."),
     ("What's the best way to share an idea in a team meeting?", "Wait your turn and speak clearly",
@@ -2215,8 +2262,8 @@ def classroom_pool(world_number):
         picked = words[:16] + rng.sample(words[16:], max(0, min(len(words) - 16, size - 16)))
         meanings = [m for _, m in words]
         out = []
-        for word, meaning in picked[:size]:
-            wrong = rng.sample([m for m in meanings if m != meaning], 2)
+        for n, (word, meaning) in enumerate(picked[:size]):
+            wrong = _wrong_answers(rng, meaning, [m for m in meanings if m != meaning], below=n)
             out.append(_choice(rng, f"What does \"{word}\" mean?", meaning, wrong, f"{word}: {meaning}"))
         return tuple(out)
     pools = {"talk": PRO_TALK, "ownit": OWN_IT, "grit": GRIT, "respect": RESPECT, "customers": CUSTOMERS,

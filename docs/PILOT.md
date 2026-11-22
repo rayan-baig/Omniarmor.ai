@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.2.1**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.3.0**) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -16,14 +16,17 @@ lists its pages, by endpoint; anything not listed has no Pilot.
 |---|---|
 | Visitors | the landing page, Industries and each industry page, `/for/*`, `/classrooms`, the teacher guide, the demos page |
 | A business | Home (with each industry page), Report, History, Reminders, Settings (with Plans) |
-| A teacher (a school's workspace) | Home (classes), Checklist (with each industry page and the report), Reminders, History, Settings (with Plans) |
+| A teacher (a school's workspace) | Home (classes), each class's page and its join codes, the teacher guide (1.15.0), Checklist (with each industry page and the report), Reminders, History, Settings (with Plans) |
 
 **Never** on a page a student uses: the Academy's lessons, map, results, practice, certificates and
 class page, and the kids' join page (every `academy.*` and `kids.*` endpoint and `classes.my_class`),
 whoever is signed in, and never on a kid's device, even on a public page. The config
 (`static/pilot-omniarmor.js`) is a second lock: its `kidView()` is true on any `/kids` or
 `/app/academy/<student>` address, or whenever it can't tell who is there, and then Pilot doesn't start.
-Pilot is also left off sign-in, password, Help, legal, error and class-roster pages.
+Pilot is also left off sign-in, password, Help, legal and error pages, and a class's certificates and report.
+On a teacher's class page and join codes (1.15.0) every student's name (the progress table, the codes,
+the "First name only?" card, the names not added, the Manage list and the teacher's notices) is marked
+`data-pilot-private`, so "Analyze & explain" and "Summarise" never send one.
 
 When the account in a tab changes (someone signs out, or a kid uses the device next), the config
 forgets the last person's chat and any key kept for that tab only.
@@ -32,7 +35,7 @@ forgets the last person's chat and any key kept for that tab only.
 
 | File | What it is |
 |---|---|
-| `static/pilot/` | the core 1.2.1, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
+| `static/pilot/` | the core 1.3.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
 | `static/pilot-omniarmor.js` | the config: OmniArmor's own welcome for each audience (`tagline`, `welcomePills`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
@@ -115,8 +118,20 @@ app-specific pills on websites). The config picks it from who is there (`data-wh
 |---|---|---|
 | A business | Your checklist helper | What's due or overdue?, Explain this check, Summarise my report, What does this colour mean?, Add my AI key |
 | A teacher | Your classroom helper | Add students, How do join codes work?, Plan a week of lessons, Print certificates, Add my AI key |
-| A visitor on `/classrooms` or the teacher guide | Your classroom helper | Is it safe for students?, How does the free trial work?, Plan a week of lessons, Explain this page, Add my AI key |
-| Any other visitor | Your checklist helper | What does OmniArmor do?, Which checklist fits me?, Which plan fits me?, Explain this page, Add my AI key |
+| A visitor on `/classrooms` or the teacher guide | Your OmniArmor helper (1.15.0) | Is it safe for students?, How does the free trial work?, Plan a week of lessons, Explain this page, Add my AI key |
+| Any other visitor | Your OmniArmor helper (1.15.0) | What does OmniArmor do?, Which checklist fits me?, Which plan fits me?, Explain this page, Add my AI key |
+
+Print certificates has the paper icon (`copy`), not a chart (1.15.0). Core 1.3.0: the "Add my AI key"
+pill is the welcome's one ask for a key (no key card beside it), the key settings say "AI key", and the
+welcome's note is one line, `keyNoteShort` "AI keys are for grown-ups (18+)." (the full `keyNote` stays
+beside the key settings and in help).
+
+**Armo and Pilot on a phone** (1.15.0): Armo's bubble has **Ask Pilot**, which opens Pilot's window
+(`window.Pilot.open()`), since Pilot steps back while Armo's badge has a count. Armo keeps clear of the
+page the way Pilot does: `armo.js` (`keepClear`) checks a grid of points under him for controls, status
+tags, notices and words, and shrinks him into his corner (`armo-tucked`) where he would cover one; on a
+phone the page's column keeps 42 px at its right while he shows. On a computer (1100 px and wider) the
+sections are a side bar, so Pilot's corners there use the core's own 16 px gap.
 
 Questions are sent at once (each has a tool or the pack's answer); "Explain this check" and "Add
 students" put a prompt in the box to finish (the check's name; first names only). "Explain this page" is
@@ -140,7 +155,7 @@ above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public p
 `pilot.COMPATIBLE_HOSTS`, and `http://localhost:*` / `http://127.0.0.1:*` for a local model),
 `media-src` adds `blob:` (a video made with the person's own key), and the Permissions-Policy allows
 `microphone=(self)` for voice. Nothing else was widened: scripts, styles, fonts and pictures stay
-this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1, 1.2.0 and 1.2.1 needed nothing new: the
+this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1, 1.2.0, 1.2.1 and 1.3.0 needed nothing new: the
 moving robot's files and pictures come from this site, it moves with the Web Animations API, and
 1.1.1 only reads the page's own layout (`elementsFromPoint`).
 

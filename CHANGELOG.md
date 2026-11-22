@@ -3,6 +3,53 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.15.0 (22 November 2026)
+
+Fixes from a strict fifth review: pictures of the app, fair quizzes, the
+helpers on a phone, a computer layout, a kid's lesson screen, plainer words,
+and Pilot core 1.3.0.
+
+- **See the app before you sign up.** The home page, the Academy for schools
+  page and each trade page show a real screenshot of the demo beside the
+  headline (the overview, or the class progress page for schools), and a
+  three-step "How it works", each step with its own picture. A trade page
+  shows its own demo: the gym page a gym's checklist.
+- **A Menu button on a phone.** The links at the top fold into one Menu
+  button, and "Start free" is a real button beside it.
+- **Quizzes you can't pass by guessing from length.** Wrong answers are
+  about as long as the right one, and in every world the right answer is
+  the shortest, the longest or in between about equally often. About fifty
+  answers were rewritten to match. The quiz checker now fails if the
+  shortest or the longest answer is right more than 45% of the time in any
+  world (a reviewer found the shortest right 10 times in 14).
+- **Armo keeps clear of the page.** Where he would sit on a status tag, a
+  button or the page's words, he shrinks into his corner, and on a phone the
+  page leaves room at its right for him, so he no longer covers "BLOCKED" on
+  the report.
+- **Pilot is a tap away while Armo shows.** Armo's bubble has an "Ask Pilot"
+  button.
+- **Pilot on more teacher pages:** the class page, its join codes and the
+  teacher guide. Students' names on those pages are never read by Pilot.
+- **Visitors meet "Your OmniArmor helper".** Print certificates has a
+  paper icon instead of a chart, and everything says "AI key".
+- **Pilot core 1.3.0**, the same files as the MTRX Horizyn site. The welcome
+  asks for the AI key once (the "Add my AI key" button), with a one-line
+  note that AI keys are for grown-ups (18+). The robot's first look never
+  sits on the page's words, and tucked away it is never smaller than a
+  44-pixel tap target.
+- **A computer layout.** On a wide screen the sections are a side bar on the
+  left instead of the phone's tab bar, Armo sits at its foot, and the
+  overview shows Needs attention and Coming due side by side.
+- **A kid's lesson on a grown-up's device** has no Report, History,
+  Reminders or Settings tabs under it, only "Back to map".
+- **Plainer words.** The first join codes no longer say "the slips you
+  already handed out still work". Names that look like a first and last
+  name stay on the class page under "First name only?" until the teacher
+  decides, even after leaving the page, and "Don't add any of them" clears
+  them. Armo says what is blocked or overdue calmly, never as a joke,
+  whatever his personality. The demo opens with "Update several at once"
+  folded.
+
 ## 1.14.1 (22 November 2026)
 
 - **Pilot core 1.2.1**, the same files as the MTRX Horizyn site. Opening

@@ -15,8 +15,8 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="for" value="missing">
     {% if codes or joined %}
-      <span><strong>{{ missing|length }} student{{ 's have' if missing|length != 1 else ' has' }} no code yet</strong>{% if missing|length <= 3 %} ({{ missing|map(attribute='nickname')|join(', ') }}){% endif %}. The slips you already handed out keep working.</span>
-      <button class="btn ac-btn" type="submit">Make codes for {{ 'them' if missing|length != 1 else missing[0].nickname }}</button>
+      <span><strong>{{ missing|length }} student{{ 's have' if missing|length != 1 else ' has' }} no code yet</strong>{% if missing|length <= 3 %} <span data-pilot-private>({{ missing|map(attribute='nickname')|join(', ') }})</span>{% endif %}. The slips you already handed out keep working.</span>
+      <button class="btn ac-btn" type="submit">Make codes for {% if missing|length != 1 %}them{% else %}<span data-pilot-private>{{ missing[0].nickname }}</span>{% endif %}</button>
     {% else %}
       <span>Each student gets a code, ready to print and cut into slips.</span>
       <button class="btn ac-btn" type="submit">Make a code for every student</button>
@@ -24,7 +24,7 @@
   </form>
   {% endif %}
   {% if codes %}
-    <ul class="ac-codes" data-join-codes>
+    <ul class="ac-codes" data-join-codes data-pilot-private>
       {% for c in codes %}
         <li><span class="ac-code-name">{{ c.nickname }}</span> <span class="mono ac-code">{{ c.code }}</span></li>
       {% endfor %}

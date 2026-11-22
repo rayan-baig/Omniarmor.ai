@@ -111,7 +111,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     "A free classroom trial with no card, a printable teacher guide, and an invoice option for schools.",
     "With the Kitchen Safety Bundle, a restaurant's fridge checks fill themselves in from real CyberLogix readings.",
     "Armo points straight at what's blocked, overdue or due soon, with a one-click link to the fix.",
-    "Pilot works with the AI provider you already use, on your own key, and asks before it changes anything.",
+    "Pilot works with the AI provider you already use, on your own AI key, and asks before it changes anything.",
   ];
 
   function liveFacts() {
@@ -630,7 +630,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       const note = document.createElement("p");
       note.className = "omni-names-note";
       note.setAttribute("data-names-note", "");
-      note.append("Student names you give Pilot are sent to your own AI provider, the company your key is from. ");
+      note.append("Student names you give Pilot are sent to your own AI provider, the company your AI key is from. ");
       const link = document.createElement("a");
       link.href = url;
       link.textContent = "Type them myself instead";

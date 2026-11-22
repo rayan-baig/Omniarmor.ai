@@ -33,8 +33,11 @@ PUBLIC_PAGES = frozenset({"public.home", "public.industries", "public.industry_p
                           "public.academy_schools", "public.class_guide", "demo.index"})
 BUSINESS_PAGES = frozenset({"app.overview", "app.industry", "app.report", "app.audit", "app.notifications",
                             "app.settings", "plan.plan_page"})
-TEACHER_PAGES = frozenset({"classes.index", "app.overview", "app.industry", "app.report", "app.notifications",
-                           "app.audit", "app.settings", "plan.plan_page"})
+# A teacher's: their classes, one class's page and its join codes, the teacher
+# guide, and the school checklist's pages.
+TEACHER_PAGES = frozenset({"classes.index", "classes.class_page", "classes.join_codes", "public.class_guide",
+                           "app.overview", "app.industry", "app.report", "app.notifications", "app.audit",
+                           "app.settings", "plan.plan_page"})
 # Never, whoever is signed in: every page a student uses, and the kids' join page.
 STUDENT_BLUEPRINTS = ("academy.", "kids.")
 
@@ -153,6 +156,9 @@ def facts(who):
 
 
 def pilot_tag():
-    """The facts for templates/_pilot.html, or None where Pilot isn't shown."""
-    who = audience()
-    return facts(who) if who else None
+    """The facts for templates/_pilot.html, or None where Pilot isn't shown
+    (worked out once a request: Armo's bubble asks too, for "Ask Pilot")."""
+    if "pilot_tag" not in g:
+        who = audience()
+        g.pilot_tag = facts(who) if who else None
+    return g.pilot_tag

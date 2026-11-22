@@ -571,3 +571,4 @@
 /* "First name only?": one fieldset per name that looks like a full name */
 .ac-confirm{margin:14px 0 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;max-width:640px}
 .ac-confirm legend{padding:0 6px;font-weight:700}
+.ac-confirm-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}

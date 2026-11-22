@@ -27,6 +27,18 @@ from .tracking import local_date, org_industry_ids, org_today
 
 bp = Blueprint("academy", __name__, url_prefix="/app/academy")
 kids = Blueprint("kids", __name__, url_prefix="/kids")
+
+# A learner's lesson screens: a world's stages, a lesson and its result,
+# practice and a duel. On a grown-up's device they are the kid's screens, so
+# base.html shows only "Back to map" under them, not the grown-up tab bar.
+LESSON_ENDPOINTS = frozenset({"academy.world_page", "academy.play", "academy.practice", "academy.duel"})
+
+
+def lesson_view():
+    """Whether this page is a learner's lesson screen seen on a grown-up's
+    device (a kid's own device has no tab bar at all)."""
+    return (g.get("user") is not None and request.endpoint in LESSON_ENDPOINTS
+            and "learner_id" in (request.view_args or {}))
 JOIN_CODE_DAYS = 7
 FAMILY_TRACKS = {t.key for t in academy.TRACK_LIST}   # the tracks a family's learner can pick
 DAILY_GOAL = 3          # levels a day for the daily goal

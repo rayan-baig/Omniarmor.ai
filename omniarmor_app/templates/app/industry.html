@@ -20,7 +20,8 @@
 {% set read_only = plan_access and plan_access.read_only %}
 
 {% if states and not read_only %}
-<details class="bulk no-print"{% if counts.NONE != total %} open{% endif %}>
+{# Open once checks have readings; in the demo it starts folded, so the checks come first. #}
+<details class="bulk no-print"{% if counts.NONE != total and not g.demo %} open{% endif %}>
 <summary class="bulk-title">Update several at once</summary>
 <form id="bulk" method="post" action="{{ url_for('app.bulk_change', industry_id=info.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

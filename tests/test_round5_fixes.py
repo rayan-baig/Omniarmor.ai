@@ -236,12 +236,13 @@ class TestPhoneLayout(unittest.TestCase):
         self.assertIn(".companion{left:auto;right:max(12px", block)
         config = read("omniarmor_app", "static", "pilot-omniarmor.js")
         self.assertIn("keepInViewport: true,", config)
-        self.assertNotIn("tucked", read("omniarmor_app", "static", "armo.js"))
+        # 1.15.0: Armo shrinks into the same corner when he would sit on the page (armo-tucked), never off it.
+        self.assertNotIn("translateX", read("omniarmor_app", "static", "armo.js"))
         # Pilot's core is untouched.
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.2\.1 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.3\.0 · ", name)
 
     def test_the_report_turns_into_cards_on_a_phone(self):
         css = read("omniarmor_app", "static", "app.css")

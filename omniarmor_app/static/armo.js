@@ -9,7 +9,13 @@
    beside the page's content column (a wide screen), never over it, so on a
    phone or a laptop he shows just his badge until tapped. On a phone he and
    Pilot share one corner and only one of them shows (app.css): Armo while
-   his badge has a count, Pilot the rest of the time. */
+   his badge has a count, Pilot the rest of the time. While he shows, "Ask
+   Pilot" in his bubble opens Pilot (where the page has Pilot).
+
+   He keeps clear of the page as Pilot does (keepClear): when he would sit
+   on a status tag, a button, a link or the page's words, he shrinks into
+   his corner (armo-tucked), where on a phone the page's column keeps room
+   for him (app.css). He comes back out when the spot is free again. */
 (function () {
   "use strict";
   var root = document.querySelector("[data-companion]");
@@ -24,6 +30,7 @@
   var next = root.querySelector("[data-bubble-next]");
   var close = root.querySelector("[data-bubble-close]");
   var count = root.querySelector("[data-count]");
+  var askPilot = root.querySelector("[data-ask-pilot]");
 
   var lines = {
     idle: parse("data-idle"), alert: parse("data-alert"), clear: parse("data-clear"), acts: parse("data-acts"),
@@ -199,6 +206,15 @@
     say(pick(roll < 0.7 ? lines.poke : roll < 0.85 ? lines.clear : lines.idle));
   });
   next.addEventListener("click", function () { showIssue(state.index + 1); });
+  // "Ask Pilot": on a phone Pilot steps back while Armo has something to
+  // show, so this is the way to it. Opened, its window shows over everything.
+  if (askPilot) {
+    askPilot.addEventListener("click", function () {
+      if (!window.Pilot || typeof window.Pilot.open !== "function" || !window.Pilot.config) return;
+      standDown();
+      window.Pilot.open();
+    });
+  }
   close.addEventListener("click", function () {
     if (alerting) store("armo-dismissed", state.signature);
     standDown();
@@ -267,7 +283,84 @@
       .catch(function () { /* offline: try again next minute */ });
   }
 
+  // ---- Keeping clear of the page, as Pilot does ---------------------------
+  // What a visitor reads or presses: the same kinds of things Pilot keeps
+  // off (controls, small marks that mean something, and words), plus the
+  // status tags and notices by name.
+  var CONTROLS = 'a[href], button, input:not([type="hidden"]), textarea, select, summary, label, [role="button"]';
+  var MARKS = ".tag, .top-n, .msg, .flash, .plan-banner, .ac-badge, .bundle-note, [data-confirm-names], [title]";
+
+  function overlaps(a, b) {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  }
+  function textUnder(el, area) {
+    if (!document.createRange) return false;
+    var range = document.createRange();
+    for (var i = 0; i < el.childNodes.length; i += 1) {
+      var node = el.childNodes[i];
+      if (node.nodeType !== 3 || !/\S/.test(node.nodeValue)) continue;
+      range.selectNodeContents(node);
+      var rects = range.getClientRects();
+      for (var j = 0; j < rects.length; j += 1) {
+        if (rects[j].width > 0 && overlaps(rects[j], area)) return true;
+      }
+    }
+    return false;
+  }
+  function pageUnder(el, area) {
+    if (!el || el.nodeType !== 1 || root.contains(el) || /^(HTML|BODY|MAIN)$/.test(el.tagName)) return false;
+    if (el.closest && el.closest(".pilot-root, .tabbar")) return false;
+    var hit = el.closest && (el.closest(CONTROLS) || el.closest(MARKS));
+    if (hit && !root.contains(hit) && overlaps(hit.getBoundingClientRect(), area)) return true;
+    return textUnder(el, area);
+  }
+  // Is anything of the page under where Armo sits, at full size? A grid of
+  // points over his spot, each asking what is drawn there under him.
+  function busy() {
+    if (!document.elementsFromPoint) return false;
+    var box = button.getBoundingClientRect();
+    if (!box.width) return false;   // not shown (on a phone with nothing to report)
+    var area = { left: box.left - 4, top: box.top - 4, right: box.right + 2, bottom: box.bottom + 2 };
+    var seen = [];
+    for (var i = 0; i < 4; i += 1) {
+      for (var j = 0; j < 4; j += 1) {
+        var x = area.left + 3 + ((area.right - area.left - 6) * i) / 3;
+        var y = area.top + 3 + ((area.bottom - area.top - 6) * j) / 3;
+        var stack = document.elementsFromPoint(x, y) || [];
+        for (var k = 0; k < stack.length; k += 1) {
+          var el = stack[k];
+          if (root.contains(el)) continue;
+          if (seen.indexOf(el) < 0) {
+            seen.push(el);
+            if (pageUnder(el, area)) return true;
+          }
+          break;
+        }
+      }
+    }
+    return false;
+  }
+  var clearQueued = false;
+  function keepClear() {
+    if (clearQueued) return;
+    clearQueued = true;
+    window.requestAnimationFrame(function () {
+      clearQueued = false;
+      // His bubble open: he stays as he is, so the bubble doesn't jump.
+      if (!bubble.hidden) return;
+      // Judged at full size, in his own spot: out, measured, and back in
+      // within one frame, so nothing flickers.
+      root.classList.remove("armo-tucked");
+      root.classList.toggle("armo-tucked", busy());
+    });
+  }
+  window.addEventListener("scroll", keepClear, { passive: true });
+  window.addEventListener("resize", keepClear);
+  document.addEventListener("focusin", keepClear);
+  document.addEventListener("toggle", keepClear, true);
+
   updateBadge();
+  keepClear();
   if (state.needs && store("armo-dismissed") !== state.signature) {
     setTimeout(function () {
       pose("alert");

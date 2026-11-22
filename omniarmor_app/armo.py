@@ -123,6 +123,12 @@ TEACHER_IDLE = [
 TEACHER_CLEAR = ["All set. Your classes are ready when you are.", "Nothing needs you right now.",
                  "Everything's in order for your classes."]
 
+# How Armo points out something blocked, overdue or due soon, whatever his
+# personality: plainly and calmly, never as a joke. ("{title}" is the issue,
+# like "Ready-to-eat food 7-day limit is blocked".) His personality shows in
+# everything else he says.
+CALM_ALERT = ["Needs your attention: {title}", "Please take a look: {title}", "This one needs you: {title}"]
+
 # A school's workspace: what each page is for, in a teacher's words.
 TEACHER_PAGE_HELP = {
     "classes.index": "These are your classes. Add a class, then your students by first name or nickname.",

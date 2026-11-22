@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body{% if g.user %} class="has-tabs"{% endif %}>
+<body{% if g.user %} class="has-tabs{{ ' lesson-view' if lesson_view() }}"{% endif %}>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap">
@@ -51,7 +51,9 @@
       </svg>
       <span class="wordmark">OmniArmor<span class="dim">.ai</span></span>
     </a>
-    <nav class="nav" aria-label="Main">
+    {#- The menu: on a computer its links sit in the top bar; on a phone (app.css) they fold into one Menu
+        button (a <details>, so it needs no script), with Start free beside it as a real button. -#}
+    {% macro nav_links() %}
       {% if g.user %}
         {% set ep = request.endpoint or '' %}
         {% if class_workspace %}
@@ -73,12 +75,19 @@
           <button type="submit">Leave</button>
         </form>
       {% else %}
-        <a href="{{ url_for('public.industries') }}">Businesses</a>
+        <a href="{{ url_for('public.industries') }}"{% if request.endpoint in ('public.industries', 'public.industry_page', 'public.trade_page') %} aria-current="page"{% endif %}>Businesses</a>
         <a href="{{ url_for('public.academy_schools') }}"{% if request.endpoint in ('public.academy_schools', 'public.class_guide') %} aria-current="page"{% endif %}>Schools</a>
         <a href="{{ url_for('kids.join') }}">Kids</a>
         <a href="{{ url_for('auth.login') }}">Sign in</a>
-        <a class="btn" href="{{ url_for('auth.signup') }}">Start free</a>
       {% endif %}
+    {% endmacro %}
+    <nav class="nav" aria-label="Main">
+      <div class="nav-wide">{{ nav_links() }}</div>
+      {% if not g.user and not g.kid %}<a class="btn nav-cta" href="{{ url_for('auth.signup') }}" data-start-free>Start free</a>{% endif %}
+      <details class="nav-menu" data-nav-menu>
+        <summary aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></summary>
+        <div class="nav-drop">{{ nav_links() }}</div>
+      </details>
     </nav>
   </div>
 </header>
@@ -126,7 +135,8 @@
     {% if demo_bar %}{% include "demo/_bar.html" %}{% endif %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <ul class="flashes" role="status">
+        {# A teacher's notices can name students: Pilot never reads them. #}
+        <ul class="flashes" role="status"{% if class_workspace %} data-pilot-private{% endif %}>
           {% for category, message in messages %}<li class="flash {{ category }}">{{ message }}</li>{% endfor %}
         </ul>
       {% endif %}
@@ -147,9 +157,9 @@
 <aside class="companion no-print" aria-label="Armo, your helper" data-companion
   data-status="{{ url_for('armo.status') }}" data-needs="{{ state.needs }}" data-signature="{{ state.signature }}"
   data-issues='{{ state.pressing|tojson }}' data-tips='{{ state.tips|tojson }}' data-page-help="{{ armo_page_help(request.endpoint, class_workspace) }}"
-  data-idle='{{ (armo_teacher['idle'] if class_workspace else buddy.idle)|tojson }}' data-alert='{{ buddy.alert|tojson }}' data-clear='{{ (armo_teacher['clear'] if class_workspace else buddy.clear)|tojson }}'
+  data-idle='{{ (armo_teacher['idle'] if class_workspace else buddy.idle)|tojson }}' data-alert='{{ armo_calm_alert|tojson }}' data-clear='{{ (armo_teacher['clear'] if class_workspace else buddy.clear)|tojson }}'
   data-fixed='{{ buddy.fixed|tojson }}' data-poke='{{ buddy.poke|tojson }}'
-  data-acts='{{ buddy.activities|tojson }}' data-fix="{{ buddy.fix }}">
+  data-acts='{{ buddy.activities|tojson }}' data-fix="Open it">
   <div class="companion-bubble" data-bubble hidden>
     <p class="companion-text" data-bubble-text aria-live="polite"></p>
     <p class="companion-detail" data-bubble-detail hidden></p>
@@ -157,6 +167,7 @@
       <a class="companion-fix" data-bubble-fix hidden href="#"></a>
       <button type="button" class="companion-next" data-bubble-next hidden></button>
       <a class="companion-more" href="{{ url_for('armo.page') }}">See everything</a>
+      {% if pilot_tag() %}<button type="button" class="companion-pilot" data-ask-pilot>Ask Pilot</button>{% endif %}
     </p>
     <button type="button" class="companion-close" data-bubble-close aria-label="Close">&times;</button>
   </div>
@@ -174,6 +185,16 @@
 {% endif %}
 {% if g.user %}
 {% set ep = request.endpoint or '' %}
+{% if lesson_view() %}
+{#- A lesson on a grown-up's device is the kid's screen: no grown-up tabs (Report, History, Reminders,
+    Settings) under it, only the way back to their map. -#}
+<nav class="tabbar lessonbar no-print" aria-label="Lesson" data-lessonbar>
+  <a class="tab tab-back" href="{{ url_for('academy.level_map', learner_id=request.view_args.learner_id) }}">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    <span>Back to map</span>
+  </a>
+</nav>
+{% else %}
 <nav class="tabbar no-print" aria-label="Sections">
   {% if class_workspace %}
   {% set tabs = [
@@ -208,6 +229,7 @@
     </a>
   {% endfor %}
 </nav>
+{% endif %}
 {% endif %}
 {% block pilot %}{% include "_pilot.html" %}{% endblock %}
 </body>
