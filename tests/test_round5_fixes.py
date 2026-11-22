@@ -242,7 +242,7 @@ class TestPhoneLayout(unittest.TestCase):
         for name in os.listdir(os.path.join(STATIC, "pilot")):
             if name.endswith((".js", ".css")):
                 with open(os.path.join(STATIC, "pilot", name), encoding="utf-8") as f:
-                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.4\.1 · ", name)
+                    self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.4\.2 · ", name)
 
     def test_the_report_turns_into_cards_on_a_phone(self):
         css = read("omniarmor_app", "static", "app.css")

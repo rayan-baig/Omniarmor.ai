@@ -99,18 +99,21 @@ class TestTheStylesheet(unittest.TestCase):
                       block)
 
     def test_on_a_computer_the_right_hand_corners_shrink_on_screen(self):
-        # The core moves the small robot by --pilot-gap (80px above the tab bar) less its margin; the
-        # right-hand corners sit 16px in, so across they count from there, never off the screen.
+        # The core moves the small robot across by --pilot-gap (80px above the tab bar) less its margin; the
+        # right-hand corners sit 16px in, so across they count from there, never off the screen. Up or down
+        # (1.20.0, core 1.4.2) only by the core's own room, --pilot-keep-dy, so it stays above the tab bar.
         wide = re.search(r"@media \(min-width:721px\)\{\n  body\.has-tabs \.pilot-at-br \.pilot-panel[^@]*", self.css).group(0)
         self.assertIn("html body.has-tabs .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br .pilot-launcher,", wide)
-        self.assertIn("transform:translate(calc(16px - var(--pilot-keep-margin)),var(--pilot-keep-d)) scale(var(--pilot-peek-scale))", wide)
-        self.assertIn("transform:translate(calc(16px - var(--pilot-keep-margin)),calc(-1 * var(--pilot-keep-d))) "
+        self.assertIn("transform:translate(calc(16px - var(--pilot-keep-margin)),var(--pilot-keep-dy)) scale(var(--pilot-peek-scale))", wide)
+        self.assertIn("transform:translate(calc(16px - var(--pilot-keep-margin)),calc(-1 * var(--pilot-keep-dy))) "
                       "scale(var(--pilot-peek-scale))", wide)
         self.assertIn("body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:16px}", self.css)
 
     def test_the_core_has_what_the_app_relies_on(self):
         core = read("omniarmor_app", "static", "pilot", "pilot.css")
-        self.assertIn(".pilot-root.pilot-keep-in { --pilot-keep-d: calc(var(--pilot-gap) - var(--pilot-keep-margin)); }", core)
+        self.assertIn(".pilot-root.pilot-keep-in { --pilot-keep-d: calc(var(--pilot-gap) - var(--pilot-keep-margin));\n"
+                      "  --pilot-keep-dy: calc(min(var(--pilot-gap), var(--pilot-keep-room)) - var(--pilot-keep-margin)); }", core)
+        self.assertNotIn("var(--pilot-keep-d))", self.css)
         self.assertIn(":root.pilot-on.pilot-keep-in { --pilot-side: 30px; }", core)
         self.assertIn('if (config.keepInViewport) for (const n of [rootEl, document.documentElement]) n.classList.add("pilot-keep-in");',
                       read("omniarmor_app", "static", "pilot", "pilot.js"))

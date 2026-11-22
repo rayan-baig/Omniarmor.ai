@@ -365,5 +365,6 @@ class TestSecondBackup(AppTestCase):
 
 class TestVersion(unittest.TestCase):
     def test_version(self):
-        self.assertEqual(__version__, "1.19.0")
+        # 1.20.0 moved on (tests/test_core142.py); 1.19.0's section stays.
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 19, 0))
         self.assertIn("## 1.19.0", read("CHANGELOG.md"))

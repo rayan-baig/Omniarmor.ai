@@ -350,9 +350,9 @@ const vm = require("node:vm");
 
 // OmniArmor's config, run for one person on one page: what it gives Pilot.mount.
 // chat: the messages already in this tab's chat (the welcome shows before any).
-function mountFor(who, pathname, { facts = {}, chat = [] } = {}) {
+function mountFor(who, pathname, { facts = {}, chat = [], ready = false } = {}) {
   let given = null;
-  const store = { prefix: "omniarmor-pilot", loadChat: () => chat, clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
+  const store = { prefix: "omniarmor-pilot", loadChat: () => chat, ready: () => ready, clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
   const dataset = { who, facts: JSON.stringify(facts), account: "a1" };
   const sessionStorage = { getItem: () => null, setItem() {} };
   vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
@@ -426,19 +426,22 @@ test("1.14.0 welcome: short taglines and labels, no picture or video keys, kept 
   }
 });
 
-test("1.14.0 welcome: a suggestion that repeats a pill is left off the welcome, and is back once a chat has started", () => {
+test("1.14.0 welcome: a suggestion that repeats a pill is left off the welcome, and is back once a chat has started (1.20.0: with a key)", () => {
   // A business's Home: "What's overdue?", "Explain a check" and "What do the colours mean?" are all pills.
   assert.deepEqual(mountFor("business", "/app").chipLabels(), []);
   assert.deepEqual(mountFor("business", "/app/report").chipLabels(), ["How do I export it?"]);
   const chatting = [{ role: "user", content: "hi" }];
-  assert.deepEqual(mountFor("business", "/app", { chat: chatting }).chipLabels(),
-    ["What's overdue?", "Explain a check", "What do the colours mean?"]);
+  // 1.20.0: back with a key, in the pill's own words (so the row under an answer shows each question once).
+  assert.deepEqual(mountFor("business", "/app", { chat: chatting, ready: true }).chipLabels(),
+    ["What's due or overdue?", "Explain this check", "What does this colour mean?"]);
+  // With no key they stay out: the pills come back under each of the app's own answers (core 1.4.2).
+  assert.deepEqual(mountFor("business", "/app", { chat: chatting }).chipLabels(), []);
   // A teacher's classes page: all three are pills (or "What's overdue?" with the school checklist).
   assert.deepEqual(mountFor("teacher", "/app/academy/classes").chipLabels(), []);
   assert.deepEqual(mountFor("teacher", "/app/academy/classes", { facts: { school_checklist: true } }).chipLabels(),
     ["What's overdue?"]);
-  assert.deepEqual(mountFor("teacher", "/app/academy/classes", { chat: chatting }).chipLabels(),
-    ["Add students", "How do join codes work?", "Plan a week"]);
+  assert.deepEqual(mountFor("teacher", "/app/academy/classes", { chat: chatting, ready: true }).chipLabels(),
+    ["Add students", "How do join codes work?", "Plan a week of lessons"]);
   assert.deepEqual(mountFor("visitor", "/classrooms").chipLabels(), ["Classroom or Whole school?"]);
 });
 
@@ -924,4 +927,129 @@ test("1.19.0: a visitor is never sent to a signed-in page like Settings; the pub
   assert.deepEqual(linksIn(reminders), ["/help#reminders"]);
   // Signed in, Settings is where the emails are chosen.
   assert.ok(linksIn(mountOn("business", "/app/notifications", h("main")).answer("When do reminders go out?")).includes("/app/settings"));
+});
+
+// ---------------------------------------------------------------- 1.20.0: Pilot core 1.4.2
+
+// The core's own panel helpers (matchTyped, againItems, screenChip, the cleaning), as the window uses them.
+function panel() {
+  const sandbox = { window: {}, document: {}, URL };
+  vm.runInNewContext(fs.readFileSync(core("pilot-panel.js"), "utf8"), sandbox);
+  return sandbox.window.PilotPanel;
+}
+// What the window compares a typed question with when there is no key (the core's typedHere): the welcome's
+// pills and this page's suggestions, cleaned. Returns the label it answers with, or null (key settings, as before).
+function typedOn(who, where, opts = {}) {
+  const P = panel();
+  const c = mountFor(who, where, opts);
+  const base = `https://omniarmor.example${where}`;
+  const items = P.ownPills(c.welcomePills, base).concat(P.cleanChips([...c.chips({})], base));
+  return (q) => { const m = P.matchTyped(q, items); return m ? m.label : null; };
+}
+
+test("1.20.0: with no key, a typed question that clearly asks one of OmniArmor's own questions gets its answer (core 1.4.2 match words)", () => {
+  const cases = {
+    "business /app": [["What's overdue?", "What's due or overdue?"], ["What needs attention?", "What's due or overdue?"],
+      ["What is due today?", "What's due or overdue?"], ["What does red mean?", "What does this colour mean?"],
+      ["What does blocked mean?", "What does this colour mean?"], ["What rule is this?", "Explain this check"],
+      ["What should I fix first?", "Summarise my report"], ["Summarize my report", "Summarise my report"]],
+    "business /app/report": [["How do I print the report?", "How do I export it?"], ["export", "How do I export it?"]],
+    "business /app/audit": [["history", "What's in History?"], ["export", "Export it"]],
+    "business /app/notifications": [["When are reminders sent?", "When do reminders go out?"], ["How do I set a reminder?", "Add a reminder"]],
+    "business /app/settings": [["How do I stop the emails?", "Choose my emails"]],
+    "teacher /app/academy/classes/12": [["How do I add students?", "Add students"], ["add pupils", "Add students"],
+      ["How do students log in?", "How do join codes work?"], ["We lost the codes", "How do join codes work?"],
+      ["plan my week", "Plan a week of lessons"], ["certificates", "Print certificates"]],
+    "teacher /app/settings": [["How much does it cost?", "Classroom or Whole school?"], ["Which plan is right for my school?", "Classroom or Whole school?"],
+      ["invite a teammate", "Invite a colleague"]],
+    "visitor /": [["What is OmniArmor?", "What does OmniArmor do?"], ["How much does it cost?", "See the prices"],
+      ["Which checklist do I need?", "Which checklist fits me?"], ["restaurant", "Which checklist fits me?"],
+      ["What is this page about?", "Explain this page"], ["Which plan should I choose?", "Which plan fits me?"]],
+    "visitor /industries": [["Is this legal advice?", "Is this legal advice?"], ["salon checklist", "Which checklist fits me?"]],
+    "visitor /classrooms": [["Is my data safe?", "Is it safe for students?"], ["How much does it cost?", "Classroom or Whole school?"],
+      ["free trial", "How does the free trial work?"], ["Do I need a card?", "How does the free trial work?"]],
+    "visitor /classrooms/guide": [["How long is a lesson?", "How long is a lesson?"], ["plan my week", "Plan a week of lessons"]],
+  };
+  for (const [page, list] of Object.entries(cases)) {
+    const [who, where] = page.split(" ");
+    for (const chat of [[], [{ role: "user", content: "hi" }]]) {
+      const pick = typedOn(who, where, { chat });
+      for (const [q, label] of list) assert.equal(pick(q), label, `${page} (chat ${chat.length}): ${q}`);
+    }
+  }
+  // Never a wrong answer for something else: that waits for a key, as before.
+  const never = ["Write me a poem", "How do I reset my password?", "What's the weather?", "Is it ok?", "help", "Who made you?",
+    "Can you mark the hood check done?", "What's blocked?", "Tell me a joke", "pizza", "Add my AI key", "", "Explain how the fridge sensors connect to the wifi"];
+  for (const page of Object.keys(cases)) {
+    const [who, where] = page.split(" ");
+    const pick = typedOn(who, where);
+    for (const q of never) assert.equal(pick(q), null, `${page}: ${q}`);
+  }
+  // A question a pill and a page suggestion both ask is answered once a chat has started too (1.20.0: the suggestion
+  // stays out with no key; with both there the core would find two answers and give neither).
+  assert.equal(typedOn("business", "/app", { chat: [{ role: "user", content: "hi" }] })("What's overdue?"), "What's due or overdue?");
+});
+
+test("1.20.0: the match words are on the pills and suggestions that answer with no key, cleaned by the core, a few each", () => {
+  const P = panel();
+  for (const [who, where] of [["business", "/app"], ["teacher", "/app/academy/classes/12"], ["visitor", "/"], ["visitor", "/classrooms"]]) {
+    const c = mountFor(who, where);
+    const base = `https://omniarmor.example${where}`;
+    for (const p of P.ownPills(c.welcomePills, base)) {
+      if (p.builtin) { assert.equal(p.match, undefined); continue; }
+      assert.ok(Array.isArray(p.match) && p.match.length >= 3 && p.match.length <= 20, `${where}: ${p.label}`);
+    }
+  }
+  // The answers themselves are the same functions as before: matching only finds them.
+  const c = mountFor("business", "/app");
+  assert.deepEqual([...c.welcomePills].map((p) => typeof p.answer), ["function", "function", "function", "function", "undefined"]);
+});
+
+test("1.20.0: under the app's own answer each question shows once, with or without a key", () => {
+  const P = panel();
+  const local = [{ role: "user", text: "Summarise my report" }, { role: "assistant", text: "Your report.", local: true }];
+  for (const ready of [false, true]) {
+    const c = mountFor("business", "/app", { chat: local, ready });
+    const base = "https://omniarmor.example/app";
+    const row = JSON.parse(JSON.stringify(P.againItems(local, P.ownPills(c.welcomePills, base), P.cleanChips([...c.chips({})], base), !ready)));
+    const words = row.map((x) => x.label);
+    assert.equal(new Set(words).size, words.length, words.join(" | "));
+    assert.ok(!words.includes("What's overdue?") && !words.includes("Explain a check"), words.join(" | "));
+    assert.ok(words.includes("What's due or overdue?") && words.includes("Explain this check"), words.join(" | "));
+    assert.equal(words.includes("Add my AI key"), !ready);
+  }
+});
+
+test("1.20.0: the suggestion after this page's own is OmniArmor's built-in look at the page, with or without a key", () => {
+  const P = panel();
+  const page = h("main", {}, h("h1", {}, "Reminders"), h("p", { class: "sub" }, "Every reminder email, kept here."), h("h2", {}, "This week"));
+  for (const who of ["business", "teacher", "visitor"]) {
+    const c = mountOn(who, "/app/notifications", page);
+    assert.equal(c.screenChip.label, "Explain this page");
+    for (const ready of [false, true]) {
+      const chip = P.screenChip(c.screenChip, ready, "https://omniarmor.example/app/notifications");
+      assert.equal(chip.label, "Explain this page");
+      assert.equal(chip.prompt, undefined, "never the AI");
+      const text = chip.answer({ facts: c.facts, ready, screen: {} });
+      assert.match(text, /Every reminder email, kept here\./);
+      assert.match(text, /- This week/);
+    }
+    assert.deepEqual(c.sent, []);
+  }
+});
+
+test("1.20.0: core 1.4.2's own rules are used: no hideWhenCrowded override, the handle and typed matching on", () => {
+  for (const [who, where] of [["business", "/app"], ["teacher", "/app/academy/classes"], ["visitor", "/"]]) {
+    const c = mountFor(who, where);
+    assert.equal(c.hideWhenCrowded, undefined, where);
+    assert.notEqual(c.handle, false, where);
+    assert.notEqual(c.matchTyped, false, where);
+    assert.equal(c.keepInViewport, true, where);
+  }
+  const src = fs.readFileSync(site("pilot-omniarmor.js"), "utf8");
+  assert.ok(!src.includes("hideWhenCrowded:"));
+  // The computer's tucked robot moves up or down only by the core's own room (it stays above the tab bar).
+  const css = fs.readFileSync(site("app.css"), "utf8");
+  assert.ok(!css.includes("var(--pilot-keep-d))"));
+  assert.equal((css.match(/var\(--pilot-keep-dy\)/g) || []).length, 2);
 });

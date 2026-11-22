@@ -165,7 +165,9 @@
   </div>
 </footer>
 {% endif %}
-{% set state = armo_state() if g.user and g.org and g.user.armo != 'off' and not (request.endpoint or '').startswith('academy.') and request.endpoint != 'armo.page' else none %}
+{#- Armo never shows where Pilot never does (pilot.py STUDENT_BLUEPRINTS): a student's pages, their class and the kids'
+    join page, even on a grown-up's signed-in device (1.20.0: the join page and a student's class page too). -#}
+{% set state = armo_state() if g.user and g.org and g.user.armo != 'off' and not (request.endpoint or '').startswith(('academy.', 'kids.')) and request.endpoint not in ('armo.page', 'classes.my_class') else none %}
 {% if state %}
 {% set buddy = armo_personality(g.user.armo) %}
 <aside class="companion no-print" aria-label="Armo, your helper" data-companion

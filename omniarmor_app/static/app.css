@@ -579,9 +579,10 @@ details.note .title{color:var(--ink);font-weight:600}
    where the core measures them --pilot-gap in, which only ever makes the robot step aside sooner. A left-hand corner, used only when the robot steps aside, stays clear of Armo. The window
    opens beside the robot, above the tab bar. A phone's full-width sheet is unchanged.
    Tucked away, the core (1.2.0, keepInViewport in pilot-omniarmor.js) shrinks the robot into its corner, fully on
-   the screen, instead of hanging it off the edge; it moves it by --pilot-gap less --pilot-keep-margin, which on the
-   right-hand corners here would be 64px too far right, so those count across from their own 16px. The small robot
-   then sits at the empty right end of the tab bar, exactly where the core checks it. */
+   the screen, instead of hanging it off the edge; it moves it across by --pilot-gap less --pilot-keep-margin, which
+   on the right-hand corners here would be 64px too far right, so those count across from their own 16px. Up or
+   down it moves it only by the core's own room (1.20.0, core 1.4.2: --pilot-keep-dy, 8px), never by the tab bar's
+   extra, so the small robot stays tucked just above the tab bar, exactly where the core measures it. */
 body.has-tabs .pilot-root{--pilot-gap:80px}
 body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-bl{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom))}
 body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{right:16px}
@@ -589,10 +590,10 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   body.has-tabs .pilot-at-br .pilot-panel,body.has-tabs .pilot-at-bl .pilot-panel{bottom:calc(var(--pilot-gap) + env(safe-area-inset-bottom));height:min(720px,calc(100vh - var(--pilot-gap) - 16px - env(safe-area-inset-bottom)))}
   html body.has-tabs .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br .pilot-launcher,
   html body.has-tabs .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br:not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible){
-    transform:translate(calc(16px - var(--pilot-keep-margin)),var(--pilot-keep-d)) scale(var(--pilot-peek-scale))}
+    transform:translate(calc(16px - var(--pilot-keep-margin)),var(--pilot-keep-dy)) scale(var(--pilot-peek-scale))}
   html body.has-tabs .pilot-root.pilot-keep-in.pilot-peek.pilot-at-tr .pilot-launcher,
   html body.has-tabs .pilot-root.pilot-keep-in.pilot-peek.pilot-at-tr:not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible){
-    transform:translate(calc(16px - var(--pilot-keep-margin)),calc(-1 * var(--pilot-keep-d))) scale(var(--pilot-peek-scale))}
+    transform:translate(calc(16px - var(--pilot-keep-margin)),calc(-1 * var(--pilot-keep-dy))) scale(var(--pilot-peek-scale))}
 }
 /* On a phone the right-hand corners keep close to the edge (12px); the left-hand corners keep --pilot-gap. */
 @media (max-width:720px){

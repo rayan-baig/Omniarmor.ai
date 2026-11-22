@@ -43,16 +43,16 @@ def pilot_data(page):
 
 
 class TestCoreFiles(unittest.TestCase):
-    def test_all_thirteen_core_files_are_core_1_4_1(self):
-        # 1.18.0: core 1.4.1 (MTRX Horizyn f221ffc), copied byte for byte.
+    def test_all_thirteen_core_files_are_core_1_4_2(self):
+        # 1.18.0: core 1.4.1 (MTRX Horizyn f221ffc); 1.20.0: core 1.4.2 (MTRX Horizyn a1c9253), copied byte for byte.
         folder = os.path.join(STATIC, "pilot")
         self.assertEqual(sorted(n for n in os.listdir(folder) if n.endswith((".js", ".css"))), sorted(CORE))
         for name in CORE:
             text = read("omniarmor_app", "static", "pilot", name)
-            self.assertRegex(text.splitlines()[0], r"^(//|/\*) Pilot core 1\.4\.1 · " + re.escape(name), name)
+            self.assertRegex(text.splitlines()[0], r"^(//|/\*) Pilot core 1\.4\.2 · " + re.escape(name), name)
             version = re.search(r'const VERSION = "([\d.]+)"', text)
             if version:
-                self.assertEqual(version.group(1), "1.4.1", name)
+                self.assertEqual(version.group(1), "1.4.2", name)
 
     def test_the_core_knows_links_and_answers(self):
         panel = read("omniarmor_app", "static", "pilot", "pilot-panel.js")

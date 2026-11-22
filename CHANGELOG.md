@@ -3,6 +3,32 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.20.0 (22 November 2026)
+
+Pilot moves to core 1.4.2: easier to find, and typed questions answered
+before an AI key.
+
+- **Pilot is always findable.** When the robot steps out of the way, a small
+  slice of it now peeks in at the screen's edge after a moment, in a spot
+  where it covers no link, button, box or label. Tap it to open Pilot. It
+  goes away as soon as the page scrolls.
+- **The robot stays above the tab bar.** On signed-in pages, tucked away, it
+  now sits just above the bottom tab bar instead of being hidden on every
+  scrolled page, and it still steps aside rather than cover anything.
+- **Type a question, get an answer, no key needed.** Typing "What needs
+  attention?", "What does red mean?", "How do I add students?", "Is my data
+  safe?" or "How much does it cost?" now gets OmniArmor's own answer straight
+  away, marked "Here's what I can tell you without an AI key". Nothing is
+  sent anywhere. Questions it can't answer on its own still ask for a key.
+- **"Explain this page" instead of "Summarise this".** The last suggestion in
+  the chat is OmniArmor's own look at the page, so it works without a key.
+- **No question shown twice** in the row of buttons under an answer.
+- **Armo stays off the kids' join page** (and a student's class page) even
+  when a grown-up is signed in on that device, the same as Pilot.
+- The 13 Pilot core files are copied unchanged from MTRX Horizyn (core
+  1.4.2), with the core's new tests. Students' pages still have no Pilot and
+  no Armo.
+
 ## 1.19.0 (22 November 2026)
 
 Fixes from a strict ninth review: clearer quiz answers, more kinds of

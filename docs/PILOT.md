@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.4.1**, since OmniArmor 1.18.0; 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.4.2**, since OmniArmor 1.20.0; 1.4.1 since 1.18.0, 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -139,6 +139,22 @@ page is scrolled. Pilot's tag also gives the robot's pictures at the sizes they 
 `data-rest-body-set`, `data-rest-head-set`, `data-rest-eyes-set`; `pilot-robot-112/168/176.webp`,
 `pilot-rest-*-112/168.webp`), so it is crisp on phones.
 
+**Core 1.4.2** (OmniArmor 1.20.0, MTRX Horizyn a1c9253, the thirteen files byte for byte, no new pictures). A corner
+raised above the tab bar is measured where it is, so signed-in pages drop 1.19.0's `hideWhenCrowded: false` and use
+the core's "hide rather than cover" everywhere; `app.css`'s computer rule moves the tucked robot up or down by
+`var(--pilot-keep-dy)` (the core's own room), not `var(--pilot-keep-d)`, so it is drawn just above the tab bar,
+where it is measured. Hidden with the page still, the core's **handle** (a 44 px slice of the robot at the screen's
+edge, only where it covers no link, button, box, bar or anything in `avoid`) opens Pilot; it is on (no `handle`
+setting). The suggestion after the page's own is `screenChip: {label: "Explain this page", answer}`: OmniArmor's
+built-in look at the page (its headings, what it is for, its counts), with or without a key, instead of the core's
+"Summarise this", which needs the AI. **Typed questions with no key**: each pill and suggestion that answers with
+no AI has `match` words (`MATCH` in `pilot-omniarmor.js`), so "What needs attention?", "What does red mean?",
+"How do I add students?", "Is my data safe?" or "How much does it cost?" get the app's own answer at once, under
+"Here's what I can tell you without an AI key:", nothing sent; anything else waits for a key as before. With no
+key, a suggestion that asks what a pill asks stays out even once a chat has started (the pills come back under
+each answer, and with both there a typed question would fit two and get neither); with a key the suggestions are
+back once chatting, in the pill's words, so the row under an answer shows each question once.
+
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of
@@ -194,8 +210,8 @@ Some page suggestions answer too (reminders, What's a check?, Is this legal advi
 Classroom or Whole school, lesson length, Is anything saved in the demo). An answer never reads anything
 marked `data-pilot-private` and never lists a student: the class page is counted (`data-total`,
 `data-codes-missing`), never its table. Under an answer, "Want more? Add your AI key to ask anything."
-(`answerMore`) offers the key until one is added. The core adds its own "Summarise this" suggestion once a
-chat has started; that one uses the AI (scratchpad note for core 1.4.1).
+(`answerMore`) offers the key until one is added. Once a chat has started, the suggestions end with "Explain this
+page" (core 1.4.2's `screenChip`, OmniArmor's own answer), never the core's "Summarise this", which used the AI.
 
 "Add my AI key" opens key settings. The taglines fit on one line at
 320 px. A pill pressed before there is a key stays waiting in the box and is sent once a key is saved (the

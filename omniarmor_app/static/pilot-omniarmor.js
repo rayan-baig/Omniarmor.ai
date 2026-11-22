@@ -609,11 +609,64 @@
     "What do the colours mean?": "What does this colour mean?", "Plan a week": "Plan a week of lessons",
   };
   const pillLabels = new Set(welcome.pills.map((p) => p.label));
+
+  // Core 1.4.2: with no key, a typed question that clearly asks what one of these pills or suggestions is about gets
+  // its answer at once, in this browser, nothing sent (the core's matchTyped: two of the typed words in the label or
+  // in these words, or one word that is in these). Each list is the words people use for that question, with the
+  // label's main word when it may be typed alone; a word that fits two questions is in both only where the other
+  // words tell them apart ("What does blocked mean?" is the colours, "What's blocked?" is neither: it waits for a key).
+  const MATCH = {
+    // A business's
+    "What's due or overdue?": ["overdue", "late", "today", "attention", "urgent", "expired", "expiring", "deadline", "upcoming", "blocked", "warning"],
+    "Explain this check": ["rule", "mean", "means", "source", "law", "regulation"],
+    "Summarise my report": ["summary", "summarize", "summarise", "report", "inspector", "fix", "first"],
+    "What does this colour mean?": ["color", "colors", "colour", "red", "orange", "faint", "status", "blocked", "warning", "cleared"],
+    "How do I export it?": ["export", "csv", "download", "print", "spreadsheet", "excel", "report"],
+    "What's in History?": ["history", "audit", "trail", "log", "changes"],
+    "Export it": ["export", "csv", "download", "spreadsheet", "excel"],
+    "When do reminders go out?": ["email", "emails", "sent", "send", "time"],
+    "Add a reminder": ["set", "create", "new", "reminder"],
+    "Choose my emails": ["email", "emails", "digest", "unsubscribe", "stop", "alerts", "notifications"],
+    "Invite a colleague": ["invite", "colleague", "teammate", "staff", "coworker", "team", "member"],
+    // A teacher's
+    "Add students": ["pupil", "pupils", "kid", "kids", "child", "children", "roster", "enrol", "enroll"],
+    "How do join codes work?": ["code", "codes", "slip", "slips", "lost", "forgot", "login", "log", "student", "students"],
+    "Plan a week of lessons": ["schedule", "timetable", "monday", "curriculum", "teach", "plan", "week"],
+    "Print certificates": ["certificate", "certificates", "award", "awards", "diploma"],
+    "Classroom or Whole school?": ["price", "prices", "cost", "much", "pricing", "yearly", "plan", "plans", "classroom", "school"],
+    // The schools pages'
+    "Is it safe for students?": ["privacy", "private", "data", "safety", "secure", "security", "coppa", "ferpa"],
+    "How does the free trial work?": ["trial", "free", "card"],
+    "How long is a lesson?": ["minute", "minutes", "long", "time"],
+    // A visitor's
+    "What does OmniArmor do?": ["omniarmor", "about", "work"],
+    "Which checklist fits me?": ["checklist", "industry", "trade", "restaurant", "cafe", "salon", "barber", "gym", "shop", "tattoo", "pharmacy", "kind"],
+    "See the prices": ["price", "prices", "cost", "much", "pricing", "expensive", "pay"],
+    "Explain this page": ["page", "about", "summary", "summarise", "summarize", "overview"],
+    "Which plan fits me?": ["plan", "plans", "pro", "plus", "difference", "compare", "choose"],
+    "What do the plans include?": ["plan", "plans", "pro", "plus", "difference", "compare", "include", "includes"],
+    "How do reminders work?": ["reminder", "reminders", "email", "emails", "remind", "alert"],
+    "What's a check?": ["check"],
+    "Is this legal advice?": ["legal", "advice", "lawyer", "attorney", "law"],
+    "What can I try?": ["demo", "try", "sample", "example"],
+    "Is anything saved?": ["save", "saved", "stored", "kept", "delete"],
+  };
+  const withMatch = (x) => (MATCH[x.label] ? { ...x, match: MATCH[x.label] } : x);
+  welcome.pills = welcome.pills.map(withMatch);
+
+  // 1.20.0 (core 1.4.2): with no key, a suggestion that asks what a pill asks stays out even once a chat has
+  // started: the core brings the pills back under each of the app's own answers, and with both there a typed
+  // question would fit two items as well and get neither. With a key, once chatting (the pills fold away), every
+  // suggestion is back, in the pill's own words, so the row under an answer never shows the same question twice.
   function chips() {
-    const list = pageChips();
+    const list = pageChips().map(withMatch);
     let chatting = false;
+    let keyed = false;
     try { chatting = window.Pilot.store.loadChat().length > 0; } catch (_) { chatting = false; }
-    return chatting ? list : list.filter((c) => !pillLabels.has(c.label) && !pillLabels.has(SAME[c.label]));
+    try { keyed = Boolean(window.Pilot.store.ready()); } catch (_) { keyed = false; }
+    const repeats = (c) => pillLabels.has(c.label) || pillLabels.has(SAME[c.label]);
+    if (!chatting || !keyed) return list.filter((c) => !repeats(c));
+    return list.map((c) => (pillLabels.has(SAME[c.label]) ? withMatch({ ...c, label: SAME[c.label] }) : c));
   }
 
   const mounted = window.Pilot.mount({
@@ -629,11 +682,13 @@
     // Tucked away, the robot shrinks into its corner instead of hanging off
     // the screen's edge (on a phone, in the one corner: app.css).
     keepInViewport: true,
-    // Core 1.4.1 fades the phone robot out rather than cover a link or a bar that stays put. On a signed-in
-    // page its corner is raised above the tab bar (app.css), but the core measures the tucked robot at the
-    // screen's edge, over the tab bar, so it would hide it on every page once scrolled: there it keeps 1.4.0's
-    // "tuck where it covers least" (and app.css steps it to the edge). Public pages use 1.4.1's rule.
-    hideWhenCrowded: !(document.body && document.body.classList.contains("has-tabs")),
+    // Core 1.4.1 fades the robot out rather than cover a link or a bar that stays put; 1.4.2 measures a corner
+    // raised above the tab bar (app.css) where it really is, so signed-in pages use that rule too (1.19.0 kept
+    // 1.4.0's "tuck where it covers least" there). Hidden with the page still, the core's handle (a slice of the
+    // robot at the screen's edge, where it covers nothing) opens Pilot; on by default.
+    // Core 1.4.2: the suggestion after this page's own is OmniArmor's built-in look at the page (its headings,
+    // what it is for and its counts), with or without a key, instead of "Summarise this" (AI only).
+    screenChip: { label: "Explain this page", answer: explainPageAnswer },
     // No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs
     // (Armo's bubble is a helper's, in yieldTo below), and the core already
     // steps back for anything covering the whole screen.
