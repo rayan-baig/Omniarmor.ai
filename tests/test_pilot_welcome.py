@@ -69,10 +69,19 @@ class TestTheStylesheet(unittest.TestCase):
         rule = ("html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl) "
                 ".pilot-launcher,")
         self.assertIn(rule, block)
-        self.assertIn("html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-hello) "
+        self.assertIn("html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-revealing) "
                       ".pilot-launcher{", block)
         self.assertIn("transform-origin:100% 100%;transform:translate(calc(12px - var(--pilot-keep-margin)),"
                       "calc(12px - var(--pilot-keep-margin))) scale(var(--pilot-peek-scale))}", block)
+
+    def test_the_first_look_is_the_core_s_own_class_not_the_greeting_bubble(self):
+        # 1.14.1, core 1.2.1: the first look of a visit marks Pilot's root 'pilot-revealing'. Core 1.2.0
+        # called it 'pilot-hello', which is also the chat window's greeting bubble, so this stylesheet must
+        # never use that name to mean the first look.
+        self.assertIn(":not(.pilot-revealing) .pilot-launcher{", phone_block(self.css))
+        self.assertNotIn("pilot-hello", self.css)
+        with open(os.path.join(ROOT, "omniarmor_app", "static", "pilot", "pilot.js"), encoding="utf-8") as f:
+            self.assertIn('rootEl.classList.add("pilot-revealing")', f.read())
 
     def test_the_1_13_phone_rules_stay(self):
         block = phone_block(self.css)
@@ -114,10 +123,15 @@ class TestThePages(PilotCase):
 
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
-        self.assertEqual(__version__, "1.14.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 14, 0))
         log = read("CHANGELOG.md")
         self.assertIn("## 1.14.0", log)
         self.assertIn("Pilot core 1.2.0", log[:log.index("## 1.13.0")])
+
+    def test_1_14_1_brings_core_1_2_1(self):
+        log = read("CHANGELOG.md")
+        self.assertIn("## 1.14.1", log)
+        self.assertIn("Pilot core 1.2.1", log[:log.index("## 1.14.0")])
 
 
 if __name__ == "__main__":

@@ -740,6 +740,10 @@ Version 1.9.0, after an honest product review.
 - **OmniArmor's own welcome** (`pilot-omniarmor.js`, `WELCOME`): a business owner sees "Your checklist helper" with What's due or overdue?, Explain this check, Summarise my report, What does this colour mean? and Add my AI key; a teacher sees "Your classroom helper" with Add students, How do join codes work?, Plan a week of lessons, Print certificates and Add my AI key; a visitor gets the questions for the business side or, on `/classrooms` and the teacher guide, the schools side. The page's suggestions under the pills leave out any that repeats a pill until a chat has started. No picture or video key sections (`hideKeySections`).
 - **Tucked away, the robot shrinks into its corner** (`keepInViewport`), fully on the screen, instead of hanging off the edge. `app.css` no longer sets the core's `--pilot-tuck` or holds the robot whole on a phone; it counts the small robot's move across from the right-hand corners' own 16 px on a computer (it then sits at the empty right end of the tab bar), and on a phone keeps it in the one corner (3 px from the edge, above the tab bar), shrinking there too when the core would move it elsewhere. The phone's column keeps the core's 30 px side room (`gutter: ["main > .wrap"]`). The 1.13.0 phone rules stay: one helper in one corner, Armo first while his badge has a count, nothing while typing; Pilot is still never on a student's page.
 
+### 5.19 Version 1.14.1: Pilot core 1.2.1
+
+- **Pilot core 1.2.1** (`static/pilot/`, the thirteen files copied unchanged from the MTRX Horizyn site). Core 1.2.0's first look of a visit gave Pilot's root the class `pilot-hello`, which is also the chat window's greeting bubble, so opening Pilot in those 4 seconds pulled the robot out of place. The root now takes `pilot-revealing`, and `app.css`'s phone rule that holds the robot whole during the first look uses that name.
+
 ## 6. Autopilot and the bug finder
 
 ### 6.1 Why

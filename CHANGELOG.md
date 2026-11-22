@@ -3,6 +3,14 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.14.1 (22 November 2026)
+
+- **Pilot core 1.2.1**, the same files as the MTRX Horizyn site. Opening
+  Pilot in the first few seconds of a visit, while the robot is being
+  shown off, no longer pulls the robot out of its corner. On a phone
+  OmniArmor's own rule for that moment now uses the core's new name for
+  it, so it still holds the robot whole there. Nothing else changes.
+
 ## 1.14.0 (21 November 2026)
 
 Pilot core 1.2.0, and a Pilot welcome made for OmniArmor.

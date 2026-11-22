@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.2.0**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.2.1**) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -32,7 +32,7 @@ forgets the last person's chat and any key kept for that tab only.
 
 | File | What it is |
 |---|---|
-| `static/pilot/` | the core 1.2.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
+| `static/pilot/` | the core 1.2.1, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
 | `static/pilot-omniarmor.js` | the config: OmniArmor's own welcome for each audience (`tagline`, `welcomePills`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
@@ -140,7 +140,7 @@ above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public p
 `pilot.COMPATIBLE_HOSTS`, and `http://localhost:*` / `http://127.0.0.1:*` for a local model),
 `media-src` adds `blob:` (a video made with the person's own key), and the Permissions-Policy allows
 `microphone=(self)` for voice. Nothing else was widened: scripts, styles, fonts and pictures stay
-this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1 and 1.2.0 needed nothing new: the
+this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1, 1.2.0 and 1.2.1 needed nothing new: the
 moving robot's files and pictures come from this site, it moves with the Web Animations API, and
 1.1.1 only reads the page's own layout (`elementsFromPoint`).
 

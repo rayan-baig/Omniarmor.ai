@@ -562,7 +562,8 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
    one corner. Tucked away there (1.14.0: the core's keepInViewport) it shrinks into that corner, 3px from the
    screen's edge and just above the tab bar, never off the screen, and the page's column keeps the core's side room
    for it (gutter in pilot-omniarmor.js), so line ends stop before it. When the core would move it to another corner (this one is busy), it shrinks here
-   too, rather than sitting whole on the page's words (but not during its first look of a visit). The page's bottom
+   too, rather than sitting whole on the page's words (but not during its first look of a visit, while the core
+   marks its root pilot-revealing: core 1.2.1's own name, never one the chat window styles). The page's bottom
    room (above) lets the last lines scroll clear of the corner. */
 @media (max-width:720px){
   body .pilot-root.pilot-at-br,body .pilot-root.pilot-at-bl,body .pilot-root.pilot-at-tr,body .pilot-root.pilot-at-tl{
@@ -571,7 +572,7 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
     bottom:calc(76px + env(safe-area-inset-bottom))}
   html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl) .pilot-launcher,
   html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible),
-  html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-hello) .pilot-launcher{
+  html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-revealing) .pilot-launcher{
     transform-origin:100% 100%;transform:translate(calc(12px - var(--pilot-keep-margin)),calc(12px - var(--pilot-keep-margin))) scale(var(--pilot-peek-scale))}
   body:has(.companion-badge:not([hidden])) .pilot-root:not(.pilot-open),body .pilot-root.pilot-typing:not(.pilot-open){display:none}
   .companion:not(:has(.companion-badge:not([hidden]))):not(:has(.companion-bubble:not([hidden]))){display:none}
