@@ -668,3 +668,20 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 .hero-more > .plans:first-child{margin-top:0}
 .how-steps .shot img{aspect-ratio:4/5;object-fit:cover;object-position:top}
 @media (max-width:720px){.how-steps .shot img{aspect-ratio:1/1}}
+/* The demo bar fits a 320px phone beside the room kept for Armo (1.15.0). */
+.demo-bar{grid-template-columns:minmax(0,1fr)}
+.demo-top > *,.demo-more,.demo-body{min-width:0;overflow-wrap:anywhere}
+/* On a tablet (721 to 1099px) Armo keeps the bottom-left corner over the bottom tab bar: while he shows, the
+   page's column keeps room at its left for him, and tucked he sits in it. */
+@media (min-width:721px) and (max-width:1099px){
+  body:has(> .companion .companion-badge:not([hidden])) main > .wrap{padding-left:max(60px,env(safe-area-inset-left))}
+  .companion.armo-tucked{left:max(6px,env(safe-area-inset-left))}
+}
+.nav a.btn{white-space:nowrap}
+@media (max-width:360px){
+  .wordmark{font-size:17px}
+  .lockup svg{width:20px;height:24px}
+  .nav a.btn{padding:0 10px;font-size:14px}
+  .topbar .wrap{gap:6px}
+  .nav{gap:6px}
+}

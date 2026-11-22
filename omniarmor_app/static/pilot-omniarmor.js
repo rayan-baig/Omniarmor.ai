@@ -222,13 +222,13 @@
     // his bubble) room, and never sits on a status tag (NO READING, BLOCKED
     // and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a check's
     // message, a flash or banner, Armo's bubble and badge, the "First name
-    // only?" card or the menu at the top (Sign out among it). When one of
+    // only?" card or the menu and the OmniArmor name at the top (Sign out among it). When one of
     // those is where it sits, it moves to a free corner, or tucks away at the
     // edge until tapped, shrunk into its corner (keepInViewport). The tab bar
     // is kept clear by app.css, which puts the robot's bottom corners above it.
     yieldTo: [".companion"],
     avoid: [".tag", ".top-n", ".bundle", ".msg", ".entry-top", ".flash", ".plan-banner", ".ac-badge",
-      ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav"],
+      ".companion-bubble", ".companion-fix", ".companion-badge", "[data-confirm-names]", ".topbar .nav", ".lockup"],
     // On a phone the robot stays in the bottom-right corner, the one corner
     // it shares with Armo, and only one of them shows (app.css, "One helper,
     // one corner"); tucked away it shrinks there, never off the edge. The
