@@ -254,7 +254,8 @@ class TestAIKeyWords(unittest.TestCase):
 
     def test_print_certificates_is_not_a_chart(self):
         js = read("omniarmor_app", "static", "pilot-omniarmor.js")
-        self.assertIn('P("copy", "Print certificates"', js)
+        # 1.17.0: a link to the class's certificates (core 1.4.0), still with the paper icon.
+        self.assertIn('LINK("copy", "Print certificates"', js)
         self.assertIn('keyNoteShort: "AI keys are for grown-ups (18+).",', js)
 
 
@@ -361,13 +362,14 @@ class TestTheDemoStartsFolded(DemoCase):
 # --- Pilot core 1.3.0, the version and the changelog ---------------------------------------------
 
 class TestCoreAndVersion(unittest.TestCase):
-    def test_every_core_file_is_core_1_3_0(self):
+    def test_every_core_file_is_core_1_3_0_or_later(self):
+        # 1.17.0 moved to core 1.4.0 (tests/test_core140.py checks it exactly).
         folder = os.path.join(STATIC, "pilot")
         names = sorted(n for n in os.listdir(folder) if n.endswith((".js", ".css")))
         self.assertEqual(len(names), 13)
         for name in names:
             with open(os.path.join(folder, name), encoding="utf-8") as f:
-                self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.3\.0 · ", name)
+                self.assertRegex(f.readline(), r"^(//|/\*) Pilot core 1\.([3-9]|[1-9]\d)\.\d+ · ", name)
 
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__

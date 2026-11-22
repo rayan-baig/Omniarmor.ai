@@ -364,10 +364,11 @@ function mountFor(who, pathname, { facts = {}, chat = [] } = {}) {
   return { ...given, plain: plain(given), chipLabels: (screen = {}) => plain(given.chips(screen)).map((x) => x.label) };
 }
 // The core's own cleaning of the pills, as the window does it.
-function cleaned(pills) {
-  const sandbox = { window: {}, document: {} };
+// Core 1.4.0: a link is read against this page's address (base).
+function cleaned(pills, base = "https://omniarmor.example/app") {
+  const sandbox = { window: {}, document: {}, URL };
   vm.runInNewContext(fs.readFileSync(core("pilot-panel.js"), "utf8"), sandbox);
-  return JSON.parse(JSON.stringify(sandbox.window.PilotPanel.welcomePills(pills)));
+  return JSON.parse(JSON.stringify(sandbox.window.PilotPanel.welcomePills(pills, base)));
 }
 const labels = (c) => cleaned(c.welcomePills).map((p) => p.label);
 
@@ -376,12 +377,14 @@ test("1.14.0 welcome: a business owner gets their checklist's five pills and tag
   assert.equal(c.tagline, "Your checklist helper");
   assert.deepEqual(labels(c), ["What's due or overdue?", "Explain this check", "Summarise my report", "What does this colour mean?", "Add my AI key"]);
   const pills = cleaned(c.welcomePills);
-  // Every pill survives the core's cleaning as given: a known icon, a prompt or a built-in.
+  // Every pill survives the core's cleaning as given: a known icon, a prompt, a built-in or (1.17.0) an answer.
   assert.deepEqual(pills.map((p) => p.icon), c.plain.welcomePills.map((p) => p.icon));
-  assert.deepEqual(pills.map((p) => [p.builtin, p.send]), [[false, true], [false, false], [false, true], [false, true], [true, false]]);
+  // 1.17.0 (core 1.4.0): what's due, explain this check and the colours answer at once with no key;
+  // summing up the report still needs the AI.
+  assert.deepEqual([...c.welcomePills].map((p) => typeof p.answer), ["function", "function", "undefined", "function", "undefined"]);
+  assert.deepEqual(pills.map((p) => [p.builtin, p.send]), [[false, false], [false, false], [false, true], [false, false], [true, false]]);
+  assert.equal(pills[2].action, "Summarise my report and tell me what to fix first.");
   assert.equal(pills[4].action, "settings");
-  // "Explain this check" leaves the cursor in the box to name the check.
-  assert.ok(pills[1].action.endsWith(": "));
 });
 
 test("1.14.0 welcome: a teacher gets their class's five pills and tagline, on every teacher page", () => {
@@ -400,7 +403,7 @@ test("1.14.0 welcome: a visitor gets the pills for the side of the site they are
   for (const where of ["/", "/industries", "/for/salons-and-barbershops", "/demo"]) {
     const c = mountFor("visitor", where);
     assert.equal(c.tagline, "Your OmniArmor helper", where);
-    assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "Which plan fits me?", "Explain this page", "Add my AI key"], where);
+    assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
   }
   for (const where of ["/classrooms", "/classrooms/guide"]) {
     const c = mountFor("visitor", where);
@@ -464,4 +467,287 @@ test("1.15.0: Print certificates shows sheets of paper, not a chart; the welcome
   }
   assert.equal(c.keyNoteShort, "AI keys are for grown-ups (18+).");
   assert.ok(!/\bAPI key\b/.test(c.keyNote + c.keyNoteShort));
+});
+
+// ---------------------------------------------------------------- 1.17.0: Pilot core 1.4.0, useful before an AI key
+
+// A very small page, enough for the answers: elements with classes,
+// attributes and words, and selectors made of tag.class[attr][attr=v]
+// [attr^=v]:not(...) parts joined by spaces.
+function h(tag, attrs = {}, ...kids) {
+  const node = { tag: tag.toUpperCase(), attrs: { ...attrs }, kids: [], parent: null, rect: attrs.rect || null };
+  delete node.attrs.rect;
+  for (const k of kids.flat()) {
+    const child = typeof k === "string" ? { text: k, parent: node } : k;
+    child.parent = node;
+    node.kids.push(child);
+  }
+  return dress(node);
+}
+function dress(node) {
+  const classes = () => String(node.attrs.class || "").split(/\s+/).filter(Boolean);
+  Object.defineProperties(node, {
+    id: { get: () => node.attrs.id || "" },
+    textContent: { get: () => node.kids.map((k) => (k.tag ? k.textContent : k.text)).join("") },
+    dataset: { get: () => Object.fromEntries(Object.entries(node.attrs).filter(([k]) => k.startsWith("data-"))
+      .map(([k, v]) => [k.slice(5).replace(/-(\w)/g, (_, c) => c.toUpperCase()), String(v)])) },
+    classList: { get: () => ({ contains: (c) => classes().includes(c) }) },
+  });
+  node.getAttribute = (n) => (n in node.attrs ? String(node.attrs[n]) : null);
+  node.getBoundingClientRect = () => node.rect || { top: 2000, bottom: 2100, left: 0, right: 300 };
+  node.remove = () => { if (node.parent) node.parent.kids = node.parent.kids.filter((k) => k !== node); node.parent = null; };
+  node.cloneNode = () => {
+    const copy = h(node.tag.toLowerCase(), { ...node.attrs }, ...node.kids.map((k) => (k.tag ? k.cloneNode(true) : k.text)));
+    copy.rect = node.rect;
+    return copy;
+  };
+  node.matches = (part) => matchPart(node, part, classes());
+  node.querySelectorAll = (sel) => select(node, sel);
+  node.querySelector = (sel) => select(node, sel)[0] || null;
+  return node;
+}
+function parts(compound) {
+  const out = { tag: "", cls: [], attr: [], not: [] };
+  const re = /^([a-z0-9]+)|\.([\w-]+)|\[([\w-]+)(?:(\^?=)'?([^'\]]*)'?)?\]|:not\(([^)]*\)?)\)/gi;
+  let m;
+  while ((m = re.exec(compound))) {
+    if (m[1]) out.tag = m[1].toUpperCase();
+    else if (m[2]) out.cls.push(m[2]);
+    else if (m[3]) out.attr.push([m[3], m[4], m[5]]);
+    else if (m[6]) out.not.push(parts(m[6]));
+  }
+  return out;
+}
+function matchPart(node, p, classes) {
+  if (p.tag && node.tag !== p.tag) return false;
+  if (!p.cls.every((c) => classes.includes(c))) return false;
+  for (const [name, op, val] of p.attr) {
+    if (!(name in node.attrs)) return false;
+    const v = String(node.attrs[name]);
+    if (op === "=" && v !== val) return false;
+    if (op === "^=" && !v.startsWith(val)) return false;
+  }
+  return !p.not.some((n) => node.matches(n));
+}
+function select(root, sel) {
+  const steps = sel.trim().split(/\s+(?![^(]*\))/).map(parts);
+  const found = [];
+  const walk = (node) => {
+    for (const k of node.kids) {
+      if (!k.tag) continue;
+      let at = k;
+      let ok = at.matches(steps[steps.length - 1]);
+      for (let i = steps.length - 2; ok && i >= 0; i -= 1) {
+        at = at.parent;
+        while (at && at !== root.parent && !(at.tag && at.matches(steps[i]))) at = at.parent;
+        ok = Boolean(at) && at !== root.parent;
+      }
+      if (ok) found.push(k);
+      walk(k);
+    }
+  };
+  walk(root);
+  return found;
+}
+
+// OmniArmor's config on one page: what it gives Pilot.mount, with that page.
+function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [], hash = "" } = {}) {
+  let given = null;
+  const store = { prefix: "omniarmor-pilot", loadChat: () => [], clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
+  const dataset = { who, facts: JSON.stringify({ ...FACTS, join_code_days: 7, join_path: "/kids", ...facts }), account: "a1",
+    classes: JSON.stringify(classes), checklists: JSON.stringify(checklists) };
+  const body = page || h("main");
+  const sent = [];
+  vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
+    window: { Pilot: { mount: (c) => { given = c; return true; }, store }, location: { pathname, hash }, innerHeight: 800,
+      sessionStorage: { getItem: () => null, setItem() {} }, fetch: (...a) => { sent.push(a); throw new Error("no network"); } },
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: (s) => body.querySelector(s),
+      querySelectorAll: (s) => body.querySelectorAll(s) },
+    fetch: (...a) => { sent.push(a); throw new Error("no network"); },
+  });
+  const ctx = { facts: given.facts, ready: false, screen: {} };
+  const pill = (label) => [...given.welcomePills].find((p) => p.label === label);
+  const answer = (label) => {
+    const p = pill(label) || [...given.chips()].find((c) => c.label === label);
+    return typeof p.answer === "function" ? p.answer(ctx) : p.answer;
+  };
+  return { ...given, pill, answer, sent };
+}
+
+const Render = require(core("pilot-render.js"));
+// The links an answer shows, as the window renders an app's own answer.
+function linksIn(text) {
+  const out = [];
+  const walk = (list) => { for (const p of list || []) { if (Array.isArray(p)) { walk(p); continue; } if (p.t === "a") out.push(p.href); walk(p.c); walk(p.items); } };
+  walk(Render.parse(text, { local: true }));
+  return out;
+}
+
+// A business's Home (templates/app/overview.html), in short.
+function overviewPage() {
+  return h("main", {},
+    h("div", { class: "totals" }, h("span", { class: "BLOCKED" }, h("b", {}, "1"), "blocked"),
+      h("span", { class: "WARNING" }, h("b", {}, "2"), "warnings"), h("span", {}, h("b", {}, "5"), "cleared"),
+      h("span", {}, h("b", {}, "3"), "without a reading")),
+    h("section", { "data-needs-attention": "" }, h("ul", { class: "list" },
+      h("li", {}, h("a", { class: "row", "data-level": "BLOCKED", href: "/app/industry/2#rule-hood" },
+        h("span", {}, h("span", { class: "title" }, "Hood cleaning"), h("span", { class: "meta" }, " · RestoArmor")),
+        h("span", { class: "tag BLOCKED" }, "OVERDUE"))),
+      h("li", {}, h("a", { class: "row", "data-level": "WARNING", href: "/app/industry/2#rule-fridge" },
+        h("span", {}, h("span", { class: "title" }, "Walk-in fridge *temperature*")), h("span", { class: "tag WARNING" }, "Warning"))))),
+    h("section", { "data-coming-due": "" }, h("ul", { class: "list" },
+      h("li", {}, h("a", { class: "row", href: "/app/industry/2#rule-permit" },
+        h("span", {}, h("span", { class: "title" }, "Health permit")), h("span", { class: "meta mono" }, "in 12 days · Dec 4"))))));
+}
+
+// One industry page (templates/app/industry.html), in short.
+function industryPage() {
+  const rule = (key, level, days, title, extra = []) => h("li", { class: "rule", id: `rule-${key}`, "data-level": level,
+    ...(days === null ? {} : { "data-days": String(days) }), rect: key === "fridge" ? { top: 200, bottom: 500, left: 0, right: 300 } : undefined },
+  h("div", { class: "rule-top" }, h("h2", {}, title), h("span", { class: `tag ${level}` }, level === "NONE" ? "No reading" : level)), ...extra);
+  return h("main", {}, h("h1", {}, "RestoArmor"), h("ul", { class: "list" },
+    rule("hood", "BLOCKED", -3, "Hood cleaning", [h("p", { class: "msg BLOCKED" }, "Overdue by 3 days."), h("p", { class: "due mono" }, "3 days overdue · Nov 19")]),
+    rule("fridge", "WARNING", null, "Walk-in fridge", [
+      h("p", { class: "why-line" }, h("span", { class: "top-n" }, "Top 3 · #1"), "Why this matters: food kept cold stays safe."),
+      h("p", { class: "msg WARNING" }, "Fridge 2: 6°C, close to the limit", h("span", { "data-pilot-private": "" }, " (by Jordan Lee)")),
+      h("details", {}, h("summary", {}, "Rule and source"), h("div", { class: "why" }, h("p", {}, "Food poisoning fines up to $1,000."),
+        h("p", { class: "mono" }, "FDA Food Code 3-501.16"), h("p", { class: "faint" }, "Last updated Nov 2", h("span", { "data-pilot-private": "" }, " by Jordan Lee")))),
+      h("p", { class: "q" }, "Fridge temperature (°C)"), h("span", { class: "limits" }, "Limit 5 °C · warns from 4 °C")]),
+    rule("permit", "CLEARED", 12, "Health permit", [h("p", { class: "sr" }, "Valid."), h("p", { class: "due mono" }, "in 12 days · Dec 4")]),
+    rule("sink", "NONE", null, "Hand sink stocked")));
+}
+
+// A teacher's class page (templates/academy/class.html), with its students' names.
+function classPage() {
+  return h("main", {}, h("h1", { class: "ac-title" }, "Room 12"),
+    h("ul", { "data-class-totals": "" }, h("li", {}, h("span", { class: "ac-stat-num", "data-total": "students" }, "3"))),
+    h("form", { class: "ac-missing", "data-codes-missing": "2" }, h("button", {}, "Make codes for them")),
+    h("table", { "data-class-progress": "", "data-pilot-private": "" },
+      h("tr", { "data-student": "Ava" }, h("td", {}, "Ava")), h("tr", { "data-student": "Liam" }, h("td", {}, "Liam")),
+      h("tr", { "data-student": "Noah" }, h("td", {}, "Noah"))));
+}
+
+test("1.17.0: what's due on Home answers at once from the page, with links to each check, and nothing sent", () => {
+  const c = mountOn("business", "/app", overviewPage());
+  const text = c.answer("What's due or overdue?");
+  assert.match(text, /\*\*Needs attention: 1 blocked, 2 warnings\.\*\*/);
+  assert.match(text, /\[Hood cleaning\]\(\/app\/industry\/2#rule-hood\): OVERDUE/);
+  // Words from the page can't add markdown of their own.
+  assert.match(text, /\[Walk-in fridge temperature\]\(\/app\/industry\/2#rule-fridge\): Warning/);
+  assert.match(text, /\*\*Coming due in the next 60 days: 1\.\*\*\n- \[Health permit\]\(\/app\/industry\/2#rule-permit\): in 12 days · Dec 4/);
+  assert.deepEqual(linksIn(text), ["/app/industry/2#rule-hood", "/app/industry/2#rule-fridge", "/app/industry/2#rule-permit"]);
+  assert.deepEqual(c.sent, []);
+  // The colours, with this page's own totals.
+  const colours = c.answer("What does this colour mean?");
+  assert.match(colours, /\*\*Blocked\*\* \(red\): past the limit/);
+  assert.match(colours, /On this page: 1 blocked, 2 warnings, 5 cleared, 3 with no reading\./);
+  assert.ok(linksIn(colours).includes("/help#lights"));
+  // Home has no rule to explain: it points at the checks that need attention.
+  const explain = c.answer("Explain this check");
+  assert.match(explain, /Open one to see it explained:\n- \[Hood cleaning\]\(\/app\/industry\/2#rule-hood\)/);
+  assert.match(explain, /not legal advice/);
+});
+
+test("1.17.0: explain this check reads the check asked for (or in view), its rule and source, and never a person's name", () => {
+  const inView = mountOn("business", "/app/industry/2", industryPage()).answer("Explain this check");
+  assert.match(inView, /^\*\*Walk-in fridge\*\*: WARNING/);
+  assert.match(inView, /- \*\*What it asks:\*\* Fridge temperature \(°C\)/);
+  assert.match(inView, /- \*\*Limit:\*\* Limit 5 °C · warns from 4 °C/);
+  assert.match(inView, /- \*\*Why it matters:\*\* food kept cold stays safe\./);
+  assert.match(inView, /- \*\*If it's missed:\*\* Food poisoning fines up to \$1,000\./);
+  assert.match(inView, /- \*\*Rule and source:\*\* FDA Food Code 3-501\.16/);
+  assert.match(inView, /Status: \*\*Warning\*\* \(orange\)/);
+  assert.match(inView, /not legal advice/);
+  assert.ok(!inView.includes("Jordan"), "a name marked private is never read");
+  // The check in the address wins.
+  const asked = mountOn("business", "/app/industry/2", industryPage(), { hash: "#rule-hood" }).answer("Explain this check");
+  assert.match(asked, /^\*\*Hood cleaning\*\*: BLOCKED\n\nOverdue by 3 days\./);
+  assert.match(asked, /- \*\*Due:\*\* 3 days overdue · Nov 19/);
+  // What's due on one checklist: overdue, close to a limit, due soon, and the ones with no reading.
+  const due = mountOn("business", "/app/industry/2", industryPage()).answer("What's due or overdue?");
+  assert.match(due, /\*\*Overdue: 1\.\*\*\n- \[Hood cleaning\]\(\/app\/industry\/2#rule-hood\): 3 days overdue · Nov 19/);
+  assert.match(due, /\*\*Blocked or close to a limit: 1\.\*\*\n- \[Walk-in fridge\]\(\/app\/industry\/2#rule-fridge\): WARNING/);
+  assert.match(due, /\*\*Due in the next 30 days: 1\.\*\*\n- \[Health permit\]/);
+  assert.match(due, /1 check here still has no reading\./);
+  assert.ok(!due.includes("Jordan"));
+  // Away from a page with checks: a link to Home, still with no key.
+  assert.match(mountOn("business", "/app/settings", h("main")).answer("What's due or overdue?"), /\[Home\]\(\/app\)/);
+  assert.match(mountOn("business", "/app/settings", h("main"), { checklists: [{ id: 2, name: "RestoArmor" }] }).answer("Explain this check"),
+    /\[RestoArmor\]\(\/app\/industry\/2\)/);
+});
+
+test("1.17.0: a teacher's join codes answer counts, never names, and goes to that class's codes; certificates is a link", () => {
+  const classes = [{ id: 12, name: "Room 12" }, { id: 14, name: "Art club" }];
+  const c = mountOn("teacher", "/app/academy/classes/12", classPage(), { classes });
+  const text = c.answer("How do join codes work?");
+  assert.match(text, /opens \*\*\/kids\*\* on this site/);
+  assert.match(text, /works once, for 7 days/);
+  assert.match(text, /This class has 3 students; 2 have no code yet\./);
+  assert.match(text, /\[Open the join codes for Room 12\]\(\/app\/academy\/classes\/12\/join-codes\)/);
+  for (const name of ["Ava", "Liam", "Noah"]) assert.ok(!text.includes(name), name);
+  assert.deepEqual(c.sent, []);
+  // Print certificates goes straight to this class's certificates.
+  assert.equal(c.pill("Print certificates").link, "/app/academy/classes/12/certificates");
+  assert.equal(cleaned(c.welcomePills, "https://omniarmor.example/app/academy/classes/12")[3].link,
+    "https://omniarmor.example/app/academy/classes/12/certificates");
+  // With one class, from any teacher page; with several, a link to each; with none, add a class first.
+  const onlyOne = mountOn("teacher", "/app/settings", h("main"), { classes: [classes[0]] });
+  assert.equal(onlyOne.pill("Print certificates").link, "/app/academy/classes/12/certificates");
+  assert.match(onlyOne.answer("How do join codes work?"), /\(\/app\/academy\/classes\/12\/join-codes\)/);
+  const several = mountOn("teacher", "/app/academy/classes", h("main"), { classes });
+  assert.equal(several.pill("Print certificates").link, "/app/academy/classes");
+  assert.deepEqual(linksIn(several.answer("How do join codes work?")), ["/app/academy/classes/12/join-codes", "/app/academy/classes/14/join-codes"]);
+  assert.match(mountOn("teacher", "/app/academy/classes", h("main")).answer("How do join codes work?"), /\[Add your class\]\(\/app\/academy\/classes#add-class\)/);
+  // Adding students and planning lessons still need the AI.
+  assert.equal(typeof c.pill("Add students").action, "string");
+  assert.equal(typeof c.pill("Plan a week of lessons").action, "string");
+});
+
+test("1.17.0: a visitor learns what OmniArmor does and the free trial with no key; the prices are a link", () => {
+  const c = mountOn("visitor", "/", h("main"));
+  const what = c.answer("What does OmniArmor do?");
+  assert.match(what, /\*\*Starter checklists\*\* for 51 industries \(510 checks\)/);
+  assert.match(what, /to your team 30, 7, 1 days before a due date/);
+  assert.match(what, /Free for 14 days, no card\./);
+  assert.deepEqual(linksIn(what), ["/demo", "/industries"]);
+  assert.equal(c.pill("See the prices").link, "/help#prices");
+  assert.equal(cleaned(c.welcomePills, "https://omniarmor.example/")[2].link, "https://omniarmor.example/help#prices");
+  assert.equal(c.answerMore, "Want more? Add your AI key to ask anything.");
+  // The schools side: safety and the free trial, from the site's own facts.
+  const school = mountOn("visitor", "/classrooms", h("main"));
+  assert.match(school.answer("Is it safe for students?"), /first name or nickname only\*\*: no email, birthdate or photo/);
+  const trial = school.answer("How does the free trial work?");
+  assert.match(trial, /free for 30 days: one class of up to 35 students/);
+  assert.match(trial, /\*\*Classroom\*\* CLASSROOM-PRICE or \*\*Whole school\*\* SCHOOL-PRICE/);
+  assert.ok(linksIn(trial).includes("/classrooms#price"));
+  // Page suggestions that are answers too.
+  assert.match(school.answer("Classroom or Whole school?"), /\*\*Whole school\*\* \(SCHOOL-PRICE a year\): Every class\./);
+  assert.match(mountOn("visitor", "/demo", h("main")).answer("Is anything saved?"), /nothing you do is saved/);
+  assert.match(mountOn("visitor", "/industries", h("main")).answer("Is this legal advice?"), /^No\. OmniArmor is decision support/);
+  assert.match(mountOn("business", "/app/report", h("main")).answer("How do I export it?"), /\*\*Export CSV\*\*/);
+});
+
+test("1.17.0: every answer and link survives the core's cleaning, links stay on this site, and none needs a key", () => {
+  const sandbox = { window: {}, document: {}, URL };
+  vm.runInNewContext(fs.readFileSync(core("pilot-panel.js"), "utf8"), sandbox);
+  const P = sandbox.window.PilotPanel;
+  const pages = [["business", "/app", overviewPage()], ["business", "/app/industry/2", industryPage()], ["business", "/app/report", h("main")],
+    ["business", "/app/notifications", h("main")], ["teacher", "/app/academy/classes/12", classPage()], ["visitor", "/", h("main")],
+    ["visitor", "/industries", h("main")], ["visitor", "/classrooms", h("main")], ["visitor", "/classrooms/guide", h("main")], ["visitor", "/demo", h("main")]];
+  for (const [who, where, page] of pages) {
+    const c = mountOn(who, where, page, { classes: [{ id: 12, name: "Room 12" }], checklists: [{ id: 2, name: "RestoArmor" }] });
+    const base = `https://omniarmor.example${where}`;
+    const pills = P.welcomePills(c.welcomePills, base);
+    assert.equal(pills.length, 5, `${who} ${where}`);
+    const chips = P.cleanChips([...c.chips()], base);
+    for (const item of [...pills, ...chips]) {
+      if (item.link) assert.ok(item.link.startsWith("https://omniarmor.example/"), item.link);
+      if (item.answer === undefined) continue;
+      const text = typeof item.answer === "function" ? item.answer({ facts: c.facts, ready: false, screen: {} }) : item.answer;
+      assert.ok(typeof text === "string" && text.length > 20 && text.length <= 4000, `${where}: ${item.label}`);
+      for (const href of linksIn(text)) assert.match(href, /^\/(?![/\\])/, `${where}: ${item.label}: ${href}`);
+      for (const name of ["Ava", "Liam", "Noah", "Jordan"]) assert.ok(!text.includes(name), `${where}: ${item.label}: ${name}`);
+    }
+    assert.deepEqual(c.sent, [], `${who} ${where}`);
+  }
 });

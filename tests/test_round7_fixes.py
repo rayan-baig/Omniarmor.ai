@@ -332,7 +332,7 @@ class TestPolish(AppTestCase):
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.16.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 16, 0))
         log = read("CHANGELOG.md")
         top = log[log.index("## 1.16.0"):log.index("## 1.15.0")]
         for said in ("first screen of a phone", "One look for grown-ups", "hints, not answers", "celebration",

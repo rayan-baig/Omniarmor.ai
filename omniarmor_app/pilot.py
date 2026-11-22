@@ -103,6 +103,7 @@ def facts(who):
     the audience, and the plans' real names and prices. Nothing about any
     person or any record."""
     from . import classrooms, plans
+    from .academy_views import JOIN_CODE_DAYS
     from .catalog import TOP_COUNT
     from .plan_views import plan_facts
     from .reminders import REMINDER_DAYS
@@ -131,6 +132,8 @@ def facts(who):
         "industries": pf["industries"], "checks": pf["checks"], "top_count": TOP_COUNT,
         "reminder_days": list(REMINDER_DAYS), "max_learners": pf["max_learners"],
         "support": pf["support_email"],
+        # 1.17.0: for the answers Pilot gives with no AI key (join codes).
+        "join_code_days": JOIN_CODE_DAYS, "join_path": url_for("kids.join"),
     }
     # The checklists this workspace keeps (names and page numbers only), for
     # the tools that read its own pages. Never sent to the AI by itself.
@@ -141,11 +144,18 @@ def facts(who):
         from .tracking import checklist_ids
         # A teacher without Whole school has no school checklist (checklist_ids).
         checklists = [{"id": i, "name": INDUSTRIES[i]["brand"]} for i in checklist_ids(get_db(), g.org)]
+    # A teacher's classes (names and page numbers only, never a student), so
+    # "Print certificates" and "How do join codes work?" can go straight to a
+    # class's own page with no AI key (1.17.0).
+    classes = []
     if who == "teacher":
         data["school_checklist"] = bool(checklists)
+        from .db import get_db
+        classes = [{"id": c["id"], "name": c["name"]} for c in classrooms.classes(get_db(), g.org["id"])]
     return {
         "who": who,
         "checklists": checklists,
+        "classes": classes,
         "demo": "on" if g.get("demo") else "off",
         "readonly": "on" if access is not None and access["read_only"] else "off",
         "account": account_marker(),

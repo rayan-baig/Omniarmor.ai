@@ -3,6 +3,39 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.17.0 (22 November 2026)
+
+Pilot, the helper, is useful before anyone adds an AI key.
+
+- **Answers without an AI key.** Pilot now runs on Pilot core 1.4.0, the
+  same core as the MTRX Horizyn site. The common questions are answered at
+  once, from what the page already shows, with nothing sent anywhere:
+  - **What's due or overdue?** lists what needs attention and what's
+    coming due, each with a link straight to the check.
+  - **Explain this check** shows the check you're looking at (or the one
+    you followed a link to): what it asks, its limit, why it matters, and
+    its rule and source.
+  - **What does this colour mean?** explains Blocked, Warning, Cleared and
+    No reading, with this page's own totals.
+  - **How do join codes work?** says how a student joins on a school
+    device and links to that class's join codes. It counts the students
+    and the missing codes and never names a student.
+  - **Print certificates** goes straight to the class's certificates.
+  - Visitors get **What does OmniArmor do?**, **See the prices** (the
+    prices on the help page), and on the schools pages **Is it safe for
+    students?** and **How does the free trial work?**
+  - Many page suggestions answer at once too (reminders, exporting the
+    report, Classroom or Whole school, lesson length, the demo).
+  Under each answer, "Want more? Add your AI key to ask anything." offers
+  the key; open questions, summing up a report, adding students and
+  planning lessons still use the AI.
+- **The robot keeps lower on a phone.** On a phone it tries the bottom
+  corners first and is never tucked over a link while a corner without one
+  is free.
+- **The business Academy page speaks to the grown-up:** its headline is
+  now "Teach your kids the family business".
+- A student's pages still never have Pilot.
+
 ## 1.16.0 (22 November 2026)
 
 Fixes from a strict sixth review: sharper pictures that show sooner on a

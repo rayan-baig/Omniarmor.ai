@@ -23,5 +23,5 @@
   data-rest-body="{{ url_for('static', filename='pilot/pilot-rest-body.webp') }}" data-rest-head="{{ url_for('static', filename='pilot/pilot-rest-head.webp') }}"
   data-rest-eyes="{{ url_for('static', filename='pilot/pilot-rest-eyes.webp') }}" data-poses="{{ pt.poses }}"
   data-who="{{ pt.who }}" data-demo="{{ pt.demo }}" data-readonly="{{ pt.readonly }}" data-account="{{ pt.account }}"
-  data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
+  data-hosts="{{ pt.hosts }}" data-checklists='{{ pt.checklists|tojson }}' data-classes='{{ pt.classes|tojson }}' data-facts='{{ pt.facts|tojson }}'></script>
 {%- endif %}

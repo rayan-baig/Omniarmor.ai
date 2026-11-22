@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.3.0**) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.4.0**, since OmniArmor 1.17.0) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -35,15 +35,16 @@ forgets the last person's chat and any key kept for that tab only.
 
 | File | What it is |
 |---|---|
-| `static/pilot/` | the core 1.3.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
+| `static/pilot/` | the core 1.4.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
-| `static/pilot-omniarmor.js` | the config: OmniArmor's own welcome for each audience (`tagline`, `welcomePills`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
+| `static/pilot-omniarmor.js` | the config: OmniArmor's own welcome for each audience (`tagline`, `welcomePills`, and since 1.17.0 the answers and links that need no AI key, `answerMore`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
 | `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and OmniArmor's tools, loaded on first open |
 
 The tag carries: who is there (`visitor`, `business` or `teacher`), whether it's the demo or a
 read-only workspace, an opaque account mark (a keyed hash), the workspace's checklists (ids and
-names, for the tools), the compatible hosts, the plans' names and prices from `plans.py`, and the
+names, for the tools), a teacher's classes (ids and names only, 1.17.0, for the join codes answer and
+the certificates link), the join code's days and the join page's address, the compatible hosts, the plans' names and prices from `plans.py`, and the
 moving robot's files (`data-motion`, `data-actor`, `data-actor-css`, `data-rest-body`, `data-rest-head`,
 `data-rest-eyes`) with `data-poses`, the pose pictures in `static/pilot/poses/` (`pilot.poses()`, so a new
 pose is added by putting its picture there). Never a
@@ -123,7 +124,7 @@ app-specific pills on websites). The config picks it from who is there (`data-wh
 | A business | Your checklist helper | What's due or overdue?, Explain this check, Summarise my report, What does this colour mean?, Add my AI key |
 | A teacher | Your classroom helper | Add students, How do join codes work?, Plan a week of lessons, Print certificates, Add my AI key |
 | A visitor on `/classrooms` or the teacher guide | Your OmniArmor helper (1.15.0) | Is it safe for students?, How does the free trial work?, Plan a week of lessons, Explain this page, Add my AI key |
-| Any other visitor | Your OmniArmor helper (1.15.0) | What does OmniArmor do?, Which checklist fits me?, Which plan fits me?, Explain this page, Add my AI key |
+| Any other visitor | Your OmniArmor helper (1.15.0) | What does OmniArmor do?, Which checklist fits me?, See the prices (1.17.0), Explain this page, Add my AI key |
 
 Print certificates has the paper icon (`copy`), not a chart (1.15.0). Core 1.3.0: the "Add my AI key"
 pill is the welcome's one ask for a key (no key card beside it), the key settings say "AI key", and the
@@ -138,8 +139,29 @@ phone (1.16.0) he and Pilot share a reserved corner above the tab bar instead, s
 and he keeps his size there. On a computer (1100 px and wider) the
 sections are a side bar, so Pilot's corners there use the core's own 16 px gap.
 
-Questions are sent at once (each has a tool or the pack's answer); "Explain this check" and "Add
-students" put a prompt in the box to finish (the check's name; first names only). "Explain this page" is
+**Answers with no AI key** (1.17.0, core 1.4.0's pill actions). The pills and suggestions that need no AI
+work before a key, with nothing sent anywhere: an `answer` built in the browser from what the page shows
+and the facts on the tag, or a `link`.
+
+| Pill or suggestion | What it does with no key |
+|---|---|
+| What's due or overdue? (and "What's overdue?") | Home: Needs attention (with the totals) and Coming due, a link to each check; an industry page: overdue, blocked or close to a limit, due in 30 days, and how many have no reading; the report: its totals; elsewhere a link to Home |
+| Explain this check (and "Explain a check") | on an industry page, the check in the address (`#rule-…`), else the one in view, else the first that needs attention: what it asks, its limit, due date, why it matters, what a miss costs and its rule and source, its status, and "not legal advice"; elsewhere, what a check is and links to the checks that need attention or to the checklists |
+| What does this colour mean? | the four statuses, with this page's totals, and a link to Help |
+| How do join codes work? | how a student joins (the join page, once, the code's days), the class's student count and missing codes (counts only, never a name), and a link to that class's join codes (or to each class's) |
+| Print certificates | a link: the class's certificates on a class page or with one class, else the classes page |
+| What does OmniArmor do? / See the prices | an answer from the plans' facts, with links to the demo and the industries / a link to the prices on the Help page |
+| Is it safe for students? / How does the free trial work? | answers from the site's own facts, with links to the privacy page and the classroom prices |
+
+Some page suggestions answer too (reminders, What's a check?, Is this legal advice?, exporting the report,
+Classroom or Whole school, lesson length, Is anything saved in the demo). An answer never reads anything
+marked `data-pilot-private` and never lists a student: the class page is counted (`data-total`,
+`data-codes-missing`), never its table. Under an answer, "Want more? Add your AI key to ask anything."
+(`answerMore`) offers the key until one is added. Summarise my report, Add students, Plan a week of lessons,
+Which checklist fits me? and Explain this page still use the AI.
+
+With a key, the rest are sent at once (each has a tool or the pack's answer); "Add students" puts a prompt
+in the box to finish (first names only). "Explain this page" is
 the core's `explain-screen` and "Add my AI key" opens key settings. The taglines fit on one line at
 320 px. A pill pressed before there is a key stays waiting in the box and is sent once a key is saved (the
 core). The picture and video key sections are hidden (`hideKeySections`): Pilot here has no use for them.
@@ -160,7 +182,7 @@ above the tab bar for Armo or `--pilot-gutter`, whichever is more; on a public p
 `pilot.COMPATIBLE_HOSTS`, and `http://localhost:*` / `http://127.0.0.1:*` for a local model),
 `media-src` adds `blob:` (a video made with the person's own key), and the Permissions-Policy allows
 `microphone=(self)` for voice. Nothing else was widened: scripts, styles, fonts and pictures stay
-this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1, 1.2.0, 1.2.1 and 1.3.0 needed nothing new: the
+this site's own, and no page loads anything from another company. Cores 1.1.0, 1.1.1, 1.2.0, 1.2.1, 1.3.0 and 1.4.0 needed nothing new (1.4.0's answers are built in the browser, with no request): the
 moving robot's files and pictures come from this site, it moves with the Web Animations API, and
 1.1.1 only reads the page's own layout (`elementsFromPoint`).
 
@@ -195,5 +217,7 @@ robot fetched late and never under reduce motion, keeping clear of Armo, the sec
 no model names, the privacy page) also runs the Node tests: `node --test tests/js/pilot.test.js`
 (the core's own tests, with the moving robot, where it may sit and core 1.2.0's welcome, keepInViewport and
 pop-ups) and `node --test tests/js/omniarmor-pilot.test.js` (the pack, confirm first, the forbidden actions,
-the bulk-answer rule, first names only, and OmniArmor's own welcome for each audience).
+the bulk-answer rule, first names only, OmniArmor's own welcome for each audience, and 1.17.0's answers
+with no key, on small pages built in the test). `tests/test_core140.py` checks core 1.4.0, the tag's facts
+and that a student's pages still have no Pilot.
 `tests/test_pilot_welcome.py` checks the stylesheet's keepInViewport rules and the phone rules of 1.13.0.
