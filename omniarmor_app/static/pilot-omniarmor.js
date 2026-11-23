@@ -341,7 +341,8 @@
     + "Each industry's checks are the failures that cost it the most; start with the ones marked **Top**. Open **Rule and source** on a check to see what it costs when missed and the rule it comes from.\n\n"
     + `${NOT_ADVICE} [More in Help](/help#check)`;
   const ADVICE = `No. ${NOT_ADVICE} Each check names the rule it comes from, so you can look it up or ask.`;
-  const EXPORT = "On this page, press **Print** for a paper copy (or save it as a PDF from the print window), or **Export CSV** for a spreadsheet. Both have every check's status, reading, due date and rule.";
+  const EXPORT = "On this page, press **Print** for a paper copy (or save it as a PDF from the print window), or **Export CSV** for a spreadsheet. Both have every check's status, reading, due date and rule. "
+    + "For one page to show an inspector or your accountant, open the [Inspection-ready summary](/app/report/summary): what's current, what needs action, what's due soon, the last checks and who recorded them.";
   const DEMO_SAVED = "No. The demos use pretend data: nothing you do is saved and no emails go out. To keep your own checks, [start a free trial](/signup).";
   function plansAnswer(f) {
     const x = f || {};
@@ -489,6 +490,11 @@
   // A page suggestion: an AI prompt (words), or an answer given at once.
   const C = (label, what) => (typeof what === "string" ? { label, prompt: what } : { label, ...what });
   const A = (fn) => ({ answer: (ctx) => fn((ctx && ctx.facts) || {}) });
+  // One answer function each for a question a pill and a suggestion both ask (in their own words): core 1.4.3
+  // counts them as one item (sameItem), so a typed question never ties between them and the row under an
+  // answer shows it once.
+  const WEEK = A(weekAnswer);
+  const JOIN = A(joinAnswer);
   function pageChips() {
     if (path === "/") return [C("What does OmniArmor do?", A(whatAnswer)),
       C("Which plan fits me?", A(planFitAnswer)),
@@ -501,16 +507,16 @@
     if (path === "/classrooms") return [C("How does the free trial work?", A(trialAnswer)),
       C("Is it safe for students?", { answer: SAFE }),
       C("Classroom or Whole school?", A(plansAnswer))];
-    if (path === "/classrooms/guide") return [C("Plan a week", A(weekAnswer)),
+    if (path === "/classrooms/guide") return [C("Plan a week", WEEK),
       C("How long is a lesson?", A(lessonAnswer))];
     if (path === "/demo") return [C("What can I try?", { answer: demoAnswer }), C("Is anything saved?", { answer: DEMO_SAVED })];
     // A teacher's pages: OmniArmor's own suggestions, about their classes. The
     // school checklist's "What's overdue?" only on Whole school.
     if (path === "/app/academy/classes" || /^\/app\/academy\/classes\/\d+(\/join-codes)?$/.test(path)) {
       return [C("Add students", { answer: addStudentsAnswer }),
-        C("How do join codes work?", A(joinAnswer)),
+        C("How do join codes work?", JOIN),
         facts.school_checklist ? C("What's overdue?", { answer: dueAnswer })
-          : C("Plan a week", A(weekAnswer))];
+          : C("Plan a week", WEEK)];
     }
     if (path === "/app" || path.startsWith("/app/industry/")) return [C("What's overdue?", { answer: dueAnswer }),
       C("Explain a check", { answer: explainAnswer }),
@@ -528,7 +534,7 @@
       C("What do the plans include?", A(planFitAnswer))];
     // Anywhere else: OmniArmor's own suggestions for who is here.
     if (who === "teacher") return [C("Add students", { answer: addStudentsAnswer }),
-      C("How do join codes work?", A(joinAnswer))];
+      C("How do join codes work?", JOIN)];
     if (who === "business") return [C("What's overdue?", { answer: dueAnswer }),
       C("How do reminders work?", A(reminderAnswer))];
     return [C("What does OmniArmor do?", A(whatAnswer))];
@@ -577,10 +583,21 @@
       who === "business" ? "Your own plan is on the [Plans page](/app/plan). [All the prices](/help#prices)" : "[All the prices](/help#prices)");
     return out.join("\n");
   }
+  // The words for "Is this legal advice?", here and on the industry pages' own button (MATCH). 1.22.0: "Does
+  // this guarantee I'm compliant?", "Will I get fined?".
+  const LEGAL_WORDS = ["legal", "advice", "lawyer", "attorney", "law", "liable", "liability",
+    "compliant", "compliance", "guarantee", "guaranteed", "fine", "fined", "sue", "sued", "court"];
   const LEGAL = `No. ${NOT_ADVICE}\n\n`
     + "Each check names the rule it comes from (open **Rule and source**), so you can look it up or ask. Rules change, and a city or state can add its own, "
     + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. OmniArmor keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
   function cancelAnswer() {
+    // 1.22.0: on the schools pages a visitor gets the school plans' answer too (it was the business plans' monthly
+    // and pause options, which a school's plan doesn't have).
+    if (who === "visitor" && schoolSide) {
+      return "A school's plan (Classroom or Whole school) is paid yearly. The person who started it cancels on the Plans page, under Settings: "
+        + "press **Cancel your plan**. It stays on until the end of the year paid for and isn't charged again (no refund for the part left). "
+        + "Nothing is deleted when it ends. The free trial needs no card, so nothing is charged when it ends. [Classroom prices](/classrooms#price)";
+    }
     if (who === "teacher") {
       return "The person who started the school's plan cancels on the [Plans page](/app/plan): press **Cancel your plan**. "
         + "A classroom plan is paid yearly, so it stays on until the end of the year paid for and isn't charged again (no refund for the part left). "
@@ -603,15 +620,21 @@
         + "The [History](/app/audit) page exports every change, with who and when, as a spreadsheet (**Export CSV**).";
     }
     return "Open the [Report](/app/report) and press **Print** for a paper copy (or save it as a PDF from the print window), or **Export CSV** for a spreadsheet: "
-      + "both have every check's status, reading, due date and rule. [History](/app/audit) has its own **Export CSV**, with who changed what and when.";
+      + "both have every check's status, reading, due date and rule. [History](/app/audit) has its own **Export CSV**, with who changed what and when. "
+      + "For one page to show an inspector or an accountant, there's the [Inspection-ready summary](/app/report/summary).";
   }
   const GLOBAL = [
     { label: "Is my data safe?", answer: (ctx) => safeAnswer(ctx && ctx.facts),
-      match: ["safe", "safety", "secure", "security", "privacy", "private", "data", "encrypted", "encryption", "hacked", "breach", "gdpr", "coppa", "ferpa"] },
+      // The core reads at most 20 words per item. 1.22.0: "Do you sell my data?", "Who do you share it with?",
+      // "Where is my data stored?", "Do you use tracking cookies?".
+      match: ["safe", "safety", "secure", "security", "privacy", "private", "data", "encrypted", "hacked", "breach", "gdpr", "coppa", "ferpa",
+        "sell", "sold", "share", "shared", "tracking", "cookies", "stored"] },
     { label: "What does it cost?", answer: (ctx) => pricesAnswer(ctx && ctx.facts),
-      match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars"] },
-    { label: "Is this legal advice?", answer: LEGAL, match: ["legal", "advice", "lawyer", "attorney", "law", "liable", "liability"] },
-    { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "downgrade", "quit", "pause", "anytime", "contract", "commitment"] },
+      match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars",
+        "billing", "bill", "charge", "charged", "afford", "monthly", "yearly"] },
+    { label: "Is this legal advice?", answer: LEGAL, match: LEGAL_WORDS },
+    { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",
+      "money", "back", "close", "account", "terminate"] },
     { label: "How do I export the report?", answer: exportAnswer, match: ["export", "csv", "download", "print", "spreadsheet", "excel", "pdf", "inspector", "auditor"] },
   ];
 
@@ -656,8 +679,8 @@
     teacher: {
       tagline: "Your classroom helper",
       pills: [ANSWER("chat", "Add students", addStudentsAnswer),
-        ANSWER("help", "How do join codes work?", (ctx) => joinAnswer(ctx && ctx.facts)),
-        ANSWER("spark", "Plan a week of lessons", (ctx) => weekAnswer(ctx && ctx.facts)),
+        ANSWER("help", "How do join codes work?", JOIN.answer),
+        ANSWER("spark", "Plan a week of lessons", WEEK.answer),
         LINK("copy", "Print certificates", certificatesLink()),
         KEY],
     },
@@ -665,7 +688,7 @@
       tagline: "Your OmniArmor helper",
       pills: [ANSWER("help", "Is it safe for students?", SAFE),
         ANSWER("bolt", "How does the free trial work?", (ctx) => trialAnswer(ctx && ctx.facts)),
-        ANSWER("spark", "Plan a week of lessons", (ctx) => weekAnswer(ctx && ctx.facts)),
+        ANSWER("spark", "Plan a week of lessons", WEEK.answer),
         ANSWER("bars", "Explain this page", explainPageAnswer),
         KEY],
     },
@@ -717,7 +740,8 @@
     "Print certificates": ["certificate", "certificates", "award", "awards", "diploma"],
     "Classroom or Whole school?": ["price", "prices", "cost", "much", "pricing", "yearly", "plan", "plans", "classroom", "school"],
     // The schools pages'
-    "Is it safe for students?": ["privacy", "private", "data", "safety", "secure", "security", "coppa", "ferpa"],
+    "Is it safe for students?": ["privacy", "private", "data", "safety", "secure", "security", "coppa", "ferpa",
+      "sell", "sold", "share", "shared", "stored", "tracking"],
     "How does the free trial work?": ["trial", "free", "card"],
     "How long is a lesson?": ["minute", "minutes", "long", "time"],
     // A visitor's
@@ -729,23 +753,22 @@
     "What do the plans include?": ["plan", "plans", "pro", "plus", "difference", "compare", "include", "includes"],
     "How do reminders work?": ["reminder", "reminders", "email", "emails", "remind", "alert"],
     "What's a check?": ["check"],
-    "Is this legal advice?": ["legal", "advice", "lawyer", "attorney", "law"],
+    "Is this legal advice?": LEGAL_WORDS,
     "What can I try?": ["demo", "try", "sample", "example"],
     "Is anything saved?": ["save", "saved", "stored", "kept", "delete"],
   };
   const withMatch = (x) => (MATCH[x.label] ? { ...x, match: MATCH[x.label] } : x);
   welcome.pills = welcome.pills.map(withMatch);
 
-  // 1.20.0 (core 1.4.2): with no key, a suggestion that asks what a pill asks stays out even once a chat has
-  // started: the core brings the pills back under each of the app's own answers, and with both there a typed
-  // question would fit two items as well and get neither. With a key, once chatting (the pills fold away), every
-  // suggestion is back, in the pill's own words, so the row under an answer never shows the same question twice.
-  function shownChips(keyed) {
+  // On the welcome, a suggestion that asks what a pill asks stays out (the core lists both there). Once chatting,
+  // every suggestion is back, in the pill's own words: core 1.4.3 counts a suggestion and a pill with one answer
+  // (or one label) as one item (sameItem), so a typed question never ties between them and the row under an
+  // answer shows it once. (1.20.0 kept them out with no key, a workaround 1.4.3 makes unnecessary.)
+  function shownChips() {
     const list = pageChips().map(withMatch);
     let chatting = false;
     try { chatting = window.Pilot.store.loadChat().length > 0; } catch (_) { chatting = false; }
-    const repeats = (c) => pillLabels.has(c.label) || pillLabels.has(SAME[c.label]);
-    if (!chatting || !keyed) return list.filter((c) => !repeats(c));
+    if (!chatting) return list.filter((c) => !pillLabels.has(c.label) && !pillLabels.has(SAME[c.label]));
     return list.map((c) => (pillLabels.has(SAME[c.label]) ? withMatch({ ...c, label: SAME[c.label] }) : c));
   }
 
@@ -779,7 +802,7 @@
   function chips() {
     let keyed = false;
     try { keyed = Boolean(window.Pilot.store.ready()); } catch (_) { keyed = false; }
-    const list = shownChips(keyed);
+    const list = shownChips();
     const question = typed;
     typed = "";
     if (keyed || !question) return list;

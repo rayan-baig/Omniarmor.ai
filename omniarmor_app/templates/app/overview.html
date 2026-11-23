@@ -91,9 +91,11 @@
 {% if upcoming %}
   <ul class="list">
     {% for s in upcoming %}
-      <li><a class="row" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
+      <li><a class="row row-stack" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
         <span><span class="title">{{ s.rule.title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
-        <span class="meta mono">{{ s.due_in }} · {{ s.due_label }}</span>
+        {#- 1.22.0: "Due in 5 days", not "in 5 days": a rule whose name has its own interval ("Emergency C-II
+            follow-up in 7 days") read as "in 7 days · in 5 days". -#}
+        <span class="meta mono" data-due-when>{{ s.due_text }} · {{ s.due_label }}</span>
       </a></li>
     {% endfor %}
   </ul>
@@ -111,7 +113,7 @@
 <h2>Your industries</h2>
 <ul class="list">
   {% for item in by_industry %}
-    <li><a class="row" href="{{ url_for('app.industry', industry_id=item.industry.id) }}">
+    <li><a class="row row-stack" href="{{ url_for('app.industry', industry_id=item.industry.id) }}">
       <span><span class="title">{{ item.industry.brand }}</span><span class="meta"> · {{ item.industry.sector }}</span></span>
       <span class="meta">{{ item.counts.BLOCKED }} blocked · {{ item.counts.WARNING|plural('warning') }} · {{ item.counts.NONE }} without a reading</span>
     </a></li>

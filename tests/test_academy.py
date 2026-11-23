@@ -131,13 +131,13 @@ class TestCourseContent(unittest.TestCase):
         self.assertEqual(academy.rank_tier(0), 0)
         self.assertEqual(academy.rank_tier(1000), 7)
         titan = academy.TRACKS["titan"]
-        self.assertLess(academy.rank_tier(BASIC.total, titan), 7)  # bigger tracks need more levels
-        self.assertEqual(academy.next_rank(0), (5, "Apprentice"))
+        self.assertLess(academy.rank_tier(BASIC.reachable(), titan), 7)  # bigger tracks need more levels
+        self.assertEqual(academy.next_rank(0), (1, "Apprentice"))
         self.assertIsNone(academy.certificate_for(BASIC.total - 1, False))
         self.assertEqual(academy.certificate_for(1, True), "Future Owner")
-        self.assertEqual(academy.certificate_for(120, True), "Silver Future Owner")
-        self.assertEqual(academy.certificate_for(BASIC.total, True), "Platinum Business Legend")
-        self.assertEqual(academy.certificate_for(titan.total, True, titan), "Titan Mastery Platinum Business Legend")
+        self.assertEqual(academy.certificate_for(40, True), "Silver Future Owner")
+        self.assertEqual(academy.certificate_for(BASIC.reachable(), True), "Platinum Future Owner")
+        self.assertEqual(academy.certificate_for(titan.reachable(), True, titan), "Titan Mastery Platinum Future Owner")
 
     def test_money_math_is_exact(self):
         for seed in range(300):
@@ -418,8 +418,8 @@ class TestAcademyPages(AppTestCase):
     def test_rank_up(self):
         self.add()
         lid = self.learner_id()
-        self.mark_passed(lid, (1, 1), (1, 2), (1, 3), (1, 4))
-        page = self.answer(lid, 1, 5).data.decode()
+        # 1.22.0: Apprentice at the first lesson (the ladder scaled to the levels this workspace has).
+        page = self.answer(lid, 1, 1).data.decode()
         self.assertIn("Rank up! You're now an Apprentice", page)
         self.assertIn("avatar-tier-1", page)
 

@@ -228,7 +228,7 @@
   {% if class_workspace %}
   {% set tabs = [
       ('classes.index', 'Home', 'Your classes', 'academy', ep.startswith(('classes.', 'academy.'))),
-      ('app.overview', 'Checklist', 'The school safety checklist', 'report', ep in ('app.overview', 'app.industry', 'app.report')),
+      ('app.overview', 'Checklist', 'The school safety checklist', 'report', ep in ('app.overview', 'app.industry', 'app.report', 'app.report_summary')),
       ('app.notifications', 'Reminders', 'Reminder emails and deadlines', 'bell', ep == 'app.notifications'),
       ('app.audit', 'History', 'Every change, with who and when', 'audit', ep == 'app.audit'),
       ('app.settings', 'Settings', 'Settings and plans', 'settings', ep in ('app.settings', 'plan.plan_page'))] %}
@@ -237,7 +237,7 @@
   {% else %}
   {% set tabs = [
       ('app.overview', 'Home', 'What needs attention', 'home', ep in ('app.overview', 'app.industry')),
-      ('app.report', 'Report', 'Compliance report', 'report', ep == 'app.report'),
+      ('app.report', 'Report', 'Compliance report', 'report', ep in ('app.report', 'app.report_summary')),
       ('app.audit', 'History', 'Every change, with who and when', 'audit', ep == 'app.audit'),
       ('app.notifications', 'Reminders', 'Reminder emails and deadlines', 'bell', ep == 'app.notifications'),
       ('academy.home', 'Academy', 'Future Owner Academy', 'academy', ep.startswith(('academy.', 'classes.'))),

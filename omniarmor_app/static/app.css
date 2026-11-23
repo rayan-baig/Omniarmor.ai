@@ -132,6 +132,9 @@ a.row:hover{background:var(--hover)}
 .row .early-note{display:inline-block;margin-top:2px;font-style:italic}
 .row[data-level="BLOCKED"]{background:var(--block-tint)}
 .row[data-level="WARNING"]{background:var(--warn-tint)}
+/* 1.22.0: on a phone, Home's "Coming due" and "Your industries" rows put their second column under the name, so a
+   long name isn't squeezed into a narrow column ("COBRA / election / notice sent") and no "·" is left alone. */
+@media (max-width:560px){.row.row-stack{grid-template-columns:minmax(0,1fr);gap:2px}}
 .grid-ind{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 24px}
 .empty{color:var(--muted);padding:12px 0}
 .checklist h2{margin:0 0 12px}
@@ -269,6 +272,45 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
   table.report-cards td[data-label]::before{content:attr(data-label) ": ";font-family:var(--sans,inherit);color:var(--faint)}
   table.report-cards td.rc-empty{display:none}
   table.report-cards tr.entry-row{padding-left:16px}
+}
+/* History on a phone (1.22.0): each entry is a card, "Jules Marrow · PharmacyArmor · 20 Nov 16:07" on top and the
+   change in full under it, instead of four columns cut off at the side. A computer, printing and the CSV keep the
+   table; the short time shows only in a card. */
+.audit-utc{display:none;margin:0 0 4px;font-size:13px;color:var(--faint)}
+table.audit-cards .at-short{display:none}
+@media screen and (max-width:640px){
+  .audit-utc{display:block}
+  table.audit-cards thead{display:none}
+  table.audit-cards,table.audit-cards tbody{display:block}
+  table.audit-cards tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;padding:12px 4px;border-bottom:1px solid var(--line)}
+  table.audit-cards td{display:block;padding:0;border:0;white-space:normal}
+  table.audit-cards td[data-pilot-private]{order:1;font-weight:600;color:var(--ink)}
+  table.audit-cards .audit-industry{order:2;color:var(--muted)}
+  table.audit-cards .audit-when{order:3;font-family:inherit;color:var(--muted)}
+  table.audit-cards .audit-industry::before,table.audit-cards .audit-when::before{content:"\00a0\00b7\00a0";color:var(--faint)}
+  table.audit-cards .audit-industry:empty{display:none}
+  table.audit-cards .at-long{display:none}
+  table.audit-cards .at-short{display:inline}
+  table.audit-cards .audit-change{order:4;flex-basis:100%;margin-top:4px;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+}
+
+/* The inspection-ready summary (1.22.0, app/report_summary.html): one page, plain lists, sign-off lines that show
+   on paper. */
+.sum-block{margin-top:28px}
+.sum-block h2{margin-bottom:8px}
+.sum-lead{font-size:17px;margin:0 0 12px}
+.sum-list{list-style:none;margin:0;padding:0}
+.sum-list li{padding:9px 0;border-bottom:1px solid var(--line);line-height:1.5}
+.sum-list .tag{margin-right:4px}
+.sum-detail{display:block;color:var(--muted);font-size:14.5px}
+.sum-sign{display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:36px}
+.sum-sign p{margin:0;display:flex;align-items:flex-end;gap:8px;flex:1 1 260px}
+.sum-line{flex:1;min-width:140px;border-bottom:1px solid var(--muted);height:1.4em}
+.sum-line-short{max-width:200px}
+@media print{
+  .sum-block{margin-top:16px;break-inside:avoid}
+  .sum-list li{padding:4px 0}
+  .sum-line{border-color:#000}
 }
 
 /* Auth and public pages */

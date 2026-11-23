@@ -3,6 +3,62 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.22.0 (23 November 2026)
+
+Fixes from a strict eleventh review, and Pilot core 1.4.3: History that reads
+on a phone, ranks a family can really reach, students who pick their own
+picture, a one-page summary for an inspector, and Pilot staying in the chat
+when it needs a key.
+
+- **Pilot core 1.4.3.** A question Pilot can't answer without an AI key no
+  longer jumps to key settings: Pilot says in the chat that it needs a key for
+  that one, offers what it can do right now (this page's buttons that answer
+  with no key) and an "Add my AI key" button, and keeps the typed words waiting
+  in the box. Typing a button's own words always gets its answer. More of the
+  ways people ask find OmniArmor's own answers with no key: "Do you sell my
+  data?", "Where is my data stored?" and "privacy" (your data), "Can I get a
+  refund?" and "How do I close my account?" (cancelling), "Does this guarantee
+  I'm compliant?" (not legal advice), "billing" (the prices). The 13 core files
+  are MTRX Horizyn's, byte for byte; a 1.20.0 workaround the core now covers is
+  gone. Students' pages still have no Pilot and no Armo.
+- **History on a phone is a list of cards.** Each change shows "Jules Marrow ·
+  PharmacyArmor · 20 Nov 16:07" on top and the change in full under it, instead
+  of four columns cut off at the side. A computer, printing and the CSV are
+  unchanged.
+- **Ranks a family can reach.** A family track's ranks and certificates were
+  spread over every industry's Rule Quests (Launchpad ended at "Tycoon, at 630
+  lessons" for a workspace with 100). They now count the track's lessons and
+  the workspace's own industries' Rule Quests, as the Classroom track has since
+  1.19.0, so every rank listed can be reached. The sixth rank is now
+  **Chief Executive** (it was "Future Owner", the certificate's own name), and the top
+  certificate is **Platinum Future Owner**, like the others. Silver and Gold are
+  spread from the Owner's Challenge up to the last level, so passing the
+  Challenge earns the Future Owner certificate first (on the Classroom track
+  Silver used to come with the Class Challenge itself).
+- **Students pick their own picture.** When a class's student joins on their
+  own device, they first pick their picture from the Academy's preset pictures
+  (no photos; nothing else is asked, first names only as before), and can change
+  it from their class page. The pictures of the ranks to come on the map are
+  twice as big, so the cap, the bow tie, the top hat, the crown and the wings
+  show.
+- **An Inspection-ready summary.** From the Report, one page to print or show
+  an inspector, auditor or accountant: what's current, what needs action, what's
+  due in the next 30 days, the last checks recorded, who recorded the current
+  readings, and lines to sign. It comes only from your records and says so; it
+  claims no inspection result or legal standing.
+- **/pricing** (and /prices) goes to the prices instead of "page not found".
+- **Home's "Coming due" says "Due in 5 days"**, so a rule with its own interval
+  in its name ("Emergency C-II follow-up in 7 days") no longer reads "in 7 days
+  · in 5 days".
+- **One definition per word.** A lesson card named for a Business Words term
+  ("Profit", "Markup", "Budget") and every "Profit: ..." line under an answer
+  now use the Word Bank's own meaning, with their examples after it, and the
+  quiz checker flags any that don't. The marketing lesson's "promotion" (a
+  special deal) is now a "special offer", since a promotion in the Word Bank is
+  a move up to a bigger job.
+- On the schools pages, Pilot's cancel answer talks about the school plans only
+  (yearly, no monthly plan or pause).
+
 ## 1.21.0 (23 November 2026)
 
 Fixes from a strict tenth review: the logo's orange back on a computer,

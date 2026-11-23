@@ -426,16 +426,18 @@ test("1.14.0 welcome: short taglines and labels, no picture or video keys, kept 
   }
 });
 
-test("1.14.0 welcome: a suggestion that repeats a pill is left off the welcome, and is back once a chat has started (1.20.0: with a key)", () => {
+test("1.14.0 welcome: a suggestion that repeats a pill is left off the welcome, and is back once a chat has started (1.22.0: with or without a key)", () => {
   // A business's Home: "What's overdue?", "Explain a check" and "What do the colours mean?" are all pills.
   assert.deepEqual(mountFor("business", "/app").chipLabels(), []);
   assert.deepEqual(mountFor("business", "/app/report").chipLabels(), ["How do I export it?"]);
   const chatting = [{ role: "user", content: "hi" }];
-  // 1.20.0: back with a key, in the pill's own words (so the row under an answer shows each question once).
-  assert.deepEqual(mountFor("business", "/app", { chat: chatting, ready: true }).chipLabels(),
-    ["What's due or overdue?", "Explain this check", "What does this colour mean?"]);
-  // With no key they stay out: the pills come back under each of the app's own answers (core 1.4.2).
-  assert.deepEqual(mountFor("business", "/app", { chat: chatting }).chipLabels(), []);
+  // Back once chatting, in the pill's own words (so the row under an answer shows each question once). 1.22.0 (core
+  // 1.4.3): with no key too, since the core counts a pill and a suggestion with one answer as one item (1.20.0 kept
+  // them out with no key, else a typed question tied between the two and got neither).
+  for (const ready of [true, false]) {
+    assert.deepEqual(mountFor("business", "/app", { chat: chatting, ready }).chipLabels(),
+      ["What's due or overdue?", "Explain this check", "What does this colour mean?"]);
+  }
   // A teacher's classes page: all three are pills (or "What's overdue?" with the school checklist).
   assert.deepEqual(mountFor("teacher", "/app/academy/classes").chipLabels(), []);
   assert.deepEqual(mountFor("teacher", "/app/academy/classes", { facts: { school_checklist: true } }).chipLabels(),
@@ -1171,4 +1173,81 @@ test("1.21.0: the answers on every page never show as buttons, and a key turns t
   }
   const src = fs.readFileSync(site("pilot-omniarmor.js"), "utf8");
   assert.ok(src.includes("if (keyed || !question) return list;"));
+});
+
+// ---------------------------------------------------------------- 1.22.0: Pilot core 1.4.3
+
+test("1.22.0: core 1.4.3's no-key reply is on: a question nothing answers stays in the chat with OmniArmor's own buttons and the key pill", () => {
+  const P = panel();
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const c = mountFor(who, where);
+    assert.equal(c.noKeyReply, undefined, `${where}: the core's own words, never the old jump to key settings`);
+    const base = `https://omniarmor.example${where}`;
+    const row = P.noKeyItems(P.ownPills(c.welcomePills, base), P.cleanChips([...c.chips({})], base), true);
+    const words = row.map((x) => String(x.label));
+    assert.equal(words[words.length - 1], "Add my AI key", where);
+    assert.ok(words.length >= 4 && words.length <= 7, `${where}: ${words.join(" | ")}`);
+    assert.equal(new Set(words).size, words.length, `${where}: ${words.join(" | ")}`);
+    // Every button there but the key answers with no AI: nothing it offers leads back to a key.
+    for (const x of row.slice(0, -1)) assert.ok(x.answer !== undefined || x.link, `${where}: ${x.label}`);
+    assert.equal(P.noKeyText(c.noKeyReply, true, row.length > 1), P.NO_KEY_REPLY.site);
+  }
+});
+
+test("1.22.0: every button's own words, typed, get its answer on every grown-up page (core 1.4.3), and no workaround is left", () => {
+  const P = panel();
+  let checked = 0;
+  for (const [who, where] of GROWN_UP_PAGES) {
+    for (const chat of [[], [{ role: "user", content: "hi" }]]) {
+      const c = mountFor(who, where, { chat, facts: { trades: TRADES, class_plan: CLASS_PLAN } });
+      const base = `https://omniarmor.example${where}`;
+      const items = P.ownPills(c.welcomePills, base).concat(P.cleanChips([...c.chips({})], base));
+      for (const item of items.filter((x) => x.link || x.answer !== undefined)) {
+        for (const typed of [item.label, item.label.toLowerCase().replace(/[?’'!.]/g, "")]) {
+          const got = P.matchTyped(typed, items);
+          assert.ok(got && P.sameItem(got, item), `${who} ${where}: "${typed}" -> ${got && got.label}`);
+          checked += 1;
+        }
+      }
+    }
+  }
+  assert.ok(checked >= 200, checked);
+  // A pill and a suggestion asking the same thing in their own words share one answer, so 1.4.3 sees one item.
+  const c = mountFor("teacher", "/app/academy/classes/12", { chat: [{ role: "user", content: "hi" }] });
+  const items = P.ownPills(c.welcomePills, "https://omniarmor.example/").concat(P.cleanChips([...c.chips({})], "https://omniarmor.example/"));
+  assert.equal(P.matchTyped("plan my week", items).label, "Plan a week of lessons");
+  const src = fs.readFileSync(site("pilot-omniarmor.js"), "utf8");
+  assert.ok(!src.includes("shownChips(keyed)"), "1.20.0's no-key workaround is gone");
+  assert.ok(!src.includes("noKeyReply"), "the core's in-chat reply, in its own words");
+});
+
+test("1.22.0: more of the ways people ask about their data, the price, the law and cancelling find the answer with no key", () => {
+  const asks = [
+    ["Do you sell my data?", "Is my data safe?"], ["privacy", "Is my data safe?"], ["Who do you share my data with?", "Is my data safe?"],
+    ["Where is my data stored?", "Is my data safe?"], ["Do you use tracking cookies?", "Is my data safe?"],
+    ["Can I get a refund?", "How do I cancel?"], ["refund", "How do I cancel?"], ["How do I close my account?", "How do I cancel?"],
+    ["Can I get my money back?", "How do I cancel?"],
+    ["Does this guarantee I'm compliant?", "Is this legal advice?"], ["Will I get fined?", "Is this legal advice?"],
+    ["billing", "What does it cost?"], ["What will I be charged?", "What does it cost?"],
+  ];
+  for (const [who, where] of [["business", "/app/audit"], ["business", "/app/notifications"], ["visitor", "/industries"], ["visitor", "/demo"]]) {
+    const ask = typedEverywhere(who, where);
+    for (const [q, label] of asks) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, label, `${who} ${where}: "${q}"`);
+    }
+  }
+});
+
+test("1.22.0: on the schools pages the cancel answer is about the school plans only; the export answers name the summary", () => {
+  for (const where of ["/classrooms", "/classrooms/guide"]) {
+    const got = typedEverywhere("visitor", where)("How do I cancel?");
+    assert.ok(got, where);
+    assert.match(got.text, /school's plan/);
+    for (const never of ["Monthly", "pause", "paused", "month paid for"]) assert.ok(!got.text.includes(never), `${where}: ${never}`);
+  }
+  assert.match(typedEverywhere("visitor", "/")("How do I cancel?").text, /Monthly/);
+  assert.ok(linksIn(typedEverywhere("business", "/app/audit")("How do I export the report?").text).includes("/app/report/summary"));
+  assert.ok(linksIn(mountOn("business", "/app/report", h("main")).answer("How do I export it?")).includes("/app/report/summary"));
 });

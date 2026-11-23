@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "academy/_art.html" import avatar %}
+{% block title %}Pick your picture{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='academy.css') }}">
+{% endblock %}
+{% block content %}
+{#- 1.22.0: a class's student picks their own starting picture when they join, from the Academy's preset
+    pictures only (never a photo). Nothing else is asked; it grows with their rank from here. -#}
+<div class="ac ac-join ac-picture">
+  <section class="ac-hero">
+    <span class="ac-picture-now" data-picture-now>{{ avatar(chosen, avatars, 110) }}</span>
+    <div>
+      <p class="ac-kicker">Future Owner Academy</p>
+      <h1 class="ac-title">Pick your picture</h1>
+      <p class="ac-lead">It's you on your map and your class page. It grows as you go up the ranks. You can change it later.</p>
+    </div>
+  </section>
+  <form class="ac-card ac-join-form" method="post" action="{{ url_for('kids.picture') }}" data-picture-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <fieldset class="plain">
+      <legend class="plain">Tap the one you like</legend>
+      <div class="ac-avatars ac-avatars-big">
+        {% for key, (label, color) in avatars.items() %}
+          <label class="ac-avatar-pick">
+            <input type="radio" name="avatar" value="{{ key }}" {% if key == chosen %}checked{% endif %}>
+            {{ avatar(key, avatars, 72) }}<span>{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <button class="btn ac-btn" type="submit">This is me!</button>
+  </form>
+</div>
+{% endblock %}

@@ -34,6 +34,10 @@
 .ac-avatar-pick input{position:absolute;opacity:0;pointer-events:none}
 .ac-avatar-pick:has(input:checked){border-color:var(--accent);background:var(--card-2);color:var(--ink)}
 .ac-avatar-pick:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* A student's own pick when they join (1.22.0, kids/picture.html): three across on a phone, big to tap. */
+.ac-avatars-big{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.ac-avatars-big .ac-avatar-pick{min-width:0;padding:10px 6px;font-size:15px}
+.ac-picture-now{display:flex;line-height:0}
 .ac-manage{margin-top:28px}
 
 /* Progress */
@@ -612,9 +616,13 @@
 .ac-grow svg{width:var(--s);height:var(--s)}
 .ac-grow-1{--s:80px}.ac-grow-2{--s:88px}.ac-grow-3{--s:96px}.ac-grow-4{--s:104px}.ac-grow-5{--s:112px}.ac-grow-6{--s:120px}.ac-grow-7{--s:128px}
 @keyframes ac-grow-pop{0%{transform:scale(.6)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
-.ac-evolve{list-style:none;display:flex;align-items:flex-end;flex-wrap:wrap;gap:4px 6px;margin:8px 0 6px;padding:0}
-.ac-evolve li{display:flex;line-height:0}
-.ac-evolve li.later{filter:grayscale(1) brightness(.45);opacity:.7}
+/* 1.22.0: big enough to see what each rank adds (the cap, the bow tie, the top hat, the crown, the wings): one row
+   of eight from 480px, two rows of four on a phone, each up to 54px (they were 26px, the current one 34px). */
+.ac-evolve{list-style:none;display:grid;grid-template-columns:repeat(8,minmax(0,54px));align-items:end;gap:6px 8px;margin:10px 0 8px;padding:0}
+.ac-evolve li{display:flex;justify-content:center;line-height:0}
+.ac-evolve li svg{width:100%;height:auto}
+@media (max-width:479px){.ac-evolve{grid-template-columns:repeat(4,minmax(0,54px));gap:8px 14px}}
+.ac-evolve li.later{filter:grayscale(1) brightness(.62);opacity:.85}
 .ac-evolve li.now{filter:drop-shadow(0 0 8px rgba(255,194,75,.55))}
 .ac-world-badge{position:relative}
 .ac-here-pin{position:absolute;right:-12px;top:-12px;line-height:0;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));animation:ac-here 2.4s ease-in-out infinite}

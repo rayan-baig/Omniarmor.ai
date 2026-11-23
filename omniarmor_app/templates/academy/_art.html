@@ -152,7 +152,7 @@
 {% macro avatar(name, colors, size=56, tier=0) -%}
 {# A learner's picture. It levels up with their rank, and from 1.21.0 every rank adds something you can see at a
    glance, even small on a class's phone: Apprentice a bronze frame and a star badge, Team Captain a silver frame
-   and a blue cap, Manager a gold frame and a bow tie, Executive a top hat and sparkles, Future Owner a crown,
+   and a blue cap, Manager a gold frame and a bow tie, Executive a top hat and sparkles, Chief Executive (1.22.0; was Future Owner) a crown,
    Business Legend wings and Tycoon a glowing diamond aura. (A ring's colour alone was too small a change to see.) #}
 {% set color = colors[name][1] if name in colors else '#F59234' %}
 {% set rings = ['none', '#B87333', '#C0C0C8', '#FFC24B', '#FFC24B', '#FFC24B', '#FFC24B', '#7FE7FF'] %}

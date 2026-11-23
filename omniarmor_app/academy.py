@@ -574,6 +574,16 @@ class Track:
         return (sum(self.stages(w) for w in self.topic_worlds) + self.final_stages
                 + len(INDUSTRY_WORLDS) * self.industry_stages)
 
+    def reachable(self, quests=None):
+        """The levels a learner here can pass for ranks and certificates (1.22.0): the business lessons and the
+        workspace's own Rule Quests (quests: how many it has, Track.quests_for; None when no workspace is
+        known, the lessons only). Track.total also counts every other industry's Rule Quest, optional extras
+        on the map, so a family's ladder used to list ranks no learner would get to (Launchpad: "Tycoon, at
+        630 lessons" for a workspace with 100). The Classroom track has no Rule Quests: its lessons."""
+        if not self.rule_quests:
+            return self.total
+        return self.lessons + max(0, int(quests or 0)) * self.industry_stages
+
     def stages(self, w):
         if w.kind == "final":
             return self.final_stages
@@ -606,10 +616,17 @@ TRACK_LIST = [
 TRACKS = {t.key: t for t in TRACK_LIST}
 DEFAULT_TRACK = "launchpad"
 TOTAL_LEVELS = TRACKS[DEFAULT_TRACK].total  # the basic track; see Track.total for the others
+# 1.22.0: the sixth rank is "Chief Executive" (it was "Future Owner", the certificate's own name, so a learner
+# with both read "Future Owner · Future Owner").
 RANKS = [(0, "Rookie"), (5, "Apprentice"), (15, "Team Captain"), (40, "Manager"), (100, "Executive"),
-         (250, "Future Owner"), (600, "Business Legend"), (1000, "Tycoon")]
+         (250, "Chief Executive"), (600, "Business Legend"), (1000, "Tycoon")]
+# The size the goals above (and CERTIFICATES') are written for: the Launchpad track with every industry's Rule
+# Quests, as it was when they were set. Each track's goals are scaled from it to the levels it really has
+# (Track.reachable), so the Classroom's ladder is the one 1.19.0 gave it.
+RANK_BASE = 630
+# 1.22.0: the top one is "Platinum Future Owner", like the others (it was "Platinum Business Legend", a rank's name).
 CERTIFICATES = [(1, "Future Owner"), (100, "Silver Future Owner"), (500, "Gold Future Owner"),
-                (None, "Platinum Business Legend")]
+                (None, "Platinum Future Owner")]
 
 
 def track(key):
@@ -692,58 +709,83 @@ def _title_for(table, count):
     return name
 
 
-def _scaled(t, table):
-    """Rank and certificate goals grow with the track's size. Each goal stays
-    above the one before, so a short track (Classroom) still starts at the
-    first title."""
-    scale = t.total / TRACKS[DEFAULT_TRACK].total
+def _scaled(t, table, quests=None):
+    """Rank and certificate goals grow with the levels a learner can pass here (Track.reachable: the track's
+    lessons and the workspace's own Rule Quests). Each goal stays above the one before, so a short track still
+    starts at the first title, and none is past the last level: the goals that would be are spread evenly up to
+    it, the last at it (1.19.0 for the Classroom track; 1.22.0 for the family tracks, whose ladder counted
+    every industry's Rule Quests)."""
+    total = t.reachable(quests)
+    scale = total / RANK_BASE
     out, last = [], None
     for needed, title in table:
-        goal = t.total if needed is None else (needed if needed <= 1 else round(needed * scale))
+        goal = total if needed is None else (needed if needed <= 1 else round(needed * scale))
         if last is not None and needed is not None:
             goal = max(goal, last + 1)
         out.append((goal, title))
         last = goal
-    # 1.19.0: no goal past what the track holds (the Classroom track's 107 lessons used to end at "Tycoon, at
-    # 170 lessons"). The goals that would be past it are spread evenly up to the track's last level.
-    over = next((i for i, (goal, _) in enumerate(out) if goal > t.total), None)
+    over = next((i for i, (goal, _) in enumerate(out) if goal > total), None)
     if over is not None and over > 0:
         base, left = out[over - 1][0], len(out) - over
         for k, i in enumerate(range(over, len(out)), start=1):
-            out[i] = (base + max(k, round((t.total - base) * k / left)), out[i][1])
+            out[i] = (min(total, base + max(k, round((total - base) * k / left))), out[i][1])
     return out
 
 
 RANK_TIERS = [title for _, title in RANKS]
 
 
-def rank_for(levels_done, t=None):
-    return _title_for(_scaled(t or TRACKS[DEFAULT_TRACK], RANKS), levels_done)
+# quests, below: how many Rule Quests the learner's workspace has on the track (Track.quests_for; None: no
+# workspace known, the lessons only). Ranks and certificates count every level passed, Rule Quests too.
+
+def rank_for(levels_done, t=None, quests=None):
+    return _title_for(_scaled(t or TRACKS[DEFAULT_TRACK], RANKS, quests), levels_done)
 
 
-def rank_tier(levels_done, t=None):
+def rank_tier(levels_done, t=None, quests=None):
     """0 for Rookie up to 7 for Tycoon: how fancy the learner's picture gets."""
-    return RANK_TIERS.index(rank_for(levels_done, t))
+    return RANK_TIERS.index(rank_for(levels_done, t, quests))
 
 
-def rank_ladder(t=None):
+def rank_ladder(t=None, quests=None):
     """Every rank on a track, in order, as (lessons needed, title): the forms a
     learner's picture grows through on the map (1.16.0)."""
-    return _scaled(t or TRACKS[DEFAULT_TRACK], RANKS)
+    return _scaled(t or TRACKS[DEFAULT_TRACK], RANKS, quests)
 
 
-def next_rank(levels_done, t=None):
-    for needed, title in _scaled(t or TRACKS[DEFAULT_TRACK], RANKS):
+def next_rank(levels_done, t=None, quests=None):
+    for needed, title in _scaled(t or TRACKS[DEFAULT_TRACK], RANKS, quests):
         if levels_done < needed:
             return needed, title
     return None
 
 
-def certificate_for(levels_done, final_passed, t=None):
+def certificate_goals(t, quests=None):
+    """Each certificate's goal, in levels passed: (levels, title). The first comes with the Owner's (or Class)
+    Challenge, which needs the first lesson of every world and the Challenge itself (len(t.topics) + 1). The
+    upgrades are spread from there to the last level as CERTIFICATES spreads them over RANK_BASE (1.22.0: scaled
+    from 0, Silver came with the Challenge itself on every track, so the first certificate was never seen)."""
+    total, first = t.reachable(quests), len(t.topics) + 1
+    out, last = [], None
+    for needed, title in CERTIFICATES:
+        if needed is None:
+            goal = total
+        elif needed <= 1:
+            goal = needed
+        else:
+            goal = first + round((needed - 1) / (RANK_BASE - 1) * (total - first))
+        if last is not None:
+            goal = max(goal, last + 1)
+        out.append((min(goal, total), title))
+        last = goal
+    return out
+
+
+def certificate_for(levels_done, final_passed, t=None, quests=None):
     t = t or TRACKS[DEFAULT_TRACK]
     if not final_passed:
         return None
-    title = _title_for(_scaled(t, CERTIFICATES), levels_done)
+    title = _title_for(certificate_goals(t, quests), levels_done)
     return title if t.key == DEFAULT_TRACK else f"{t.name} {title}"
 
 
@@ -929,7 +971,7 @@ def _money_story(company, industry_ids):
     return [
         ("Revenue", "Revenue is all the money customers pay the business."),
         ("Costs", "Costs are what the business spends: pay for workers, supplies, rent and more."),
-        ("Profit", "Profit is what's left: revenue minus costs. Healthy businesses make a profit."),
+        ("Profit", "Profit is the money left over after paying all the costs: revenue minus costs. Healthy businesses make a profit."),
         ("Surprise costs", "Fines are costs nobody plans for. Following the rules protects the profit."),
     ]
 
@@ -2488,10 +2530,10 @@ _STAND_CARDS = {
                         " mean a fine: money paid as a penalty."),
     ),
     "classmoney": (
-        ("Revenue", "Revenue is all the money customers pay. 10 cups at $1 each is $10."),
+        ("Revenue", "Revenue is all the money customers pay the business. 10 cups at $1 each is $10."),
         ("Costs", "Costs are what the stand spends: lemons, sugar, cups and ice."),
-        ("Profit", "Profit is what's left: revenue minus costs. $10 in and $4 spent leaves $6."),
-        ("Budget", "A budget is a plan for how much to spend on each thing, made before you buy."),
+        ("Profit", "Profit is the money left over after paying all the costs: revenue minus costs. $10 in and $4 spent leaves $6."),
+        ("Budget", "A budget is a plan for how much money to spend on each thing, made before you buy."),
         ("Saving", "Saving some money each day helps pay for next week's lemons."),
     ),
     "classteam": (

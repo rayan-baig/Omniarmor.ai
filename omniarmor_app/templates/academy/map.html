@@ -57,7 +57,7 @@
         {% for goal, title in summary.ladder %}
           {% set reached = loop.index0 <= summary.tier %}
           <li class="{{ 'now' if loop.index0 == summary.tier else ('got' if reached else 'later') }}"{% if loop.index0 == summary.tier %} aria-current="step"{% endif %}>
-            {{ avatar(summary.learner.avatar, avatars, 34 if loop.index0 == summary.tier else 26, loop.index0) }}
+            {{ avatar(summary.learner.avatar, avatars, 54, loop.index0) }}
             <span class="sr">{{ title }}{% if not reached %}, at {{ goal|plural('lesson') }}{% endif %}</span>
           </li>
         {% endfor %}

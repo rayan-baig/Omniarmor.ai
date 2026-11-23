@@ -12,6 +12,7 @@
     <div class="ac-player-text">
       <p class="ac-kicker">My class</p>
       <h1 class="ac-title">{{ cls.name }}</h1>
+      {% if g.kid %}<p class="ac-picture-change"><a href="{{ url_for('kids.picture') }}" data-change-picture>Change my picture</a></p>{% endif %}
     </div>
   </section>
   {% if board is not none %}

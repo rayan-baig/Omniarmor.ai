@@ -114,7 +114,8 @@ class TestTheStylesheet(unittest.TestCase):
         self.assertIn(".pilot-root.pilot-keep-in { --pilot-keep-d: calc(var(--pilot-gap) - var(--pilot-keep-margin));\n"
                       "  --pilot-keep-dy: calc(min(var(--pilot-gap), var(--pilot-keep-room)) - var(--pilot-keep-margin)); }", core)
         self.assertNotIn("var(--pilot-keep-d))", self.css)
-        self.assertIn(":root.pilot-on.pilot-keep-in { --pilot-side: 30px; }", core)
+        # Core 1.4.3: 34 px of side gutter on a phone (was 30), clear of the tucked robot's ring.
+        self.assertIn(":root.pilot-on.pilot-keep-in { --pilot-side: 34px; }", core)
         self.assertIn('if (config.keepInViewport) for (const n of [rootEl, document.documentElement]) n.classList.add("pilot-keep-in");',
                       read("omniarmor_app", "static", "pilot", "pilot.js"))
 

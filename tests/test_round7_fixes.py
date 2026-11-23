@@ -190,7 +190,10 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         return html.unescape(response.data.decode())
 
     def test_passing_a_stage_opens_a_celebration(self):
-        page = self.result(5)
+        # 1.22.0: the first lesson is a rank up (Apprentice, at 1 lesson on the ladder scaled to the workspace's own
+        # levels); the second isn't.
+        self.play(1, 1, right=5)
+        page = html.unescape(self.play(1, 2, right=5).data.decode())
         self.assertIn("data-celebrate", page)
         party = page[page.index("data-celebrate"):page.index('<section class="ac-result')]
         self.assertIn("Perfect!", party)
@@ -198,12 +201,10 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         self.assertIn('tabindex="-1" hidden>', party)   # shown by academy.js, gone after "Keep going"
         self.assertIn("data-celebrate-close>Keep going", party)
         self.assertIn('data-sound aria-pressed="false">Sound: off', party)
-        self.assertNotIn("Your picture grew", party)   # 1 lesson: still a Rookie
+        self.assertNotIn("Your picture grew", party)   # 2 lessons: still an Apprentice
 
     def test_a_rank_up_says_the_picture_grew(self):
-        for stage in range(1, 5):
-            self.play(1, stage, right=5)
-        page = self.result_of(1, 5)
+        page = self.result_of(1, 1)   # 1.22.0: Apprentice at the first lesson
         party = page[page.index("data-celebrate"):page.index('<section class="ac-result')]
         self.assertIn("Your picture grew: you're now an Apprentice!", party)
         self.assertIn('ac-celebrate-pic grew', party)
@@ -229,8 +230,7 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         self.assertIn('data-picture-tier="0"', before)
         self.assertEqual(before.count('<li class="later"'), len(academy.RANKS) - 1)
         self.assertIn('class="ac-grow ac-grow-0"', before)
-        for stage in range(1, 6):
-            self.play(1, stage, right=5)
+        self.play(1, 1, right=5)   # 1.22.0: Apprentice at the first lesson
         after = self.client.get(f"/app/academy/{self.lid}").data.decode()
         self.assertIn('data-picture-tier="1"', after)
         self.assertIn('class="ac-grow ac-grow-1"', after)

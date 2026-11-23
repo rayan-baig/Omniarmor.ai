@@ -328,7 +328,7 @@ def _learner(conn, org_id, owner_id, spec, today, rng, t=None):
                  (learner_id, academy.level_id(t, number, top + 1), academy.pass_mark(t, w, top + 1) - 1))
     done = len(levels)
     return {"id": learner_id, "nickname": spec["nickname"], "levels": done,
-            "certificate": academy.certificate_for(done, spec["certificate"], t)}
+            "certificate": academy.certificate_for(done, spec["certificate"], t, t.quests_for(READINGS))}
 
 
 def _morning_digest(conn, cfg):

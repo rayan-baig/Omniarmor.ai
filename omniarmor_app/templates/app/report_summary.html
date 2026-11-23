@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Inspection-ready summary{% endblock %}
+{% block content %}
+{#- 1.22.0: one page from the Report for an inspector or an accountant: what's current, what needs action, what's
+    due soon, the last checks and who recorded them. From this workspace's records only, and it says so. -#}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ g.org.name }} · {{ today.isoformat() }}</p>
+    <h1>Inspection-ready summary</h1>
+    <p class="sub">One page from your records, to print or show an inspector, auditor or accountant. Every check, with its rule, is in the <a href="{{ url_for('app.report') }}">full report</a>.</p>
+  </div>
+  <div class="tools no-print"><button class="btn" type="button" data-print hidden>Print</button> <a class="btn quiet" href="{{ url_for('app.report') }}">Full report</a></div>
+</div>
+
+{% set total = counts.BLOCKED + counts.WARNING + counts.CLEARED + counts.NONE %}
+<section class="sum-block" aria-labelledby="sum-now" data-summary-now>
+  <h2 id="sum-now">Where things stand</h2>
+  {% if total %}
+  <p class="sum-lead"><strong>{{ counts.CLEARED }} of {{ total|plural('check') }} current</strong>{% if counts.WARNING %} · {{ counts.WARNING }} due soon or near a limit{% endif %}{% if counts.BLOCKED %} · {{ counts.BLOCKED }} overdue or out of limits{% endif %}{% if counts.NONE %} · {{ counts.NONE }} not recorded yet{% endif %}.</p>
+  <ul class="sum-list" data-summary-groups>
+    {% for gr in groups %}
+    <li><strong>{{ gr.industry.brand }}</strong> <span class="muted">· {{ gr.industry.sector }}</span>
+      <span class="sum-detail">{{ gr.counts.CLEARED }} current · {{ gr.counts.WARNING }} due soon · {{ gr.counts.BLOCKED }} overdue{% if gr.counts.NONE %} · {{ gr.counts.NONE }} not recorded{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="sum-lead">No checklist yet. Choose your industries in <a href="{{ url_for('app.settings') }}">Settings</a>.</p>
+  {% endif %}
+</section>
+
+<section class="sum-block" aria-labelledby="sum-action" data-summary-action>
+  <h2 id="sum-action">Needs action</h2>
+  {% if attention %}
+  <ul class="sum-list">
+    {% for s, title, st in attention %}
+    <li><span class="tag {{ st.level }}">{{ st.label }}</span> <strong>{{ title }}</strong> <span class="muted">· {{ s.industry.brand }}</span>
+      <span class="sum-detail">{% if st.due_text %}{{ st.due_text }}{% elif st.message %}{{ st.message }}{% endif %}{% if st.shown_value %} · last reading {{ st.shown_value }}{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+  {% if attention_more %}<p class="hint">And {{ attention_more }} more in the <a href="{{ url_for('app.report') }}">full report</a>.</p>{% endif %}
+  {% else %}
+  <p>Nothing is overdue, out of limits or close to a limit today.</p>
+  {% endif %}
+</section>
+
+<section class="sum-block" aria-labelledby="sum-soon" data-summary-soon>
+  <h2 id="sum-soon">Due in the next {{ soon_days }} days</h2>
+  {% if soon %}
+  <ul class="sum-list">
+    {% for s, title, st in soon %}
+    <li><strong>{{ title }}</strong> <span class="muted">· {{ s.industry.brand }}</span> <span class="sum-detail">{{ st.due_text }} · {{ st.due_label }}</span></li>
+    {% endfor %}
+  </ul>
+  {% if soon_more %}<p class="hint">And {{ soon_more }} more in the <a href="{{ url_for('app.report') }}">full report</a>.</p>{% endif %}
+  {% else %}
+  <p>Nothing else falls due in the next {{ soon_days }} days.</p>
+  {% endif %}
+</section>
+
+<section class="sum-block" aria-labelledby="sum-last" data-summary-last>
+  <h2 id="sum-last">Last checks recorded</h2>
+  {% if recorded %}
+  <ul class="sum-list">
+    {% for s, title, st in recorded %}
+    <li><strong>{{ title }}</strong>
+      <span class="sum-detail">{{ st.shown_value or 'No reading' }} · {{ st.updated_at|local_date }}{% if st.updated_by %}<span data-pilot-private> · {{ st.updated_by }}</span>{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No reading has been saved yet.</p>
+  {% endif %}
+</section>
+
+<section class="sum-block" aria-labelledby="sum-who" data-summary-who>
+  <h2 id="sum-who">Who recorded the current readings</h2>
+  {% if people %}
+  <ul class="sum-list" data-pilot-private>
+    {% for p in people %}
+    <li><strong>{{ p.name }}</strong> <span class="sum-detail">{{ p.checks|plural('check') }}, most recently {{ p.last|local_date }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No one yet.</p>
+  {% endif %}
+  <p class="hint">Every change, with who made it and when, is in <a href="{{ url_for('app.audit') }}">History</a> (and its CSV).</p>
+</section>
+
+<div class="sum-sign" aria-label="Sign-off lines for the printed page">
+  <p>Reviewed by: <span class="sum-line"></span></p>
+  <p>Date: <span class="sum-line sum-line-short"></span></p>
+</div>
+<p class="hint mt" data-summary-note>Made by OmniArmor on {{ now.strftime('%Y-%m-%d %H:%M %Z') }} from the readings {{ g.org.name }} entered. It is a summary of those records, not an inspection result, a certificate or legal advice.</p>
+{% endblock %}

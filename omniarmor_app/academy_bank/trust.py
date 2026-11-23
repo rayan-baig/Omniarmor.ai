@@ -7,7 +7,7 @@ WORLDS = [
         "tagline": "Honesty, fairness and integrity",
         "icon": "compass",
         "cards": [
-            ("Integrity", "Integrity means doing the right thing even when nobody is watching. Return extra change, fix hidden mistakes, and follow safety rules every time."),
+            ("Integrity", "Integrity means being honest and doing the right thing, even when no one is watching. Return extra change, fix hidden mistakes, and follow safety rules every time."),
             ("Keep Your Promises", "A promise is something people count on. If you cannot keep one, tell them early and offer a fair fix. Broken promises break trust."),
             ("Fair to Everyone", "Treat every customer and worker with respect. Pay the same for the same work, post clear prices, and choose people for skill, not friendship."),
             ("Conflicts of Interest", "A conflict of interest is when something personal, like family or a gift, could sway a business choice. Tell others about it and let fair rules decide."),

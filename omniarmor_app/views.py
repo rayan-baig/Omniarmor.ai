@@ -4,6 +4,7 @@ notifications and settings."""
 
 import csv
 import io
+from datetime import datetime
 
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
@@ -413,7 +414,17 @@ def _audit_rows(limit=None, offset=0):
     for r in get_db().execute(sql, params):
         rule = find_rule(r["industry_id"], r["rule_key"]) if r["industry_id"] else None
         yield {**dict(r), "industry": INDUSTRIES.get(r["industry_id"], {}).get("brand", ""),
-               "rule_title": rule.title if rule else ""}
+               "rule_title": rule.title if rule else "", "at_short": _short_moment(r["at"])}
+
+
+def _short_moment(text):
+    """"2026-11-20T16:07:31+00:00" as "20 Nov 16:07" (UTC, as History's table and
+    CSV): the time on History's phone cards (1.22.0)."""
+    try:
+        moment = datetime.fromisoformat(str(text))
+    except ValueError:
+        return str(text or "")[:16].replace("T", " ")
+    return f"{moment.day} {moment:%b %H:%M}"
 
 
 def _csv_cell(value):
@@ -472,6 +483,48 @@ def report():
         groups.append({"industry": INDUSTRIES[i], "states": mine, "counts": tally(mine)})
     return render_template("app/report.html", groups=groups, counts=tally(states), today=org_today(g.org),
                            next_up=next_reading(states, ids))
+
+
+SUMMARY_ROWS = 10      # the inspection summary's lists: what needs action, what's due next, the last checks
+SUMMARY_SOON_DAYS = 30
+
+
+@bp.route("/report/summary")
+@login_required
+def report_summary():
+    """The inspection-ready summary (1.22.0): one page to print or show an inspector or accountant, from the
+    workspace's own records only. What's current, what needs action, what's due in the next 30 days, the last
+    checks recorded and who recorded the current readings. It claims nothing beyond those records: no "passed",
+    no "compliant"; the full report has every check and its rule."""
+    from .classrooms import school_checklist_hidden
+    if school_checklist_hidden(g.org):
+        return redirect(url_for("app.report"))
+    conn = get_db()
+    states = states_for_org(conn, g.org)
+    ids = checklist_ids(conn, g.org)
+    # Each entry of a check kept per item (a fridge, a cooler) is a check of its own here.
+    rows = []
+    for s in states:
+        if len(s.entries) > 1:
+            rows += [(s, f"{s.rule.title} · {e['label']}", e["state"]) for e in s.entries]
+        else:
+            rows.append((s, s.rule.title, s))
+    attention = sorted((r for r in rows if r[2].level in ("BLOCKED", "WARNING")),
+                       key=lambda r: (LEVEL_ORDER[r[2].level], r[2].days_left if r[2].days_left is not None else 10 ** 6))
+    soon = sorted((r for r in rows if r[2].level == "CLEARED" and r[2].days_left is not None
+                   and r[2].days_left <= SUMMARY_SOON_DAYS), key=lambda r: r[2].days_left)
+    recorded = sorted((r for r in rows if r[2].updated_at), key=lambda r: str(r[2].updated_at), reverse=True)
+    people = {}
+    for _, _, st in recorded:
+        name = st.updated_by or "Someone no longer on the team"
+        who = people.setdefault(name, {"name": name, "checks": 0, "last": st.updated_at})
+        who["checks"] += 1
+    groups = [{"industry": INDUSTRIES[i], "counts": tally([st for s, _, st in rows if s.industry_id == i])} for i in ids]
+    return render_template("app/report_summary.html", counts=tally([st for _, _, st in rows]), groups=groups,
+                           attention=attention[:SUMMARY_ROWS], attention_more=max(0, len(attention) - SUMMARY_ROWS),
+                           soon=soon[:SUMMARY_ROWS], soon_more=max(0, len(soon) - SUMMARY_ROWS), soon_days=SUMMARY_SOON_DAYS,
+                           recorded=recorded[:SUMMARY_ROWS], people=sorted(people.values(), key=lambda p: -p["checks"]),
+                           today=org_today(g.org), now=org_now(g.org))
 
 
 @bp.route("/report.csv")

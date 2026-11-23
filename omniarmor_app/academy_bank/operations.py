@@ -9,7 +9,7 @@ WORLDS = [
         "cards": [
             ("What operations means", "Operations is how the work gets done every day: making, serving, shipping and cleaning up. Good operations means the same good result every time."),
             ("Processes and checklists", "A process is the set of steps for a job. A checklist lists those steps so nobody forgets one, even on a busy day. Experts like pilots and chefs use them too."),
-            ("Quality control", "Quality control means checking work before it reaches the customer. Catch a burnt cookie in the kitchen, not at the counter."),
+            ("Quality control", "Quality control means checking products to make sure they meet the business's standards, before they reach the customer. Catch a burnt cookie in the kitchen, not at the counter."),
             ("Fix the cause", "When something goes wrong, keep asking why it happened. Fixing the real cause stops the problem from coming back. Blaming people rarely fixes anything."),
             ("Measure and write it down", "Count things like orders, mistakes and wait times to see what is improving. Write down how jobs are done so anyone can do them the right way."),
         ],

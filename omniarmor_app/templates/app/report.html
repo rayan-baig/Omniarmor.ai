@@ -8,7 +8,7 @@
     <h1>Compliance report</h1>
     <p class="sub">Current status of every check. Print this page or export it for an inspector, auditor or insurer.</p>
   </div>
-  <div class="tools no-print"><button class="btn" type="button" data-print hidden>Print</button> <a class="btn quiet" href="{{ url_for('app.report_csv') }}">Export CSV</a></div>
+  <div class="tools no-print"><button class="btn" type="button" data-print hidden>Print</button> <a class="btn quiet" href="{{ url_for('app.report_csv') }}">Export CSV</a> <a class="btn quiet" href="{{ url_for('app.report_summary') }}" data-summary-link>Inspection-ready summary</a></div>
 </div>
 {% set total = counts.BLOCKED + counts.WARNING + counts.CLEARED + counts.NONE %}
 {% include "app/_totals.html" %}

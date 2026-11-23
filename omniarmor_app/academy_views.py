@@ -179,22 +179,26 @@ def _summary(learner, progress=None, t=None):
     # Counted: the business lessons only (Track.lessons_done), the same count
     # on the Academy home, the track picker and the map. The Rule Quests of
     # the workspace's own industries are shown apart, as "+N Rule Quests".
-    own = org_industry_ids(get_db(), g.org["id"])
-    upcoming = academy.next_rank(done, t)   # ranks count every level passed, Rule Quests too
+    # The learner's own workspace (a friend on the friends board may be in another).
+    own = org_industry_ids(get_db(), learner["org_id"] if "org_id" in learner.keys() else g.org["id"])
+    # Ranks count every level passed, Rule Quests too; their goals and the certificates' are scaled on what this
+    # workspace has (1.22.0): the track's lessons and its own industries' Rule Quests.
+    quests = t.quests_for(own)
+    upcoming = academy.next_rank(done, t, quests)
     return {
         "learner": learner,
         "track": t,
         "stars": sum(r["best_stars"] for r in progress.values()),
         "done": t.lessons_done(passed),
-        "rank": academy.rank_for(done, t),
-        "tier": academy.rank_tier(done, t),
-        "ladder": academy.rank_ladder(t),
+        "rank": academy.rank_for(done, t, quests),
+        "tier": academy.rank_tier(done, t, quests),
+        "ladder": academy.rank_ladder(t, quests),
         "levels": done,
         "next_rank": upcoming,
         "to_next": upcoming[0] - done if upcoming else 0,
-        "certificate": academy.certificate_for(done, final_passed, t),
+        "certificate": academy.certificate_for(done, final_passed, t, quests),
         "total": t.lessons,
-        "quests": t.quests_for(own),
+        "quests": quests,
         "streak": _streak(learner["id"], today),
         "today": _today_levels(learner["id"], today),
     }
@@ -842,6 +846,7 @@ def progress_report(learner_id):
     rows = get_db().execute("SELECT * FROM learner_progress WHERE learner_id = ?"
                             " ORDER BY completed_at IS NULL, completed_at DESC, level DESC", (learner_id,)).fetchall()
     tracks, lessons = [], []
+    own = org_industry_ids(get_db(), g.org["id"])
     for t in academy.ALL_TRACKS:
         progress = {r["level"]: r for r in rows if academy.level_exists(t, r["level"])}
         if not progress and t.key != learner["track"]:
@@ -850,8 +855,8 @@ def progress_report(learner_id):
         final_passed = academy.level_id(t, academy.FINAL_WORLD.number, 1) in passed
         tracks.append({"track": t, "done": len(passed), "lessons": t.lessons_done(passed),
                        "stars": sum(r["best_stars"] for r in progress.values()),
-                       "rank": academy.rank_for(len(passed), t),
-                       "certificate": academy.certificate_for(len(passed), final_passed, t),
+                       "rank": academy.rank_for(len(passed), t, t.quests_for(own)),
+                       "certificate": academy.certificate_for(len(passed), final_passed, t, t.quests_for(own)),
                        "current": t.key == learner["track"]})
     for r in rows:
         parts = _level_parts(r["level"])
@@ -933,11 +938,42 @@ def join():
             return render_template("kids/join.html"), 400
         start_kid_session(row)
         flash(f"Welcome, {row['nickname']}! This device is ready for the Academy.", "ok")
-        started = conn.execute("SELECT 1 FROM learner_progress WHERE learner_id = ? LIMIT 1", (row["id"],)).fetchone()
-        if row["track_chosen"] and started is None:
-            return redirect(_first_lesson(academy.track(row["track"]), row["id"]))
-        return redirect(url_for("academy.level_map", learner_id=row["id"]))
+        if row["class_id"]:
+            # 1.22.0: a student picks their own starting picture first, as a family's grown-up does for their kid.
+            return redirect(url_for("kids.picture"))
+        return redirect(_after_join(row))
     return render_template("kids/join.html")
+
+
+def _after_join(row):
+    """Where a kid goes once this device is theirs: their first lesson when they haven't started, else their map."""
+    started = get_db().execute("SELECT 1 FROM learner_progress WHERE learner_id = ? LIMIT 1", (row["id"],)).fetchone()
+    if row["track_chosen"] and started is None:
+        return _first_lesson(academy.track(row["track"]), row["id"])
+    return url_for("academy.level_map", learner_id=row["id"])
+
+
+@kids.route("/picture", methods=["GET", "POST"])
+def picture():
+    """A class's student picks their picture on their own device (1.22.0): one of the Academy's preset
+    pictures (academy.AVATARS), never a photo, and nothing else about them is asked. The teacher's pick (one
+    each in turn, as students are added) stays until they choose. Only a student's own device: a family's
+    learner has a grown-up pick theirs, and a grown-up never lands here."""
+    kid = g.get("kid")
+    if kid is None:
+        return redirect(url_for("kids.join"))
+    if not kid["class_id"]:
+        return redirect(url_for("academy.level_map", learner_id=kid["id"]))
+    if request.method == "POST":
+        chosen = request.form.get("avatar", "")
+        if chosen not in academy.AVATARS:
+            flash_error("Tap a picture to choose it.")
+            return render_template("kids/picture.html", kid=kid, avatars=academy.AVATARS, chosen=kid["avatar"]), 400
+        conn = get_db()
+        conn.execute("UPDATE learners SET avatar = ? WHERE id = ? AND org_id = ?", (chosen, kid["id"], kid["org_id"]))
+        conn.commit()
+        return redirect(_after_join(kid))
+    return render_template("kids/picture.html", kid=kid, avatars=academy.AVATARS, chosen=kid["avatar"])
 
 
 @kids.route("/leave", methods=["POST"])

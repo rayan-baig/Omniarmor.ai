@@ -222,9 +222,9 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **Industry pages.** One page per industry the company tracks, with the industry's counts at the top and its ten checks below: problems first, then the top 5 (section 2.1.1), then the rest. With **Only problems** on and none to show, it says whether that is because nothing has a reading yet. Each check shows its status, its message, the due date and days left when it's date-tracked (for example "15 days overdue · 2026-10-10"), "Why it matters" (the cost and the citation), and its input form.
 
-**Report (the compliance report).** A table of every check: status, reading, due date, the rule citation, and who last updated it and when. It prints cleanly, and **Export CSV** downloads the same data. The CSV is formula-safe: a cell that starts with a character a spreadsheet could treat as a formula is escaped.
+**Report (the compliance report).** A table of every check: status, reading, due date, the rule citation, and who last updated it and when. It prints cleanly, and **Export CSV** downloads the same data. **Inspection-ready summary** (1.22.0, `/app/report/summary`) is one page from the same records to print or show an inspector, auditor or accountant: where things stand per checklist, what needs action, what's due in the next 30 days, the last ten checks recorded, who recorded the current readings, and lines to sign. It says it is a summary of the workspace's records, not an inspection result, a certificate or legal advice. The CSV is formula-safe: a cell that starts with a character a spreadsheet could treat as a formula is escaped.
 
-**History (the audit trail).** Every change in the workspace: readings, limits, invites and team changes, with the time (UTC), the person, the industry and a "before → after" description, for example "COBRA election notice sent: no reading → date 2026-10-05". It also exports to CSV.
+**History (the audit trail).** Every change in the workspace: readings, limits, invites and team changes, with the time (UTC), the person, the industry and a "before → after" description, for example "COBRA election notice sent: no reading → date 2026-10-05". It also exports to CSV. On a phone (1.22.0) each change is a card: the person, the industry and the time ("20 Nov 16:07") on top, the change in full under it.
 
 **Reminders.** Every reminder and account email OmniArmor has sent the team, newest first, with its status (sent, saved or failed) and the error for any failure. When email isn't set up, reminders are saved here instead, and a note says so.
 
@@ -572,24 +572,15 @@ The last seven units (27 worlds) are on Trailblazer, Summit and Titan Mastery.
 
 - **Practice my mistakes.** Every missed question is saved. Practice serves up to 8 at a time. A mistake answered right comes back after 1 day, then 3 days, then 7 days; after that it's mastered and removed. Only due mistakes are graded, and resubmitting an old practice page does nothing. Each question is one practice card, even one that can come with a different right answer (a family in two industries is asked "What kind of work does Acme do?" with either as the answer), so practice never asks the same question twice in a row.
 - **Daily goal and streak.** The daily goal is 3 levels. Playing at least one level a day builds a streak.
-- **Ranks**, which grow with the track's size:
-  - Rookie (from 0 levels)
-  - Apprentice (5)
-  - Team Captain (15)
-  - Manager (40)
-  - Executive (100)
-  - Future Owner (250)
-  - Business Legend (600)
-  - Tycoon (1,000)
+- **Ranks**: Rookie, Apprentice, Team Captain, Manager, Executive, Chief Executive, Business Legend and Tycoon. Their goals (levels passed, Rule Quests too) are written for 630 levels (Rookie 0, Apprentice 5, Team Captain 15, Manager 40, Executive 100, Chief Executive 250, Business Legend 600, Tycoon 1,000) and scaled to the levels a learner can really pass: the track's lessons plus a Rule Quest for each of the workspace's own industries (1.22.0; the Classroom track, its lessons). Tycoon is always the last level, and no goal is past it: on Launchpad with one industry (100 levels) they are 0, 1, 2, 6, 16, 40, 95 and 100.
 
   Each rank makes the learner's picture fancier, with rings, an aura and sparkles.
-- **Certificates**, earned by passing the Owner's Challenge:
-  - Future Owner (1 level)
-  - Silver Future Owner (100)
-  - Gold Future Owner (500)
-  - Platinum Business Legend (every level)
+- **Certificates**, earned by passing the Owner's Challenge (the first lesson of every world, then the Challenge):
+  - Future Owner (with the Challenge)
+  - Silver Future Owner and Gold Future Owner (written as 100 and 500 of 630; spread from the Challenge's levels up to the last level, so the Challenge alone never earns Silver: Launchpad with one industry, 30 and 83 of 100)
+  - Platinum Future Owner (every level)
 
-  On tracks other than Launchpad the title includes the track, for example "Titan Mastery Platinum Business Legend". The certificate prints on one landscape page, A4 or US Letter, with nothing of the app around it (`certificate-print.css`, loaded only for printing).
+  On tracks other than Launchpad the title includes the track, for example "Titan Mastery Platinum Future Owner". The certificate prints on one landscape page, A4 or US Letter, with nothing of the app around it (`certificate-print.css`, loaded only for printing).
 - **Word Bank.** A glossary of 201 business words, each with a kid-friendly meaning, open from the map.
 
 ### 5.8 Friends and duels
@@ -6550,6 +6541,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | POST | `/app/plan/manage` | Open the Stripe customer portal (change plan, card, cancel) |
 | GET | `/app/report` | Report, the compliance report |
 | GET | `/app/report.csv` | The report as CSV |
+| GET | `/app/report/summary` | The inspection-ready summary: one page to print for an inspector or accountant (1.22.0) |
 | GET | `/app/settings` | Settings |
 | POST | `/app/settings/company` | Company name, timezone and industries (owners) |
 | POST | `/app/settings/connections/cyberlogix/create` | Create the CyberLogix connection key, shown once (owners) |
@@ -6575,9 +6567,11 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET | `/industries/<slug>` | Public page for one industry |
 | GET | `/for/<slug>` | Trade pages: salons, tattoo studios, gyms, shops and schools |
 | GET, POST | `/kids` | A kid enters a join code |
+| GET, POST | `/kids/picture` | A class's student picks their own picture from the preset ones, on joining (1.22.0) |
 | POST | `/kids/leave` | A kid device leaves the Academy |
 | GET, POST | `/login` | Sign in |
 | POST | `/logout` | Sign out |
+| GET | `/pricing`, `/prices` | Go to the prices on the Help page (1.22.0) |
 | GET | `/privacy` | Privacy page: what is collected, who sees it, how long it is kept, how to delete it |
 | GET, POST | `/reset/<token>` | Set a new password from a reset link |
 | GET | `/robots.txt` | robots.txt |

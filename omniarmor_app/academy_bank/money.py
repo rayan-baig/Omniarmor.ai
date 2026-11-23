@@ -8,7 +8,7 @@ WORLDS = [
         "icon": "tag",
         "cards": [
             ("Cost, price and profit", "Cost is what you spend to make something. Price is what a customer pays you. Profit is price minus cost. If the price is below the cost, you lose money on every sale."),
-            ("Markup", "Markup is the amount you add on top of cost. A $2 cost with a 50% markup adds $1, so the price is $3. Your prices must also cover rent, wages and other bills."),
+            ("Markup", "Markup is the amount added to an item's cost to set the price you sell it for. A $2 cost with a 50% markup adds $1, so the price is $3. Your prices must also cover rent, wages and other bills."),
             ("Sales and discounts", "A discount lowers the price for a while. 25% off a $20 item saves $5, so it costs $15. Sales can bring in new customers, but too many sales shrink your profit."),
             ("Value and competitors", "Customers pay for value: quality, service and convenience. Check what other shops charge, but you do not have to be the cheapest if you give more value."),
             ("Raising prices fairly", "When costs go up, prices may need to rise. Tell customers early, explain why, and keep quality high. Honest pricing builds trust that lasts."),
@@ -132,7 +132,7 @@ WORLDS = [
             ("What a budget is", "A budget is a plan for your money. You list what comes in, then decide where it goes before you spend it. Planning first stops nasty surprises later."),
             ("Needs vs wants", "Needs keep you or your business going, like food, rent or supplies. Wants are nice extras, like a fancy sign. Pay for needs first, then wants."),
             ("Fixed and variable costs", "Fixed costs stay the same each month, like rent. Variable costs change with how much you make or sell, like flour for a bakery."),
-            ("Emergency fund", "An emergency fund is money saved for surprises, like a broken oven. Many experts suggest saving enough to cover a few months of costs."),
+            ("Emergency fund", "An emergency fund is money saved just for surprises, like a broken freezer or a slow month. Many experts suggest saving enough to cover a few months of costs."),
             ("Track, then pause", "Write down every dollar you spend. Before an impulse buy, wait a day and ask: is this in my plan? Cash flow is money moving in and out over time."),
         ],
         "questions": [

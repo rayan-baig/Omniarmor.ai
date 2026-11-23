@@ -226,6 +226,13 @@ def help_page():
     return render_template("help.html", facts=_help_facts())
 
 
+@public.route("/pricing", endpoint="pricing")
+@public.route("/prices")
+def pricing():
+    """The address people guess for the prices (1.22.0; it was a 404): Help's prices, every plan and amount."""
+    return redirect(url_for("public.help") + "#prices", code=301)
+
+
 # The pages anyone can open and search engines may list: the sitemap gives
 # them, and they carry share previews (og: and twitter: tags) and a canonical
 # address. Every other page is private: marked noindex, and the ones that
@@ -234,7 +241,7 @@ PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "pub
                 "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.security", "public.help", "auth.signup",
                 "auth.login"}
 # Addresses that are not pages: they get no noindex header.
-NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon"}
+NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon", "public.pricing"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
 # and invite links, the kids' join page, the demos (each opening one counts
 # toward its limit) and the addresses only programs use.

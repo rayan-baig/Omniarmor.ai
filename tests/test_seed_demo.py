@@ -103,7 +103,8 @@ class TestSeedDemo(SeedCase):
 
     def test_academy_two_learners_partway_one_certificate(self):
         out = self.result.output
-        self.assertRegex(out, r"Academy: Pip, \d+ levels passed, certificate: Future Owner")
+        # 1.22.0: Pip's 57 levels earn Silver on a ladder scaled to the workspace's own levels (two industries: 110).
+        self.assertRegex(out, r"Academy: Pip, \d+ levels passed, certificate: Silver Future Owner")
         self.assertRegex(out, r"Academy: Maple, \d+ levels passed\n")
         client = self.sign_in()
         conn = connect(self.path)

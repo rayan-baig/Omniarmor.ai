@@ -16,7 +16,7 @@ WORLDS = [
         "questions": [
             # Level 1
             ("What is marketing?", "Telling people about your business and how it helps them", "Counting all the money in the cash register each night",
-             "Fixing broken tools in the back room", "Marketing is how people learn about you and why to choose you. Without it, even a great product can go unnoticed.", 1),
+             "Fixing broken tools in the back room", "Marketing is everything a business does to understand customers and get them interested: how people learn about you and why to choose you. Without it, even a great product can go unnoticed.", 1),
             ("What is word of mouth?", "Customers telling friends about your business", "A loud radio ad that plays every single hour of the day",
              "A sign with big, bright letters", "When happy customers tell others, it is free and trusted. People often believe friends more than ads.", 1),
             ("What is a target audience?", "The group of people most likely to buy from you", "Every single person in the whole world",
@@ -38,7 +38,7 @@ WORLDS = [
             ("A bakery's sign says Open 7am to 3pm. Why is this good marketing?", "It tells customers clearly when they can come in", "It makes the bakery seem closed forever",
              "It hides the hours so people get curious and come to ask", "Clear, useful information makes it easy to visit. Confused customers often just go somewhere else.", 1),
             ("What is a slogan?", "A short, catchy phrase about your business", "A secret password that only the workers know",
-             "A list of every price in the store", "A good slogan is easy to remember, like Fresh Bread, Friendly Faces. It helps people recall you.", 1),
+             "A list of every price in the store", "A slogan is a short, catchy phrase that helps people remember a business, like Fresh Bread, Friendly Faces.", 1),
             # Level 2
             ("An ad costs $50 and brings 10 customers. What did each customer cost?", "$5", "$10",
              "$500", "Divide the cost by the number of customers: $50 / 10 = $5. This is called the cost per customer.", 2),
@@ -58,8 +58,8 @@ WORLDS = [
              "A coupon that gives a free item to every single visitor", "Surveys help you learn what customers like and what to improve. Keep them short and don't ask for private details.", 2),
             ("A new customer says a friend sent them. What is the best thing to do?", "Thank them, and thank the friend next time", "Ignore it, since it doesn't matter",
              "Charge them more because a friend sent them", "Thanking people for sending friends shows you value them and encourages even more word of mouth.", 2),
-            ("What is a promotion in marketing?", "A special offer, like a free cookie with any milk", "A sign that says the shop is closed for the whole week",
-             "A rule that bans all discounts", "A promotion is a special deal that gives people a reason to try you now. It works best when it is clear and honest.", 2),
+            ("What is a special offer in marketing?", "A deal for a short time, like a free cookie with any milk", "A sign that says the shop is closed for the whole week",
+             "A rule that bans all discounts", "A special offer gives people a reason to try you now. It works best when it is clear and honest.", 2),
             ("Your marketing budget is $300 a month. You have spent $240. How much is left?", "$60", "$540",
              "$40", "$300 - $240 = $60. Tracking what you spend keeps you inside your budget.", 2),
             ("A $40 bike helmet is on sale for 10% off. How much does a buyer save?", "$4", "$10",

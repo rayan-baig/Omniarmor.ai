@@ -372,7 +372,7 @@ class TestCore141(AppTestCase):
         names = [n for n in os.listdir(folder) if n.endswith((".js", ".css"))]
         self.assertEqual(len(names), 13)
         for name in names:
-            self.assertRegex(read("omniarmor_app", "static", "pilot", name).splitlines()[0], r"Pilot core 1\.4\.2 · ", name)
+            self.assertRegex(read("omniarmor_app", "static", "pilot", name).splitlines()[0], r"Pilot core 1\.4\.3 · ", name)
         for picture in ("pilot-robot-112.webp", "pilot-robot-168.webp", "pilot-robot-176.webp", "pilot-rest-body-112.webp",
                         "pilot-rest-head-168.webp", "pilot-rest-eyes-112.webp"):
             self.assertTrue(os.path.getsize(os.path.join(folder, picture)) > 500, picture)

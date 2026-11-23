@@ -34,6 +34,13 @@ and flags the patterns that have slipped through before:
 - long-sentence an answer to "Which sentence uses ...?" is longer than
                 academy.SENTENCE_MOST characters (1.21.0), too long to read
                 three of at a glance on a phone
+- definition    a Business Words term (academy.GLOSSARY) is defined in other
+                words than the Word Bank's (1.22.0): a lesson card named for
+                the term ("Profit") or an explanation's "Profit: ..." line
+                must start with the Word Bank's meaning ("Profit is the
+                money left over after paying all the costs", then any
+                example), so a kid meets one definition of each word, on the
+                cards, in the Word Bank and under each answer
 
 Run it from the project folder:
 
@@ -227,6 +234,44 @@ def lesson_flags(t, company, ids):
     return flags
 
 
+def _first_sentence(text):
+    return re.split(r"(?<=[.!?])\s+", text.strip())[0].rstrip(".")
+
+
+_TERMS = sorted(dict(academy.GLOSSARY), key=len, reverse=True)
+_TERM_ALT = "|".join(re.escape(t) for t in _TERMS)
+# "Profit is ", "A budget is ", "Costs are ", "Integrity means ": a definition's lead, before the meaning itself.
+_DEF_LEAD = re.compile(rf"^(?:(?:A|An|The) )?(?:{_TERM_ALT})s? (?:is|are|means) ", re.I)
+# "Profit: ..." at the start of an explanation or of one of its sentences.
+_DEF_LINE = re.compile(rf"(?:^|(?<=[.!?] ))({_TERM_ALT}): ")
+
+
+def _defined_as_the_word_bank(term, text):
+    meaning = dict(academy.GLOSSARY)[term]
+    return _plain(_DEF_LEAD.sub("", text.strip(), count=1)).startswith(_plain(_first_sentence(meaning)))
+
+
+def definition_flags(t, company, ids):
+    """Cards named for a Business Words term, and explanations' "Term: ..." lines, that define it in other words
+    than the Word Bank's (1.22.0)."""
+    flags, seen = [], set()
+    glossary = dict(academy.GLOSSARY)
+    for w in t.worlds:
+        if w.kind == "industry":
+            continue
+        for stage in range(1, t.stages(w) + 1):
+            where = f"{company}: {t.name} · {w.title} · stage {stage}"
+            texts = [(title, body) for title, body in academy.story(t, w.number, stage, company, ids) if title in glossary]
+            for q in academy.quiz(t, w.number, stage, company, ids, "review"):
+                text = q.explain or ""
+                texts += [(m.group(1), text[m.end():]) for m in _DEF_LINE.finditer(text)]
+            for term, body in texts:
+                if (term, body) not in seen and not _defined_as_the_word_bank(term, body):
+                    seen.add((term, body))
+                    flags.append(("definition", where, term, body))
+    return flags
+
+
 def review(companies=None, tracks=None):
     """Every flag, as (pattern, where, question prompt, the option); for a
     shape flag, (pattern, where, what was found, the limit)."""
@@ -263,6 +308,7 @@ def review(companies=None, tracks=None):
                 flags += shape_flags(f"{company}: {world}", questions.values())
             flags += word_for_word_flags(t, company, ids)
             flags += lesson_flags(t, company, ids)
+            flags += definition_flags(t, company, ids)
         for prompt, wrongs in wrong_for.items():
             for option, (where, shown) in wrongs.items():
                 if option in right_for.get(prompt, ()):
@@ -282,6 +328,8 @@ def main(argv):
             print(f"[repeat] {where}\n    Q: {prompt}\n    asks a word the lesson's matching game shows: {option}")
         elif pattern == "long-sentence":
             print(f"[long-sentence] {where}\n    Q: {prompt}\n    {len(option)} characters: {option}")
+        elif pattern == "definition":
+            print(f"[definition] {where}\n    {prompt}, not in the Word Bank's words: {option}")
         elif pattern == "shape":
             print(f"[shape] {where}\n    {prompt} ({option})")
         else:

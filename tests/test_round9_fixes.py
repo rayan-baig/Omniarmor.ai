@@ -115,16 +115,15 @@ class TestRankGoals(unittest.TestCase):
             ladder = academy.rank_ladder(t)
             goals = [g for g, _ in ladder]
             self.assertEqual(len(ladder), len(academy.RANKS), t.key)
-            self.assertLessEqual(goals[-1], t.total, t.key)
+            self.assertLessEqual(goals[-1], t.reachable(), t.key)
             self.assertEqual(goals, sorted(set(goals)), t.key)
-            self.assertEqual(academy.rank_for(t.total, t), "Tycoon", t.key)
+            self.assertEqual(academy.rank_for(t.reachable(), t), "Tycoon", t.key)
         classroom = academy.rank_ladder(academy.CLASSROOM)
         self.assertEqual(classroom[-1], (academy.CLASSROOM.total, "Tycoon"))
         self.assertEqual(academy.CLASSROOM.total, academy.CLASSROOM.lessons)
-        # Goals that were already in reach stay where they were.
-        self.assertEqual(academy.rank_ladder(BASIC)[:7], [(0, "Rookie"), (5, "Apprentice"), (15, "Team Captain"),
-                                                         (40, "Manager"), (100, "Executive"), (250, "Future Owner"),
-                                                         (600, "Business Legend")])
+        # 1.22.0: a family track's goals are scaled on its lessons and the workspace's own Rule Quests
+        # (tests/test_round11_fixes.py); with no workspace known, the lessons only.
+        self.assertEqual(academy.rank_ladder(BASIC)[-1], (BASIC.lessons, "Tycoon"))
 
 
 class TestExplanations(unittest.TestCase):
@@ -266,16 +265,15 @@ class TestTheMapRoad(unittest.TestCase):
 
 class TestMyPictureOnAPassedStage(ProgressCase):
     def test_a_passed_stage_shows_the_learner_s_picture(self):
-        page = self.play(1, 1, right=5).data.decode()
+        self.play(1, 1, right=5)
+        page = self.play(1, 2, right=5).data.decode()   # 1.22.0: the first lesson is a rank up, the second isn't
         result = page[page.index('<section class="ac-result'):]
         self.assertIn("data-my-picture", result)
         self.assertIn('class="ac-result-armo"', result)
         self.assertNotIn("ac-grew-from", page)
 
     def test_when_the_picture_grows_the_one_before_shows_beside_it(self):
-        for stage in range(1, 5):
-            self.play(1, stage, right=5)
-        page = self.play(1, 5, right=5).data.decode()      # the fifth lesson: Apprentice
+        page = self.play(1, 1, right=5).data.decode()      # 1.22.0: the first lesson: Apprentice
         self.assertIn("you're now an Apprentice", page)
         self.assertIn('data-grew-from="0"', page)
         self.assertIn("ac-grew-arrow", page)

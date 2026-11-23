@@ -2,7 +2,7 @@
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
 OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.4.2**, since OmniArmor 1.20.0; 1.4.1 since 1.18.0, 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
+nothing for the AI. The shared core (**Pilot core 1.4.3**, since OmniArmor 1.22.0; 1.4.2 since 1.20.0, 1.4.1 since 1.18.0, 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
 security rules. This page covers only what is OmniArmor's own.
@@ -151,9 +151,21 @@ built-in look at the page (its headings, what it is for, its counts), with or wi
 no AI has `match` words (`MATCH` in `pilot-omniarmor.js`), so "What needs attention?", "What does red mean?",
 "How do I add students?", "Is my data safe?" or "How much does it cost?" get the app's own answer at once, under
 "Here's what I can tell you without an AI key:", nothing sent; anything else waits for a key as before. With no
-key, a suggestion that asks what a pill asks stays out even once a chat has started (the pills come back under
-each answer, and with both there a typed question would fit two and get neither); with a key the suggestions are
-back once chatting, in the pill's words, so the row under an answer shows each question once.
+key, a suggestion that asks what a pill asks stayed out even once a chat had started (until 1.22.0, below).
+
+**Core 1.4.3** (OmniArmor 1.22.0, MTRX Horizyn ea7498b, the thirteen files byte for byte, no new pictures). With
+no key, a typed question none of OmniArmor's answers fits stays in the chat (the core's `noKeyReply`, in its own
+words: "I need an AI key to answer that one. Here's what I can help with right now:"), with this page's
+suggestions and the welcome's pills that answer with no key, then "Add my AI key", and the words waiting in the
+box. Typing a button's own words always gets its answer. A pill and a suggestion that ask one thing in their own
+words share one answer function (`WEEK`, `JOIN`, `dueAnswer` and the rest), so 1.4.3 counts them as one item
+(`sameItem`): once chatting, every suggestion is back with or without a key, in the pill's words, and 1.20.0's
+no-key workaround is gone. The answers on every grown-up page (`GLOBAL`: is my data safe, what does it cost, is
+this legal advice, how do I cancel, how do I export) stay as `chips()` hands them to the core's typed matching
+only as a question is sent (`globalFor`): 1.4.3 has no setting for answers that are never buttons. 1.22.0 adds
+words to them ("sell", "share", "stored", "cookies"; "refund", "money", "close", "account"; "compliant",
+"guarantee", "fined"; "billing"); the core reads at most 20 per item. On the schools pages the cancel answer is
+about the school plans only. The phone's side gutter is the core's 34 px.
 
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
@@ -269,6 +281,6 @@ no model names, the privacy page) also runs the Node tests: `node --test tests/j
 (the core's own tests, with the moving robot, where it may sit and core 1.2.0's welcome, keepInViewport and
 pop-ups) and `node --test tests/js/omniarmor-pilot.test.js` (the pack, confirm first, the forbidden actions,
 the bulk-answer rule, first names only, OmniArmor's own welcome for each audience, and 1.17.0's answers
-with no key, on small pages built in the test). `tests/test_core140.py` checks core 1.4.0, the tag's facts
-and that a student's pages still have no Pilot.
+with no key, on small pages built in the test). `tests/test_core140.py` checks the core's version (1.4.3), the
+tag's facts and that a student's pages still have no Pilot; `tests/test_round11_fixes.py` checks the 1.4.3 config.
 `tests/test_pilot_welcome.py` checks the stylesheet's keepInViewport rules and the phone rules of 1.13.0.
