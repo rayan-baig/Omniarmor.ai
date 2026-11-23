@@ -3,6 +3,55 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.21.0 (23 November 2026)
+
+Fixes from a strict tenth review: the logo's orange back on a computer,
+Pilot's answers on every page, a class's picture that visibly grows, lessons
+that don't repeat their words, Home in order of urgency, and nothing covering
+the page's words.
+
+- **The orange is back in the side bar.** On a computer the logo's ring and
+  the active page's icon in the side bar lost their orange gradient: it lived
+  inside the top bar's logo, which a computer hides. It now has its own tiny,
+  never-hidden place on every page.
+- **Pilot answers five questions on every page, with no AI key.** Typing "Is
+  my data safe?" (a short version of the Security page), "How much does it
+  cost?" (the real plans, names and prices), "Is this legal advice?" (why
+  OmniArmor is not legal advice, and who to ask), "How do I cancel?" or "How
+  do I export the report?" now gets OmniArmor's own answer on every page for
+  grown-ups, the public pages too. A page's own buttons still answer first
+  (on the classroom plans' page, the price question still gets "Classroom or
+  Whole school?"). A visitor's "See the prices" button now shows the plans
+  and their prices, then the link, instead of only a link.
+- **A class's picture grows where you can see it.** Every rank now adds
+  something new: Apprentice a bronze frame and a star badge, Team Captain a
+  silver frame and a blue cap, Manager a gold frame and a bow tie, Executive a
+  top hat and sparkles, then the crown, the wings and the glowing aura. "Your
+  picture grew" shows the picture before and after, on clearing a world too.
+- **A bigger moment for clearing a world**, on every track and for a class's
+  students too: more sparks, and a dot for each of the track's worlds with
+  the one just cleared popping in ("3 of 16 worlds cleared").
+- **Lessons that don't repeat themselves.** The words in a lesson's matching
+  game are no longer asked again, or offered as answers, in that lesson's
+  other questions. Every answer to "Which sentence uses ...?" is now at most
+  90 characters (38 scenes were rewritten shorter; a word whose scene is
+  still long is asked as "Which word fills the gap?" instead), and each
+  fill-the-gap scene has a small picture of where it happens (the stand, the
+  bakery, the bank...), never of the answer. The quiz checker enforces both
+  rules and still finds nothing to flag.
+- **Home's "Needs attention" is in order of urgency**: by days left, the most
+  overdue first, then whatever is due soonest. A warning that shows early
+  because its warning window is a policy setting (an industry standard, not
+  a law) now says so in one line, so 41 days left doesn't look like a
+  mistake.
+- **Nothing covers the words.** The quiz's pop-ups ("You're amazing!") show
+  inside the bar, in the score line's place for a moment, instead of over the
+  question's heading ("Match each word to its idea"). Pilot's robot, peeking
+  in above the tab bar, keeps off a page's small notes (the class page's "A
+  lesson is one level passed..."). The answer review no longer has a big
+  empty gap above "Correct:", and "Add as Ava T" has one space, not two.
+- Students' pages still have no Pilot and no Armo.
+
 ## 1.20.0 (22 November 2026)
 
 Pilot moves to core 1.4.2: easier to find, and typed questions answered
@@ -15,11 +64,17 @@ before an AI key.
 - **The robot stays above the tab bar.** On signed-in pages, tucked away, it
   now sits just above the bottom tab bar instead of being hidden on every
   scrolled page, and it still steps aside rather than cover anything.
-- **Type a question, get an answer, no key needed.** Typing "What needs
-  attention?", "What does red mean?", "How do I add students?", "Is my data
-  safe?" or "How much does it cost?" now gets OmniArmor's own answer straight
-  away, marked "Here's what I can tell you without an AI key". Nothing is
-  sent anywhere. Questions it can't answer on its own still ask for a key.
+- **Type a question, get an answer, no key needed.** A typed question that
+  one of the page's own buttons or suggestions answers now gets OmniArmor's
+  own answer straight away, marked "Here's what I can tell you without an AI
+  key", on the pages that offer them: "What needs attention?" and "What does
+  red mean?" on Home and a checklist, "How do I add students?" on a teacher's
+  pages, "Is my data safe?" on the schools page, and "How much does it cost?"
+  on the public pages (a link to the prices) and a teacher's Settings.
+  Nothing is sent anywhere. Questions it can't answer on its own still ask
+  for a key. (Corrected in 1.21.0: this line used to read as if those five
+  worked on every page. From 1.21.0 the safety, price, legal-advice,
+  cancelling and export questions do.)
 - **"Explain this page" instead of "Summarise this".** The last suggestion in
   the chat is OmniArmor's own look at the page, so it works without a key.
 - **No question shown twice** in the row of buttons under an answer.

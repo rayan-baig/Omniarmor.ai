@@ -67,7 +67,7 @@ class TestStudentsStillHaveNoHelpers(SchoolCase):
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.20.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 20, 0))
         log = read("CHANGELOG.md")
         top = log[log.index("## 1.20.0"):log.index("## 1.19.0")]
         for said in ("core 1.4.2", "no key needed", "Explain this page", "above the tab bar", "no Pilot"):

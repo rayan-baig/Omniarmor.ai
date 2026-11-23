@@ -50,6 +50,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 :where(:not(.pilot-root *)):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* The gradient's own svg (base.html): zero-sized and out of the way, but never display:none, which would lose the gradient. */
+.svg-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
 .skip{position:absolute;left:-9999px;top:12px;z-index:20;background:var(--accent);color:var(--on-accent);padding:10px 16px;border-radius:6px;font-weight:600;text-decoration:none}
 .skip:focus{left:16px}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:32px}
@@ -127,6 +129,7 @@ textarea:where(:not(.pilot-root *)){padding:12px;min-height:120px}
 a.row:hover{background:var(--hover)}
 .row .title{font-weight:600}
 .row .meta{font-size:14px;color:var(--muted)}
+.row .early-note{display:inline-block;margin-top:2px;font-style:italic}
 .row[data-level="BLOCKED"]{background:var(--block-tint)}
 .row[data-level="WARNING"]{background:var(--warn-tint)}
 .grid-ind{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 24px}
@@ -684,6 +687,12 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   html:root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root){padding-bottom:max(48px,var(--pilot-gutter))}
   body.has-tabs:not(.lesson-view) .companion{bottom:calc(16px + env(safe-area-inset-bottom))}
   body.has-tabs:not(.lesson-view) .pilot-root{--pilot-gap:16px}
+  /* 1.21.0: tucked away beside the side bar, the small robot shrinks where it stands, 16px in from the corner's
+     two edges, instead of moving 8px further in: there a pose (a wave, or sitting) ran off the screen's edge and
+     the robot looked cut off in the corner on the teachers' pages. */
+  html body.has-tabs:not(.lesson-view) .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br .pilot-launcher,
+  html body.has-tabs:not(.lesson-view) .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br:not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible){
+    transform-origin:100% 100%;transform:scale(var(--pilot-peek-scale))}
 }
 
 /* Armo keeps clear of the page (1.15.0), as Pilot does: where he sits over a status tag, a button, a link or

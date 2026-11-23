@@ -717,15 +717,15 @@ test("1.17.0: a teacher's join codes answer counts, never names, and goes to tha
   assert.equal(typeof c.pill("Plan a week of lessons").answer, "function");
 });
 
-test("1.17.0: a visitor learns what OmniArmor does and the free trial with no key; the prices are a link", () => {
+test("1.17.0: a visitor learns what OmniArmor does and the free trial with no key; the prices (1.21.0: the plans, then the link)", () => {
   const c = mountOn("visitor", "/", h("main"));
   const what = c.answer("What does OmniArmor do?");
   assert.match(what, /\*\*Starter checklists\*\* for 51 industries \(510 checks\)/);
   assert.match(what, /to your team 30, 7 and 1 day before a due date/);
   assert.match(what, /Free for 14 days, no card\./);
   assert.deepEqual(linksIn(what), ["/demo", "/industries"]);
-  assert.equal(c.pill("See the prices").link, "/help#prices");
-  assert.equal(cleaned(c.welcomePills, "https://omniarmor.example/")[2].link, "https://omniarmor.example/help#prices");
+  assert.equal(c.pill("See the prices").link, undefined);
+  assert.ok(linksIn(c.answer("See the prices")).includes("/help#prices"));
   assert.equal(c.answerMore, "Want more? Add your AI key to ask anything.");
   // The schools side: safety and the free trial, from the site's own facts.
   const school = mountOn("visitor", "/classrooms", h("main"));
@@ -1052,4 +1052,123 @@ test("1.20.0: core 1.4.2's own rules are used: no hideWhenCrowded override, the 
   const css = fs.readFileSync(site("app.css"), "utf8");
   assert.ok(!css.includes("var(--pilot-keep-d))"));
   assert.equal((css.match(/var\(--pilot-keep-dy\)/g) || []).length, 2);
+});
+
+// ---------------------------------------------------------------- 1.21.0: answers on every grown-up page
+
+// The window as it really runs: the core's panel loaded (window.PilotPanel), and a question typed in Pilot's box
+// and sent (the compose form's submit, which the config hears first). Returns what the core's typedHere finds
+// for it, the label and its answer, or null (no key: key settings, as before).
+function typedEverywhere(who, where, { facts = {}, due = [], classes = [] } = {}) {
+  const P = panel();
+  let given = null;
+  const listeners = [];
+  const store = { prefix: "omniarmor-pilot", loadChat: () => [], ready: () => false, clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
+  const dataset = { who, facts: JSON.stringify({ ...FACTS, join_code_days: 7, join_path: "/kids", security_path: "/security", ...facts }),
+    account: "a1", due: JSON.stringify(due), classes: JSON.stringify(classes), checklists: "[]" };
+  const base = `https://omniarmor.example${where}`;
+  vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
+    setTimeout: () => 0,
+    window: { Pilot: { mount: (c) => { given = c; return true; }, store }, PilotPanel: P, location: { pathname: where, href: base, hash: "" },
+      innerHeight: 800, sessionStorage: { getItem: () => null, setItem() {} } },
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: () => null, querySelectorAll: () => [],
+      addEventListener: (type, fn, capture) => { if (type === "submit" && capture) listeners.push(fn); } },
+  });
+  const ctx = { facts: given.facts, ready: false, screen: {} };
+  return (q) => {
+    const form = { classList: { contains: (c) => c === "pilot-compose" }, querySelector: () => ({ value: q }) };
+    for (const fn of listeners) fn({ target: form });
+    const items = P.ownPills(given.welcomePills, base).concat(P.cleanChips([...given.chips({})], base));
+    const hit = P.matchTyped(q, items);
+    if (!hit) return null;
+    const text = hit.link ? `[${hit.label}](${hit.link})` : typeof hit.answer === "function" ? hit.answer(ctx) : hit.answer;
+    return { label: hit.label, text };
+  };
+}
+
+const GROWN_UP_PAGES = [
+  ["visitor", "/"], ["visitor", "/industries"], ["visitor", "/industries/restoarmor"], ["visitor", "/for/salons-and-barbershops"],
+  ["visitor", "/classrooms"], ["visitor", "/classrooms/guide"], ["visitor", "/demo"],
+  ["business", "/app"], ["business", "/app/industry/2"], ["business", "/app/report"], ["business", "/app/audit"],
+  ["business", "/app/notifications"], ["business", "/app/settings"], ["business", "/app/plan"],
+  ["teacher", "/app/academy/classes"], ["teacher", "/app/academy/classes/12"], ["teacher", "/app/academy/classes/12/join-codes"],
+  ["teacher", "/app/settings"], ["teacher", "/app/plan"], ["teacher", "/app/notifications"], ["teacher", "/app/audit"],
+];
+
+test("1.21.0: safety, prices, legal advice, cancelling and exporting are answered on every grown-up page, typed, with no key", () => {
+  const asks = {
+    safe: ["Is my data safe?", "Is it secure?", "privacy"],
+    price: ["How much does it cost?", "What are the prices?", "pricing"],
+    legal: ["Is this legal advice?", "Do I need a lawyer?"],
+    cancel: ["How do I cancel?", "Can I cancel anytime?", "refund"],
+    export: ["How do I export the report?", "Can I download a CSV?", "export"],
+  };
+  const says = {
+    safe: /HTTPS|secure connection|Security and your data|first name or nickname/i,
+    price: /PRO-PRICE|CLASSROOM-PRICE/,
+    legal: /not legal advice/,
+    cancel: /cancel/i,
+    export: /Export CSV|Print/,
+  };
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const ask = typedEverywhere(who, where, { facts: { trades: TRADES, class_plan: CLASS_PLAN } });
+    for (const [kind, list] of Object.entries(asks)) {
+      for (const q of list) {
+        const got = ask(q);
+        assert.ok(got, `${who} ${where}: "${q}" found no answer`);
+        assert.match(got.text, says[kind], `${who} ${where}: "${q}" got ${got.label}`);
+        if (who === "visitor") for (const l of linksIn(got.text)) assert.ok(!l.startsWith("/app"), `${where}: ${q} links ${l}`);
+      }
+    }
+  }
+});
+
+test("1.21.0: the prices are the real plans (names and amounts), never just a link, for a visitor, a business and a teacher", () => {
+  const price = (who, where) => typedEverywhere(who, where)("How much does it cost?").text;
+  for (const where of ["/", "/industries", "/demo"]) {
+    const text = price("visitor", where);
+    assert.match(text, /\*\*Pro: PRO-PRICE\.\*\*/, where);
+    assert.match(text, /\*\*Plus: PLUS-PRICE\.\*\*/, where);
+    assert.match(text, /Classroom\*\* CLASSROOM-PRICE a year/, where);
+    assert.match(text, /14 days free, no card/, where);
+  }
+  const biz = price("business", "/app/audit");
+  assert.match(biz, /PRO-PRICE/);
+  assert.ok(linksIn(biz).includes("/app/plan"));
+  const teacher = price("teacher", "/app/academy/classes/12");
+  assert.match(teacher, /\*\*Classroom: CLASSROOM-PRICE a year\.\*\* One class\./);
+  assert.match(teacher, /\*\*Whole school: SCHOOL-PRICE a year\.\*\*/);
+  assert.ok(!teacher.includes("PRO-PRICE"), "a teacher gets the classroom plans");
+  // The visitor's "See the prices" button answers with the plans too, and still links to Help.
+  const c = mountOn("visitor", "/", h("main"));
+  const pill = c.answer("See the prices");
+  assert.match(pill, /PRO-PRICE/);
+  assert.ok(linksIn(pill).includes("/help#prices"));
+});
+
+test("1.21.0: this page's own buttons still win, and other questions still wait for a key", () => {
+  assert.equal(typedEverywhere("teacher", "/app/settings")("How much does it cost?").label, "Classroom or Whole school?");
+  assert.equal(typedEverywhere("visitor", "/classrooms")("How much does it cost?").label, "Classroom or Whole school?");
+  assert.equal(typedEverywhere("visitor", "/classrooms")("Is my data safe?").label, "Is it safe for students?");
+  assert.equal(typedEverywhere("business", "/app/report")("How do I export it?").label, "How do I export it?");
+  assert.equal(typedEverywhere("business", "/app/settings")("How do I stop the emails?").label, "Choose my emails");
+  assert.equal(typedEverywhere("business", "/app")("What does red mean?").label, "What does this colour mean?");
+  const never = ["Write me a poem", "How do I reset my password?", "What's the weather?", "Is it ok?", "help", "Who made you?",
+    "Can you mark the hood check done?", "What's blocked?", "Tell me a joke", "pizza", "Add my AI key", ""];
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const ask = typedEverywhere(who, where);
+    for (const q of never) assert.equal(ask(q), null, `${who} ${where}: ${q}`);
+  }
+});
+
+test("1.21.0: the answers on every page never show as buttons, and a key turns them off", () => {
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const c = mountFor(who, where);
+    const shown = c.chipLabels().concat(c.plain.welcomePills.map((p) => p.label));
+    for (const label of ["Is my data safe?", "What does it cost?", "How do I cancel?", "How do I export the report?"]) {
+      assert.ok(!shown.includes(label), `${where}: ${label}`);
+    }
+  }
+  const src = fs.readFileSync(site("pilot-omniarmor.js"), "utf8");
+  assert.ok(src.includes("if (keyed || !question) return list;"));
 });

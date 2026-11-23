@@ -534,6 +534,87 @@
     return [C("What does OmniArmor do?", A(whatAnswer))];
   }
 
+  // ---------------------------------------------------------------- 1.21.0: answers on every grown-up page
+  //
+  // Five questions people type on any page, not only where a button asks them: is my data safe, what does it
+  // cost (the real plans, from pilot.py's facts), is this legal advice, how do I cancel and how do I export the
+  // report. They are never buttons; with no key, a typed question that clearly asks one of them gets its answer
+  // at once (chips() below hands it to the core's typed matching), unless this page's own buttons and
+  // suggestions already answer it.
+  const signedIn = who === "business" || who === "teacher";
+  function safeAnswer(f) {
+    const x = f || {};
+    const security = typeof x.security_path === "string" && /^\/[\w/-]*$/.test(x.security_path) ? x.security_path : "/security";
+    const out = ["**Your data, in short** (the [Security and your data](" + security + ") page has every detail):", "",
+      "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to OmniArmor.",
+      "- No ad, analytics or tracking company sees the pages you open.",
+      "- The whole database is copied once a day, and each copy is checked before it is kept.",
+      "- Pilot, this helper, runs in your browser on your own AI key: OmniArmor's server never sees the key or the chat."];
+    if (who === "teacher" || schoolSide) {
+      out.push("- Students are added by first name or nickname only, have no accounts, and Pilot is never on a student's page.");
+    }
+    out.push(`- Delete a record, a class or the whole workspace any time${signedIn ? " (the owner, in [Settings](/app/settings))" : ""}: it is gone from the app at once.`,
+      "", "[The privacy page](/privacy) says who can see what.");
+    return out.join("\n");
+  }
+  // "What does it cost?": the plans' real names and prices.
+  function pricesAnswer(f) {
+    const x = f || {};
+    const year = (y) => (y ? `, or ${words(y)}${x.free_label ? ` (${words(x.free_label)})` : ""}` : "");
+    const cap = (t) => { const w = words(t); return w ? w[0].toUpperCase() + w.slice(1) : ""; };
+    const business = [`- **${words(x.pro) || "Pro"}: ${words(x.pro_price)}${year(x.pro_yearly)}.** ${cap(x.pro_summary)}.`,
+      `- **${words(x.plus) || "Plus"}: ${words(x.plus_price)}${year(x.plus_yearly)}.** ${cap(x.plus_summary)}.`];
+    const school = [`- **${words(x.classroom) || "Classroom"}: ${yearly(x.classroom_price)}.** ${words(x.classroom_summary)}`,
+      `- **${words(x.school) || "Whole school"}: ${yearly(x.school_price)}.** ${words(x.school_summary)}`];
+    if (who === "teacher" || schoolSide) {
+      return ["**For a class or a school, paid yearly:**", "", ...school, "",
+        `Both start with a free ${x.pilot_days || 30}-day trial for one class, no card.`,
+        who === "teacher" ? "Your plan and its renewal date are on the [Plans page](/app/plan)." : "[See the prices](/classrooms#price)"].join("\n");
+    }
+    const out = ["**For a business, billed monthly" + (x.pro_yearly || x.plus_yearly ? " or yearly" : "") + ":**", "", ...business, ""];
+    if (x.trial_days) out.push(`Every new workspace starts with ${x.trial_days} days free, no card.`);
+    out.push(`For a school: **${words(x.classroom) || "Classroom"}** ${yearly(x.classroom_price)} or **${words(x.school) || "Whole school"}** ${yearly(x.school_price)}.`, "",
+      who === "business" ? "Your own plan is on the [Plans page](/app/plan). [All the prices](/help#prices)" : "[All the prices](/help#prices)");
+    return out.join("\n");
+  }
+  const LEGAL = `No. ${NOT_ADVICE}\n\n`
+    + "Each check names the rule it comes from (open **Rule and source**), so you can look it up or ask. Rules change, and a city or state can add its own, "
+    + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. OmniArmor keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
+  function cancelAnswer() {
+    if (who === "teacher") {
+      return "The person who started the school's plan cancels on the [Plans page](/app/plan): press **Cancel your plan**. "
+        + "A classroom plan is paid yearly, so it stays on until the end of the year paid for and isn't charged again (no refund for the part left). "
+        + "Nothing is deleted when it ends. To delete a class or its students, use the class's own page.";
+    }
+    const where = who === "business" ? "the [Plans page](/app/plan)" : "the Plans page (Settings, Plan)";
+    return `The workspace owner cancels on ${where}: press **Cancel or pause your plan**, then **Cancel my plan**. Nothing stops at once:\n\n`
+      + "- **Monthly:** it stays on until the end of the month paid for, and isn't charged again.\n"
+      + "- **Yearly:** it stays on until the end of the year paid for, with no refund for the months left.\n"
+      + "- **A break instead?** A monthly plan can be paused for a few months: no charges, reminders stop, and it starts again by itself.\n\n"
+      + "When the plan ends nothing is deleted: you can still see, print and download every record. [Cancelling, in Help](/help#cancel)";
+  }
+  function exportAnswer() {
+    if (!signedIn) {
+      return "Once signed in, the **Report** tab shows every check's status, reading, due date and rule: press **Print** for paper or a PDF, or **Export CSV** for a spreadsheet. "
+        + "The **History** tab exports every change, with who and when, the same way. [See it in the demo](/demo/business)";
+    }
+    if (who === "teacher" && !facts.school_checklist) {
+      return "Each class has a one-page report to print: on the class page, open its report and use your browser's **Print** (or save it as a PDF). "
+        + "The [History](/app/audit) page exports every change, with who and when, as a spreadsheet (**Export CSV**).";
+    }
+    return "Open the [Report](/app/report) and press **Print** for a paper copy (or save it as a PDF from the print window), or **Export CSV** for a spreadsheet: "
+      + "both have every check's status, reading, due date and rule. [History](/app/audit) has its own **Export CSV**, with who changed what and when.";
+  }
+  const GLOBAL = [
+    { label: "Is my data safe?", answer: (ctx) => safeAnswer(ctx && ctx.facts),
+      match: ["safe", "safety", "secure", "security", "privacy", "private", "data", "encrypted", "encryption", "hacked", "breach", "gdpr", "coppa", "ferpa"] },
+    { label: "What does it cost?", answer: (ctx) => pricesAnswer(ctx && ctx.facts),
+      match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars"] },
+    { label: "Is this legal advice?", answer: LEGAL, match: ["legal", "advice", "lawyer", "attorney", "law", "liable", "liability"] },
+    { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "downgrade", "quit", "pause", "anytime", "contract", "commitment"] },
+    { label: "How do I export the report?", answer: exportAnswer, match: ["export", "csv", "download", "print", "spreadsheet", "excel", "pdf", "inspector", "auditor"] },
+  ];
+
   const TASKS = {
     "/app": "Mark this check done today: ",
     "/app/report": "Summarise my report and tell me what to fix first",
@@ -592,7 +673,8 @@
       tagline: "Your OmniArmor helper",
       pills: [ANSWER("chat", "What does OmniArmor do?", (ctx) => whatAnswer(ctx && ctx.facts)),
         ANSWER("help", "Which checklist fits me?", (ctx) => checklistAnswer(ctx && ctx.facts)),
-        LINK("bolt", "See the prices", "/help#prices"),
+        // 1.21.0: the real plans and prices, with the link to Help under them (was only the link).
+        ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts)),
         ANSWER("bars", "Explain this page", explainPageAnswer),
         KEY],
     },
@@ -658,15 +740,51 @@
   // started: the core brings the pills back under each of the app's own answers, and with both there a typed
   // question would fit two items as well and get neither. With a key, once chatting (the pills fold away), every
   // suggestion is back, in the pill's own words, so the row under an answer never shows the same question twice.
-  function chips() {
+  function shownChips(keyed) {
     const list = pageChips().map(withMatch);
     let chatting = false;
-    let keyed = false;
     try { chatting = window.Pilot.store.loadChat().length > 0; } catch (_) { chatting = false; }
-    try { keyed = Boolean(window.Pilot.store.ready()); } catch (_) { keyed = false; }
     const repeats = (c) => pillLabels.has(c.label) || pillLabels.has(SAME[c.label]);
     if (!chatting || !keyed) return list.filter((c) => !repeats(c));
     return list.map((c) => (pillLabels.has(SAME[c.label]) ? withMatch({ ...c, label: SAME[c.label] }) : c));
+  }
+
+  // 1.21.0: the answers on every page (GLOBAL) for a typed question. The core compares a question typed with no
+  // key with the welcome's pills and this page's suggestions (its typedHere, which asks chips() for them as the
+  // question is sent). Just then, and only when none of those fits, chips() hands it the one GLOBAL answer that
+  // clearly fits, found by the core's own matchTyped; nothing else changes and nothing shows on the screen. This
+  // page's own buttons win: "How much does it cost?" on the classroom plans' page is still "Classroom or Whole
+  // school?". `typed` is the question being sent, taken once.
+  let typed = "";
+  try {
+    document.addEventListener("submit", (e) => {
+      const form = e && e.target;
+      if (!form || !form.classList || !form.classList.contains("pilot-compose")) return;
+      const box = form.querySelector("textarea");
+      typed = box ? String(box.value || "").trim() : "";
+      setTimeout(() => { typed = ""; }, 0);
+    }, true);
+  } catch (_) { /* no document events: the page's own answers only */ }
+  function globalFor(question, list) {
+    const P = window.PilotPanel;
+    if (!question || !P || typeof P.matchTyped !== "function") return null;
+    const base = window.location.href || `https://omniarmor.invalid${path}`;
+    const pills = P.ownPills(welcome.pills, base);
+    if (P.matchTyped(question, pills.concat(P.cleanChips(list, base)))) return null;
+    const here = new Set(pills.map((p) => p.label).concat(list.map((c) => c.label)));
+    const extra = GLOBAL.filter((x) => !here.has(x.label));
+    const hit = P.matchTyped(question, pills.concat(...extra.map((x) => P.cleanChips([x], base))));
+    return hit && !hit.icon ? extra.find((x) => x.label === hit.label) || null : null;
+  }
+  function chips() {
+    let keyed = false;
+    try { keyed = Boolean(window.Pilot.store.ready()); } catch (_) { keyed = false; }
+    const list = shownChips(keyed);
+    const question = typed;
+    typed = "";
+    if (keyed || !question) return list;
+    const extra = globalFor(question, list);
+    return extra ? [extra] : list;
   }
 
   const mounted = window.Pilot.mount({
@@ -732,7 +850,10 @@
       ".pick", "[data-teacher-guide] p", "[data-teacher-guide] li", "[data-teacher-guide] h2", "[data-teacher-guide] h3",
       // 1.18.0: the app's picture under the headline (its Blocked and Warning rows) and a folded line like the
       // join codes page's "Lost the slips?": the robot steps aside rather than sit on them.
-      ".hero-shot", "details > summary"],
+      ".hero-shot", "details > summary",
+      // 1.21.0: a page's small notes, like the class page's "A lesson is one level passed..." just above the tab
+      // bar, where the peeking robot covered a word.
+      ".hint"],
     // On a phone the robot stays in the bottom-right corner, the one corner
     // it shares with Armo, and only one of them shows (app.css, "One helper,
     // one corner"); tucked away it shrinks there, never off the edge. The

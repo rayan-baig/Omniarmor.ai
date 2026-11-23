@@ -17,12 +17,31 @@ from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, c
                       multi_check, rules_for, top_rank, why_line)
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, home_url, login_required, owner_required
-from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, ValidationError, add_illness,
+from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, LEVEL_ORDER, ValidationError, add_illness,
                        apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, local_date, org_industry_ids, org_now,
                        org_today, remove_illness, states_for_org, tally)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
+# 1.21.0: a warning this many days or more before its due date is "early" on Home, and when its window is a policy
+# setting (an industry standard, not a law) Home says so in one line, so 41 days left doesn't read as a mistake.
+EARLY_DAYS = 14
+
+
+def urgency(state):
+    """Home's "Needs attention" order (1.21.0): by days left, the most overdue first, then the soonest due. A
+    blocked yes-or-no answer (no date) is broken now, so it counts as overdue; a warning with no date comes after
+    the dated ones. Ties keep blocked before warnings."""
+    days = state.days_left
+    if days is None:
+        days = -1 if state.level == "BLOCKED" else 10 ** 6
+    return (days, LEVEL_ORDER[state.level], state.industry_id, state.rule.title)
+
+
+def early_policy(state):
+    """Whether Home explains a warning as early because its window is a policy setting (1.21.0)."""
+    return (state.level == "WARNING" and bool(getattr(state.effective, "policy", False))
+            and state.days_left is not None and state.days_left >= EARLY_DAYS)
 AUDIT_PAGE = 100
 MAX_LOCATIONS = 25      # workspaces one person can own (each is a location, billed on its own)
 
@@ -71,7 +90,7 @@ def overview():
     states = states_for_org(conn, g.org)
     today = org_today(g.org)
     ids = checklist_ids(conn, g.org)
-    problems = sorted([s for s in states if s.problem], key=lambda s: s.sort_key)
+    problems = sorted([s for s in states if s.problem], key=urgency)
     upcoming = sorted([s for s in states if s.due_date and 0 <= s.days_left <= UPCOMING_DAYS and not s.problem],
                       key=lambda s: s.days_left)
     later = sorted([s for s in states if s.due_date and s.days_left > UPCOMING_DAYS and not s.problem],
@@ -82,6 +101,7 @@ def overview():
         mine = [s for s in states if s.industry_id == i]
         by_industry.append({"industry": INDUSTRIES[i], "counts": tally(mine)})
     return render_template("app/overview.html", counts=tally(states), problems=problems, upcoming=upcoming,
+                           early_policy=early_policy,
                            missing=len(missing), by_industry=by_industry, today=today, total=len(states),
                            checklist=getting_started(conn, states, ids), next_up=next_reading(states, ids),
                            next_dated=next_reading(states, ids, dated=True), later=later[0] if later else None,

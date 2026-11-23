@@ -64,11 +64,14 @@
 {% if problems %}
   <ul class="list">
     {% for s in problems %}
-      <li><a class="row" data-level="{{ s.level }}" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
+      {#- 1.21.0: most urgent first (views.urgency: by days left), and a warning that shows early because its
+          window is a policy setting says so in one line. -#}
+      <li><a class="row" data-level="{{ s.level }}"{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %} href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
         <span>
           <span class="title">{{ s.rule.title }}</span>
           <span class="meta"> · {{ s.industry.brand }}</span><br>
           <span class="meta">{{ s.message }}</span>
+          {% if early_policy(s) %}<br><span class="meta early-note" data-early-note>Why so early: this warning window is a policy setting (an industry standard, not a law), set to give you time to plan.</span>{% endif %}
         </span>
         <span class="tag {{ s.level }}">{{ s.label }}</span>
       </a></li>

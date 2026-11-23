@@ -47,7 +47,7 @@ from .academy_bank import basics as _basics
 from .academy_bank import load_expansions, load_worlds
 from .academy_bank.sorting import SORT_SETS
 from .academy_bank.word_ideas import WORD_IDEAS, kindred
-from .academy_bank.word_use import CLASHES, GAP, WORD_SCENES
+from .academy_bank.word_use import CLASHES, GAP, WORD_SCENES, scene_picture
 from .catalog import INDUSTRIES, counts_first_day, date_mode, date_unit
 from .words import plural
 
@@ -1556,25 +1556,67 @@ def _in_gap(scene, word):
 
 def _word_scene(rng, word, meaning, words, n):
     """"Which word fills the gap?" (1.19.0): the word's scene, the word and two
-    others that don't half-fit it."""
+    others that don't half-fit it. 1.21.0: with a small picture of where the
+    scene happens (scene_picture), never one of the word itself."""
     scene = WORD_SCENES[word]
     others = [w for w, _ in words if not _clash(word, w) and not _names(scene, w)]
     wrong = _wrong_answers(rng, word, others, below=n)
     q = _choice(rng, f"Which word fills the gap? {scene}", word, wrong, f"{word}: {meaning}")
     q.look = "scenario"
     # The page asks the question as its heading and shows the scene under it.
-    q.parts = {"title": "Which word fills the gap?", "scene": scene}
+    q.parts = {"title": "Which word fills the gap?", "scene": scene, "pic": scene_picture(scene)}
     return q
+
+
+# 1.21.0: an answer to "Which sentence uses ...?" is at most this long, so the three sentences read at a glance on a
+# phone (some scenes ran to 120 characters). A word whose own scene is longer is asked in its scene instead.
+SENTENCE_MOST = 90
+
+
+def _sentence_others(word, words):
+    """The other words' scenes with `word` put in their gap that can be wrong answers to its sentence question."""
+    return [_in_gap(WORD_SCENES[w], word) for w, _ in words
+            if w in WORD_SCENES and not _clash(word, w) and not _names(WORD_SCENES[w], word)
+            and len(_in_gap(WORD_SCENES[w], word)) <= SENTENCE_MOST]
+
+
+def _sentence_fits(word, words):
+    """Whether `word` can be asked as "Which sentence uses ...?" with every answer short enough."""
+    return len(_in_gap(WORD_SCENES[word], word)) <= SENTENCE_MOST and len(_sentence_others(word, words)) >= 2
 
 
 def _word_sentence(rng, word, meaning, words, n):
     """'Which sentence uses "Invoice" the right way?' (1.19.0): the word's own
-    scene, and two other words' scenes with it put in their gap."""
+    scene, and two other words' scenes with it put in their gap, each at most
+    SENTENCE_MOST characters (1.21.0)."""
     right = _in_gap(WORD_SCENES[word], word)
-    others = [_in_gap(WORD_SCENES[w], word) for w, _ in words
-              if w in WORD_SCENES and not _clash(word, w) and not _names(WORD_SCENES[w], word)]
-    wrong = _wrong_answers(rng, right, others, below=n)
+    wrong = _wrong_answers(rng, right, _sentence_others(word, words), below=n)
     return _choice(rng, f"Which sentence uses \"{word}\" the right way?", right, wrong, f"{word}: {meaning}")
+
+
+def asked_word(q):
+    """The word a Business Words question is about, in any of its kinds ("What does X mean?", "Which word fills
+    the gap?", "Which sentence uses X ...?"), or None (1.21.0)."""
+    if q.kind != "choice":
+        return None
+    if q.prompt.startswith("Which word fills the gap?"):
+        return q.options[q.answer]
+    found = re.match(r'(?:What does "(.+)" mean\?|Which sentence uses "(.+)" the right way\?)$', q.prompt)
+    return (found.group(1) or found.group(2)) if found else None
+
+
+def words_in(q):
+    """Every Business Word a question shows, asked or offered: its word, the words offered in a scene, and the
+    words whose ideas are its answers to "What does X mean?" (1.21.0)."""
+    if q.kind != "choice":
+        return set()
+    idea_of = {idea: w for w, idea in WORD_IDEAS.items()}
+    found = {asked_word(q)} - {None}
+    if q.prompt.startswith("Which word fills the gap?"):
+        found |= {o for o in q.options if o in WORD_IDEAS}
+    elif q.prompt.startswith("What does"):
+        found |= {idea_of[o] for o in q.options if o in idea_of}
+    return found
 
 
 def _word_of(q):
@@ -1798,9 +1840,48 @@ def _mix_formats(key, questions, size):
                 # so length gives nothing away in any of them.
                 make = (_word_question if i not in change else _word_scene if change.index(i) % 2 == 0
                         else _word_sentence)
+                # 1.21.0: a word whose sentences would be too long is asked in its scene instead.
+                if make is _word_sentence and not _sentence_fits(word, words):
+                    make = _word_scene
                 out[i] = make(rng, word, meaning, words, turns[make.__name__])
                 turns[make.__name__] += 1
+            _match_apart(out, chunk, rng)
     return tuple(out)
+
+
+MATCH_POOL = 5   # a game's first word and the four it can be matched with (1.21.0), so its cards stay few
+
+
+def _match_apart(out, chunk, rng):
+    """1.21.0: the words a lesson's matching game can show are never asked again in that lesson's other
+    questions, nor offered in them (a scene's words, or the ideas of "What does X mean?"), so the game and the
+    questions teach different words. The game keeps its own first word and takes the rest of its pool from the
+    words the lesson doesn't use elsewhere, in the Word Bank's order from that word on (and when another question
+    offers its first word, it starts from the next word the lesson doesn't use)."""
+    spot = next((i for i in chunk if out[i].kind == "match" and out[i].parts and out[i].parts.get("pool")), None)
+    if spot is None:
+        return
+    game = out[spot]
+    used = set().union(*(words_in(out[i]) for i in chunk if i != spot))
+    first = game.parts["pool"][0]
+    order = [w for w, _ in _quiz_words(GLOSSARY)]
+    start = order.index(first) if first in order else 0
+    ring = game.parts["pool"][1:] + order[start + 1:] + order[:start]
+    # Its first word, unless another question offers it: then the next word the lesson doesn't use.
+    anchor = first if first not in used else next((w for w in ring if w not in used), None)
+    if anchor is None:
+        return
+    pool = [anchor]
+    for w in ring:
+        if w not in pool and w not in used and not _clash(anchor, w) and len(pool) < MATCH_POOL:
+            pool.append(w)
+    pair = []
+    for w in pool[1:]:
+        if len(pair) < 2 and all(not _clash(w, p) for p in pair):
+            pair.append(w)
+    if len(pair) < 2:
+        return
+    out[spot] = _build_match([anchor] + pair, WORD_IDEAS, dict(GLOSSARY), rng, title=game.parts["title"], pool=pool)
 
 
 def _lessons(choices, facts, size, lesson):

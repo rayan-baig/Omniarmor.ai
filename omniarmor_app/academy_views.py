@@ -669,7 +669,13 @@ def play(learner_id, world_number, stage):
             order = [x.number for x in t.topic_worlds]
             spot = order.index(w.number) + 1 if w.number in order else None
             following = order[spot] if spot is not None and spot < len(order) else None
+            # 1.21.0: how far along the whole track this clear puts them (worlds cleared of all its worlds), for
+            # a bigger moment on every track, the Classroom track's too.
+            cleared = sum(1 for x in order
+                          if all((now.get(academy.level_id(t, x, n)) or {"best_stars": 0})["best_stars"] >= 1
+                                 for n in range(1, t.stages(academy.world(x)) + 1)))
             world_clear = {"stages": best, "stars": sum(best), "most": 3 * len(best),
+                           "cleared": cleared, "worlds": len(order),
                            "next": (academy.world_for(t, following) if following
                                     else academy.world_for(t, academy.FINAL_WORLD.number) if spot is not None else None)}
     return render_template(

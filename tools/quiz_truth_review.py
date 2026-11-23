@@ -28,6 +28,12 @@ and flags the patterns that have slipped through before:
                 right answer ("What is a fine?" ... "A thank-you is a tip."),
                 so it reads as a line from somewhere else (1.19.0). Say how it
                 ties back ("..., not a product.") or leave it out.
+- repeat        a word a lesson's matching game can show is asked again, or
+                offered, in another question of the same lesson (1.21.0): the
+                game and the questions should teach different words
+- long-sentence an answer to "Which sentence uses ...?" is longer than
+                academy.SENTENCE_MOST characters (1.21.0), too long to read
+                three of at a glance on a phone
 
 Run it from the project folder:
 
@@ -199,6 +205,28 @@ def stray_lines(q):
             and not _content(x) & ties]
 
 
+def lesson_flags(t, company, ids):
+    """The repeat and long-sentence flags for every lesson of track t."""
+    flags = []
+    for w in t.worlds:
+        for stage in range(1, t.stages(w) + 1):
+            where = f"{company}: {t.name} · {w.title} · stage {stage}"
+            questions = academy.quiz(t, w.number, stage, company, ids, "review")
+            for n, q in enumerate(questions):
+                if q.prompt.startswith("Which sentence uses"):
+                    for option in q.options:
+                        if len(option) > academy.SENTENCE_MOST:
+                            flags.append(("long-sentence", where, q.prompt, option))
+                if q.kind != "match":
+                    continue
+                shown = set((q.parts or {}).get("pool") or []) | set((q.parts or {}).get("left") or [])
+                for m, other in enumerate(questions):
+                    if m != n:
+                        for word in sorted(shown & academy.words_in(other)):
+                            flags.append(("repeat", where, other.prompt, word))
+    return flags
+
+
 def review(companies=None, tracks=None):
     """Every flag, as (pattern, where, question prompt, the option); for a
     shape flag, (pattern, where, what was found, the limit)."""
@@ -234,6 +262,7 @@ def review(companies=None, tracks=None):
             for world, questions in by_world.items():
                 flags += shape_flags(f"{company}: {world}", questions.values())
             flags += word_for_word_flags(t, company, ids)
+            flags += lesson_flags(t, company, ids)
         for prompt, wrongs in wrong_for.items():
             for option, (where, shown) in wrongs.items():
                 if option in right_for.get(prompt, ()):
@@ -249,6 +278,10 @@ def main(argv):
             print(f"[{pattern}] {where}\n    Q: {prompt}\n    right answer copied from its card: {option}")
         elif pattern == "stray-line":
             print(f"[stray-line] {where}\n    Q: {prompt}\n    a line that doesn't tie back to it: {option}")
+        elif pattern == "repeat":
+            print(f"[repeat] {where}\n    Q: {prompt}\n    asks a word the lesson's matching game shows: {option}")
+        elif pattern == "long-sentence":
+            print(f"[long-sentence] {where}\n    Q: {prompt}\n    {len(option)} characters: {option}")
         elif pattern == "shape":
             print(f"[shape] {where}\n    {prompt} ({option})")
         else:

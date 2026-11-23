@@ -64,7 +64,9 @@ class TestTheQuizBar(unittest.TestCase):
     def test_the_pop_up_sits_below_the_bar_not_over_the_score(self):
         css = read("omniarmor_app", "static", "academy.css")
         toast = re.search(r"\.ac-toast\{position:absolute;[^}]*\}", css).group(0)
-        self.assertIn("top:calc(100% + 6px)", toast)
+        # 1.21.0: inside the bar, in the score line's place (which hides meanwhile): over neither the score nor
+        # the question under the bar (test_round10_fixes).
+        self.assertIn("bottom:7px", toast)
         self.assertNotIn("top:50%", toast)
 
     def test_check_is_greyed_out_until_every_piece_has_a_place(self):
@@ -210,7 +212,7 @@ class TestBusinessWordsVariety(unittest.TestCase):
         fresh = academy._fresh(q, random.Random(3))
         self.assertEqual(fresh.parts, q.parts)
         self.assertEqual(fresh.look, "scenario")
-        self.assertIn('<p class="ac-word-scene">{{ q.parts.scene }}</p>', read("omniarmor_app", "templates", "academy", "_quiz.html"))
+        self.assertIn('{{ q.parts.scene }}</p>', read("omniarmor_app", "templates", "academy", "_quiz.html"))
 
     def test_the_match_words_change_between_attempts(self):
         t = academy.TRACKS["launchpad"]

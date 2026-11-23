@@ -171,7 +171,10 @@
 .ac-hud-main{flex:1;min-width:0}
 .ac-hud-line{margin:6px 0 0;font-size:14px;color:var(--muted)}
 .ac-hud-line span{font-weight:800;color:var(--ink)}
-.ac-toast{position:absolute;right:14px;top:calc(100% + 6px);margin:0;max-width:calc(100% - 28px);box-shadow:0 6px 18px rgba(0,0,0,.35);padding:6px 14px;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:14px;opacity:0;transform:scale(.9);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+/* 1.21.0: the pop-up sits inside the bar, in the score line's place (the line hides while it shows), so it covers
+   neither the score nor the question under the bar. */
+.ac-toast{position:absolute;left:72px;bottom:7px;top:auto;margin:0;max-width:calc(100% - 84px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 10px;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:13.5px;line-height:1.45;opacity:0;transform:scale(.9);transform-origin:left center;transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.ac-hud.toasting .ac-hud-line{visibility:hidden}
 .ac-toast{background:var(--card-2);border:1px solid var(--line);color:var(--ink)}
 .ac-toast.good{border-color:var(--mint)}
 .ac-toast.oops{border-color:var(--accent)}
@@ -308,6 +311,7 @@
 .ac-review li.right{border-color:rgba(79,209,165,.6)}
 .ac-review li.wrong{border-color:rgba(229,38,28,.6)}
 .ac-review-q{font-family:var(--kid);font-weight:700;font-size:19px;margin:0 0 6px}
+/* The answer review (1.21.0): the template's own white space no longer shows as an empty gap (result.html). */
 .ac-review-a{margin:0 0 6px;white-space:pre-line}
 .ac-review-why{margin:0;color:var(--muted)}
 
@@ -797,3 +801,19 @@
 @media (prefers-reduced-motion:reduce){.ac-result-me,.ac-result-me.grew{animation:none}}
 /* A Business Words scene (1.19.0): the question is the heading, the scene a quote under it, its gap a line. */
 .ac-word-scene{clear:both;margin:4px 0 12px;padding:10px 14px;border-left:3px solid var(--sun);border-radius:6px;background:rgba(255,194,75,.06);font-size:17px;line-height:1.5}
+/* Clearing a world, bigger (1.21.0), on every track and a class's too: more sparks, one dot for each of the
+   track's worlds with this one popping in, and the picture before and after when it grew. */
+.ac-celebrate-sparks i:nth-child(29){--x:-250px;--y:40px}.ac-celebrate-sparks i:nth-child(30){--x:250px;--y:30px}
+.ac-celebrate-sparks i:nth-child(31){--x:-110px;--y:200px}.ac-celebrate-sparks i:nth-child(32){--x:110px;--y:205px}
+.ac-world-trail{position:relative;z-index:1;margin:4px 0 6px;text-align:center}
+.ac-world-trail ol{list-style:none;margin:0 auto 4px;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:5px;max-width:300px}
+.ac-world-trail li{width:14px;height:14px;border-radius:50%;background:var(--card-2);border:2px solid var(--line)}
+.ac-world-trail li.done{background:var(--blend);border-color:transparent}
+.ac-world-trail li[data-just-cleared]{box-shadow:0 0 0 3px rgba(255,194,75,.45);animation:ac-pop-in .6s cubic-bezier(.3,1.6,.5,1) .6s both}
+.ac-world-trail p{margin:0;font-size:16px;color:var(--muted)}
+.ac-world-trail strong{font-family:var(--kid);color:var(--ink)}
+.ac-world-grew{margin:2px 0 4px}
+@media (prefers-reduced-motion:reduce){.ac-world-trail li[data-just-cleared]{animation:none}}
+/* A scene's small picture (1.21.0): where it happens, beside its first line. */
+.ac-scene-pic{float:left;display:grid;place-items:center;width:40px;height:40px;margin:0 10px 2px 0;border-radius:10px;background:var(--card-2);font-size:24px;line-height:1}
+@media (max-width:380px){.ac-world-trail ol{gap:3px}.ac-world-trail li{width:12px;height:12px;border-width:1px}}

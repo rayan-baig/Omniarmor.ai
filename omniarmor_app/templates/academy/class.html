@@ -43,8 +43,8 @@
     {% for name, short in ask %}
     <fieldset class="ac-confirm" data-ask>
       <legend>{{ name }}</legend>
-      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ short }}" checked> Add as <strong>{{ short }}</strong></label>
-      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ name }}"> Add as {{ name }}: it's all first name (like Mary Jane)</label>
+      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ short }}" checked> <span>Add as <strong>{{ short }}</strong></span></label>
+      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ name }}"> <span>Add as {{ name }}: it's all first name (like Mary Jane)</span></label>
       <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value=""> Don't add</label>
     </fieldset>
     {% endfor %}

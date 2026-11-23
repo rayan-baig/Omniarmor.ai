@@ -21,7 +21,7 @@
   <section class="ac-celebrate ac-celebrate-world{{ ' ac-celebrate-boss' if boss }}" data-celebrate data-world-clear aria-labelledby="celebrate-title" tabindex="-1" hidden>
     <div class="ac-celebrate-card">
       <div class="ac-celebrate-rays" aria-hidden="true"></div>
-      <div class="ac-celebrate-sparks" aria-hidden="true">{% for i in range(28 if boss else 20) %}<i></i>{% endfor %}</div>
+      <div class="ac-celebrate-sparks" aria-hidden="true">{% for i in range(32 if boss else 28) %}<i></i>{% endfor %}</div>
       <div class="ac-trophy" aria-hidden="true">
         <span class="ac-trophy-cup">{{ level_icon('trophy', 104 if boss else 88) }}</span>
         <span class="ac-celebrate-pic ac-trophy-pic">{{ avatar(learner.avatar, avatars, 60, summary.tier) }}</span>
@@ -32,6 +32,15 @@
       <ol class="ac-world-stages" aria-label="Stars for each stage">
         {% for got in world_clear.stages %}<li><span class="ac-world-stage-n">{{ loop.index }}</span>{{ stars(got, 14) }}</li>{% endfor %}
       </ol>
+      {#- 1.21.0: a bigger moment on every track (a class's students too): how many of the track's worlds are now
+          cleared, one dot each, and when the picture grew, the one it was beside the one it is now. -#}
+      {% if world_clear.worlds %}
+      <div class="ac-world-trail" data-worlds-cleared="{{ world_clear.cleared }}">
+        <ol aria-hidden="true">{% for i in range(world_clear.worlds) %}<li{% if i < world_clear.cleared %} class="done"{% endif %}{% if i + 1 == world_clear.cleared %} data-just-cleared{% endif %}></li>{% endfor %}</ol>
+        <p><strong>{{ world_clear.cleared }} of {{ world_clear.worlds }}</strong> worlds cleared{% if world_clear.cleared == world_clear.worlds %}: every one!{% endif %}</p>
+      </div>
+      {% endif %}
+      {% if new_rank %}<span class="ac-celebrate-pics ac-world-grew"><span class="ac-grew-from" data-grew-from="{{ old_tier }}">{{ avatar(learner.avatar, avatars, 48, old_tier) }}<span class="sr">Before</span></span><span class="ac-grew-arrow" aria-hidden="true">→</span><span class="ac-celebrate-pic grew" data-my-picture>{{ avatar(learner.avatar, avatars, 72, summary.tier) }}</span></span>{% endif %}
       <p class="ac-lead">{% if new_rank %}And your picture grew: you're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}! {% endif %}{% if world_clear.next %}Next up: <strong>{{ world_clear.next.title }}</strong>.{% else %}{{ learner.nickname }} cleared every stage of {{ world.title }}.{% endif %}</p>
       <div class="ac-actions">
         <button type="button" class="btn ac-btn" data-celebrate-close>Keep going</button>
@@ -105,13 +114,15 @@
     {% for r in results %}
       <li class="{{ 'right' if r.right else 'wrong' }}">
         <p class="ac-review-q">{% if r.question.review %}<span class="ac-tag">Review</span> {% endif %}{{ r.question.prompt }}</p>
+        {#- 1.21.0: no white space of the template inside the answer: the line keeps its own line breaks
+            (white-space:pre-line), so the template's left an empty gap above "Correct:". -#}
         <p class="ac-review-a">
-          {% if r.right %}
+          {%- if r.right -%}
             <strong>Correct:</strong> {{ r.question.options[r.question.answer] }}
-          {% else %}
-            {% if r.chosen is not none %}<span>You picked: {{ r.question.options[r.chosen] }}</span><br>{% else %}<span>Skipped.</span><br>{% endif %}
+          {%- else -%}
+            {%- if r.chosen is not none %}<span>You picked: {{ r.question.options[r.chosen] }}</span><br>{% else %}<span>Skipped.</span><br>{% endif -%}
             <strong>Right answer:</strong> {{ r.question.options[r.question.answer] }}
-          {% endif %}
+          {%- endif -%}
         </p>
         <p class="ac-review-why">{{ r.question.explain }}</p>
       </li>

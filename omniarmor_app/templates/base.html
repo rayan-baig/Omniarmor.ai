@@ -40,14 +40,16 @@
   {% block head %}{% endblock %}
 </head>
 <body{% if g.user %} class="has-tabs{{ ' lesson-view' if lesson_view() }}"{% endif %}>
+{#- The orange gradient the logo ring and the active tab's icon use (url(#blend)). It lives in its own tiny svg that
+    nothing hides: inside the top bar's logo it vanished on a computer, where that logo is hidden (1.21.0). -#}
+<svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false" data-blend-defs><defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs></svg>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap">
     {#- A kid's lesson on a grown-up's device (lesson_view) is the kid's screen: the name at the top is not a
         link, and there is no menu (no checklist, no Sign out), only "Back to map" at the bottom (1.16.0). -#}
     {% set kid_screen = g.user and lesson_view() %}
-    {% macro logo_mark(defs=true) %}<svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
-        {% if defs %}<defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"/><stop offset="1" stop-color="#F59234"/></linearGradient></defs>{% endif %}
+    {% macro logo_mark() %}<svg viewBox="0 0 40 46" width="24" height="28" aria-hidden="true">
         <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
         <circle cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"/>
       </svg>
@@ -222,7 +224,7 @@
 {% else %}
 <nav class="tabbar no-print" aria-label="Sections">
   {#- On a computer the tabs are a side bar, with the OmniArmor name at its top (app.css, 1.16.0). -#}
-  <a class="tab-logo lockup" href="{{ home_url() }}" aria-label="OmniArmor.ai home" data-side-logo>{{ logo_mark(false) }}</a>
+  <a class="tab-logo lockup" href="{{ home_url() }}" aria-label="OmniArmor.ai home" data-side-logo>{{ logo_mark() }}</a>
   {% if class_workspace %}
   {% set tabs = [
       ('classes.index', 'Home', 'Your classes', 'academy', ep.startswith(('classes.', 'academy.'))),

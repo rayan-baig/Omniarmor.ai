@@ -150,8 +150,10 @@
 {%- endmacro %}
 
 {% macro avatar(name, colors, size=56, tier=0) -%}
-{# A learner's picture. It levels up with their rank: a bronze, silver then gold
-   ring, sparkles, a crown, wings and finally a glowing diamond aura. #}
+{# A learner's picture. It levels up with their rank, and from 1.21.0 every rank adds something you can see at a
+   glance, even small on a class's phone: Apprentice a bronze frame and a star badge, Team Captain a silver frame
+   and a blue cap, Manager a gold frame and a bow tie, Executive a top hat and sparkles, Future Owner a crown,
+   Business Legend wings and Tycoon a glowing diamond aura. (A ring's colour alone was too small a change to see.) #}
 {% set color = colors[name][1] if name in colors else '#F59234' %}
 {% set rings = ['none', '#B87333', '#C0C0C8', '#FFC24B', '#FFC24B', '#FFC24B', '#FFC24B', '#7FE7FF'] %}
 <svg class="avatar avatar-tier-{{ tier }}" viewBox="-14 -16 92 92" width="{{ size }}" height="{{ size }}" aria-hidden="true">
@@ -161,7 +163,7 @@
     </g>
   {% endif %}
   {% if tier >= 7 %}<circle class="avatar-aura" cx="32" cy="32" r="40" fill="none" stroke="#7FE7FF" stroke-width="3" stroke-dasharray="4 6"/>{% endif %}
-  {% if tier >= 1 %}<circle cx="32" cy="32" r="34" fill="none" stroke="{{ rings[tier] }}" stroke-width="{{ 3 if tier < 4 else 4.5 }}"/>{% endif %}
+  {% if tier >= 1 %}<circle class="avatar-frame" cx="32" cy="32" r="34" fill="none" stroke="{{ rings[tier] }}" stroke-width="{{ 4.5 if tier < 4 else 5.5 }}"/>{% endif %}
   <circle cx="32" cy="32" r="30" fill="{{ color }}"/>
   <g fill="#0F0E0D">
   {% if name == 'rocket' %}
@@ -190,8 +192,29 @@
       <path d="M58 6 L60 12 L66 14 L60 16 L58 22 L56 16 L50 14 L56 12 Z"/><path d="M4 50 L5.5 54 L9.5 55.5 L5.5 57 L4 61 L2.5 57 L-1.5 55.5 L2.5 54 Z"/>
     </g>
   {% endif %}
+  {% if tier >= 3 %}
+    <g class="avatar-bowtie" stroke="#0F0E0D" stroke-width="2" stroke-linejoin="round">
+      <path d="M20 57 L31 62 L20 67 Z M44 57 L33 62 L44 67 Z" fill="#E5261C"/><circle cx="32" cy="62" r="3.5" fill="#FFC24B"/>
+    </g>
+  {% endif %}
+  {% if tier >= 1 %}
+    <g class="avatar-badge" stroke="#0F0E0D" stroke-width="2">
+      <circle cx="57" cy="53" r="10" fill="{{ rings[tier] }}"/>
+      <path d="M57 46.5 L58.9 50.9 L63.6 51.3 L60 54.4 L61.1 59 L57 56.6 L52.9 59 L54 54.4 L50.4 51.3 L55.1 50.9 Z" fill="#FFF4E6" stroke-width="1.2" stroke-linejoin="round"/>
+    </g>
+  {% endif %}
   {% if tier >= 5 %}
-    <path d="M18 2 L22 -10 L28 -2 L32 -14 L36 -2 L42 -10 L46 2 Z" fill="#FFC24B" stroke="#B9791A" stroke-width="2" stroke-linejoin="round"/>
+    <path class="avatar-crown" d="M18 2 L22 -10 L28 -2 L32 -14 L36 -2 L42 -10 L46 2 Z" fill="#FFC24B" stroke="#B9791A" stroke-width="2" stroke-linejoin="round"/>
+  {% elif tier == 4 %}
+    <g class="avatar-tophat" stroke="#0F0E0D" stroke-width="2" stroke-linejoin="round">
+      <rect x="21" y="-13" width="22" height="16" rx="2" fill="#2A2522"/><rect x="21" y="-2" width="22" height="4" fill="#E5261C"/>
+      <rect x="13" y="2" width="38" height="4.5" rx="2" fill="#2A2522"/>
+    </g>
+  {% elif tier >= 2 %}
+    <g class="avatar-cap" stroke="#0F0E0D" stroke-width="2" stroke-linejoin="round">
+      <path d="M16 6 C16 -8 48 -8 48 6 Z" fill="#3B82F6"/><path d="M42 5 H60 C60 9 52 10 44 9 Z" fill="#1D4ED8"/>
+      <circle cx="32" cy="-4" r="2.5" fill="#FFC24B"/>
+    </g>
   {% endif %}
 </svg>
 {%- endmacro %}

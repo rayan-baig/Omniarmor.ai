@@ -68,7 +68,9 @@ class TestTheConfigUsesThem(unittest.TestCase):
         for pill in ('ANSWER("bolt", "What\'s due or overdue?", dueAnswer)', 'ANSWER("help", "Explain this check", explainAnswer)',
                      'ANSWER("spark", "What does this colour mean?", colourAnswer)', 'ANSWER("help", "How do join codes work?"',
                      'LINK("copy", "Print certificates", certificatesLink())', 'ANSWER("chat", "What does OmniArmor do?"',
-                     'LINK("bolt", "See the prices", "/help#prices")', 'ANSWER("help", "Is it safe for students?", SAFE)',
+                     # 1.21.0: the prices answer with the plans themselves, then the link.
+                     'ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts))',
+                     'ANSWER("help", "Is it safe for students?", SAFE)',
                      'ANSWER("bolt", "How does the free trial work?"'):
             self.assertIn(pill, self.config)
         self.assertIn('answerMore: "Want more? Add your AI key to ask anything.",', self.config)

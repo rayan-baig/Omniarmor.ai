@@ -199,14 +199,21 @@
       void armoSlot.offsetWidth; // restart the animation
       armoSlot.classList.add(mood === "think" ? "shake" : "bounce");
     };
+    // 1.21.0: the pop-up takes the score line's place inside the bar for a moment (the bar's "toasting"), so it
+    // never covers the question under the bar ("Match each word to ...") nor sits over the score.
+    var hud = quiz.querySelector("[data-hud]");
     var say = function (text, good) {
       if (!toast) return;
       toast.textContent = text;
       toast.classList.remove("show", "good", "oops");
       void toast.offsetWidth;
       toast.classList.add("show", good ? "good" : "oops");
+      if (hud) hud.classList.add("toasting");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2200);
+      toastTimer = setTimeout(function () {
+        toast.classList.remove("show");
+        if (hud) hud.classList.remove("toasting");
+      }, 2200);
     };
     var pick = function (list) { return list[Math.floor(Math.random() * list.length)]; };
 
