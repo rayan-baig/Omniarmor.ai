@@ -17,7 +17,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_classroom_review import SchoolCase  # noqa: E402
-from test_parent_view import ProgressCase  # noqa: E402
+from test_parent_view import ProgressCase, pass_levels_before_apprentice  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
 from omniarmor_app import academy, shots  # noqa: E402
@@ -204,7 +204,8 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         self.assertNotIn("Your picture grew", party)   # 2 lessons: still an Apprentice
 
     def test_a_rank_up_says_the_picture_grew(self):
-        page = self.result_of(1, 1)   # 1.22.0: Apprentice at the first lesson
+        pass_levels_before_apprentice(self.db, self.lid, [1, 18])   # 1.23.0: ranks spaced evenly
+        page = self.result_of(1, 1)
         party = page[page.index("data-celebrate"):page.index('<section class="ac-result')]
         self.assertIn("Your picture grew: you're now an Apprentice!", party)
         self.assertIn('ac-celebrate-pic grew', party)
@@ -230,7 +231,8 @@ class TestTheCelebrationAndTheGrowingPicture(ProgressCase):
         self.assertIn('data-picture-tier="0"', before)
         self.assertEqual(before.count('<li class="later"'), len(academy.RANKS) - 1)
         self.assertIn('class="ac-grow ac-grow-0"', before)
-        self.play(1, 1, right=5)   # 1.22.0: Apprentice at the first lesson
+        pass_levels_before_apprentice(self.db, self.lid, [1, 18])   # 1.23.0: ranks spaced evenly
+        self.play(1, 1, right=5)
         after = self.client.get(f"/app/academy/{self.lid}").data.decode()
         self.assertIn('data-picture-tier="1"', after)
         self.assertIn('class="ac-grow ac-grow-1"', after)

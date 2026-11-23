@@ -197,6 +197,7 @@ def _summary(learner, progress=None, t=None):
         "next_rank": upcoming,
         "to_next": upcoming[0] - done if upcoming else 0,
         "certificate": academy.certificate_for(done, final_passed, t, quests),
+        "certificates": academy.certificates_for(done, final_passed, t, quests),
         "total": t.lessons,
         "quests": quests,
         "streak": _streak(learner["id"], today),
@@ -689,6 +690,8 @@ def play(learner_id, world_number, stage):
         first_clear=passed and not was_passed, avatars=academy.AVATARS, summary=after,
         new_rank=after["rank"] if after["rank"] != before["rank"] else None, old_tier=before["tier"],
         new_certificate=after["certificate"] if after["certificate"] != before["certificate"] else None,
+        # 1.23.0: each certificate this lesson earned, in the order they're awarded (Future Owner first).
+        new_certificates=[c for c in after["certificates"] if c not in before["certificates"]],
         goal_hit=passed and before["today"] < DAILY_GOAL <= after["today"], daily_goal=DAILY_GOAL,
         missed=sum(1 for r in results if not r["right"]),
         band=result_band(score, len(questions), needed, stars),

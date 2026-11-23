@@ -35,8 +35,10 @@
 .ac-avatar-pick:has(input:checked){border-color:var(--accent);background:var(--card-2);color:var(--ink)}
 .ac-avatar-pick:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 /* A student's own pick when they join (1.22.0, kids/picture.html): three across on a phone, big to tap. */
-.ac-avatars-big{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
-.ac-avatars-big .ac-avatar-pick{min-width:0;padding:10px 6px;font-size:15px}
+/* 1.23.0: three pictures a row (the nine presets in three rows; it was two a row on a phone, five rows to scroll) */
+.ac-avatars-big{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:420px}
+.ac-avatars-big .ac-avatar-pick{min-width:0;padding:8px 4px;font-size:15px}
+.ac-avatars-big .ac-avatar-pick svg{max-width:100%;height:auto}
 .ac-picture-now{display:flex;line-height:0}
 .ac-manage{margin-top:28px}
 

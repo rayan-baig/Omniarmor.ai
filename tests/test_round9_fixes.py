@@ -17,7 +17,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
-from test_parent_view import BASIC, ProgressCase  # noqa: E402
+from test_parent_view import BASIC, ProgressCase, pass_levels_before_apprentice  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
 import quiz_truth_review  # noqa: E402
@@ -273,7 +273,8 @@ class TestMyPictureOnAPassedStage(ProgressCase):
         self.assertNotIn("ac-grew-from", page)
 
     def test_when_the_picture_grows_the_one_before_shows_beside_it(self):
-        page = self.play(1, 1, right=5).data.decode()      # 1.22.0: the first lesson: Apprentice
+        pass_levels_before_apprentice(self.db, self.lid, [1, 18])   # 1.23.0: ranks spaced evenly
+        page = self.play(1, 1, right=5).data.decode()
         self.assertIn("you're now an Apprentice", page)
         self.assertIn('data-grew-from="0"', page)
         self.assertIn("ac-grew-arrow", page)

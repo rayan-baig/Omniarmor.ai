@@ -317,7 +317,7 @@ class TestCsvExportsStream(AppTestCase):
         self.assertGreater(len(chunks), 4)
         text = b"".join(c if isinstance(c, bytes) else c.encode() for c in chunks).decode()
         lines = text.splitlines()
-        self.assertEqual(lines[0], "Time (UTC),Person,Action,Industry,Check,Before,After,Summary")
+        self.assertEqual(lines[0], "Time (America/New_York),Person,Action,Industry,Check,Before,After,Summary")
         self.assertEqual(len(lines), 1 + 2500 + 1)  # header, the rows, "Workspace created"
         self.assertEqual(len(set(lines)), len(lines))
         # The report export still works the same way.

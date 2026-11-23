@@ -20,6 +20,19 @@ def words(page):
     return " ".join(re.sub(r"<[^>]+>", " ", page).split())
 
 
+def pass_levels_before_apprentice(db, learner_id, industry_ids, track=None):
+    """Marks enough levels passed (from world 2 on) that the next lesson passed makes the learner an Apprentice: 1.23.0
+    spaces a family's ranks evenly over the levels its workspace has, so Apprentice no longer comes at the first one."""
+    t = track or academy.TRACKS["launchpad"]
+    goal = academy.rank_ladder(t, t.quests_for(industry_ids))[1][0]
+    levels = [academy.level_id(t, w.number, s) for w in t.topic_worlds if w.number != 1 for s in range(1, t.stages(w) + 1)]
+    with db() as conn:
+        conn.executemany("INSERT INTO learner_progress (learner_id, level, attempts, best_score, best_stars, completed_at)"
+                         " VALUES (?, ?, 1, 5, 3, '2026-11-01T10:00:00+00:00')", [(learner_id, lv) for lv in levels[:goal - 1]])
+        conn.commit()
+    return goal
+
+
 class ProgressCase(AppTestCase):
     def setUp(self):
         super().setUp()

@@ -3,6 +3,64 @@
 What changed in OmniArmor, in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.23.0 (23 November 2026)
+
+Fixes from a strict twelfth review: one way of counting on Home, the Report
+and the summary, a summary that prints on one page, more of Pilot's answers
+with no AI key, History in your own time zone, ranks spread evenly, and a real
+pricing page.
+
+- **One counting rule.** Home, the Report, each industry page and the
+  Inspection-ready summary all count checks the same way: a check that keeps
+  food batches or fridges one by one counts once, as its worst item, and a line
+  under the totals says so: "10 checks, 4 tracked items (food batches and
+  fridges)". The summary said "2 of 12 checks current" where Home counted 10.
+  A food batch coming due ("Ready-to-eat food 7-day limit · Chicken tinga, Due
+  in 4 days") now shows in Home's "Coming due" too, even when another batch
+  makes its check blocked.
+- **The summary prints on one page,** Letter or A4: two columns on paper,
+  smaller type, the six latest checks, and no empty last page (the room kept
+  on screen for the tab bar, Armo and Pilot's robot made one; the full report
+  lost its empty last page too). A deadline or licence reads "41 days left",
+  not "last reading 41 days", and a check counted from when it was done reads
+  "last done 35 days ago".
+- **Pilot, with no AI key:** typing the header button's words ("Explain this
+  page") gets its answer on every page. "Do you sell my data?" starts
+  "No, we don't sell your data." and says where it's stored (one database on one
+  server at our hosting company, copied daily, and the second storage company
+  only when off-site backups are on), as the Security page does. New answers
+  for Help's top how-tos: adding a teammate, reminder emails, adding an
+  industry, and deleting the workspace ("How do I close my account?"), which
+  says plainly that it isn't the same as cancelling the plan.
+- **History and its CSV are in your workspace's time zone** (Settings), with
+  the zone named ("When (Chicago time)", and "Time (America/Chicago)" in the
+  CSV), like the summary. They were in UTC.
+- **A family's ranks are spaced evenly** over the lessons its workspace has
+  (Launchpad with one industry: every 14 or so lessons up to 100), instead of
+  five ranks in the first 16 lessons and then a long wait. The Classroom track
+  keeps its ladder. **The Future Owner certificate always comes first:** a
+  lesson that earns two at once (passing the Owner's Challenge late, past
+  Silver's goal) shows both, Future Owner then Silver, and the certificate page
+  lists them in order.
+- **/pricing is a page of plan cards:** Pro, Plus and the Academy's free part
+  for a business, Classroom and Whole school for a school, with the same prices
+  from the same plan data and a button on each to start the free trial. The menu
+  for visitors has "Pricing". /prices goes there; Help's prices (/help#prices)
+  stay.
+- A student picks their picture from three a row (nine pictures in three rows,
+  not five rows to scroll). On a computer the page's column keeps Pilot's
+  corner free, so the robot shows whole instead of shrinking into the corner.
+  "Which sentence uses ...?" only offers wrong answers that are real sentences
+  with the wrong meaning ("Following every rule like that is invoice." is
+  gone), and the quiz checker flags any that aren't. A teacher's "First name
+  only?" card has one "Don't add" per name and one Save button (there was a
+  second "Don't add it" button beside it).
+- Adding a food batch says when its own reminder goes out ("Reminder set: ...
+  4 days before it's due"), not "It's overdue" because another batch is. The
+  Security page says to cancel a paid plan first before deleting the workspace,
+  as Help and Settings do.
+- Students' pages still have no Pilot and no Armo.
+
 ## 1.22.0 (23 November 2026)
 
 Fixes from a strict eleventh review, and Pilot core 1.4.3: History that reads

@@ -167,6 +167,14 @@ words to them ("sell", "share", "stored", "cookies"; "refund", "money", "close",
 "guarantee", "fined"; "billing"); the core reads at most 20 per item. On the schools pages the cancel answer is
 about the school plans only. The phone's side gutter is the core's 34 px.
 
+**1.23.0** adds to `GLOBAL`: "Explain this page" (the header button's own words, typed, get its answer: the core's
+typed matching doesn't look at the `screenChip`), and Help's top how-tos: "How do I add a teammate?", "How do
+reminder emails work?", "How do I add an industry?" and "How do I delete my workspace?" ("close" and "account" move
+there from cancelling: deleting the workspace closes the account, which isn't cancelling the plan, and the answer
+says so). "Is my data safe?" starts "No, we don't sell your data." and says where the data is stored, from the
+Security page's facts on the script tag (`offsite_backup`, `backup_keep`; `invite_days` for the teammate answer).
+On a computer the page's column keeps the robot's corner free (`app.css`), so it shows whole instead of tucking.
+
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of

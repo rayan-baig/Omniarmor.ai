@@ -79,7 +79,7 @@ class TestHistoryCards(AppTestCase):
         self.assertIn("table.audit-cards thead{display:none}", phone)
         self.assertIn("table.audit-cards .audit-change{order:4;flex-basis:100%", phone)
         csv = self.client.get("/app/audit.csv").data.decode().splitlines()[0]
-        self.assertEqual(csv, "Time (UTC),Person,Action,Industry,Check,Before,After,Summary")
+        self.assertEqual(csv, "Time (America/New_York),Person,Action,Industry,Check,Before,After,Summary")  # 1.23.0: local
 
 
 # --- 2. A family's ranks ---------------------------------------------------------------------------------------
@@ -229,15 +229,16 @@ class TestInspectionSummary(AppTestCase):
 class TestSmallThings(AppTestCase):
     def test_pricing_goes_to_the_prices(self):
         visitor = self.app.test_client()
-        for path in ("/pricing", "/prices"):
-            got = visitor.get(path)
-            self.assertEqual(got.status_code, 301, path)
-            self.assertTrue(got.headers["Location"].endswith("/help#prices"), path)
+        # 1.23.0: /pricing is a page of its own (tests/test_round12_fixes.py); /prices goes there.
+        self.assertEqual(visitor.get("/pricing").status_code, 200)
+        got = visitor.get("/prices")
+        self.assertEqual(got.status_code, 301)
+        self.assertTrue(got.headers["Location"].endswith("/pricing"))
         self.assertIn('id="prices"', visitor.get("/help").data.decode())
 
     def test_home_says_due_not_a_second_in(self):
         page = read("omniarmor_app", "templates", "app", "overview.html")
-        self.assertIn("<span class=\"meta mono\" data-due-when>{{ s.due_text }} · {{ s.due_label }}</span>", page)
+        self.assertIn("<span class=\"meta mono\" data-due-when>{{ st.due_text }} · {{ st.due_label }}</span>", page)
         self.assertNotIn("{{ s.due_in }} · {{ s.due_label }}", page)
         client = self.app.test_client()
         client.get("/demo/business")

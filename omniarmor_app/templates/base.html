@@ -87,6 +87,7 @@
       {% else %}
         <a href="{{ url_for('public.industries') }}"{% if request.endpoint in ('public.industries', 'public.industry_page', 'public.trade_page') %} aria-current="page"{% endif %}>Businesses</a>
         <a href="{{ url_for('public.academy_schools') }}"{% if request.endpoint in ('public.academy_schools', 'public.class_guide') %} aria-current="page"{% endif %}>Schools</a>
+        <a href="{{ url_for('public.pricing') }}"{% if request.endpoint == 'public.pricing' %} aria-current="page"{% endif %}>Pricing</a>
         <a href="{{ url_for('kids.join') }}">Kids</a>
         <a href="{{ url_for('auth.login') }}">Sign in</a>
       {% endif %}

@@ -8,6 +8,7 @@
 {% block content %}
 <div class="ac">
   {{ certificate(summary, avatars, earned or today.isoformat(), cls) }}
+  {% if summary.certificates|length > 1 %}<p class="mt no-print" data-certificates-order>Certificates earned, in order: {{ summary.certificates|join(' → ') }}.</p>{% endif %}
   <p class="mt no-print"><a href="{{ url_for('academy.level_map', learner_id=summary.learner.id) }}">← Back to the map</a>{% if cls and not g.kid %} · <a href="{{ url_for('classes.class_page', class_id=cls.id) }}">{{ cls.name }}</a>{% endif %} · Use your browser's Print to print it on one landscape page.</p>
 </div>
 {% endblock %}

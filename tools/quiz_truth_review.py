@@ -34,6 +34,11 @@ and flags the patterns that have slipped through before:
 - long-sentence an answer to "Which sentence uses ...?" is longer than
                 academy.SENTENCE_MOST characters (1.21.0), too long to read
                 three of at a glance on a phone
+- sentence-grammar  a wrong answer to "Which sentence uses ...?" puts the word
+                where only its own kind of word fits (a bare gap: "Following
+                every rule like that is invoice."), so it can be ruled out on
+                grammar instead of meaning (1.23.0): wrong answers come only
+                from scenes whose gap is a noun's place (academy.noun_slot)
 - definition    a Business Words term (academy.GLOSSARY) is defined in other
                 words than the Word Bank's (1.22.0): a lesson card named for
                 the term ("Profit") or an explanation's "Profit: ..." line
@@ -224,6 +229,9 @@ def lesson_flags(t, company, ids):
                     for option in q.options:
                         if len(option) > academy.SENTENCE_MOST:
                             flags.append(("long-sentence", where, q.prompt, option))
+                    for m, option in enumerate(q.options):
+                        if m != q.answer and not sentence_reads(q, option):
+                            flags.append(("sentence-grammar", where, q.prompt, option))
                 if q.kind != "match":
                     continue
                 shown = set((q.parts or {}).get("pool") or []) | set((q.parts or {}).get("left") or [])
@@ -232,6 +240,18 @@ def lesson_flags(t, company, ids):
                         for word in sorted(shown & academy.words_in(other)):
                             flags.append(("repeat", where, other.prompt, word))
     return flags
+
+
+def sentence_reads(q, option):
+    """Whether a wrong answer to "Which sentence uses X ...?" is X put in a noun's place of another word's scene
+    (academy.noun_slot), so it reads as a sentence (1.23.0)."""
+    word = academy.asked_word(q)
+    if not word:
+        return True
+    for scene in academy.WORD_SCENES.values():
+        if academy._in_gap(scene, word) == option:
+            return academy.noun_slot(scene)
+    return True
 
 
 def _first_sentence(text):

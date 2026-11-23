@@ -173,8 +173,10 @@ class TestDatesAreTheWorkspaces(AppTestCase):
         self.assertIn("Works once, until 2099-11-02", self.client.get("/app/academy/1").get_data(as_text=True))
 
     def test_utc_only_where_it_says_so(self):
+        # 1.23.0: History and its CSV are in the workspace's own time zone, and say which.
         audit = self.client.get("/app/audit").get_data(as_text=True)
-        self.assertIn("When (UTC)", audit)
+        self.assertIn("When (Los Angeles time)", audit)
+        self.assertIn("America/Los_Angeles", audit)
         head = self.client.get("/app/report.csv").get_data(as_text=True).splitlines()[0]
         self.assertIn("Last updated (UTC)", head)
 

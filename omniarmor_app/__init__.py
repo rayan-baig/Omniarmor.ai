@@ -227,10 +227,18 @@ def help_page():
 
 
 @public.route("/pricing", endpoint="pricing")
-@public.route("/prices")
 def pricing():
-    """The address people guess for the prices (1.22.0; it was a 404): Help's prices, every plan and amount."""
-    return redirect(url_for("public.help") + "#prices", code=301)
+    """The prices as a page of plan cards (1.23.0; 1.22.0 sent /pricing to Help's prices): the business plans, the
+    Academy's free part and the school plans, every name and amount from plans.py (plan_facts, the same numbers
+    Help, the landing page and the Plans page use), each with a way to start the free trial. Help's #prices stays."""
+    from .classrooms import public_facts
+    facts = _help_facts()
+    return render_template("pricing.html", facts=facts, school=public_facts(current_app.config))
+
+
+@public.route("/prices")
+def prices():
+    return redirect(url_for("public.pricing"), code=301)
 
 
 # The pages anyone can open and search engines may list: the sitemap gives
@@ -238,10 +246,10 @@ def pricing():
 # address. Every other page is private: marked noindex, and the ones that
 # hold a person's or a company's data are closed to crawlers in robots.txt.
 PUBLIC_PAGES = {"public.home", "public.industries", "public.industry_page", "public.trade_page",
-                "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.security", "public.help", "auth.signup",
+                "public.academy_schools", "public.class_guide", "public.terms", "public.privacy", "public.security", "public.help", "public.pricing", "auth.signup",
                 "auth.login"}
 # Addresses that are not pages: they get no noindex header.
-NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon", "public.pricing"}
+NOT_PAGES = {"static", "public.robots", "public.sitemap", "public.favicon", "public.apple_touch_icon", "public.prices"}
 # Closed to crawlers: the app (with the Academy and Settings), password reset
 # and invite links, the kids' join page, the demos (each opening one counts
 # toward its limit) and the addresses only programs use.
@@ -295,7 +303,8 @@ def sitemap():
     from .trades import TRADES
     paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
     paths += [url_for("public.academy_schools"), url_for("public.class_guide")]
-    paths += [url_for("auth.signup"), url_for("auth.login"), url_for("public.help"), url_for("public.terms"),
+    paths += [url_for("public.pricing"), url_for("auth.signup"), url_for("auth.login"), url_for("public.help"),
+              url_for("public.terms"),
               url_for("public.privacy"), url_for("public.security")]
     if current_app.config.get("NOINDEX"):
         paths = []

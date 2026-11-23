@@ -4,7 +4,8 @@ notifications and settings."""
 
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, session,
                    stream_with_context, url_for)
@@ -19,8 +20,8 @@ from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, c
 from .db import get_db, now_iso, record_audit
 from .security import clean_text, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, LEVEL_ORDER, ValidationError, add_illness,
-                       apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, local_date, org_industry_ids, org_now,
-                       org_today, remove_illness, states_for_org, tally)
+                       apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, item_rows, local_date, org_industry_ids,
+                       org_now, org_today, remove_illness, states_for_org, tally, tracked_items)
 
 bp = Blueprint("app", __name__, url_prefix="/app")
 UPCOMING_DAYS = 60
@@ -92,16 +93,20 @@ def overview():
     today = org_today(g.org)
     ids = checklist_ids(conn, g.org)
     problems = sorted([s for s in states if s.problem], key=urgency)
-    upcoming = sorted([s for s in states if s.due_date and 0 <= s.days_left <= UPCOMING_DAYS and not s.problem],
-                      key=lambda s: s.days_left)
-    later = sorted([s for s in states if s.due_date and s.days_left > UPCOMING_DAYS and not s.problem],
-                   key=lambda s: s.days_left)
+    # 1.23.0: what's coming due is counted per item, like the summary's "Due in the next 30 days": a food batch
+    # due in 4 days shows here even when another batch makes its check blocked.
+    rows = list(item_rows(states))
+    upcoming = sorted([r for r in rows if r[2].due_date and 0 <= r[2].days_left <= UPCOMING_DAYS and not r[2].problem],
+                      key=lambda r: r[2].days_left)
+    later = sorted([r for r in rows if r[2].due_date and r[2].days_left > UPCOMING_DAYS and not r[2].problem],
+                   key=lambda r: r[2].days_left)
     missing = [s for s in states if s.level == "NONE"]
     by_industry = []
     for i in ids:
         mine = [s for s in states if s.industry_id == i]
         by_industry.append({"industry": INDUSTRIES[i], "counts": tally(mine)})
-    return render_template("app/overview.html", counts=tally(states), problems=problems, upcoming=upcoming,
+    return render_template("app/overview.html", counts=tally(states), tracked=tracked_items(states),
+                           problems=problems, upcoming=upcoming,
                            early_policy=early_policy,
                            missing=len(missing), by_industry=by_industry, today=today, total=len(states),
                            checklist=getting_started(conn, states, ids), next_up=next_reading(states, ids),
@@ -177,6 +182,7 @@ def industry(industry_id):
     shown = [s for s in states if s.problem] if only else states
     logs = {key: illness_log(get_db(), g.org["id"], i, key) for i, key in ILLNESS_LOG_CHECKS if i == industry_id}
     return render_template("app/industry.html", info=info, states=shown, counts=tally(states), only=only,
+                           tracked=tracked_items(states),
                            can_override=can_override, today=now.date(), now=now, counts_time=counts_time,
                            top_rank=top_rank, why_line=why_line, top_count=TOP_COUNT, bulk_actions=BULK_ACTIONS,
                            bundle=_bundle(industry_id), multi_check=multi_check, logs=logs,
@@ -307,13 +313,30 @@ def entry_change(industry_id, rule_key):
         flash(apply_entry(get_db(), g.org, g.user["id"], industry_id, rule_key, action, request.form), "ok")
         usage.count(get_db(), "checks_updated")
         if action in ("add", "save", "done_today"):
-            line = reminder_line(industry_id, rule_key)
+            # 1.23.0: about the entry just saved (a batch due in 4 days), not the check's worst one: adding
+            # "Chicken tinga" said "It's overdue" because another batch was.
+            pick = {"label": " ".join((request.form.get("label") or "").split())} if action == "add" else \
+                {"id": request.form.get("entry_id") or "main"}
+            line = reminder_line(industry_id, rule_key, entry=pick)
             if line:
                 flash(line, "ok")
     except ValidationError as exc:
         flash_error(str(exc))
     target = url_for("app.industry", industry_id=industry_id, only=request.form.get("only") or None)
     return redirect(f"{target}#rule-{rule_key}")
+
+
+def _entry_state(state, pick):
+    """The state of the entry a form just saved (by its id, or for a new one its name, the newest of that name), or
+    the check's own state when it can't be told."""
+    if not pick or not state.entries:
+        return state
+    if pick.get("id") is not None:
+        found = [e for e in state.entries if str(e["id"]) == str(pick["id"])]
+    else:
+        found = [e for e in state.entries if pick.get("label") and e["label"] == pick["label"]]
+        found.sort(key=lambda e: -1 if e["id"] == "main" else int(e["id"]))
+    return found[-1]["state"] if found else state
 
 
 @bp.route("/industry/<int:industry_id>/rule/<rule_key>/illness", methods=["POST"])
@@ -338,11 +361,14 @@ def illness_change(industry_id, rule_key):
     return redirect(url_for("app.industry", industry_id=industry_id) + f"#rule-{rule_key}")
 
 
-def reminder_line(industry_id, rule_key):
+def reminder_line(industry_id, rule_key, entry=None):
     """After a save: when the reminder emails for this check go out, for a
-    check counted in days from a date. Empty for the others."""
+    check counted in days from a date. Empty for the others. entry: which
+    entry of a check kept per item was saved ({"id": ...} or {"label": ...})."""
     from .reminders import REMINDER_DAYS
     state = next((s for s in states_for_org(get_db(), g.org, industry_ids=[industry_id]) if s.key == rule_key), None)
+    if state is not None:
+        state = _entry_state(state, entry)
     if state is None or not state.mode or state.due_date is None or state.minutes_left is not None:
         return ""
     if not g.user["email_reminders"]:
@@ -394,7 +420,7 @@ def audit():
         conn = get_db()
         next_up = next_reading(states_for_org(conn, g.org), checklist_ids(conn, g.org))
     return render_template("app/audit.html", rows=rows[:AUDIT_PAGE], page=page, more=len(rows) > AUDIT_PAGE,
-                           next_up=next_up)
+                           next_up=next_up, zone=zone_words(g.org), zone_abbr=org_now(g.org).strftime("%Z"))
 
 
 # Newest first. The index audit_org_at_id (migration 12) holds this order.
@@ -405,24 +431,54 @@ AUDIT_QUERY = ("SELECT audit.*, COALESCE(users.name, audit.user_name) AS user_na
 
 def _audit_rows(limit=None, offset=0):
     """The company's audit rows, newest first, one at a time (a long trail is
-    never held in memory all at once)."""
+    never held in memory all at once). 1.23.0: each with its time where the
+    workspace is (its own time zone, as the summary and every other page), not UTC."""
     sql = AUDIT_QUERY
     params = [g.org["id"]]
     if limit is not None:
         sql += " LIMIT ? OFFSET ?"
         params += [limit, offset]
+    tz = _org_zone(g.org)
     for r in get_db().execute(sql, params):
         rule = find_rule(r["industry_id"], r["rule_key"]) if r["industry_id"] else None
+        moment = _local_moment(r["at"], tz)
         yield {**dict(r), "industry": INDUSTRIES.get(r["industry_id"], {}).get("brand", ""),
-               "rule_title": rule.title if rule else "", "at_short": _short_moment(r["at"])}
+               "rule_title": rule.title if rule else "", "at_short": _short_moment(r["at"], tz),
+               "at_local": f"{moment:%Y-%m-%d %H:%M}" if moment else str(r["at"] or "")[:16].replace("T", " "),
+               "at_csv": moment.isoformat() if moment else str(r["at"] or "")}
 
 
-def _short_moment(text):
-    """"2026-11-20T16:07:31+00:00" as "20 Nov 16:07" (UTC, as History's table and
-    CSV): the time on History's phone cards (1.22.0)."""
+def _org_zone(org):
+    try:
+        return ZoneInfo(org["timezone"])
+    except (KeyError, IndexError, ValueError, TypeError, ZoneInfoNotFoundError):
+        return timezone.utc
+
+
+def zone_words(org):
+    """How History names the workspace's time zone (1.23.0): "Chicago time" for America/Chicago, "UTC" for UTC."""
+    name = str(org["timezone"] or "UTC")
+    if name in ("UTC", "Etc/UTC", "GMT"):
+        return "UTC"
+    return name.rsplit("/", 1)[-1].replace("_", " ") + " time"
+
+
+def _local_moment(text, tz):
+    """A moment the database keeps in UTC, in the time zone tz; None when it isn't a time."""
     try:
         moment = datetime.fromisoformat(str(text))
     except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(tz)
+
+
+def _short_moment(text, tz=timezone.utc):
+    """"2026-11-20T16:07:31+00:00" as "20 Nov 16:07" in the time zone tz (1.23.0: the workspace's; it was UTC):
+    the time on History's phone cards (1.22.0)."""
+    moment = _local_moment(text, tz)
+    if moment is None:
         return str(text or "")[:16].replace("T", " ")
     return f"{moment.day} {moment:%b %H:%M}"
 
@@ -460,8 +516,9 @@ def _csv_response(filename, header, rows):
 @login_required
 def audit_csv():
     return _csv_response("omniarmor-audit-trail.csv",
-                         ["Time (UTC)", "Person", "Action", "Industry", "Check", "Before", "After", "Summary"],
-                         ([r["at"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
+                         [f"Time ({g.org['timezone']})", "Person", "Action", "Industry", "Check", "Before", "After",
+                          "Summary"],
+                         ([r["at_csv"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
                            r["before"], r["after"], r["summary"]] for r in _audit_rows()))
 
 
@@ -482,11 +539,13 @@ def report():
         mine = sorted([s for s in states if s.industry_id == i], key=lambda s: s.sort_key)
         groups.append({"industry": INDUSTRIES[i], "states": mine, "counts": tally(mine)})
     return render_template("app/report.html", groups=groups, counts=tally(states), today=org_today(g.org),
+                           tracked=tracked_items(states),
                            next_up=next_reading(states, ids))
 
 
 SUMMARY_ROWS = 10      # the inspection summary's lists: what needs action, what's due next, the last checks
 SUMMARY_SOON_DAYS = 30
+SUMMARY_LAST = 6       # 1.23.0: the last checks recorded, so the summary prints on one page
 
 
 @bp.route("/report/summary")
@@ -502,28 +561,27 @@ def report_summary():
     conn = get_db()
     states = states_for_org(conn, g.org)
     ids = checklist_ids(conn, g.org)
-    # Each entry of a check kept per item (a fridge, a cooler) is a check of its own here.
-    rows = []
-    for s in states:
-        if len(s.entries) > 1:
-            rows += [(s, f"{s.rule.title} · {e['label']}", e["state"]) for e in s.entries]
-        else:
-            rows.append((s, s.rule.title, s))
+    # 1.23.0: one counting rule, Home's and the Report's (tracking.tracked_items): the totals count checks, a
+    # check that tracks items one by one counting once, as its worst item. The lists below name each item.
+    rows = list(item_rows(states))
     attention = sorted((r for r in rows if r[2].level in ("BLOCKED", "WARNING")),
                        key=lambda r: (LEVEL_ORDER[r[2].level], r[2].days_left if r[2].days_left is not None else 10 ** 6))
     soon = sorted((r for r in rows if r[2].level == "CLEARED" and r[2].days_left is not None
                    and r[2].days_left <= SUMMARY_SOON_DAYS), key=lambda r: r[2].days_left)
     recorded = sorted((r for r in rows if r[2].updated_at), key=lambda r: str(r[2].updated_at), reverse=True)
     people = {}
-    for _, _, st in recorded:
+    for s, _, st in recorded:
         name = st.updated_by or "Someone no longer on the team"
-        who = people.setdefault(name, {"name": name, "checks": 0, "last": st.updated_at})
-        who["checks"] += 1
-    groups = [{"industry": INDUSTRIES[i], "counts": tally([st for s, _, st in rows if s.industry_id == i])} for i in ids]
-    return render_template("app/report_summary.html", counts=tally([st for _, _, st in rows]), groups=groups,
+        who = people.setdefault(name, {"name": name, "checks": set(), "items": 0, "last": st.updated_at})
+        who["checks"].add((s.industry_id, s.key))
+        who["items"] += 1 if len(s.entries) > 1 else 0
+    for who in people.values():
+        who["checks"] = len(who["checks"])
+    groups = [{"industry": INDUSTRIES[i], "counts": tally([s for s in states if s.industry_id == i])} for i in ids]
+    return render_template("app/report_summary.html", counts=tally(states), tracked=tracked_items(states), groups=groups,
                            attention=attention[:SUMMARY_ROWS], attention_more=max(0, len(attention) - SUMMARY_ROWS),
                            soon=soon[:SUMMARY_ROWS], soon_more=max(0, len(soon) - SUMMARY_ROWS), soon_days=SUMMARY_SOON_DAYS,
-                           recorded=recorded[:SUMMARY_ROWS], people=sorted(people.values(), key=lambda p: -p["checks"]),
+                           recorded=recorded[:SUMMARY_LAST], recorded_more=max(0, len(recorded) - SUMMARY_LAST), people=sorted(people.values(), key=lambda p: -p["checks"]),
                            today=org_today(g.org), now=org_now(g.org))
 
 

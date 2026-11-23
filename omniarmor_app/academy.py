@@ -716,6 +716,12 @@ def _scaled(t, table, quests=None):
     it, the last at it (1.19.0 for the Classroom track; 1.22.0 for the family tracks, whose ladder counted
     every industry's Rule Quests)."""
     total = t.reachable(quests)
+    if table is RANKS and t.rule_quests:
+        # 1.23.0: a family's ranks are spaced evenly over the levels its workspace has (Launchpad with one
+        # industry: 0, 14, 29, 43, 57, 71, 86, 100), not 1, 2, 6, 16, 40, 95 and 100, five ranks in the first
+        # fifth and then a long wait. The Classroom track keeps 1.19.0's ladder.
+        steps = len(table) - 1
+        return [(round(total * k / steps), title) for k, (_, title) in enumerate(table)]
     scale = total / RANK_BASE
     out, last = [], None
     for needed, title in table:
@@ -781,12 +787,22 @@ def certificate_goals(t, quests=None):
     return out
 
 
-def certificate_for(levels_done, final_passed, t=None, quests=None):
+def certificates_for(levels_done, final_passed, t=None, quests=None):
+    """Every certificate earned, in the order they are awarded (1.23.0): the Future Owner certificate always
+    first, then Silver, Gold and Platinum. Passing the Challenge late, past Silver's goal, earns the Future Owner
+    certificate and Silver at once, shown in that order (it used to show only Silver)."""
     t = t or TRACKS[DEFAULT_TRACK]
     if not final_passed:
-        return None
-    title = _title_for(certificate_goals(t, quests), levels_done)
-    return title if t.key == DEFAULT_TRACK else f"{t.name} {title}"
+        return []
+    goals = certificate_goals(t, quests)
+    earned = [title for goal, title in goals if levels_done >= goal] or [goals[0][1]]
+    return [title if t.key == DEFAULT_TRACK else f"{t.name} {title}" for title in earned]
+
+
+def certificate_for(levels_done, final_passed, t=None, quests=None):
+    """The highest certificate earned (the one the certificate page prints), or None."""
+    earned = certificates_for(levels_done, final_passed, t, quests)
+    return earned[-1] if earned else None
 
 
 def money(n):
@@ -1615,10 +1631,24 @@ def _word_scene(rng, word, meaning, words, n):
 SENTENCE_MOST = 90
 
 
+# 1.23.0: a wrong answer to "Which sentence uses ...?" must read as a real sentence that means the wrong thing, so it
+# is only made from a scene whose gap is a noun's place: after "the", "its", "his", "her", "their" or a "'s", maybe
+# with a word or two between ("the shop's biggest ___"). A bare gap ("Following every rule like that is ___.", "a
+# high ___", "went to court: ___.") fits only its own word: "is invoice." was not a sentence, so a kid could rule it
+# out on grammar alone. tools/quiz_truth_review.py flags any that slip through ("sentence-grammar").
+NOUN_SLOT = re.compile(r"(?:\b(?:the|its|his|her|their|our|your|my)|'s)\s+(?:[\w-]+\s+){0,2}" + re.escape(GAP))
+
+
+def noun_slot(scene):
+    """Whether a scene's gap is a noun's place, where any business word reads as a sentence (1.23.0)."""
+    return NOUN_SLOT.search(scene) is not None
+
+
 def _sentence_others(word, words):
-    """The other words' scenes with `word` put in their gap that can be wrong answers to its sentence question."""
+    """The other words' scenes with `word` put in their gap that can be wrong answers to its sentence question:
+    a noun's place only (noun_slot), so each reads as a sentence and is wrong only in what it means."""
     return [_in_gap(WORD_SCENES[w], word) for w, _ in words
-            if w in WORD_SCENES and not _clash(word, w) and not _names(WORD_SCENES[w], word)
+            if w in WORD_SCENES and noun_slot(WORD_SCENES[w]) and not _clash(word, w) and not _names(WORD_SCENES[w], word)
             and len(_in_gap(WORD_SCENES[w], word)) <= SENTENCE_MOST]
 
 

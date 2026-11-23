@@ -13,14 +13,15 @@
 {% if rows %}
 {# 1.22.0: on a phone each entry is a card (app.css, "History on a phone"): "Jules Marrow · PharmacyArmor ·
    20 Nov 16:07" on top, then the change in full. A computer and the CSV keep the four columns. #}
-<p class="audit-utc">Times are UTC.</p>
+{#- 1.23.0: every time in the workspace's own time zone (Settings), as on the summary; it was UTC. -#}
+<p class="audit-zone" data-audit-zone>Times are {{ zone }} ({{ g.org.timezone }}{% if zone_abbr and zone_abbr != 'UTC' %}, {{ zone_abbr }} now{% endif %}), this workspace's time zone. The CSV uses it too.</p>
 <div class="table-wrap">
   <table class="audit-cards" data-audit-table>
-    <thead><tr><th scope="col">When (UTC)</th><th scope="col">Who</th><th scope="col">Industry</th><th scope="col">Change</th></tr></thead>
+    <thead><tr><th scope="col">When ({{ zone }})</th><th scope="col">Who</th><th scope="col">Industry</th><th scope="col">Change</th></tr></thead>
     <tbody>
       {% for r in rows %}
         <tr>
-          <td class="num mono audit-when"><span class="at-long">{{ r.at[:16].replace('T', ' ') }}</span><span class="at-short">{{ r.at_short }}</span></td>
+          <td class="num mono audit-when"><span class="at-long">{{ r.at_local }}</span><span class="at-short">{{ r.at_short }}</span></td>
           <td data-pilot-private>{{ r.user_name or 'System' }}</td>
           <td class="audit-industry">{{ r.industry }}</td>
           <td class="audit-change">{{ r.summary }}</td>

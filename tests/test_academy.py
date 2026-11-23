@@ -132,10 +132,12 @@ class TestCourseContent(unittest.TestCase):
         self.assertEqual(academy.rank_tier(1000), 7)
         titan = academy.TRACKS["titan"]
         self.assertLess(academy.rank_tier(BASIC.reachable(), titan), 7)  # bigger tracks need more levels
-        self.assertEqual(academy.next_rank(0), (1, "Apprentice"))
+        self.assertEqual(academy.next_rank(0), (round(BASIC.reachable() / 7), "Apprentice"))   # 1.23.0: evenly
         self.assertIsNone(academy.certificate_for(BASIC.total - 1, False))
         self.assertEqual(academy.certificate_for(1, True), "Future Owner")
-        self.assertEqual(academy.certificate_for(40, True), "Silver Future Owner")
+        silver = academy.certificate_goals(BASIC)[1][0]
+        self.assertEqual(academy.certificate_for(silver, True), "Silver Future Owner")
+        self.assertEqual(academy.certificates_for(silver, True), ["Future Owner", "Silver Future Owner"])
         self.assertEqual(academy.certificate_for(BASIC.reachable(), True), "Platinum Future Owner")
         self.assertEqual(academy.certificate_for(titan.reachable(), True, titan), "Titan Mastery Platinum Future Owner")
 
@@ -418,7 +420,10 @@ class TestAcademyPages(AppTestCase):
     def test_rank_up(self):
         self.add()
         lid = self.learner_id()
-        # 1.22.0: Apprentice at the first lesson (the ladder scaled to the levels this workspace has).
+        # 1.23.0: the ranks are spaced evenly over the levels this workspace has: the lesson that reaches the
+        # first goal is the rank up.
+        from test_parent_view import pass_levels_before_apprentice
+        pass_levels_before_apprentice(self.db, lid, self.org()[1])
         page = self.answer(lid, 1, 1).data.decode()
         self.assertIn("Rank up! You're now an Apprentice", page)
         self.assertIn("avatar-tier-1", page)

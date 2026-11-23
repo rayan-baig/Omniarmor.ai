@@ -181,6 +181,31 @@ class ItemState:
         return format_quantity(self.value, self.rule.unit)
 
     @property
+    def reading_text(self):
+        """The reading in words that say what the number is (1.23.0): "44°F", "Yes", "35 days ago" for a check
+        counted from when it was done, "41 days left" for a deadline or licence (the summary said "last
+        reading 41 days" for both)."""
+        shown = self.shown_value
+        if not shown or not self.mode or isinstance(self.value, bool):
+            return shown
+        if self.mode == "since":
+            return f"{shown} ago"
+        return f"{shown} left" if self.value >= 0 else f"{format_quantity(-self.value, self.rule.unit)} past due"
+
+    @property
+    def reading_line(self):
+        """The summary's "Needs action" detail after the due line: "last reading 44°F", "last done 35 days
+        ago", "41 days left"."""
+        text = self.reading_text
+        if not text:
+            return ""
+        if self.mode == "since" and not isinstance(self.value, bool):
+            return f"last done {text}"
+        if self.mode and not isinstance(self.value, bool):
+            return text if self.value >= 0 else ""     # "3 days overdue" already says it
+        return f"last reading {text}"
+
+    @property
     def sort_key(self):
         return (LEVEL_ORDER[self.level], self.days_left if self.days_left is not None else 10 ** 6, self.industry_id, self.rule.title)
 
@@ -552,6 +577,45 @@ def tally(states):
     for s in states:
         counts[s.level] += 1
     return counts
+
+
+def item_rows(states):
+    """(check, title, state) for each thing with its own reading or deadline: a check, or, for a check that
+    tracks several items one by one (food batches, fridges), each item ("Ready-to-eat food 7-day limit ·
+    Chicken tinga"). The summary's lists and Home's "Coming due" are made of these rows (1.23.0)."""
+    for s in states:
+        if len(s.entries) > 1:
+            for e in s.entries:
+                yield s, f"{s.rule.title} · {e['label']}", e["state"]
+        else:
+            yield s, s.rule.title, s
+
+
+def _item_kind(industry_id, rule_key):
+    """"food batch", "fridge", "AED": what one tracked item of a check is, in a sentence."""
+    thing = multi_check(industry_id, rule_key)[0].split(" or ")[0]
+    return thing if thing.isupper() else thing.lower()
+
+
+def _many(kind):
+    return f"{kind}es" if kind.endswith(("ch", "sh", "s", "x")) else f"{kind}s"
+
+
+def tracked_items(states):
+    """The one counting rule (1.23.0), the same on Home, the Report and the summary: every status total counts
+    checks, and a check that tracks several items one by one counts once, as its worst item. The items are
+    counted beside it: {"checks": 10, "items": 4, "counts": the items' own tally, "kinds": "food batches and
+    fridges"}, with items 0 when no check tracks more than one."""
+    multi = [s for s in states if len(s.entries) > 1]
+    entries = [e["state"] for s in multi for e in s.entries]
+    kinds = []
+    for s in multi:
+        kind = _item_kind(s.industry_id, s.key)
+        if kind not in kinds:
+            kinds.append(kind)
+    words = sorted(_many(k) for k in kinds)
+    return {"checks": len(states), "items": len(entries), "counts": tally(entries),
+            "kinds": " and ".join([", ".join(words[:-1])] + words[-1:]) if len(words) > 1 else "".join(words)}
 
 
 # ---------------------------------------------------------------------------

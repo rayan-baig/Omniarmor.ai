@@ -45,12 +45,12 @@
       <legend>{{ name }}</legend>
       <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ short }}" checked> <span>Add as <strong>{{ short }}</strong></span></label>
       <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value="{{ name }}"> <span>Add as {{ name }}: it's all first name (like Mary Jane)</span></label>
-      <label class="check"><input type="radio" name="pick-{{ loop.index0 }}" value=""> Don't add</label>
+      <label class="check" data-dont-add><input type="radio" name="pick-{{ loop.index0 }}" value=""> <span>Don't add {{ 'this name' if ask|length > 1 else 'it' }}</span></label>
     </fieldset>
     {% endfor %}
+    {#- 1.23.0: one "Don't add" per name (the choice above), not a second "Don't add it" button beside Save. -#}
     <p class="ac-confirm-actions">
-      <button class="btn ac-btn" type="submit">Add {{ 'these students' if ask|length > 1 else 'this student' }}</button>
-      <button class="btn quiet" type="submit" name="skip" value="all" data-skip-names>Don't add {{ 'any of them' if ask|length > 1 else 'it' }}</button>
+      <button class="btn ac-btn" type="submit" data-save-names>Save {{ 'my choices' if ask|length > 1 else 'my choice' }}</button>
     </p>
   </form>
   {% endif %}

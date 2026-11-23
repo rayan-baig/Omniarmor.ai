@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Pricing{% endblock %}
+{% block description %}OmniArmor's plans and prices: {{ facts.pro.name }} {{ facts.pro.price }} and {{ facts.plus.name }} {{ facts.plus.price }} for a business, {{ school.classroom.name }} and {{ school.school.name }} for schools, with a free trial and no card.{% endblock %}
+{% block content %}
+{#- 1.23.0: a page of plan cards (it was a jump to Help's prices). Every name, price and number comes from plans.py
+    through plan_facts() and classrooms.public_facts(), the same as Help (#prices stays), the landing page and the
+    Plans page. -#}
+{% set yr = facts.yearly %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Pricing</p>
+    <h1>Plans and prices</h1>
+    <p class="sub">Start with a {{ facts.trial_days }}-day free trial of everything in {{ facts.plus.name }}, for your whole team. No card needed. Prices are per {{ facts.location }}.</p>
+  </div>
+</div>
+
+<h2 id="business">For a business</h2>
+<div class="plan-grid" data-pricing-business>
+  {% for p in facts.plans %}
+  <section class="plan-card" data-plan="{{ p.key }}">
+    <span class="plan-here">{{ 'Compliance tracker' if p.key == 'pro' else 'Tracker and Academy' }}</span>
+    <h3>{{ p.name }}</h3>
+    <p class="plan-price" data-price>{{ p.price }}</p>
+    {% if yr[p.key] %}<p class="plan-note" data-price-yearly>or {{ p.yearly_price }} paid yearly ({{ facts.free_label }})</p>{% endif %}
+    <ul>
+      {% if p.key == 'pro' %}
+        <li>All {{ facts.checks }} checks across {{ facts.industries }} industries: pick the ones your company works in</li>
+        <li>Reminder emails and time-limit alerts, the report and its exports, the history of every change</li>
+        <li>Update several checks at once, your own limits, the whole team</li>
+        <li>The Academy's free worlds</li>
+      {% else %}
+        <li>Everything in {{ facts.pro.name }}</li>
+        <li>The whole Future Owner Academy for your kids at no extra cost: all {{ facts.tracks|length }} tracks, the Owner's Challenge and its certificates, and a Rule Quest for each of your industries</li>
+        <li>Up to {{ facts.max_learners }} kids, each on their own device if you like</li>
+      {% endif %}
+    </ul>
+    <a class="btn{{ ' quiet' if p.key == 'pro' }}" href="{{ url_for('auth.signup') }}" data-start-trial>Start your free trial</a>
+  </section>
+  {% endfor %}
+  <section class="plan-card" data-plan="free">
+    <span class="plan-here">Free for everyone</span>
+    <h3>Academy, free part</h3>
+    <p class="plan-price">Free</p>
+    <ul>
+      <li>{{ facts.free_track.name }} track: {{ facts.free_worlds|map(attribute='title')|join(', ') }}, with all {{ "{:,}".format(facts.free_levels) }} of their levels</li>
+      <li>Practice for missed questions, daily streaks, friends and Armo</li>
+      <li>Stays free after the trial, with or without a plan</li>
+    </ul>
+    <a class="btn quiet" href="{{ url_for('auth.signup') }}">Sign up free</a>
+  </section>
+</div>
+<p class="hint mt-s">Billed {% if yr.any %}monthly or yearly{% else %}monthly{% endif %} through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for, and nothing is deleted when it ends. On CyberLogix's {{ facts.bundle.name }} ({{ facts.bundle.price }})? It includes {{ facts.bundle.includes.name }}, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}.</p>
+
+<h2 id="schools">For a school</h2>
+<div class="plan-grid" data-pricing-schools>
+  {% for p in school.plans %}
+  <section class="plan-card" data-plan="{{ p.key }}">
+    <span class="plan-here">Paid yearly</span>
+    <h3>{{ p.name }}</h3>
+    <p class="plan-price" data-price>{{ p.yearly_price }}</p>
+    <p>{{ p.summary }}</p>
+    <a class="btn{{ ' quiet' if not loop.last }}" href="{{ url_for('auth.signup', then='classes') }}" data-start-trial>Start a free class trial</a>
+  </section>
+  {% endfor %}
+</div>
+<p class="hint mt-s">The class trial is {{ school.pilot_days|plural('day') }} for {{ school.pilot_classes }} class of up to {{ school.class_size }} students, no card. Pay by card or ask for an invoice: <a href="{{ url_for('public.academy_schools', _anchor='price') }}">more for schools</a>.</p>
+
+<p class="hint mt">Every detail (the trial, monthly or yearly, pausing and cancelling) is in <a href="{{ url_for('public.help', _anchor='prices') }}">Help</a>.</p>
+<p class="cta mt"><a class="btn" href="{{ url_for('auth.signup') }}">Start your free trial</a> <a class="btn quiet" href="{{ url_for('demo.index') }}">Try the demo</a></p>
+{% endblock %}

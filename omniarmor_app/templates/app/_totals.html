@@ -10,3 +10,4 @@
   {% for level in ['BLOCKED', 'WARNING', 'CLEARED', 'NONE'] %}{% if counts[level] %}<span class="{{ level }} grow-{{ counts[level]|pct(total, 1) }}"></span>{% endif %}{% endfor %}
 </div>
 {% endif %}
+{% include "app/_count_rule.html" %}

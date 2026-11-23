@@ -90,17 +90,18 @@
 <h2 id="coming-due">Coming due in the next 60 days</h2>
 {% if upcoming %}
   <ul class="list">
-    {% for s in upcoming %}
+    {% for s, title, st in upcoming %}
+      {#- 1.23.0: one row per tracked item (a food batch due in 4 days), as on the summary. -#}
       <li><a class="row row-stack" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
-        <span><span class="title">{{ s.rule.title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
+        <span><span class="title">{{ title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
         {#- 1.22.0: "Due in 5 days", not "in 5 days": a rule whose name has its own interval ("Emergency C-II
             follow-up in 7 days") read as "in 7 days · in 5 days". -#}
-        <span class="meta mono" data-due-when>{{ s.due_text }} · {{ s.due_label }}</span>
+        <span class="meta mono" data-due-when>{{ st.due_text }} · {{ st.due_label }}</span>
       </a></li>
     {% endfor %}
   </ul>
 {% elif later %}
-  <p class="empty">No tracked deadlines in the next 60 days. The next one is {{ check_link(later) }}, due {{ later.due_label }}.</p>
+  <p class="empty">No tracked deadlines in the next 60 days. The next one is <a href="{{ url_for('app.industry', industry_id=later[0].industry_id) }}#rule-{{ later[0].key }}">{{ later[1] }}</a> in {{ later[0].industry.brand }}, due {{ later[2].due_label }}.</p>
 {% elif next_dated and not any_dated %}
   {{ empty('coming-due', 'Deadlines in the next 60 days will show here once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
 {% else %}

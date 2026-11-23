@@ -88,7 +88,10 @@
     {% if goal_hit %}<p class="ac-unlock">Daily goal reached: {{ daily_goal }} lessons passed today! Streak: {{ summary.streak }} day{{ 's' if summary.streak != 1 }}.</p>{% endif %}
     {% if new_rank %}<p class="ac-unlock ac-rankup">Rank up! You're now {{ 'an' if new_rank[0] in 'AEIOU' else 'a' }} {{ new_rank }}!</p>{% endif %}
     {% if new_certificate %}
-      <p class="ac-unlock">You earned the {{ new_certificate }} certificate!</p>
+      {#- 1.23.0: in the order they're awarded, the Future Owner certificate first, even when one lesson earns two. -#}
+      {% for c in new_certificates or [new_certificate] %}
+      <p class="ac-unlock" data-new-certificate>{{ 'You earned the' if loop.first else 'And the' }} {{ c }} certificate!</p>
+      {% endfor %}
       <a class="btn ac-btn" href="{{ url_for('academy.certificate', learner_id=learner.id) }}">See your certificate</a>
     {% endif %}
     {% if first_clear and next_stage %}

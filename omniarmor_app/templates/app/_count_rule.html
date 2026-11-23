@@ -1,0 +1,5 @@
+{#- 1.23.0: the one counting rule, said the same way on Home, the Report, an industry page and the summary
+    (tracking.tracked_items). Needs: tracked. -#}
+{% if tracked and tracked['items'] %}
+<p class="count-rule" data-count-rule>{{ tracked.checks|plural('check') }}, {{ tracked['items']|plural('tracked item') }} ({{ tracked.kinds }}). A check that tracks items one by one counts once, as its worst item.</p>
+{% endif %}

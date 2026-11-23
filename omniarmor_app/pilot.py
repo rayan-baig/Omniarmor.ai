@@ -108,6 +108,8 @@ def facts(who):
     from .catalog import TOP_COUNT
     from .plan_views import plan_facts
     from .reminders import REMINDER_DAYS
+    from .auth import INVITE_DAYS
+    from .jobs import offsite_ok
     cfg = current_app.config
     pf = plan_facts(cfg)
     cf = classrooms.public_facts(cfg)
@@ -139,6 +141,9 @@ def facts(who):
         "pro_summary": "the compliance tracker: every check, reminder emails, reports and exports, and your whole team",
         "plus_summary": "everything in Pro, and the whole Future Owner Academy for your kids at no extra cost",
         "security_path": url_for("public.security"),
+        # 1.23.0: where the data is kept (the Security page's own facts) and how long an invite link works, for
+        # the answers to "Do you sell my data?" and "How do I add a teammate?".
+        "offsite_backup": bool(offsite_ok(cfg)), "backup_keep": cfg["BACKUP_KEEP"], "invite_days": INVITE_DAYS,
     }
     # ... "Which checklist fits me?" (the trades the industry list leads with,
     # each with its page, then the other trade pages) ...

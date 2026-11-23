@@ -548,20 +548,67 @@
   // at once (chips() below hands it to the core's typed matching), unless this page's own buttons and
   // suggestions already answer it.
   const signedIn = who === "business" || who === "teacher";
-  function safeAnswer(f) {
+  // 1.23.0: it starts with the answer to the question most people mean ("No, we don't sell your data.") and says
+  // where the data is kept, in the Security page's own words (one database on one server at the hosting company,
+  // and the second storage company only when off-site backups are on). `asked` is what was typed or pressed.
+  const SELL_WORDS = /\b(sell|sells|selling|sold|share|shares|sharing|shared|ads|advertis\w*|third|partners?)\b/i;
+  function storedLine(x) {
+    const kept = Number(x.backup_keep) > 0 ? ` The newest ${count(Number(x.backup_keep), "daily copy", "daily copies")} are kept.` : "";
+    return "- **Where it's stored:** in one database on one server, run for MTRX Horizyn (who make OmniArmor) by our hosting company. "
+      + `It is copied once a day, and each copy is checked before it is kept.${kept}`
+      + (x.offsite_backup ? " A copy of each day's backup also goes to a second, separate storage company." : "");
+  }
+  function safeAnswer(f, asked) {
     const x = f || {};
     const security = typeof x.security_path === "string" && /^\/[\w/-]*$/.test(x.security_path) ? x.security_path : "/security";
-    const out = ["**Your data, in short** (the [Security and your data](" + security + ") page has every detail):", "",
-      "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to OmniArmor.",
-      "- No ad, analytics or tracking company sees the pages you open.",
-      "- The whole database is copied once a day, and each copy is checked before it is kept.",
-      "- Pilot, this helper, runs in your browser on your own AI key: OmniArmor's server never sees the key or the chat."];
+    const sell = !asked || SELL_WORDS.test(String(asked)) || labelOf(asked) === "is my data safe";
+    const out = [sell ? "No, we don't sell your data. We don't share it for ads, and no ad, analytics or tracking company sees the pages you open."
+      : "We keep it safe, and no, we don't sell your data or share it for ads.", "",
+    storedLine(x),
+    "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to OmniArmor.",
+    "- Pilot, this helper, runs in your browser on your own AI key: OmniArmor's server never sees the key or the chat."];
     if (who === "teacher" || schoolSide) {
       out.push("- Students are added by first name or nickname only, have no accounts, and Pilot is never on a student's page.");
     }
     out.push(`- Delete a record, a class or the whole workspace any time${signedIn ? " (the owner, in [Settings](/app/settings))" : ""}: it is gone from the app at once.`,
-      "", "[The privacy page](/privacy) says who can see what.");
+      "", `[Security and your data](${security}) has every detail, and [the privacy page](/privacy) says who can see what.`);
     return out.join("\n");
+  }
+  const labelOf = (t) => String(t || "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  // 1.23.0: Help's top how-tos, answered with no key wherever they're typed (GLOBAL below).
+  function teammateAnswer(f) {
+    const days = Number((f || {}).invite_days) || 7;
+    if (!signedIn) {
+      return `Once your workspace is set up, the owner opens Settings and, under **Team**, presses **Create invite link**. The link works once, for ${count(days, "day")}: `
+        + "your teammate signs up with it and joins your workspace. Every plan includes your whole team. [Start a free trial](/signup)";
+    }
+    return `In [Settings](/app/settings#team), under **Team**, the owner presses **Create invite link** and sends the link to the teammate: it works once, for ${count(days, "day")}. `
+      + "They sign up with it and join this workspace, and get their own reminder emails. Only the owner can create links or remove someone (Remove, beside their name).";
+  }
+  function industryAnswer() {
+    if (!signedIn) {
+      return "You pick your industries when you sign up, and can add or remove one any time after in Settings: each brings its own checklist, with its top checks first. "
+        + "[See every industry](/industries)";
+    }
+    if (who === "teacher") {
+      return "A school's checklists are in [Settings](/app/settings#workspace), under **Your school checklists** (the owner ticks the ones you keep, then saves). "
+        + "They come with the Whole school plan.";
+    }
+    return "The workspace owner opens [Settings](/app/settings#workspace), ticks the industry under **Industries** and presses **Save company settings**. "
+      + "Its checklist shows in the menu at once, with its top checks first. Unticking one hides its checklist; the readings stay in History. [Every industry](/industries)";
+  }
+  function deleteAnswer(f) {
+    const keep = Number((f || {}).backup_keep);
+    const backups = keep > 0 ? `about ${count(keep, "day")}` : "a while";
+    const where = signedIn ? "[Settings](/app/settings)" : "Settings";
+    const what = who === "teacher" ? "every class, its students and their progress, the checklist records" : "every record, the audit trail, the reminder log and every learner";
+    return "**Deleting your workspace closes your account; it isn't the same as cancelling your plan.** Cancelling stops the charges and keeps your records to see and download. "
+      + "Deleting removes everything for good.\n\n"
+      + `- **To delete:** the workspace owner opens ${where}, goes to **Delete workspace** at the bottom and types the ${who === "teacher" ? "school" : "company"} name. `
+      + `That deletes ${what}, at once. With no other workspace, your sign-in goes too.\n`
+      + "- **Paying for a plan?** Cancel it first on the Plans page (Manage billing); you can delete right away after that.\n"
+      + `- **Download first** the report and History if you need them. Backups keep a copy for ${backups}.\n\n`
+      + "[Only cancel the plan instead](/help#cancel) · [Deleting, in Help](/help#delete)";
   }
   // "What does it cost?": the plans' real names and prices.
   function pricesAnswer(f) {
@@ -624,7 +671,7 @@
       + "For one page to show an inspector or an accountant, there's the [Inspection-ready summary](/app/report/summary).";
   }
   const GLOBAL = [
-    { label: "Is my data safe?", answer: (ctx) => safeAnswer(ctx && ctx.facts),
+    { label: "Is my data safe?", answer: (ctx) => safeAnswer(ctx && ctx.facts, ctx && ctx.label),
       // The core reads at most 20 words per item. 1.22.0: "Do you sell my data?", "Who do you share it with?",
       // "Where is my data stored?", "Do you use tracking cookies?".
       match: ["safe", "safety", "secure", "security", "privacy", "private", "data", "encrypted", "hacked", "breach", "gdpr", "coppa", "ferpa",
@@ -633,9 +680,20 @@
       match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars",
         "billing", "bill", "charge", "charged", "afford", "monthly", "yearly"] },
     { label: "Is this legal advice?", answer: LEGAL, match: LEGAL_WORDS },
+    // 1.23.0: "close" and "account" are deleting the workspace now (below), which isn't cancelling.
     { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",
-      "money", "back", "close", "account", "terminate"] },
+      "money", "back", "terminate"] },
     { label: "How do I export the report?", answer: exportAnswer, match: ["export", "csv", "download", "print", "spreadsheet", "excel", "pdf", "inspector", "auditor"] },
+    // 1.23.0: the header button's own words, typed ("Explain this page"), get its answer; and Help's top how-tos.
+    { label: "Explain this page", answer: explainPageAnswer, match: ["page", "screen", "overview", "summarise", "summarize"] },
+    { label: "How do I add a teammate?", answer: (ctx) => teammateAnswer(ctx && ctx.facts),
+      match: ["teammate", "invite", "colleague", "coworker", "employee", "employees", "worker", "workers", "team", "member", "members", "user", "users", "manager", "add"] },
+    { label: "How do reminder emails work?", answer: (ctx) => reminderAnswer((ctx && ctx.facts) || {}),
+      match: ["reminder", "email", "digest", "alert", "notification", "remind", "inbox", "unsubscribe"] },
+    { label: "How do I add an industry?", answer: industryAnswer,
+      match: ["industry", "industries", "checklist", "sector", "trade", "another", "add"] },
+    { label: "How do I delete my workspace?", answer: (ctx) => deleteAnswer(ctx && ctx.facts),
+      match: ["delete", "deleting", "deleted", "erase", "wipe", "workspace", "close", "closing", "account", "everything", "data", "remove", "shut"] },
   ];
 
   const TASKS = {

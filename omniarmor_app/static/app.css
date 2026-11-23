@@ -122,6 +122,8 @@ textarea:where(:not(.pilot-root *)){padding:12px;min-height:120px}
 .bar{display:flex;gap:2px;height:4px;margin-top:14px}
 .bar span{display:block;height:100%;border-radius:2px;min-width:0}
 .bar .BLOCKED{background:var(--block)}.bar .WARNING{background:var(--warn)}.bar .CLEARED{background:#4A433C}.bar .NONE{background:var(--line)}
+/* 1.23.0: the counting rule under the totals (app/_count_rule.html) */
+.count-rule{margin:10px 0 0;font-size:14px;color:var(--muted);max-width:68ch}
 
 /* Lists */
 .list{list-style:none;margin:0;padding:0}
@@ -276,10 +278,9 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 /* History on a phone (1.22.0): each entry is a card, "Jules Marrow · PharmacyArmor · 20 Nov 16:07" on top and the
    change in full under it, instead of four columns cut off at the side. A computer, printing and the CSV keep the
    table; the short time shows only in a card. */
-.audit-utc{display:none;margin:0 0 4px;font-size:13px;color:var(--faint)}
+.audit-zone{margin:12px 0 4px;font-size:13px;color:var(--faint)}
 table.audit-cards .at-short{display:none}
 @media screen and (max-width:640px){
-  .audit-utc{display:block}
   table.audit-cards thead{display:none}
   table.audit-cards,table.audit-cards tbody{display:block}
   table.audit-cards tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;padding:12px 4px;border-bottom:1px solid var(--line)}
@@ -307,9 +308,25 @@ table.audit-cards .at-short{display:none}
 .sum-sign p{margin:0;display:flex;align-items:flex-end;gap:8px;flex:1 1 260px}
 .sum-line{flex:1;min-width:140px;border-bottom:1px solid var(--muted);height:1.4em}
 .sum-line-short{max-width:200px}
+/* 1.23.0: the summary prints on one Letter or A4 page: smaller type, two columns, tighter lists. */
 @media print{
-  .sum-block{margin-top:16px;break-inside:avoid}
-  .sum-list li{padding:4px 0}
+  @page{margin:12mm}
+  .summary-page{font-size:10pt;line-height:1.35}
+  .summary-page .page-head{padding-bottom:8px;margin-bottom:0}
+  .summary-page h1{font-size:22pt;margin:0}
+  .summary-page .eyebrow{margin:0}
+  .summary-page .sub{margin:4px 0 0;font-size:9.5pt}
+  .summary-page h2{font-size:12pt;margin:0 0 4px;break-after:avoid}
+  .sum-block{margin-top:10px}
+  .sum-lead{font-size:10.5pt;margin:0 0 4px}
+  .sum-cols{columns:2;column-gap:24px}
+  .sum-cols .sum-block{margin:0 0 10px}
+  .sum-list li{padding:2px 0;line-height:1.3;break-inside:avoid}
+  .sum-detail{font-size:9pt}
+  .sum-list .tag{font-size:7.5pt;padding:1px 5px}
+  .summary-page .hint{font-size:8.5pt;margin:4px 0 0}
+  .count-rule{font-size:9pt;margin:4px 0}
+  .sum-sign{margin-top:14px;break-inside:avoid}
   .sum-line{border-color:#000}
 }
 
@@ -439,7 +456,10 @@ body:not(.has-tabs):has(> .companion) main{padding-bottom:120px}
 @media print{
   :root{color-scheme:light}
   body{background:#fff;color:#000}
-  .topbar,.no-print,footer.site,.flashes,.tabbar,.companion{display:none!important}
+  .topbar,.no-print,footer.site,.flashes,.tabbar,.companion,.pilot-root,.skip{display:none!important}
+  /* 1.23.0: the room kept on screen for the tab bar, Armo and Pilot's robot made an empty last page. */
+  html body,html body.has-tabs,html body.has-tabs:not(.lesson-view),html body.has-tabs:has(> .companion),html body.has-tabs:has(> .pilot-root),html:root.pilot-on body.has-tabs:has(> .pilot-root),html body.has-tabs:not(.lesson-view):has(> .pilot-root),html:root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root){padding-bottom:0!important;min-height:0!important}
+  main,html body:not(.has-tabs):has(> .companion) main{padding-bottom:0!important;min-height:0!important}
   .tag.BLOCKED{background:none;color:#000;box-shadow:inset 0 0 0 1px #000}
   th,td{border-color:#999}
   a{color:#000}
@@ -519,6 +539,8 @@ details.note .title{color:var(--ink);font-weight:600}
 .plan-status{font-size:15px}
 .plan-here{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text)}
 .plan-note{color:var(--muted);font-size:14.5px}
+/* 1.23.0: /pricing, each card's button at its foot, so the buttons of a row line up */
+[data-pricing-business] .plan-card>.btn,[data-pricing-schools] .plan-card>.btn{margin-top:auto}
 /* Monthly or yearly: two radio buttons (visually hidden) and their labels as
    a switch. The yearly prices and buttons (.when-year) show while Yearly is
    picked, the monthly ones (.when-month) otherwise. No script. */
@@ -735,6 +757,12 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   html body.has-tabs:not(.lesson-view) .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br .pilot-launcher,
   html body.has-tabs:not(.lesson-view) .pilot-root.pilot-keep-in.pilot-peek.pilot-at-br:not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible){
     transform-origin:100% 100%;transform:scale(var(--pilot-peek-scale))}
+  /* 1.23.0: the page's column keeps the robot's corner free on a computer (its right edge stops 136px from the
+     screen's, the robot's 88px and its 16px margin with room to spare), so the robot is never over a table row and
+     shows whole, instead of shrinking into the bottom-right corner where it looked cut off. A wide screen's own
+     margin counts toward the room. */
+  :root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root) main > .wrap{
+    padding-right:max(32px,calc(136px - max(0px,(100vw - 1396px) / 2)))}
 }
 
 /* Armo keeps clear of the page (1.15.0), as Pilot does: where he sits over a status tag, a button, a link or

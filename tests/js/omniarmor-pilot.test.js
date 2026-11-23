@@ -1225,7 +1225,7 @@ test("1.22.0: more of the ways people ask about their data, the price, the law a
   const asks = [
     ["Do you sell my data?", "Is my data safe?"], ["privacy", "Is my data safe?"], ["Who do you share my data with?", "Is my data safe?"],
     ["Where is my data stored?", "Is my data safe?"], ["Do you use tracking cookies?", "Is my data safe?"],
-    ["Can I get a refund?", "How do I cancel?"], ["refund", "How do I cancel?"], ["How do I close my account?", "How do I cancel?"],
+    ["Can I get a refund?", "How do I cancel?"], ["refund", "How do I cancel?"], ["How do I close my account?", "How do I delete my workspace?"],
     ["Can I get my money back?", "How do I cancel?"],
     ["Does this guarantee I'm compliant?", "Is this legal advice?"], ["Will I get fined?", "Is this legal advice?"],
     ["billing", "What does it cost?"], ["What will I be charged?", "What does it cost?"],
@@ -1250,4 +1250,64 @@ test("1.22.0: on the schools pages the cancel answer is about the school plans o
   assert.match(typedEverywhere("visitor", "/")("How do I cancel?").text, /Monthly/);
   assert.ok(linksIn(typedEverywhere("business", "/app/audit")("How do I export the report?").text).includes("/app/report/summary"));
   assert.ok(linksIn(mountOn("business", "/app/report", h("main")).answer("How do I export it?")).includes("/app/report/summary"));
+});
+
+// ---------------------------------------------------------------- 1.23.0
+
+test("1.23.0: the header button's words, typed, get its answer on every grown-up page", () => {
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const ask = typedEverywhere(who, where, { facts: { trades: TRADES, class_plan: CLASS_PLAN } });
+    for (const q of ["Explain this page", "explain this page", "Explain this page."]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, "Explain this page", `${who} ${where}: "${q}"`);
+    }
+  }
+});
+
+test("1.23.0: the safety answer starts with 'No, we don't sell your data.' and says where the data is stored", () => {
+  for (const [who, where] of GROWN_UP_PAGES.filter(([, w]) => !w.startsWith("/classrooms"))) {
+    for (const offsite of [true, false]) {
+      const ask = typedEverywhere(who, where, { facts: { offsite_backup: offsite, backup_keep: 14 } });
+      for (const q of ["Do you sell my data?", "Is my data safe?"]) {
+        const got = ask(q);
+        assert.ok(got, `${who} ${where}: ${q}`);
+        assert.equal(got.label, "Is my data safe?");
+        assert.ok(got.text.startsWith("No, we don't sell your data."), `${who} ${where}: ${got.text.slice(0, 60)}`);
+        assert.match(got.text, /Where it's stored:\*\* in one database on one server/);
+        assert.match(got.text, /newest 14 daily copies/);
+        assert.equal(/second, separate storage company/.test(got.text), offsite, `${where} offsite ${offsite}`);
+        assert.ok(linksIn(got.text).includes("/security"));
+      }
+    }
+  }
+});
+
+test("1.23.0: Help's top how-tos answer with no key: a teammate, reminder emails, an industry, deleting the workspace", () => {
+  const asks = [
+    ["How do I add a teammate?", "How do I add a teammate?", /Create invite link/], ["invite my manager", "How do I add a teammate?", /Create invite link/],
+    ["How do I add an employee?", "How do I add a teammate?", /for 5 days/],
+    ["How do reminder emails work?", "How do reminder emails work?", /daily digest/], ["unsubscribe", "How do reminder emails work?", /chooses their own emails/],
+    ["How do I add an industry?", "How do I add an industry?", /Industries|industries/], ["add another checklist", "How do I add an industry?", /Settings/],
+    ["How do I delete my workspace?", "How do I delete my workspace?", /Delete workspace/],
+    ["How do I close my account?", "How do I delete my workspace?", /isn't the same as cancelling/],
+    ["How do I delete my data?", "How do I delete my workspace?", /Delete workspace/],
+  ];
+  for (const [who, where] of [["business", "/app"], ["business", "/app/audit"], ["business", "/app/report"], ["visitor", "/industries"], ["visitor", "/demo"]]) {
+    const ask = typedEverywhere(who, where, { facts: { invite_days: 5, backup_keep: 14 } });
+    for (const [q, label, says] of asks) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, label, `${who} ${where}: "${q}"`);
+      assert.match(got.text, says, `${who} ${where}: "${q}"`);
+      if (who === "visitor") for (const l of linksIn(got.text)) assert.ok(!l.startsWith("/app"), `${where}: ${q} links ${l}`);
+    }
+  }
+  // Cancelling is still cancelling, and deleting says it isn't.
+  const ask = typedEverywhere("business", "/app/audit");
+  assert.equal(ask("How do I cancel?").label, "How do I cancel?");
+  assert.equal(ask("Can I get a refund?").label, "How do I cancel?");
+  assert.ok(linksIn(ask("How do I close my account?").text).includes("/help#cancel"));
+  // A teacher's own Invite a colleague button still wins on their settings page.
+  assert.equal(typedEverywhere("teacher", "/app/settings")("invite a teammate").label, "Invite a colleague");
 });
