@@ -172,8 +172,9 @@
 .ac-hud-line{margin:6px 0 0;font-size:14px;color:var(--muted)}
 .ac-hud-line span{font-weight:800;color:var(--ink)}
 /* 1.21.0: the pop-up sits inside the bar, in the score line's place (the line hides while it shows), so it covers
-   neither the score nor the question under the bar. */
-.ac-toast{position:absolute;left:72px;bottom:7px;top:auto;margin:0;max-width:calc(100% - 84px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 10px;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:13.5px;line-height:1.45;opacity:0;transform:scale(.9);transform-origin:left center;transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+   neither the score nor the question under the bar. A long line ("8 in a row! Okay, I'm actually smiling...") takes
+   two lines, over the progress bar for a moment, never more. */
+.ac-toast{position:absolute;left:72px;bottom:7px;top:auto;margin:0;max-width:calc(100% - 84px);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:1px 10px;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:13.5px;line-height:1.45;opacity:0;transform:scale(.9);transform-origin:left center;transition:opacity .2s ease,transform .2s ease;pointer-events:none}
 .ac-hud.toasting .ac-hud-line{visibility:hidden}
 .ac-toast{background:var(--card-2);border:1px solid var(--line);color:var(--ink)}
 .ac-toast.good{border-color:var(--mint)}
