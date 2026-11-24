@@ -40,7 +40,8 @@ class TestOutsideTheApp(unittest.TestCase):
         for _ in range(5):
             assert backup_database(cfg) == first
         names = sorted(os.path.basename(p) for p in glob.glob(str(backups / "*.db")))
-        assert len(names) == 4 and names[0].startswith("omniarmor-20260101")
+        # 1.25.0: the new copy is aegizyn-*.db; the old omniarmor-*.db ones still count and stay.
+        assert len(names) == 4 and names[1].startswith("omniarmor-20260101") and names[0].startswith("aegizyn-")
 
     def test_a_deleted_workspaces_subscription_does_not_land_on_a_stranger(self):
         """Workspace ids are reused, and a renewal for a deleted workspace used to

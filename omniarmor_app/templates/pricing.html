@@ -49,7 +49,9 @@
     <a class="btn quiet" href="{{ url_for('auth.signup') }}">Sign up free</a>
   </section>
 </div>
-<p class="hint mt-s">Billed {% if yr.any %}monthly or yearly{% else %}monthly{% endif %} through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for, and nothing is deleted when it ends. On Kryozyn's {{ facts.bundle.name }} ({{ facts.bundle.price }})? It includes {{ facts.bundle.includes.name }}, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}.</p>
+<p class="hint mt-s">Billed {% if yr.any %}monthly or yearly{% else %}monthly{% endif %} through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for, and nothing is deleted when it ends.</p>
+{#- 1.25.0: what the bundle is, in one line (it was only named). -#}
+<p class="hint" data-bundle-line><strong>{{ NAMES.fridge_app }} {{ facts.bundle.name }}:</strong> for kitchens on {{ NAMES.fridge_app }}, {{ COMPANY }}'s fridge and freezer alarm app. {{ facts.bundle.price }} paid to {{ NAMES.fridge_app }} includes Aegizyn {{ facts.bundle.includes.name }} for that {{ facts.location }}, its daily reports fill in your fridge temperature checks, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}.</p>
 
 <h2 id="schools">For a school</h2>
 <div class="plan-grid" data-pricing-schools>

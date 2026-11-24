@@ -3,6 +3,41 @@
 What changed in Aegizyn (called OmniArmor until 1.24.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.25.0 (24 November 2026)
+
+Fixes from a strict thirteenth review.
+
+- **The summary says what each date is.** A check counted from something
+  that happened says so: "hired 2 business days ago" (Form I-9), "qualifying
+  event 47 days ago" (COBRA), "event 3 days ago", "made or opened 9 days ago"
+  (a food batch). Only a duty that was done says "last done", so nothing not
+  done yet is called done. A deadline or licence says its days once ("Due in
+  41 days", not "Due in 41 days · 41 days left"). "Last checks recorded"
+  labels the day each was recorded ("recorded 2026-09-25"). A check's page
+  asks for "the date it happened" or "the date it was last done" to match.
+- **The full report prints with every name whole** on Letter and A4: fixed
+  column widths that fit the page, every cell wraps, and in Last updated the
+  name sits under its date. A test opens the printed page in a real browser
+  at both paper widths and checks no name is cut off.
+- **Pilot:** "What's due this week?" (or soon, today, next month) gets
+  What's due or overdue?; "How do I change my password?" (or reset, forgot)
+  says how, with the reset link; "How do I export my data?" is the export
+  answer. Pilot is now on the pricing, Help and security pages too, with
+  questions for each. Price answers link to /pricing. "Can I get a refund?"
+  starts with the answer (no refund for time already paid for, nothing more
+  charged once you cancel), then how to cancel.
+- **One set of status words:** the summary uses Home's and the Report's own
+  words (blocked, warnings, cleared, without a reading), with one line saying
+  what each means on paper. The Report's CSV gives Last updated in the
+  workspace's time zone, named in its header, like History's.
+- **Copy:** a student's pages have their own footer ("Learn how a business
+  works, one lesson at a time"), with no slogan about fines or legal notes.
+  The pricing page says what the Kitchen Safety Bundle is in one line.
+  Deleting a workspace says "Download the report and History first".
+- **Backups** are named `aegizyn-YYYYMMDD-HHMMSS-*.db` from now on, in the
+  Autopilot email too. Backups named `omniarmor-...db` still count: as
+  today's copy, as the newest copy, and pruned with the rest, oldest first.
+
 ## 1.24.0 (23 November 2026)
 
 Renamed to Aegizyn. OmniArmor is now **Aegizyn**, and the fridge-alarm app

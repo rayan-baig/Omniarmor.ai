@@ -14,7 +14,7 @@ lists its pages, by endpoint; anything not listed has no Pilot.
 
 | Who | Pages |
 |---|---|
-| Visitors | the landing page, Industries and each industry page, `/for/*`, `/classrooms`, the teacher guide, the demos page |
+| Visitors | the landing page, Industries and each industry page, `/for/*`, `/classrooms`, the teacher guide, the demos page, and (1.25.0) Pricing, Help and Security |
 | A business | Home (with each industry page), Report, History, Reminders, Settings (with Plans) |
 | A teacher (a school's workspace) | Home (classes), each class's page and its join codes, the teacher guide (1.15.0), Checklist (with each industry page and the report), Reminders, History, Settings (with Plans) |
 
@@ -23,7 +23,7 @@ class page, and the kids' join page (every `academy.*` and `kids.*` endpoint and
 whoever is signed in, and never on a kid's device, even on a public page. The config
 (`static/pilot-omniarmor.js`) is a second lock: its `kidView()` is true on any `/kids` or
 `/app/academy/<student>` address, or whenever it can't tell who is there, and then Pilot doesn't start.
-Pilot is also left off sign-in, password, Help, legal and error pages, and a class's certificates and report.
+Pilot is also left off sign-in, password, the terms and privacy pages, error pages, and a class's certificates and report.
 On a teacher's class page and join codes (1.15.0) every student's name (the progress table, the codes,
 the "First name only?" card, the names not added, the Manage list and the teacher's notices) is marked
 `data-pilot-private`, so "Analyze & explain" and "Summarise" never send one.
@@ -174,6 +174,15 @@ there from cancelling: deleting the workspace closes the account, which isn't ca
 says so). "Is my data safe?" starts "No, we don't sell your data." and says where the data is stored, from the
 Security page's facts on the script tag (`offsite_backup`, `backup_keep`; `invite_days` for the teammate answer).
 On a computer the page's column keeps the robot's corner free (`app.css`), so it shows whole instead of tucking.
+
+**1.25.0**: Pilot is on `/pricing` (Which plan fits me?, What's the Kitchen Safety Bundle?, How do I cancel?), `/help`
+(a teammate, the password, reminder emails) and `/security` (is my data safe, deleting the workspace, exporting),
+with the visitor's welcome. A page suggestion in the words of a `GLOBAL` answer takes that answer's `match` words
+(`withMatch`), so "Can I get a refund?" on the pricing page still finds How do I cancel?. New: "How do I change my
+password?" in `GLOBAL` (the emailed reset link; `reset_hours` on the tag); "What's due or overdue?" also matches
+"due", "week", "soon", "coming", "next", "month" and "tomorrow"; the export answer also matches "data" and
+"records" (two words then beat the safety and delete answers' one). The cancel answer reads the words typed
+(`ctx.label`): a refund question starts with the refund. Price answers link to `/pricing`.
 
 **Aegizyn's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window Aegizyn's warm black with the orange-to-red

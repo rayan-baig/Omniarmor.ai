@@ -31,8 +31,10 @@ LOCAL_HOSTS = ("localhost", "127.0.0.1")
 CONNECT = " ".join([f"https://{h}" for h in PROVIDER_HOSTS + COMPATIBLE_HOSTS] + [f"http://{h}:*" for h in LOCAL_HOSTS])
 
 # The pages Pilot is on, by endpoint. Anything not listed here has no Pilot.
+# 1.25.0: the pricing, Help and security pages too (each with its own questions in pilot-omniarmor.js).
 PUBLIC_PAGES = frozenset({"public.home", "public.industries", "public.industry_page", "public.trade_page",
-                          "public.academy_schools", "public.class_guide", "demo.index"})
+                          "public.academy_schools", "public.class_guide", "demo.index",
+                          "public.pricing", "public.help", "public.security"})
 BUSINESS_PAGES = frozenset({"app.overview", "app.industry", "app.report", "app.audit", "app.notifications",
                             "app.settings", "plan.plan_page"})
 # A teacher's: their classes, one class's page and its join codes, the teacher
@@ -73,12 +75,19 @@ def poses():
                     for pose, name in pose_files().items())
 
 
+def student_page():
+    """A page a student uses, or any page on a kid's device (1.25.0): every academy.* and kids.* page and a student's
+    class page, whoever is signed in."""
+    endpoint = request.endpoint or ""
+    return g.get("kid") is not None or endpoint.startswith(STUDENT_BLUEPRINTS) or endpoint == "classes.my_class"
+
+
 def audience():
     """Who Pilot would be talking to on this page: "visitor", "business" or
     "teacher", or None where Pilot never goes (a student's page, a kid's
     device, an error page, or a page not listed above)."""
     endpoint = request.endpoint or ""
-    if g.get("kid") is not None or endpoint.startswith(STUDENT_BLUEPRINTS) or endpoint == "classes.my_class":
+    if student_page():
         return None
     if g.get("user") is not None and g.get("org") is not None:
         from .classrooms import is_class_workspace
@@ -110,7 +119,7 @@ def facts(who):
     from .catalog import TOP_COUNT
     from .plan_views import plan_facts
     from .reminders import REMINDER_DAYS
-    from .auth import INVITE_DAYS
+    from .auth import INVITE_DAYS, RESET_HOURS
     from .jobs import offsite_ok
     cfg = current_app.config
     pf = plan_facts(cfg)
@@ -146,6 +155,8 @@ def facts(who):
         # 1.23.0: where the data is kept (the Security page's own facts) and how long an invite link works, for
         # the answers to "Do you sell my data?" and "How do I add a teammate?".
         "offsite_backup": bool(offsite_ok(cfg)), "backup_keep": cfg["BACKUP_KEEP"], "invite_days": INVITE_DAYS,
+        # 1.25.0: how long a password reset link works, for "How do I change my password?".
+        "reset_hours": RESET_HOURS,
         # 1.24.0: the company's, the apps' and the assistant's names (names.py), so the config and the pack never
         # type them.
         "names": names.for_pages(),

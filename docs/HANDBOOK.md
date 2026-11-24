@@ -411,7 +411,7 @@ A built-in timer runs inside the app; there is no separate cron or queue service
    - used or expired password reset links;
    - invites that expired over 30 days ago;
    - expired Academy friend codes and join codes.
-3. **Backup**, last, so the copy holds the day's reminders as sent and restoring it never sends them again. It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `omniarmor-YYYYMMDD-HHMMSS-*.db` only then, as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
+3. **Backup**, last, so the copy holds the day's reminders as sent and restoring it never sends them again. It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `aegizyn-YYYYMMDD-HHMMSS-*.db` only then (copies named `omniarmor-*.db` before 1.25.0 still count), as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
 
 Several server processes can run at once safely. Each sweep (the alerts, the daily job, Autopilot) holds a lock in the database (`job_locks`) while it runs, renewed every 20 seconds, so no two processes run the same sweep at once however long it takes; a process that dies loses its lock within 2 minutes. Each day's run is also claimed in the database, so it happens only once. If a run crashes halfway (for example the server restarted), its claim goes stale after an hour and the next check can claim it again. If any step fails, the run releases its claim and tries again in about 10 minutes; reminders already sent are not repeated.
 
@@ -1161,7 +1161,7 @@ Without email settings, reminders and password-reset links are saved under Remin
 
 ### 9.4 Backups and restore
 
-Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR`. `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
+Backups are files named `aegizyn-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR` (before 1.25.0, `omniarmor-...db`; those are still read, kept and pruned). `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
 
 To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: copy the backup to a fresh file beside the database, check it, point `DATABASE_PATH` at it and restart, then check sign-in, the checks, the Academy and History. The old database stays as it was, so going back is one setting. `tests/test_operations.py` rehearses it on every push.
 

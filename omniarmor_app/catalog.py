@@ -149,6 +149,37 @@ def entry_date_words(industry_id, rule_key):
     return ENTRY_DATE_WORDS.get((industry_id, rule_key), ("Last done", "The date it was last done"))
 
 
+# 1.25.0: what the date of a check counted from a date is, in the summary's words ("hired 2 business days ago",
+# "event 47 days ago", "last done 35 days ago"). Most are a duty done ("Days since the last fire drill"); the
+# others count from something that happened and is still waiting on the duty ("Days since a qualifying event
+# without sending the COBRA election notice"): never "last done" for something not done yet.
+SINCE_WORDS = {
+    (30, "i9_section_2"): "hired",
+    (30, "cobra_election_notice"): "qualifying event",
+    (28, "emergency_cii_7_days"): "filled",
+    (14, "gear_retirement"): "made",
+    (40, "lqg_90_day_limit"): "started",
+    (40, "sqg_180_day_limit"): "started",
+}
+_DONE = re.compile(r"\blast\b|\b(?:was|were) (?:tested|reviewed|done)\b|\bposted\b|\bissued\b", re.I)
+_WAITING = re.compile(r"\bnot yet\b|\bwithout\b", re.I)
+
+
+def since_word(industry_id, rule):
+    """How the summary names the date a "since" check counts from: "last done" for a duty done, "event" for
+    something that happened and still waits on the duty, or the entry's own word ("made or opened", "cleaned",
+    "hired"). None for a check not counted from a date."""
+    if date_mode(rule) != "since":
+        return None
+    key = (industry_id, rule.key)
+    if key in SINCE_WORDS:
+        return SINCE_WORDS[key]
+    if key in ENTRY_DATE_WORDS:
+        return ENTRY_DATE_WORDS[key][0].lower()
+    text = rule.input
+    return "last done" if _DONE.search(text) and not _WAITING.search(text) else "event"
+
+
 def multi_check(industry_id, rule_key):
     """(what one entry is, an example name) for a check with one entry per
     item, None for the others."""

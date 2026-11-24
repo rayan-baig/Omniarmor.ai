@@ -473,7 +473,7 @@ def create_app(**overrides):
                                 COMPANY=names.COMPANY, ASSISTANT=names.ASSISTANT, NAMES=names.for_pages(),
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config),
-                                pilot_tag=pilot.pilot_tag, lesson_view=academy_views.lesson_view, kid_exit_url=academy_views.kid_exit_url,
+                                pilot_tag=pilot.pilot_tag, kid_footer=academy_views.kid_footer, lesson_view=academy_views.lesson_view, kid_exit_url=academy_views.kid_exit_url,
                                 shot=shots.shot, shot_kind=shots.kind_for)
     app.jinja_env.filters["qty"] = lambda value, unit: format_quantity(value, unit)
     app.jinja_env.filters["pct"] = percent

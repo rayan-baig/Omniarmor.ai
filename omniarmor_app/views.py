@@ -445,7 +445,7 @@ def _audit_rows(limit=None, offset=0):
         yield {**dict(r), "industry": INDUSTRIES.get(r["industry_id"], {}).get("brand", ""),
                "rule_title": rule.title if rule else "", "at_short": _short_moment(r["at"], tz),
                "at_local": f"{moment:%Y-%m-%d %H:%M}" if moment else str(r["at"] or "")[:16].replace("T", " "),
-               "at_csv": moment.isoformat() if moment else str(r["at"] or "")}
+               "at_csv": _csv_moment(r["at"], tz)}
 
 
 def _org_zone(org):
@@ -592,22 +592,32 @@ def report_csv():
     if school_checklist_hidden(g.org):
         return redirect(url_for("app.report"))
     states = sorted(states_for_org(get_db(), g.org), key=lambda s: (s.industry_id, s.sort_key))
+    # 1.25.0: in the workspace's own time zone, named in the header, like History's CSV (it was UTC).
     return _csv_response("aegizyn-compliance-report.csv",
-                         ["Industry", "Check", "Status", "Reading", "Due date", "Rule", "Last updated (UTC)", "Updated by"],
-                         _report_rows(states))
+                         ["Industry", "Check", "Status", "Reading", "Due date", "Rule",
+                          f"Last updated ({g.org['timezone']})", "Updated by"],
+                         _report_rows(states, _org_zone(g.org)))
 
 
-def _report_rows(states):
+def _csv_moment(text, tz):
+    """A stored UTC moment as the CSVs write it: ISO 8601 in the time zone tz, with its offset."""
+    if not text:
+        return ""
+    moment = _local_moment(text, tz)
+    return moment.isoformat() if moment else str(text)
+
+
+def _report_rows(states, tz=timezone.utc):
     """The report's rows: one per check, then, for a check with several
     entries, one per entry ("Cold holding · Walk-in cooler")."""
     for s in states:
         yield [s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.shown_value, s.due_label,
-               s.rule.citation, s.updated_at or "", s.updated_by or ""]
+               s.rule.citation, _csv_moment(s.updated_at, tz), s.updated_by or ""]
         if len(s.entries) > 1:
             for e in s.entries:
                 es = e["state"]
                 yield [s.industry["brand"], f"{s.rule.title} · {e['label']}", LEVEL_LABEL[es.level], es.shown_value,
-                       es.due_label, s.rule.citation, es.updated_at or "", es.updated_by or ""]
+                       es.due_label, s.rule.citation, _csv_moment(es.updated_at, tz), es.updated_by or ""]
 
 
 @bp.route("/notifications")

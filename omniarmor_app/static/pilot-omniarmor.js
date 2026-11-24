@@ -386,7 +386,7 @@
       + `- **${words(x.plus) || "Plus"}** (${words(x.plus_price)}${year(x.plus_yearly)}): ${words(x.plus_summary)}.\n\n`
       + `Pick **${words(x.pro) || "Pro"}** if you only need the checklist; **${words(x.plus) || "Plus"}** if someone in the family may run the business one day. `
       + `${x.trial_days ? `Every plan starts with ${x.trial_days} days free, no card. ` : ""}`
-      + `Teaching a class? [The classroom plans](/classrooms#price) are yearly. [All the prices](/help#prices)`;
+      + `Teaching a class? [The classroom plans](/classrooms#price) are yearly. [All the prices](/pricing)`;
   }
 
   // "Explain this page": from its own headings and what it says it's for.
@@ -490,6 +490,16 @@
     + "They sign up with it and join this workspace. Only the owner can remove someone.";
   const EMAILS = "In [Settings](/app/settings), under **Your reminder emails**, choose the daily digest, the time-limit alerts, both or neither. Each person chooses their own; every reminder email links back there.";
 
+  // 1.25.0: the Kitchen Safety Bundle in a few lines, from the tag's prices (the pricing page's one line, longer).
+  function bundleAnswer(f) {
+    const x = f || {};
+    const app = words(N.fridge_app) || "the fridge app";
+    return `**The Kitchen Safety Bundle** is for kitchens that use ${app}, ${N.company}'s fridge and freezer alarm app. `
+      + `You pay ${app} ${words(x.bundle_price) || "for the bundle"}, and it includes Aegizyn's ${words(x.pro) || "Pro"} for that location while ${app} sends its daily reports, `
+      + "which fill in your fridge temperature checks by themselves.\n\n"
+      + `Want the Academy too? ${words(x.plus) || "Plus"} costs only the difference${x.bundle_upgrade ? `, ${words(x.bundle_upgrade)}` : ""}. [See every plan](/pricing)`;
+  }
+
   // A page suggestion: an AI prompt (words), or an answer given at once.
   const C = (label, what) => (typeof what === "string" ? { label, prompt: what } : { label, ...what });
   const A = (fn) => ({ answer: (ctx) => fn((ctx && ctx.facts) || {}) });
@@ -513,6 +523,16 @@
     if (path === "/classrooms/guide") return [C("Plan a week", WEEK),
       C("How long is a lesson?", A(lessonAnswer))];
     if (path === "/demo") return [C("What can I try?", { answer: demoAnswer }), C("Is anything saved?", { answer: DEMO_SAVED })];
+    // 1.25.0: Pilot on the pricing, Help and security pages too (a visitor's), each with its page's own questions.
+    if (path === "/pricing") return [C("Which plan fits me?", A(planFitAnswer)),
+      C("What's the Kitchen Safety Bundle?", A(bundleAnswer)),
+      C("How do I cancel?", { answer: cancelAnswer })];
+    if (path === "/help") return [C("How do I add a teammate?", A(teammateAnswer)),
+      C("How do I change my password?", A(passwordAnswer)),
+      C("How do reminder emails work?", A(reminderAnswer))];
+    if (path === "/security") return [C("Is my data safe?", { answer: (ctx) => safeAnswer(ctx && ctx.facts, ctx && ctx.label) }),
+      C("How do I delete my workspace?", A(deleteAnswer)),
+      C("How do I export the report?", { answer: exportAnswer })];
     // A teacher's pages: Aegizyn's own suggestions, about their classes. The
     // school checklist's "What's overdue?" only on Whole school.
     if (path === "/app/academy/classes" || /^\/app\/academy\/classes\/\d+(\/join-codes)?$/.test(path)) {
@@ -610,8 +630,15 @@
       + `- **To delete:** the workspace owner opens ${where}, goes to **Delete workspace** at the bottom and types the ${who === "teacher" ? "school" : "company"} name. `
       + `That deletes ${what}, at once. With no other workspace, your sign-in goes too.\n`
       + "- **Paying for a plan?** Cancel it first on the Plans page (Manage billing); you can delete right away after that.\n"
-      + `- **Download first** the report and History if you need them. Backups keep a copy for ${backups}.\n\n`
+      + `- **Download the report and History first** if you need them. Backups keep a copy for ${backups}.\n\n`
       + "[Only cancel the plan instead](/help#cancel) · [Deleting, in Help](/help#delete)";
+  }
+  // 1.25.0: changing or resetting a password is one way, the emailed link (there is no password box in Settings).
+  function passwordAnswer(f) {
+    const hours = Number((f || {}).reset_hours) || 1;
+    const start = signedIn ? "Sign out, then on the sign-in page press **Forgot your password?**" : "On the sign-in page, press **Forgot your password?**";
+    return `${start} and type your email. We email you a link that works once, for ${count(hours, "hour")}: open it and choose the new password. `
+      + "Every other device you were signed in on is signed out. No email? Check spam, or ask again after a few minutes. [Reset my password](/forgot)";
   }
   // "What does it cost?": the plans' real names and prices.
   function pricesAnswer(f) {
@@ -630,7 +657,7 @@
     const out = ["**For a business, billed monthly" + (x.pro_yearly || x.plus_yearly ? " or yearly" : "") + ":**", "", ...business, ""];
     if (x.trial_days) out.push(`Every new workspace starts with ${x.trial_days} days free, no card.`);
     out.push(`For a school: **${words(x.classroom) || "Classroom"}** ${yearly(x.classroom_price)} or **${words(x.school) || "Whole school"}** ${yearly(x.school_price)}.`, "",
-      who === "business" ? "Your own plan is on the [Plans page](/app/plan). [All the prices](/help#prices)" : "[All the prices](/help#prices)");
+      who === "business" ? "Your own plan is on the [Plans page](/app/plan). [All the prices](/pricing)" : "[All the prices](/pricing)");
     return out.join("\n");
   }
   // The words for "Is this legal advice?", here and on the industry pages' own button (MATCH). 1.22.0: "Does
@@ -640,7 +667,22 @@
   const LEGAL = `No. ${NOT_ADVICE}\n\n`
     + "Each check names the rule it comes from (open **Rule and source**), so you can look it up or ask. Rules change, and a city or state can add its own, "
     + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. Aegizyn keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
-  function cancelAnswer() {
+  // 1.25.0: "Can I get a refund?" starts with the answer to that, then how to cancel.
+  const REFUND_WORDS = /\b(refunds?|refunded|money|back)\b/i;
+  function refundLead() {
+    if (who === "teacher" || schoolSide) {
+      return "**No refund for the part of the year left.** A school's plan is paid yearly: cancelling stops the next year's charge, and the plan stays on until the end of the year paid for. "
+        + "The free class trial needs no card, so it never costs anything.";
+    }
+    return "**No refund for time already paid for, and nothing more is charged once you cancel.** The plan stays on until the end of the month paid for (or the year, for a yearly plan). "
+      + "The free trial needs no card, so it never costs anything.";
+  }
+  function cancelAnswer(ctx) {
+    const asked = ctx && typeof ctx.label === "string" ? ctx.label : "";
+    const body = cancelSteps();
+    return REFUND_WORDS.test(asked) ? `${refundLead()}\n\n**To cancel:** ${body[0].toLowerCase()}${body.slice(1)}` : body;
+  }
+  function cancelSteps() {
     // 1.22.0: on the schools pages a visitor gets the school plans' answer too (it was the business plans' monthly
     // and pause options, which a school's plan doesn't have).
     if (who === "visitor" && schoolSide) {
@@ -686,7 +728,10 @@
     // 1.23.0: "close" and "account" are deleting the workspace now (below), which isn't cancelling.
     { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",
       "money", "back", "terminate"] },
-    { label: "How do I export the report?", answer: exportAnswer, match: ["export", "csv", "download", "print", "spreadsheet", "excel", "pdf", "inspector", "auditor"] },
+    { label: "How do I export the report?", answer: exportAnswer,
+      // 1.25.0: "How do I export my data?", "Can I download my records?" ("data" is in the safety and delete answers too, so
+      // only "export", "download"... with it decides).
+      match: ["export", "csv", "download", "print", "spreadsheet", "excel", "pdf", "inspector", "auditor", "data", "records", "record", "copy"] },
     // 1.23.0: the header button's own words, typed ("Explain this page"), get its answer; and Help's top how-tos.
     { label: "Explain this page", answer: explainPageAnswer, match: ["page", "screen", "overview", "summarise", "summarize"] },
     { label: "How do I add a teammate?", answer: (ctx) => teammateAnswer(ctx && ctx.facts),
@@ -697,6 +742,9 @@
       match: ["industry", "industries", "checklist", "sector", "trade", "another", "add"] },
     { label: "How do I delete my workspace?", answer: (ctx) => deleteAnswer(ctx && ctx.facts),
       match: ["delete", "deleting", "deleted", "erase", "wipe", "workspace", "close", "closing", "account", "everything", "data", "remove", "shut"] },
+    // 1.25.0: "How do I change my password?", "I forgot my password", "reset password".
+    { label: "How do I change my password?", answer: (ctx) => passwordAnswer(ctx && ctx.facts),
+      match: ["password", "passwords", "passcode", "reset", "forgot", "forgotten", "locked", "login", "signin"] },
   ];
 
   const TASKS = {
@@ -783,7 +831,9 @@
   // words tell them apart ("What does blocked mean?" is the colours, "What's blocked?" is neither: it waits for a key).
   const MATCH = {
     // A business's
-    "What's due or overdue?": ["overdue", "late", "today", "attention", "urgent", "expired", "expiring", "deadline", "upcoming", "blocked", "warning"],
+    // 1.25.0: "What's due this week?", "What's due soon?", "anything coming up next month?".
+    "What's due or overdue?": ["overdue", "late", "today", "attention", "urgent", "expired", "expiring", "deadline", "upcoming", "blocked", "warning",
+      "due", "week", "soon", "coming", "next", "month", "tomorrow"],
     "Explain this check": ["rule", "mean", "means", "source", "law", "regulation"],
     "Summarise my report": ["summary", "summarize", "summarise", "report", "inspector", "fix", "first"],
     "What does this colour mean?": ["color", "colors", "colour", "red", "orange", "faint", "status", "blocked", "warning", "cleared"],
@@ -816,9 +866,14 @@
     "What's a check?": ["check"],
     "Is this legal advice?": LEGAL_WORDS,
     "What can I try?": ["demo", "try", "sample", "example"],
+    "What's the Kitchen Safety Bundle?": ["bundle", "kitchen", "fridge", "fridges", "freezer", "sensor", "sensors", "temperature", String(N.fridge_app || "").toLowerCase()].filter(Boolean),
     "Is anything saved?": ["save", "saved", "stored", "kept", "delete"],
   };
-  const withMatch = (x) => (MATCH[x.label] ? { ...x, match: MATCH[x.label] } : x);
+  // 1.25.0: a page suggestion in the words of an answer on every page (GLOBAL: "How do I cancel?" on the pricing page)
+  // takes that answer's words too; the page's own button stands in for it there, so "Can I get a refund?" still fits.
+  const globalWords = (label) => (GLOBAL.find((x) => x.label === label) || {}).match;
+  const withMatch = (x) => (MATCH[x.label] ? { ...x, match: MATCH[x.label] }
+    : globalWords(x.label) ? { ...x, match: globalWords(x.label) } : x);
   welcome.pills = welcome.pills.map(withMatch);
 
   // On the welcome, a suggestion that asks what a pill asks stays out (the core lists both there). Once chatting,

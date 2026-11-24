@@ -23,7 +23,7 @@ from omni_armor_rules import evaluate
 from omni_armor_rules.rule import _fmt as format_quantity
 
 from .catalog import (FIRST_ENTRY, ILLNESS_LOG_CHECKS, INDUSTRIES, can_override, counts_first_day, counts_time,
-                      date_mode, date_unit, effective_rule, find_rule, multi_check, rules_for)
+                      date_mode, date_unit, effective_rule, find_rule, multi_check, rules_for, since_word)
 from .db import iso, now_iso, record_audit, user_name, utcnow
 from .words import plural
 
@@ -75,6 +75,11 @@ def _duration(minutes):
         return f"{hours} h" + (f" {rest} min" if rest else "")
     days, rest = divmod(minutes, 24 * 60)
     return f"{days} days" + (f" {rest // 60} h" if rest // 60 else "")
+
+
+def _one(text, n):
+    """A quantity of exactly one in the singular: "1 business days" becomes "1 business day" (the units are plural)."""
+    return text[:-1] if n == 1 and text.endswith("s") and not text.endswith("ss") else text
 
 
 def _plural_days(n):
@@ -188,22 +193,39 @@ class ItemState:
         shown = self.shown_value
         if not shown or not self.mode or isinstance(self.value, bool):
             return shown
+        # 1.25.0: "1 business day ago", not "1 business days ago".
+        amount = lambda v: _one(format_quantity(v, self.rule.unit), v)  # noqa: E731
         if self.mode == "since":
-            return f"{shown} ago"
-        return f"{shown} left" if self.value >= 0 else f"{format_quantity(-self.value, self.rule.unit)} past due"
+            return f"{amount(self.value)} ago"
+        return f"{amount(self.value)} left" if self.value >= 0 else f"{amount(-self.value)} past due"
+
+    @property
+    def since_word(self):
+        """catalog.since_word for this check: "last done", "event", "hired"... (None unless counted from a date)."""
+        return since_word(self.industry_id, self.rule)
 
     @property
     def reading_line(self):
-        """The summary's "Needs action" detail after the due line: "last reading 44°F", "last done 35 days
-        ago", "41 days left"."""
+        """The summary's detail for a reading, by the kind of check (1.25.0): "last reading 44°F", "last done 35
+        days ago" for a duty done, "event 47 days ago" or "hired 2 business days ago" for a check counted from
+        something that happened (never "last done" for what isn't done yet), "made or opened 9 days ago" for a
+        food batch. A deadline or licence says nothing here: its due line ("Due in 41 days") already says it."""
         text = self.reading_text
         if not text:
             return ""
         if self.mode == "since" and not isinstance(self.value, bool):
-            return f"last done {text}"
+            return f"{self.since_word or 'last done'} {text}"
         if self.mode and not isinstance(self.value, bool):
-            return text if self.value >= 0 else ""     # "3 days overdue" already says it
+            return ""
         return f"last reading {text}"
+
+    @property
+    def recorded_line(self):
+        """The summary's "Last checks recorded" reading, from its own kind (1.25.0): "Hired 2 business days ago",
+        "Last done 260 days ago", "41 days left", "Yes", "44°F"."""
+        since = self.mode == "since" and not isinstance(self.value, bool)
+        line = self.reading_line if since else self.reading_text
+        return line[:1].upper() + line[1:] if line else "No reading"
 
     @property
     def sort_key(self):

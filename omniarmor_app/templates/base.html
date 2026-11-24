@@ -162,9 +162,17 @@
 {% if not kid_screen %}
 <footer class="site">
   <div class="wrap">
+    {% if kid_footer() %}
+    {#- 1.25.0: a kid's device and the join page (academy_views.kid_footer) get a footer in their own words: no slogan about fines, no legal
+        notes about checks they don't keep. -#}
+    <span data-kid-footer>Aegizyn Academy · Learn how a business works, one lesson at a time · Made by {{ COMPANY }}</span>
+    <span>Stuck? Ask your teacher or a grown-up.</span>
+    <nav aria-label="Rules"><a href="{{ url_for('public.privacy') }}">Privacy</a><a href="{{ url_for('public.terms') }}">Terms</a></nav>
+    {% else %}
     <span>Aegizyn · {{ SLOGAN }} · A product of {{ COMPANY }}</span>
     <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
     <nav aria-label="Rules"><a href="{{ url_for('public.help') }}">Help</a><a href="{{ url_for('public.terms') }}">Terms</a><a href="{{ url_for('public.privacy') }}">Privacy</a><a href="{{ url_for('public.security') }}">Security and your data</a></nav>
+    {% endif %}
   </div>
 </footer>
 {% endif %}

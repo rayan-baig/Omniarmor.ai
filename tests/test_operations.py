@@ -46,7 +46,7 @@ class TestBackupDrill(AppTestCase):
         cfg = dict(self.app.config)
         result = jobs.run_daily(cfg, force=True)
         self.assertNotIn("failed", result)
-        backups = [f for f in os.listdir(cfg["BACKUP_DIR"]) if f.startswith("omniarmor-") and f.endswith(".db")]
+        backups = [f for f in os.listdir(cfg["BACKUP_DIR"]) if f.startswith("aegizyn-") and f.endswith(".db")]
         self.assertEqual(len(backups), 1, os.listdir(cfg["BACKUP_DIR"]))
         backup = os.path.join(cfg["BACKUP_DIR"], backups[0])
         # The backup is one file, checked, with nothing beside it.
@@ -156,11 +156,11 @@ class TestRestoreRehearsal(AppTestCase):
                          200)
         cfg = dict(self.app.config, DAILY_JOB_HOUR_UTC=0)
         self.assertNotIn("failed", jobs.run_daily(cfg))               # today's digest, then the daily backup
-        daily = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
+        daily = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "aegizyn-*.db")))   # 1.25.0: was omniarmor-*.db
         self.assertEqual(len(daily), 1)
         made = self.app.test_cli_runner().invoke(args=["backup"])     # and one by hand, the same way
         self.assertEqual(made.exit_code, 0, made.output)
-        self.assertTrue(os.path.basename(made.output.strip()).startswith("omniarmor-"), made.output)
+        self.assertTrue(os.path.basename(made.output.strip()).startswith("aegizyn-"), made.output)
         # The daily one: the copy holds the day's claim, not yet finished.
         backup = daily[0]
         with self.db() as conn:

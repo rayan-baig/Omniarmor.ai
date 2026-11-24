@@ -145,15 +145,15 @@ def backup_database(cfg, fresh=False):
     # out: one company whose reminders kept failing wiped the restore history
     # of every customer. Today's copy is kept once made.
     today = utcnow().strftime("%Y%m%d")
-    existing = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{today}-*.db")))
+    existing = backup_files(cfg["BACKUP_DIR"], f"{today}-*.db")
     if existing and not fresh:
         # Today's copy didn't reach the second provider yet (it was down): try again.
         if cfg.get("OFFSITE_BACKUP_COMMAND") and offsite_age(cfg, since=existing[-1]) is None:
             send_offsite(cfg, existing[-1])
         return existing[-1]
     _remove_stale_partials(cfg["BACKUP_DIR"])
-    dest = os.path.join(cfg["BACKUP_DIR"], f"omniarmor-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
-    # Written under another name and only named omniarmor-*.db once it is
+    dest = os.path.join(cfg["BACKUP_DIR"], f"{BACKUP_PREFIX}-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
+    # Written under another name and only named aegizyn-*.db once it is
     # complete and checked. A copy that failed half-way (a full disk) used to
     # stay under the real name: every later run that day took it for today's
     # backup, Autopilot saw a fresh backup, and the restore drill found a
@@ -165,7 +165,7 @@ def backup_database(cfg, fresh=False):
         _remove(partial)
         raise
     os.replace(partial, dest)
-    copies = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
+    copies = backup_files(cfg["BACKUP_DIR"])
     for old in copies[:-cfg["BACKUP_KEEP"]] if cfg["BACKUP_KEEP"] > 0 else []:
         os.remove(old)
     if cfg.get("OFFSITE_BACKUP_COMMAND"):
@@ -174,6 +174,18 @@ def backup_database(cfg, fresh=False):
 
 
 PARTIAL = ".partial"
+# 1.25.0: backups are named aegizyn-YYYYMMDD-HHMMSS-*.db. The ones made before, omniarmor-*.db, still count: they are
+# today's copy, the newest copy Autopilot and the health check look at, and pruned with the rest, oldest first.
+BACKUP_PREFIX = "aegizyn"
+OLD_BACKUP_PREFIXES = ("omniarmor",)
+
+
+def backup_files(folder, rest="*.db"):
+    """The backups in folder (new and old names), oldest first by the time in their name."""
+    found = []
+    for prefix in (BACKUP_PREFIX,) + OLD_BACKUP_PREFIXES:
+        found += glob.glob(os.path.join(folder, f"{prefix}-{rest}"))
+    return sorted(found, key=lambda path: os.path.basename(path).split("-", 1)[1])
 OFFSITE_MARK = "offsite-last-ok"
 OFFSITE_TIMEOUT = 15 * 60
 OFFSITE_MAX_AGE = timedelta(hours=50)   # the security page claims the second copy only while it's this fresh
@@ -264,7 +276,7 @@ def _remove(path):
 def _remove_stale_partials(folder):
     """Copies left half-made by a server that stopped mid-backup."""
     cutoff = time.time() - STALE_AFTER.total_seconds()
-    for path in glob.glob(os.path.join(folder, "omniarmor-*.db" + PARTIAL)):
+    for path in backup_files(folder, "*.db" + PARTIAL):
         if os.path.getmtime(path) < cutoff:
             _remove(path)
 

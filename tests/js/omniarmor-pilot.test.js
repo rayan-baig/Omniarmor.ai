@@ -730,7 +730,7 @@ test("1.17.0: a visitor learns what Aegizyn does and the free trial with no key;
   assert.match(what, /Free for 14 days, no card\./);
   assert.deepEqual(linksIn(what), ["/demo", "/industries"]);
   assert.equal(c.pill("See the prices").link, undefined);
-  assert.ok(linksIn(c.answer("See the prices")).includes("/help#prices"));
+  assert.ok(linksIn(c.answer("See the prices")).includes("/pricing"));   // 1.25.0: the pricing page (was Help's prices)
   assert.equal(c.answerMore, "Want more? Add your AI key to ask anything.");
   // The schools side: safety and the free trial, from the site's own facts.
   const school = mountOn("visitor", "/classrooms", h("main"));
@@ -1064,7 +1064,9 @@ test("1.20.0: core 1.4.2's own rules are used: no hideWhenCrowded override, the 
 // The window as it really runs: the core's panel loaded (window.PilotPanel), and a question typed in Pilot's box
 // and sent (the compose form's submit, which the config hears first). Returns what the core's typedHere finds
 // for it, the label and its answer, or null (no key: key settings, as before).
-function typedEverywhere(who, where, { facts = {}, due = [], classes = [] } = {}) {
+// 1.25.0: { label: true } gives the answer what the core gives it, the words typed (ctx.label), as "Can I get a
+// refund?" needs to start with the refund.
+function typedEverywhere(who, where, { facts = {}, due = [], classes = [], label = false } = {}) {
   const P = panel();
   let given = null;
   const listeners = [];
@@ -1086,7 +1088,7 @@ function typedEverywhere(who, where, { facts = {}, due = [], classes = [] } = {}
     const items = P.ownPills(given.welcomePills, base).concat(P.cleanChips([...given.chips({})], base));
     const hit = P.matchTyped(q, items);
     if (!hit) return null;
-    const text = hit.link ? `[${hit.label}](${hit.link})` : typeof hit.answer === "function" ? hit.answer(ctx) : hit.answer;
+    const text = hit.link ? `[${hit.label}](${hit.link})` : typeof hit.answer === "function" ? hit.answer(label ? { ...ctx, label: q } : ctx) : hit.answer;
     return { label: hit.label, text };
   };
 }
@@ -1094,6 +1096,7 @@ function typedEverywhere(who, where, { facts = {}, due = [], classes = [] } = {}
 const GROWN_UP_PAGES = [
   ["visitor", "/"], ["visitor", "/industries"], ["visitor", "/industries/resto-aegizyn"], ["visitor", "/for/salons-and-barbershops"],
   ["visitor", "/classrooms"], ["visitor", "/classrooms/guide"], ["visitor", "/demo"],
+  ["visitor", "/pricing"], ["visitor", "/help"], ["visitor", "/security"],
   ["business", "/app"], ["business", "/app/industry/2"], ["business", "/app/report"], ["business", "/app/audit"],
   ["business", "/app/notifications"], ["business", "/app/settings"], ["business", "/app/plan"],
   ["teacher", "/app/academy/classes"], ["teacher", "/app/academy/classes/12"], ["teacher", "/app/academy/classes/12/join-codes"],
@@ -1144,11 +1147,11 @@ test("1.21.0: the prices are the real plans (names and amounts), never just a li
   assert.match(teacher, /\*\*Classroom: CLASSROOM-PRICE a year\.\*\* One class\./);
   assert.match(teacher, /\*\*Whole school: SCHOOL-PRICE a year\.\*\*/);
   assert.ok(!teacher.includes("PRO-PRICE"), "a teacher gets the classroom plans");
-  // The visitor's "See the prices" button answers with the plans too, and still links to Help.
+  // The visitor's "See the prices" button answers with the plans too, and links to the pricing page (1.25.0; was Help).
   const c = mountOn("visitor", "/", h("main"));
   const pill = c.answer("See the prices");
   assert.match(pill, /PRO-PRICE/);
-  assert.ok(linksIn(pill).includes("/help#prices"));
+  assert.ok(linksIn(pill).includes("/pricing"));
 });
 
 test("1.21.0: this page's own buttons still win, and other questions still wait for a key", () => {
@@ -1158,7 +1161,8 @@ test("1.21.0: this page's own buttons still win, and other questions still wait 
   assert.equal(typedEverywhere("business", "/app/report")("How do I export it?").label, "How do I export it?");
   assert.equal(typedEverywhere("business", "/app/settings")("How do I stop the emails?").label, "Choose my emails");
   assert.equal(typedEverywhere("business", "/app")("What does red mean?").label, "What does this colour mean?");
-  const never = ["Write me a poem", "How do I reset my password?", "What's the weather?", "Is it ok?", "help", "Who made you?",
+  // 1.25.0: "How do I reset my password?" has its own answer now.
+  const never = ["Write me a poem", "What's the opening time?", "What's the weather?", "Is it ok?", "help", "Who made you?",
     "Can you mark the hood check done?", "What's blocked?", "Tell me a joke", "pizza", "Add my AI key", ""];
   for (const [who, where] of GROWN_UP_PAGES) {
     const ask = typedEverywhere(who, where);
@@ -1167,7 +1171,8 @@ test("1.21.0: this page's own buttons still win, and other questions still wait 
 });
 
 test("1.21.0: the answers on every page never show as buttons, and a key turns them off", () => {
-  for (const [who, where] of GROWN_UP_PAGES) {
+  // 1.25.0: except the pricing, Help and security pages, where cancelling, safety and exporting are the page's own questions.
+  for (const [who, where] of GROWN_UP_PAGES.filter(([, w]) => !["/pricing", "/help", "/security"].includes(w))) {
     const c = mountFor(who, where);
     const shown = c.chipLabels().concat(c.plain.welcomePills.map((p) => p.label));
     for (const label of ["Is my data safe?", "What does it cost?", "How do I cancel?", "How do I export the report?"]) {
@@ -1325,4 +1330,96 @@ test("1.24.0: the pack names the company and the assistant from names.json, and 
     delete require.cache[site("pilot-omniarmor-pack.js")]; const p = require(site("pilot-omniarmor-pack.js"));
     delete globalThis.window; return p; })();
   assert.doesNotMatch(bare.knowledge, /undefined/, "without the names it still reads cleanly");
+});
+
+// ---------------------------------------------------------------- 1.25.0: a strict thirteenth review
+
+test("1.25.0: \"What's due this week?\" and the like get What's due or overdue? with no key", () => {
+  for (const where of ["/app", "/app/report", "/app/audit", "/app/settings"]) {
+    const ask = typedEverywhere("business", where, { due: [{ level: "BLOCKED", title: "Staff checked for exclusion", where: "Pharmacy Aegizyn", url: "/app/industry/28#rule-x" }] });
+    for (const q of ["What's due this week?", "What's due soon?", "What's due today?", "anything coming up next week?", "What's due next month?", "due"]) {
+      const got = ask(q);
+      assert.ok(got, `${where}: "${q}" found nothing`);
+      assert.equal(got.label, "What's due or overdue?", `${where}: "${q}"`);
+    }
+  }
+});
+
+test("1.25.0: changing or resetting a password answers with no key, on every grown-up page", () => {
+  for (const [who, where] of GROWN_UP_PAGES) {
+    const ask = typedEverywhere(who, where, { facts: { reset_hours: 1 } });
+    for (const q of ["How do I change my password?", "I forgot my password", "reset password", "password"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, "How do I change my password?", `${who} ${where}: "${q}"`);
+      assert.match(got.text, /Forgot your password\?/);
+      assert.match(got.text, /works once, for 1 hour/);
+      assert.ok(linksIn(got.text).includes("/forgot"));
+    }
+  }
+  assert.match(typedEverywhere("business", "/app")("reset password").text, /^Sign out, then/);
+  assert.match(typedEverywhere("visitor", "/")("reset password").text, /^On the sign-in page/);
+});
+
+test("1.25.0: \"export my data\" is the export answer, not safety or deleting", () => {
+  for (const [who, where] of [["business", "/app"], ["business", "/app/audit"], ["visitor", "/"], ["visitor", "/security"]]) {
+    const ask = typedEverywhere(who, where);
+    for (const q of ["How do I export my data?", "Can I download my records?", "download my data"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}"`);
+      assert.match(got.label, /export/i, `${who} ${where}: "${q}"`);
+    }
+    assert.equal(ask("Do you sell my data?").label, "Is my data safe?");
+    assert.match(ask("How do I delete my data?").label, /delete my workspace/);
+  }
+});
+
+test("1.25.0: Pilot's own questions on /pricing, /help and /security, with the visitor's welcome", () => {
+  const chips = { "/pricing": ["Which plan fits me?", "What's the Kitchen Safety Bundle?", "How do I cancel?"],
+    "/help": ["How do I add a teammate?", "How do I change my password?", "How do reminder emails work?"],
+    "/security": ["Is my data safe?", "How do I delete my workspace?", "How do I export the report?"] };
+  for (const [where, want] of Object.entries(chips)) {
+    const c = mountFor("visitor", where);
+    assert.equal(c.tagline, "Your Aegizyn helper", where);
+    assert.deepEqual(labels(c), ["What does Aegizyn do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
+    assert.deepEqual(c.chipLabels(), want, where);
+  }
+  const bundle = typedEverywhere("visitor", "/pricing")("What's the Kitchen Safety Bundle?");
+  assert.match(bundle.text, /BUNDLE-PRICE/);
+  assert.match(bundle.text, /UPGRADE-PRICE/);
+  assert.match(bundle.text, /fridge and freezer alarm app/);
+  // A refund question on the pricing page still gets the cancel answer, through the page's own button.
+  assert.equal(typedEverywhere("visitor", "/pricing")("Can I get a refund?").label, "How do I cancel?");
+});
+
+test("1.25.0: price answers link to /pricing", () => {
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/industries"], ["business", "/app/audit"]]) {
+    const text = typedEverywhere(who, where)("How much does it cost?").text;
+    assert.ok(linksIn(text).includes("/pricing"), `${who} ${where}`);
+    assert.ok(!linksIn(text).includes("/help#prices"), `${who} ${where}`);
+  }
+  const fit = mountFor("visitor", "/");
+  const planFit = fit.welcomePills.length && fit.chips({}).find((x) => x.label === "Which plan fits me?");
+  assert.ok(linksIn(planFit.answer({ facts: FACTS })).includes("/pricing"));
+});
+
+test("1.25.0: \"Can I get a refund?\" starts with the answer to it", () => {
+  for (const [who, where, lead] of [["business", "/app/audit", /^\*\*No refund for time already paid for/],
+    ["visitor", "/", /^\*\*No refund for time already paid for/], ["visitor", "/classrooms", /^\*\*No refund for the part of the year left/],
+    ["teacher", "/app/settings", /^\*\*No refund for the part of the year left/]]) {
+    const ask = typedEverywhere(who, where, { label: true });
+    for (const q of ["Can I get a refund?", "Do I get my money back?"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}"`);
+      assert.match(got.text, lead, `${who} ${where}: "${q}"`);
+      assert.match(got.text, /\*\*To cancel:\*\*/);
+    }
+    const plain = ask("How do I cancel?");
+    assert.doesNotMatch(plain.text, /No refund for time already paid for\*\*|No refund for the part of the year left\*\*/, `${who} ${where}`);
+  }
+});
+
+test("1.25.0: deleting says \"Download the report and History first\"", () => {
+  const got = typedEverywhere("business", "/app")("How do I delete my workspace?");
+  assert.match(got.text, /\*\*Download the report and History first\*\* if you need them/);
 });

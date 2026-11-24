@@ -114,7 +114,8 @@ with many companies: [LOAD-TEST.md](LOAD-TEST.md).
 
 ## 4. Backups and restore
 
-Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` (the time in UTC) in
+Backups are files named `aegizyn-YYYYMMDD-HHMMSS-*.db` (the time in UTC; before
+1.25.0 they were `omniarmor-...db`, which are still read, kept and pruned) in
 `BACKUP_DIR`, `/data/backups` in the Docker image. Each one is checked before
 it gets that name and is a single file, so it can be copied and restored on
 its own. To make one now: `flask --app wsgi backup` (on Docker,
@@ -158,7 +159,7 @@ with Docker Compose, the Shell tab on Render, or a shell on any other host.
 1. **Pick the backup (1 min).** `run ls -l /data/backups`. Take the newest
    one from before the problem started. Everything after it is lost.
 2. **Copy it to a fresh file (1 min).** With today's date in the name:
-   `run cp /data/backups/omniarmor-20261103-110012-123456.db /data/omniarmor-restored-20261103.db`.
+   `run cp /data/backups/aegizyn-20261103-110012-123456.db /data/omniarmor-restored-20261103.db`.
    Never copy over the database the app is using while it runs.
 3. **Check the copy (1 min).**
    `run python -c "import sqlite3; print(sqlite3.connect('/data/omniarmor-restored-20261103.db').execute('PRAGMA integrity_check').fetchone()[0])"`

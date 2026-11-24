@@ -47,6 +47,13 @@ def lesson_view():
             and "learner_id" in (request.view_args or {}))
 
 
+def kid_footer():
+    """Whether the footer is a student's (1.25.0, base.html): any page on a kid's own device, the kids' join page, and
+    a learner's own screens (which on a grown-up's device show no footer at all). A grown-up's Academy pages (the
+    family's learners, a class's progress) keep the grown-ups' footer."""
+    return g.get("kid") is not None or (request.endpoint or "").startswith("kids.") or lesson_view()
+
+
 def kid_exit_url():
     """Where "Grown-up? Hold to exit" on a learner's map goes: their class's
     page for a student, the family's learners otherwise."""

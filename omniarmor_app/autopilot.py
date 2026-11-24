@@ -18,7 +18,6 @@ data for things that should never happen.
     flask --app wsgi autopilot --log    show what it fixed and reported lately
 """
 
-import glob
 import logging
 import os
 import shutil
@@ -101,7 +100,8 @@ def retry_failed_emails(conn, cfg):
 
 
 def latest_backup(cfg):
-    copies = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))
+    from .jobs import backup_files
+    copies = backup_files(cfg["BACKUP_DIR"])
     return copies[-1] if copies else None
 
 

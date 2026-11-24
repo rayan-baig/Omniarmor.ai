@@ -17,13 +17,16 @@
 <section class="sum-block" aria-labelledby="sum-now" data-summary-now>
   <h2 id="sum-now">Where things stand</h2>
   {% if total %}
-  <p class="sum-lead"><strong>{{ counts.CLEARED }} of {{ total|plural('check') }} current</strong>{% if counts.WARNING %} · {{ counts.WARNING }} due soon or near a limit{% endif %}{% if counts.BLOCKED %} · {{ counts.BLOCKED }} overdue or out of limits{% endif %}{% if counts.NONE %} · {{ counts.NONE }} not recorded yet{% endif %}.</p>
+  {#- 1.25.0: Home's and the Report's own status words (blocked, warnings, cleared, without a reading), in the same
+      order, with what each means on paper in one line under them (data-status-key). -#}
+  <p class="sum-lead"><strong>{{ total|plural('check') }}:</strong> {{ counts.BLOCKED }} blocked · {{ counts.WARNING|plural('warning') }} · {{ counts.CLEARED }} cleared{% if counts.NONE %} · {{ counts.NONE }} without a reading{% endif %}.</p>
+  <p class="sum-key" data-status-key><b>Blocked:</b> overdue or out of limits · <b>Warning:</b> due soon or near a limit · <b>Cleared:</b> current · <b>Without a reading:</b> not recorded yet. The same words as Home and the Report.</p>
   {% include "app/_count_rule.html" %}
-  {% if tracked['items'] %}{% set ic = tracked.counts %}<p class="sum-detail" data-items-tally>The {{ tracked['items']|plural('tracked item') }}: {{ ic.CLEARED }} current{% if ic.WARNING %} · {{ ic.WARNING }} due soon or near a limit{% endif %}{% if ic.BLOCKED %} · {{ ic.BLOCKED }} overdue or out of limits{% endif %}{% if ic.NONE %} · {{ ic.NONE }} not recorded yet{% endif %}.</p>{% endif %}
+  {% if tracked['items'] %}{% set ic = tracked.counts %}<p class="sum-detail" data-items-tally>The {{ tracked['items']|plural('tracked item') }}: {{ ic.BLOCKED }} blocked · {{ ic.WARNING|plural('warning') }} · {{ ic.CLEARED }} cleared{% if ic.NONE %} · {{ ic.NONE }} without a reading{% endif %}.</p>{% endif %}
   <ul class="sum-list" data-summary-groups>
     {% for gr in groups %}
     <li><strong>{{ gr.industry.brand }}</strong> <span class="muted">· {{ gr.industry.sector }}</span>
-      <span class="sum-detail">{{ gr.counts.CLEARED }} current · {{ gr.counts.WARNING }} due soon · {{ gr.counts.BLOCKED }} overdue{% if gr.counts.NONE %} · {{ gr.counts.NONE }} not recorded{% endif %}</span></li>
+      <span class="sum-detail">{{ gr.counts.BLOCKED }} blocked · {{ gr.counts.WARNING|plural('warning') }} · {{ gr.counts.CLEARED }} cleared{% if gr.counts.NONE %} · {{ gr.counts.NONE }} without a reading{% endif %}</span></li>
     {% endfor %}
   </ul>
   {% else %}
@@ -68,7 +71,9 @@
   <ul class="sum-list">
     {% for s, title, st in recorded %}
     <li><strong>{{ title }}</strong>
-      <span class="sum-detail">{{ st.reading_text or 'No reading' }} · {{ st.updated_at|local_date }}{% if st.updated_by %}<span data-pilot-private> · {{ st.updated_by }}</span>{% endif %}</span></li>
+      {#- 1.25.0: the reading in its own kind's words ("Hired 2 business days ago", "Last done 260 days ago") and the
+          day it was recorded, labelled as such. -#}
+      <span class="sum-detail">{{ st.recorded_line }} · recorded {{ st.updated_at|local_date }}{% if st.updated_by %}<span data-pilot-private> · {{ st.updated_by }}</span>{% endif %}</span></li>
     {% endfor %}
   </ul>
   {% if recorded_more %}<p class="hint">And {{ recorded_more }} earlier in the <a href="{{ url_for('app.report') }}">full report</a>.</p>{% endif %}

@@ -118,7 +118,7 @@
             <input type="datetime-local" id="{{ fid }}-d" name="date" value="{{ s.value_at.strftime('%Y-%m-%dT%H:%M') if s.value_at else '' }}">
           </div>
         {% elif s.mode %}
-          <label class="hint" for="{{ fid }}-d">{{ 'Or the date it last happened' if s.mode == 'since' else 'Or the due or expiry date' }}</label>
+          <label class="hint" for="{{ fid }}-d">{{ ('Or the date it was last done' if s.since_word == 'last done' else 'Or the date it happened') if s.mode == 'since' else 'Or the due or expiry date' }}</label>
           <div class="inline">
             <input type="date" id="{{ fid }}-d" name="date" value="{{ s.value_date.isoformat() if s.value_date else '' }}"{% if s.mode == 'since' %} max="{{ today.isoformat() }}"{% endif %}>
           </div>

@@ -602,7 +602,7 @@ class TestJobs(AppTestCase):
         # Automatically, a day's copy is made once: a retried run reuses it.
         self.assertEqual(backup_database(cfg), made[-1])
         result = run_daily(cfg, force=True)
-        self.assertIn("backup=omniarmor-", result)
+        self.assertIn("backup=aegizyn-", result)
 
     def test_find_rule(self):
         self.assertIsNone(find_rule(99, "x"))

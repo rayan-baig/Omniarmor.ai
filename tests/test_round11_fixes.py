@@ -215,7 +215,7 @@ class TestInspectionSummary(AppTestCase):
         # The totals are the report's own.
         cleared = re.search(r"<b>(\d+)</b>cleared", report)
         self.assertIsNotNone(cleared)
-        self.assertRegex(text, r"\d+ of \d+ checks current")
+        self.assertRegex(text, r"\d+ checks: \d+ blocked · ")   # 1.25.0: Home's and the Report's words
         # The names of who recorded are marked private for Pilot.
         self.assertIn('<ul class="sum-list" data-pilot-private>', page)
         self.assertIn("ep in ('app.report', 'app.report_summary')", read("omniarmor_app", "templates", "base.html"))

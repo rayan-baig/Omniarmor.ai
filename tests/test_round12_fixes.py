@@ -62,9 +62,10 @@ class TestOneCountingRule(AppTestCase):
             self.assertIn(rule, text, name)
         for text in (home, report):
             self.assertIn("2 blocked 0 warnings 0 cleared 8 without a reading", text)
-        self.assertIn("0 of 10 checks current · 2 overdue or out of limits · 8 not recorded yet.", summary)
-        self.assertIn("The 4 tracked items: 2 current · 2 overdue or out of limits.", summary)
-        self.assertIn("0 current · 0 due soon · 2 overdue · 8 not recorded", summary)
+        # 1.25.0: in Home's and the Report's own words.
+        self.assertIn("10 checks: 2 blocked · 0 warnings · 0 cleared · 8 without a reading.", summary)
+        self.assertIn("The 4 tracked items: 2 blocked · 0 warnings · 2 cleared.", summary)
+        self.assertIn("2 blocked · 0 warnings · 0 cleared · 8 without a reading", summary)
         self.assertIn("2 checks (4 tracked items), most recently", summary)
         self.assertNotIn("of 12 checks", summary)
 
@@ -128,7 +129,9 @@ class TestSummaryPrintsOnOnePage(AppTestCase):
             states = states_for_org(conn, org)
         until = next(s for s in states if s.mode == "until")
         since = next(s for s in states if s.mode == "since" and s.rule.unit == "days")
-        self.assertEqual(dataclasses.replace(until, value=41).reading_line, "41 days left")
+        # 1.25.0: a deadline's due line says its days; the reading line doesn't repeat them.
+        self.assertEqual(dataclasses.replace(until, value=41).reading_line, "")
+        self.assertEqual(dataclasses.replace(until, value=41).reading_text, "41 days left")
         self.assertEqual(dataclasses.replace(until, value=-3).reading_line, "")
         self.assertEqual(dataclasses.replace(until, value=-3).reading_text, "3 days past due")
         self.assertEqual(dataclasses.replace(since, value=35).reading_line, "last done 35 days ago")

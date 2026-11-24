@@ -178,7 +178,7 @@ class TestDatesAreTheWorkspaces(AppTestCase):
         self.assertIn("When (Los Angeles time)", audit)
         self.assertIn("America/Los_Angeles", audit)
         head = self.client.get("/app/report.csv").get_data(as_text=True).splitlines()[0]
-        self.assertIn("Last updated (UTC)", head)
+        self.assertIn("Last updated (America/Los_Angeles)", head)   # 1.25.0: the Report's CSV too (it was UTC)
 
     def test_local_date(self):
         tokyo, la = {"timezone": "Asia/Tokyo"}, {"timezone": "America/Los_Angeles"}

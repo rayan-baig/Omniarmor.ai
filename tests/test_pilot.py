@@ -89,7 +89,8 @@ class TestWherePilotIs(PilotCase):
             self.assertIn('data-who="visitor"', page, path)
 
     def test_not_on_sign_in_password_legal_or_error_pages(self):
-        for path in ("/login", "/signup", "/forgot", "/help", "/privacy", "/terms", "/kids"):
+        # 1.25.0: Help, pricing and security have Pilot now (test_round13_fixes); the sign-in and legal pages don't.
+        for path in ("/login", "/signup", "/forgot", "/privacy", "/terms", "/kids"):
             self.assertFalse(has_pilot(self.page(path)), path)
         self.assertFalse(has_pilot(self.client.get("/no-such-page").data.decode()))
 
@@ -221,7 +222,7 @@ class TestThePilotTag(PilotCase):
         self.change(1, next(r.key for r in rules_for(1) if r.kind in ("required", "forbidden")), answer="no")
         self.assertRegex(self.page("/app/settings"), r'<ul class="list" data-pilot-private>\s*<li class="row">\s*<span><span class="title">Pat Owner')
         self.assertIn("<td data-pilot-private>Pat Owner</td>", self.page("/app/audit"))
-        self.assertIn("<span data-pilot-private> · Pat Owner</span>", self.page("/app/report"))
+        self.assertIn('<span class="upd-by" data-pilot-private><span class="upd-sep"> · </span>Pat Owner</span>', self.page("/app/report"))
 
     def test_the_tools_read_the_app_s_own_pages(self):
         """The hooks the tools read: each check's kind and how it counts, and the list of classes."""
