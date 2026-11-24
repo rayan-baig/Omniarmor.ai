@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-OmniArmor rule catalog: ten costly compliance risks for each of the 54
+Aegizyn rule catalog: ten costly compliance risks for each of the 54
 industries, 540 rules in all. CATALOG maps industry id -> list of Rule.
 """
 

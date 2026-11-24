@@ -460,7 +460,7 @@ class TestCsrfEverywhere(AppTestCase):
         # The webhook takes no form token, only Stripe's signature.
         self.app.config["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
         self.assertEqual(self.client.post("/billing/stripe/webhook", data=b"{}").status_code, 400)
-        # CyberLogix's report takes no form token, only the workspace's
+        # Kryozyn's report takes no form token, only the workspace's
         # connection key: the signed-in cookie gets nowhere.
         response = self.client.post("/api/connect/cyberlogix/daily", data=fields)
         self.assertEqual(response.status_code, 401)

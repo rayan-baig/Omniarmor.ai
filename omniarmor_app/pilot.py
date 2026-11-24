@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pilot, the MTRX Horizyn assistant, on OmniArmor (docs/PILOT.md).
+"""Pilot, the company's assistant, on Aegizyn (docs/PILOT.md).
 
 Pilot runs in the visitor's browser on their own AI key and talks to the AI
 provider they chose, straight from the browser: this server never sees the
@@ -7,7 +7,7 @@ key or the conversation, and has no Pilot address of its own. This module
 says only three things:
 
 - which addresses the browser may reach for it (the security policy's
-  connect-src, in security.py), exactly the MTRX Horizyn site's list;
+  connect-src, in security.py), exactly the company site's list;
 - which pages carry it: the public pages for grown-ups, a business's pages
   and a teacher's pages. Never a page a student uses (the Academy's
   lessons, map, results and the kids' join page): students are children,
@@ -21,6 +21,8 @@ import hmac
 import os
 
 from flask import current_app, g, request, url_for
+
+from . import names
 
 PROVIDER_HOSTS = ("api.anthropic.com", "api.openai.com", "generativelanguage.googleapis.com")
 COMPATIBLE_HOSTS = ("openrouter.ai", "api.groq.com", "api.mistral.ai", "api.deepseek.com", "api.together.xyz",
@@ -45,7 +47,7 @@ STUDENT_BLUEPRINTS = ("academy.", "kids.")
 
 # The moving robot's pose pictures (core 1.1.0): every <pose>.webp or .png in
 # static/pilot/poses/ whose name is one of these, so a new pose is added just
-# by putting its picture there. The same list as the MTRX Horizyn site's.
+# by putting its picture there. The same list as the company site's.
 POSES = ("standing", "sitting", "wave", "walk1", "walk2", "run1", "run2", "fly", "climb1", "climb2", "flip",
          "throw", "kick", "tennis", "celebrate", "slide", "point", "power", "dash", "love", "land", "arms-crossed")
 
@@ -144,6 +146,9 @@ def facts(who):
         # 1.23.0: where the data is kept (the Security page's own facts) and how long an invite link works, for
         # the answers to "Do you sell my data?" and "How do I add a teammate?".
         "offsite_backup": bool(offsite_ok(cfg)), "backup_keep": cfg["BACKUP_KEEP"], "invite_days": INVITE_DAYS,
+        # 1.24.0: the company's, the apps' and the assistant's names (names.py), so the config and the pack never
+        # type them.
+        "names": names.for_pages(),
     }
     # ... "Which checklist fits me?" (the trades the industry list leads with,
     # each with its page, then the other trade pages) ...

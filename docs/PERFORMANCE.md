@@ -1,4 +1,4 @@
-# How fast OmniArmor is
+# How fast Aegizyn is
 
 Measured on 19 November 2026 (version 1.8.0) on the demo workspace
 (`flask --app wsgi seed-demo`), in the app itself, on a shared Linux
@@ -15,7 +15,7 @@ alone is 150 KB of HTML.
 
 ## 2. Page weight on the first visit
 
-What the browser downloads from OmniArmor for one page: the HTML and our CSS
+What the browser downloads from Aegizyn for one page: the HTML and our CSS
 and JavaScript (fonts not counted; since 1.9.0 they come from the app itself and are
 cached across sites). "Slow phone" is Chrome's "Slow 3G" setting, 400 kbit/s:
 the time just to download those bytes, before any round trips.
@@ -72,5 +72,5 @@ of every workspace), where a scan is the right plan.
 The pages that do the most work are the Academy map (all the worlds and
 levels) and an industry page with many checks; measure them first. With the
 app running, `curl -s -o /dev/null -w '%{size_download}\n' -H
-'Accept-Encoding: gzip' https://omniarmor.mtrxhorizyn.com/` gives the bytes
+'Accept-Encoding: gzip' https://aegizyn.mtrxhorizyn.com/` gives the bytes
 sent for one page.

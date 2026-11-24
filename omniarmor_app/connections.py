@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""The Kitchen Safety Bundle: CyberLogix fills in OmniArmor's temperature checks.
+"""The Kitchen Safety Bundle: Kryozyn fills in Aegizyn's temperature checks.
 
-CyberLogix is MTRX Horizyn's fridge and freezer alarm app. A workspace owner
+Kryozyn is the company's fridge and freezer alarm app. A workspace owner
 creates a connection key in Settings, Connections (shown once, stored as a
 hash like invite links, one active key per workspace) and pastes it into
-CyberLogix. Each day CyberLogix sends that day's summary to
+Kryozyn. Each day Kryozyn sends that day's summary to
 POST /api/connect/cyberlogix/daily with the key as a Bearer token. The
-contract the CyberLogix side builds against is docs/CYBERLOGIX-CONNECTION.md:
+contract the Kryozyn side builds against is docs/KRYOZYN-CONNECTION.md:
 change one, change the other.
 
 What a report does to each of the workspace's temperature-log checks
@@ -14,7 +14,7 @@ What a report does to each of the workspace's temperature-log checks
 
 - every unit in range all day: the check gets the day's warmest reading
   through tracking.apply_change, the same code a person's Save goes through,
-  with "From CyberLogix: 7 of 7 units in range all day" in the audit trail;
+  with "From Kryozyn: 7 of 7 units in range all day" in the audit trail;
 - a breach, or a unit not confirmed in range: no reading is saved. The check
   gets a note for a person to review instead.
 
@@ -24,9 +24,9 @@ away or overwrites a reading someone on the team saved that day or later.
 A report carries temperatures, unit names and roles ("on-call staff"), never
 a person's name: the roles and actions are fixed lists.
 
-**Signed reports and the bundle's included Pro.** CyberLogix signs the
+**Signed reports and the bundle's included Pro.** Kryozyn signs the
 reports of sites on the Kitchen Safety Bundle with the shared
-KITCHEN_BUNDLE_SECRET: the header X-CyberLogix-Signature is
+KITCHEN_BUNDLE_SECRET: the header X-Kryozyn-Signature is
 "t=<unix seconds>,v1=<hex HMAC-SHA256(secret, b"<t>." + raw body bytes)>".
 check_signature() verifies it over the raw bytes, in constant time, and
 refuses a t more than SIGNATURE_TOLERANCE seconds from now. A signature
@@ -52,20 +52,22 @@ from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, jsonify, request
 
+from . import names
 from .catalog import INDUSTRIES, find_rule
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .security import client_ip, hash_token, rate_limited, record_event
 from .tracking import _get_row, apply_change, format_quantity, local_date, org_industry_ids, org_today
 
 SERVICE = "cyberlogix"
-NAME = "CyberLogix"
+NAME = names.FRIDGE_APP
+OLD_NAMES = ("CyberLogix",)   # the app's name before the 1.24.0 rename, on rows written before it
 BUNDLE = "Kitchen Safety Bundle"
 
-# The checks CyberLogix fills in: the catalog's fridge, freezer and cold
+# The checks Kryozyn fills in: the catalog's fridge, freezer and cold
 # holding temperature checks, as (industry id, rule key). Each one is a
 # maximum in °F, which tests check.
 TEMPERATURE_CHECKS = (
-    (2, "cold_holding"),   # RestoArmor: Cold holding at 41°F or below (FDA Food Code 3-501.16(A)(2))
+    (2, "cold_holding"),   # Resto Aegizyn: Cold holding at 41°F or below (FDA Food Code 3-501.16(A)(2))
 )
 
 KEY_PREFIX = "clx_"
@@ -103,7 +105,9 @@ ACTIONS = {
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # --- The signature (the Kitchen Safety Bundle) -------------------------------------
-SIGNATURE_HEADER = "X-CyberLogix-Signature"
+SIGNATURE_HEADER = "X-Kryozyn-Signature"
+# The header's name before the 1.24.0 rename: still read when the new one is absent.
+OLD_SIGNATURE_HEADER = "X-CyberLogix-Signature"
 SIGNATURE_TOLERANCE = 300                  # seconds either side of now
 SIGNATURE_MEMORY = timedelta(minutes=10)   # accepted signatures remembered, against replays
 MAX_SIGNATURE_HEADER = 300
@@ -206,13 +210,13 @@ def mark_reviewed(conn, org_id, user_id, industry_id, rule_key, day):
 # --- The signature ------------------------------------------------------------------
 
 def sign(secret, body, stamp):
-    """The header value CyberLogix sends: what check_signature verifies."""
+    """The header value Kryozyn sends: what check_signature verifies."""
     digest = hmac.new(secret.encode(), str(int(stamp)).encode() + b"." + body, hashlib.sha256).hexdigest()
     return f"t={int(stamp)},v1={digest}"
 
 
 def check_signature(raw, header, secret, now=None):
-    """Checks X-CyberLogix-Signature against the raw body. Returns (status,
+    """Checks X-Kryozyn-Signature against the raw body. Returns (status,
     signature): status is "valid", "missing" (no header), "not_configured"
     (KITCHEN_BUNDLE_SECRET unset), "stale" (t over SIGNATURE_TOLERANCE from
     now) or "invalid" (malformed, or no v1 matches); signature is the v1
@@ -425,7 +429,7 @@ def _fahrenheit(value, uom):
 
 
 def _span(b):
-    """"02:10–02:45" in the site's own clock (the offset CyberLogix sent)."""
+    """"02:10–02:45" in the site's own clock (the offset Kryozyn sent)."""
     start = datetime.fromisoformat(b["started_at"])
     if b["ended_at"] is None:
         return f"from {start:%H:%M}, still out of range when reported"
@@ -469,7 +473,7 @@ def fingerprint(report):
 def _by_a_person(item):
     """Whether the check's reading was last changed by someone on the team
     (a removed member's change keeps their name and loses the id)."""
-    return item is not None and (item["updated_by"] is not None or item["updated_by_name"] not in (None, NAME))
+    return item is not None and (item["updated_by"] is not None or item["updated_by_name"] not in (None, NAME, *OLD_NAMES))
 
 
 def _apply_to_check(conn, org, industry_id, rule, report, digest):
@@ -560,12 +564,12 @@ def receive(conn, org, key_row, report, signature=("missing", None)):
                          for i, rule, r in results],
               "signature": status, "bundle_counted": counted}
     if not results:
-        answer["hint"] = ("This workspace tracks no temperature-log check, so nothing was filled in. In OmniArmor,"
-                          " the owner can add RestoArmor (Restaurants) in Settings, Company, to track cold holding.")
+        answer["hint"] = ("This workspace tracks no temperature-log check, so nothing was filled in. In Aegizyn,"
+                          " the owner can add Resto Aegizyn (Restaurants) in Settings, Company, to track cold holding.")
     return answer
 
 
-# --- The address CyberLogix calls -------------------------------------------------------
+# --- The address Kryozyn calls -------------------------------------------------------
 
 def _error(status_code, code, message, **extra):
     response = jsonify(ok=False, error=code, message=message, **extra)
@@ -590,9 +594,12 @@ def _bearer():
     return token
 
 
+@api.route("/kryozyn/daily", methods=["POST"])
 @api.route("/cyberlogix/daily", methods=["POST"])
 def cyberlogix_daily():
-    """CyberLogix's daily report. Answered in JSON only, authenticated by the
+    """Kryozyn's daily report, at /api/connect/kryozyn/daily (1.24.0) and at
+    the address it had before the rename, /api/connect/cyberlogix/daily, which
+    keeps working for a Kryozyn that hasn't moved yet. Answered in JSON only, authenticated by the
     workspace's connection key and nothing else (no cookie), so it is the one
     form-free POST outside Stripe's webhook that skips the CSRF token."""
     conn = get_db()
@@ -609,7 +616,7 @@ def cyberlogix_daily():
                                (hash_token(token), SERVICE)).fetchone()
     if key_row is None:
         record_event([f"cyberlogix-bad:{ip}"])
-        return _error(401, "unauthorized", "Send the workspace's CyberLogix connection key as"
+        return _error(401, "unauthorized", "Send the workspace's Kryozyn connection key as"
                                            " 'Authorization: Bearer <key>'. A revoked key stops working.")
     if rate_limited([(f"cyberlogix-key:{key_row['id']}", PER_KEY[0])], PER_KEY[1]):
         return _too_many(PER_KEY[1])
@@ -631,10 +638,10 @@ def cyberlogix_daily():
                       errors=[{"field": f, "problem": p} for f, p in exc.problems])
     # The signature is checked over the exact bytes received, before anything
     # parsed them. Whatever it says, the report is processed the same way.
-    signature = check_signature(raw, request.headers.get(SIGNATURE_HEADER, ""),
+    signature = check_signature(raw, request.headers.get(SIGNATURE_HEADER) or request.headers.get(OLD_SIGNATURE_HEADER, ""),
                                 current_app.config.get("KITCHEN_BUNDLE_SECRET", ""))
     answer = receive(conn, org, key_row, report, signature)
-    current_app.logger.info("cyberlogix report for workspace %s, %s: %s matched, %s ticked, %s noted, signature %s",
+    current_app.logger.info("kryozyn report for workspace %s, %s: %s matched, %s ticked, %s noted, signature %s",
                             org["id"], report["date"], answer["matched_checks"], answer["ticked"], answer["noted"],
                             answer["signature"])
     return jsonify(answer)

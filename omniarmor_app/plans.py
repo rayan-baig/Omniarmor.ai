@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""OmniArmor's plans, and what a workspace can use right now.
+"""Aegizyn's plans, and what a workspace can use right now.
 
 This is the one place the prices live. Every page that names a plan or a
 price (the plan page, Help, Settings, the landing page and the industry
@@ -25,7 +25,7 @@ only. A yearly plan cancelled in Stripe's portal stays on to the end of the
 year paid for, with no partial refund; then the rules below apply.
 
 A **location** is a workspace. One workspace holds one site: it has one
-timezone, one reading per check, and CyberLogix sends one report per
+timezone, one reading per check, and Kryozyn sends one report per
 workspace a day; a company with several sites makes a workspace for each.
 So every subscription has a quantity of location_count(), which is 1.
 
@@ -34,9 +34,9 @@ compliance tracker is read-only: every record can be seen, printed and
 downloaded, nothing is deleted, but no check can be saved and reminders
 pause. Export and deleting the workspace always work.
 
-**The Kitchen Safety Bundle.** CyberLogix customers pay CyberLogix for the
+**The Kitchen Safety Bundle.** Kryozyn customers pay Kryozyn for the
 bundle, and it includes Pro for that location. A workspace counts as covered
-while it receives validly signed CyberLogix reports (connections.py): at
+while it receives validly signed Kryozyn reports (connections.py): at
 least one in the last BUNDLE_FRESH. When they stop, BUNDLE_GRACE more of Pro
 follows, with a banner, and then the rules above. A covered workspace can
 add the Academy (Plus) for the difference between Plus and Pro.
@@ -63,7 +63,7 @@ pays for a school year, often by invoice):
   so it is never dearer than adding the Academy, and never a cheaper way for
   a business to get the tracker (it has none).
 - **Whole school**: the whole Academy for any number of classes, and the
-  compliance tracker (SchoolArmor's checklist) for the school. It costs
+  compliance tracker (School Aegizyn's checklist) for the school. It costs
   between four and five Classrooms, so it pays from the fifth class, and
   more than a year of Plus, which it includes.
 
@@ -211,8 +211,8 @@ CLASSROOM_PLANS = {p.key: p for p in (CLASSROOM, SCHOOL)}
 
 # --- The Kitchen Safety Bundle -------------------------------------------------
 BUNDLE_NAME = "Kitchen Safety Bundle"
-BUNDLE_DOLLARS = 29                     # what CyberLogix charges a month per location
-BUNDLE_INCLUDES = PRO                   # what the bundle includes in OmniArmor
+BUNDLE_DOLLARS = 29                     # what Kryozyn charges a month per location
+BUNDLE_INCLUDES = PRO                   # what the bundle includes in Aegizyn
 BUNDLE_UPGRADE_SETTING = "PLUS_BUNDLE_UPGRADE_STRIPE_PRICE"
 BUNDLE_UPGRADE_YEARLY_SETTING = "PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE"
 BUNDLE_FRESH = timedelta(days=3)        # a signed report this recent: covered
@@ -346,7 +346,7 @@ def trial_ends(org, trial_days=None):
 
 def bundle_status(org, now=None):
     """The Kitchen Safety Bundle's cover from the last validly signed
-    CyberLogix report: 'covered', 'grace', 'lapsed' or 'none', with the dates."""
+    Kryozyn report: 'covered', 'grace', 'lapsed' or 'none', with the dates."""
     now = now or datetime.now(timezone.utc)
     last = _parse(_get(org, "bundle_report_at"))
     if last is None:

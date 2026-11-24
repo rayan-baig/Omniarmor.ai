@@ -5,6 +5,8 @@ import os
 import secrets
 from datetime import timedelta
 
+from . import names
+
 
 def _flag(name, default):
     value = os.environ.get(name)
@@ -13,14 +15,25 @@ def _flag(name, default):
     return value.strip().lower() in ("1", "true", "yes", "on")
 
 
-# Where people write for help when SUPPORT_EMAIL isn't set: MTRX Horizyn's
-# help address, so no page ever ends without a way to reach a person.
-DEFAULT_SUPPORT_EMAIL = "help@mtrxhorizyn.com"
+# Where people write for help when SUPPORT_EMAIL isn't set: the company's
+# help address (names.py), so no page ever ends without a way to reach a person.
+DEFAULT_SUPPORT_EMAIL = names.HELP_EMAIL
 
 
 def support_email(cfg):
     """The address pages give for help and for "contact us"."""
     return (cfg.get("SUPPORT_EMAIL") or "").strip() or DEFAULT_SUPPORT_EMAIL
+
+
+def environment(env=None):
+    """The environment, "production" or "development": AEGIZYN_ENV, or the older OMNIARMOR_ENV
+    (1.24.0: both work, and AEGIZYN_ENV wins when both are set)."""
+    env = os.environ if env is None else env
+    return (env.get("AEGIZYN_ENV") or env.get("OMNIARMOR_ENV") or "development").strip()
+
+
+def _hosts(value):
+    return tuple(h.strip().lower() for h in (value or "").split(",") if h.strip())
 
 
 class SettingsError(RuntimeError):
@@ -40,7 +53,7 @@ def load_config(**overrides):
     env = os.environ
     instance = os.path.join(os.getcwd(), "instance")
     database = env.get("DATABASE_PATH", os.path.join(instance, "omniarmor.db"))
-    production = env.get("OMNIARMOR_ENV", "development") == "production"
+    production = environment(env) == "production"
     cfg = {
         "ENV_NAME": "production" if production else "development",
         "SECRET_KEY": env.get("SECRET_KEY", ""),
@@ -57,7 +70,7 @@ def load_config(**overrides):
         "SMTP_USER": env.get("SMTP_USER", ""),
         "SMTP_PASSWORD": env.get("SMTP_PASSWORD", ""),
         "SMTP_STARTTLS": _flag("SMTP_STARTTLS", True),
-        "MAIL_FROM": env.get("MAIL_FROM", "OmniArmor <no-reply@localhost>"),
+        "MAIL_FROM": env.get("MAIL_FROM", names.MAIL_FROM_DEFAULT),
         "DAILY_JOB_HOUR_UTC": _whole(env, "DAILY_JOB_HOUR_UTC", "11"),
         "SCHEDULER_ENABLED": _flag("SCHEDULER_ENABLED", True),
         # Autopilot fixes small problems itself and emails big ones here.
@@ -66,7 +79,7 @@ def load_config(**overrides):
         # One inbox that gets a short report of each server error (a 500),
         # with no personal data (errormail.py). Unset, none are sent.
         "ERRORS_EMAIL": env.get("ERRORS_EMAIL", "").strip(),
-        # The private key MTRX Horizyn's console sends to /api/stats (the same
+        # The private key the company's console sends to /api/stats (the same
         # value as its MTRX_STATS_KEY) for user counts and daily feature use.
         # Unset, that address does not exist.
         "STATS_KEY": env.get("STATS_KEY", "").strip(),
@@ -99,7 +112,7 @@ def load_config(**overrides):
         # The free classroom pilot's length, in days (once per workspace, no card).
         "CLASSROOM_PILOT_DAYS": _whole(env, "CLASSROOM_PILOT_DAYS", "30"),
         # Where a school writes to pay by invoice. Unset, SUPPORT_EMAIL, and
-        # without that MTRX Horizyn's help address.
+        # without that the company's help address (names.py).
         "SCHOOL_INVOICE_EMAIL": env.get("SCHOOL_INVOICE_EMAIL", "").strip(),
         # The save offer on the cancel screen (plans.py): a Stripe coupon id,
         # and the amount the screen promises, which must match that coupon
@@ -112,7 +125,7 @@ def load_config(**overrides):
         "SAVE_OFFER_MONTHS": _whole(env, "SAVE_OFFER_MONTHS", "2"),
         "STRIPE_SECRET_KEY": env.get("STRIPE_SECRET_KEY", ""),
         "STRIPE_WEBHOOK_SECRET": env.get("STRIPE_WEBHOOK_SECRET", ""),
-        # The secret CyberLogix signs its daily reports with (the same value
+        # The secret Kryozyn signs its daily reports with (the same value
         # on both apps). A validly signed report counts toward the Kitchen
         # Safety Bundle's included Pro; unset, reports are still taken but
         # none counts (connections.py).
@@ -127,12 +140,17 @@ def load_config(**overrides):
         # (and every form also needs its CSRF token).
         "SESSION_COOKIE_SAMESITE": "Lax",
         # Host-only: no Domain attribute, so the cookie goes back to this
-        # exact host and nowhere else. OmniArmor runs on a subdomain of MTRX
-        # Horizyn's domain, beside its other apps; a cookie scoped to the
-        # parent domain would carry an OmniArmor sign-in to every one of them.
+        # exact host and nowhere else. Aegizyn runs on a subdomain of the
+        # company's domain, beside its other apps; a cookie scoped to the
+        # parent domain would carry an Aegizyn sign-in to every one of them.
         "SESSION_COOKIE_DOMAIN": None,
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),
         "MAX_CONTENT_LENGTH": 1024 * 1024,
+        # 1.24.0: the app's old addresses (names.py, OLD_APP_HOSTS: omniarmor.<domain>), comma-separated. A page
+        # asked for there is sent on, with a permanent redirect, to the same path at BASE_URL's address. Stripe's
+        # webhook, Kryozyn's daily report and the health checks are answered there as before, so nothing that
+        # posts to the old address breaks (security.py, old_host_redirect). Set it to empty to turn this off.
+        "OLD_HOSTS": _hosts(env.get("OLD_HOSTS", ",".join(names.OLD_APP_HOSTS))),
     }
     base_url_given = "BASE_URL" in env or "BASE_URL" in overrides
     cfg.update(overrides)
@@ -140,7 +158,7 @@ def load_config(**overrides):
         _production_checks(cfg, base_url_given)
     if not cfg["SECRET_KEY"]:
         if cfg["ENV_NAME"] == "production":
-            raise SettingsError("SECRET_KEY must be set when OMNIARMOR_ENV=production")
+            raise SettingsError("SECRET_KEY must be set when AEGIZYN_ENV=production")
         cfg["SECRET_KEY"] = secrets.token_hex(32)  # development only: sessions reset on restart
     if not 0 <= cfg["DAILY_JOB_HOUR_UTC"] <= 23:
         raise SettingsError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
@@ -162,17 +180,17 @@ def _production_checks(cfg, base_url_given):
                         " python3 -c \"import secrets; print(secrets.token_hex(32))\" (Render makes one itself).")
     if not base_url_given:
         problems.append("BASE_URL is not set. Set it to the site's address, like"
-                        " https://omniarmor.mtrxhorizyn.com (no slash at the end): every link in an email uses it.")
+                        f" {names.APP_URL} (no slash at the end): every link in an email uses it.")
     elif not cfg["BASE_URL"].startswith(("https://", "http://")):
         problems.append(f"BASE_URL must be a full address starting with https://. It is set to {cfg['BASE_URL']!r}.")
     if cfg.get("SMTP_HOST") and "@localhost" in cfg.get("MAIL_FROM", ""):
         problems.append("SMTP_HOST is set but MAIL_FROM is not. Set MAIL_FROM to the address emails come from,"
-                        " like OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>.")
+                        f" like {names.MAIL_FROM_LIVE}.")
     if cfg.get("SMTP_HOST") and cfg.get("SMTP_USER") and not cfg.get("SMTP_PASSWORD"):
         problems.append("SMTP_USER is set but SMTP_PASSWORD is empty. Set the password your email provider gave.")
     if cfg.get("STRIPE_SECRET_KEY") and not cfg.get("STRIPE_WEBHOOK_SECRET"):
         problems.append("STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is not: people could pay and never get"
                         " their plan. Set it to the webhook's signing secret from Stripe (docs/OPERATIONS.md, section 8).")
     if problems:
-        raise SettingsError("OmniArmor can't start in production until these settings are fixed:\n- "
+        raise SettingsError("Aegizyn can't start in production until these settings are fixed:\n- "
                             + "\n- ".join(problems))

@@ -5,12 +5,12 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from omni_armor_platform import BLOCKED, CLEARED, WARNING, OmniArmorPortal  # noqa: E402
+from omni_armor_platform import BLOCKED, CLEARED, WARNING, AegizynPortal  # noqa: E402
 
 
 class PortalTestCase(unittest.TestCase):
     def setUp(self):
-        self.p = OmniArmorPortal(verbose=False)
+        self.p = AegizynPortal(verbose=False)
 
     def assertLevel(self, result, level):
         self.assertEqual(result.level, level, result.message)

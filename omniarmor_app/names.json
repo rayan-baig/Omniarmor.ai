@@ -1,0 +1,19 @@
+{
+  "_about": "The one place for the names that may still change: the company, its domain, the assistant and the sister apps. omniarmor_app/names.py reads this file and works out every address from it; the pages, emails, Pilot's answers (through its script tag) and the JS tests all use it. To rename the company, change company and domain here (the help address and every app address follow the domain).",
+  "company": "MTRX Horizyn",
+  "domain": "mtrxhorizyn.com",
+  "help_mailbox": "help",
+  "app": "Aegizyn",
+  "app_subdomain": "aegizyn",
+  "old_app_subdomains": ["omniarmor"],
+  "fridge_app": "Kryozyn",
+  "fridge_subdomain": "kryozyn",
+  "old_fridge_subdomains": ["cyberlogix"],
+  "assistant": "Pilot",
+  "assistant_next": "Astroxy",
+  "other_apps": {
+    "RankUp": "rankup",
+    "Genesis": "genesis",
+    "Orbyt": "orbyt"
+  }
+}

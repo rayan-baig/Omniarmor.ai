@@ -4,9 +4,9 @@ notification log instead of being sent, so nothing is lost.
 
 Every email goes out the same way: a plain-text part and an HTML part, both
 made from the one plain-text body the sender wrote (the copy Radar keeps),
-with the same footer: the MTRX Horizyn line, and on a reminder a link to
+with the same footer: the company line (names.py), and on a reminder a link to
 choose which reminder emails you get. The HTML part is one 600-pixel column
-in OmniArmor's colors (templates/email/message.html). Its building blocks
+in Aegizyn's colors (templates/email/message.html). Its building blocks
 come from the body's shape:
 
     a line in capitals ("OVERDUE")       a heading
@@ -25,14 +25,18 @@ from email.message import EmailMessage
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markupsafe import Markup, escape
 
+from . import names
 from .db import now_iso
 
 log = logging.getLogger("omniarmor.notify")
 
-# Every MTRX Horizyn app sends from the one company domain. The From line
+# Every app of the company sends from the one company domain. The From line
 # names the product; this line, at the foot of every email, names the
-# company behind it.
-SIGNATURE = "OmniArmor is a product of MTRX Horizyn."
+# company behind it (names.py).
+SIGNATURE = names.SIGNATURE
+# The line emails ended with before the 1.24.0 rename: a stored copy may still
+# carry it, and it is taken off like the current one.
+OLD_SIGNATURES = ("OmniArmor is a product of MTRX Horizyn.",)
 # Where a person chooses which reminder emails they get.
 MANAGE_PATH = "/app/settings#reminders"
 REMINDER_KINDS = {"reminder"}
@@ -43,18 +47,18 @@ _templates = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__
 
 
 def footer_lines(cfg, kind=None):
-    """The lines under every email of this kind, the MTRX Horizyn line last."""
+    """The lines under every email of this kind, the company line last."""
     base = (cfg or {}).get("BASE_URL", "").rstrip("/")
     lines = []
     if kind in REMINDER_KINDS:
         lines.append(f"Choose which reminder emails you get: {base}{MANAGE_PATH}")
     elif kind in ("autopilot", "autopilot_weekly"):
-        lines.append(f"Sent by OmniArmor Autopilot at {base}. It fixes small problems by itself and only emails"
+        lines.append(f"Sent by Aegizyn Autopilot at {base}. It fixes small problems by itself and only emails"
                      " you about these.")
         if kind == "autopilot_weekly":
             lines.append(f"Turn this weekly report off (signed in to the operator's account): {base}{MANAGE_PATH}")
     elif kind == "error_report":
-        lines.append(f"Sent by OmniArmor at {base} because a page failed with a server error. It goes to the"
+        lines.append(f"Sent by Aegizyn at {base} because a page failed with a server error. It goes to the"
                      " ERRORS_EMAIL address; unset it to stop these.")
     lines.append(SIGNATURE)
     return lines
@@ -63,10 +67,11 @@ def footer_lines(cfg, kind=None):
 def _unsigned(body):
     """The body without a footer a stored copy may already carry."""
     body = body.rstrip()
-    if body.endswith(SIGNATURE) and "\n--\n" in body:
-        body = body[:body.rindex("\n--\n")].rstrip()
-    elif body.endswith(SIGNATURE):
-        body = body[:-len(SIGNATURE)].rstrip()
+    for line in (SIGNATURE,) + OLD_SIGNATURES:
+        if body.endswith(line) and "\n--\n" in body:
+            return body[:body.rindex("\n--\n")].rstrip()
+        if body.endswith(line):
+            return body[:-len(line)].rstrip()
     return body
 
 

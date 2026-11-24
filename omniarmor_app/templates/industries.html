@@ -22,14 +22,14 @@
     <a class="row" href="{{ url_for('public.trade_page', slug=t.slug) }}"><span><span class="title">{{ t.name }}</span><br><span class="meta">Trade page</span></span></a>
   {% endfor %}
   {% for name, ind in existing %}
-    <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}"><span><span class="title">{{ name }}</span><br><span class="meta">{{ ind.brand }}</span></span></a>
+    <a class="row" href="{{ url_for('public.industry_page', slug=ind.slug) }}"><span><span class="title">{{ name }}</span><br><span class="meta">{{ ind.brand }}</span></span></a>
   {% endfor %}
 </div>
 <details class="more-industries mt" data-all-industries>
   <summary>All {{ industries|length }} industries</summary>
   <div class="grid-ind mt-s">
     {% for ind in industries.values() %}
-      <a class="row" href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">
+      <a class="row" href="{{ url_for('public.industry_page', slug=ind.slug) }}">
         <span><span class="title">{{ ind.brand }}</span><br><span class="meta">{{ ind.sector }}</span></span>
         <span class="faint mono" aria-hidden="true">{{ '%02d' % ind.id }}</span>
       </a>

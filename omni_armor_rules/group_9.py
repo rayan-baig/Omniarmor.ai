@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 9: GridArmor, WaterArmor, LawArmor, CampusArmor and
-ChildArmor. Ten rules per industry, costliest first.
+Rule catalog, group 9: Grid Aegizyn, Water Aegizyn, Law Aegizyn, Campus Aegizyn and
+Child Aegizyn. Ten rules per industry, costliest first.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 41. GRIDARMOR (electric utilities and grid operators, NERC) ---
+    # --- 41. GRID AEGIZYN (electric utilities and grid operators, NERC) ---
     41: [
         Rule(key="cip007_patch_evaluation", title="Security patch evaluation cycle",
              cost="Late patch evaluations are frequently cited CIP violations and draw NERC civil penalties and mitigation plans.",
@@ -71,7 +71,7 @@ RULES = {
              action="Submit the EOP-004 Attachment 2 or DOE OE-417 form to the required parties now."),
     ],
 
-    # --- 42. WATERARMOR (drinking water and wastewater utilities) ---
+    # --- 42. WATER AEGIZYN (drinking water and wastewater utilities) ---
     42: [
         Rule(key="lead_action_level", title="Lead 90th percentile action level",
              cost="A lead action level exceedance triggers public education, treatment changes and lead service line replacement, plus lawsuits.",
@@ -135,7 +135,7 @@ RULES = {
              action="Assign a properly certified operator now and notify the state of the change."),
     ],
 
-    # --- 43. LAWARMOR (law firms) ---
+    # --- 43. LAW AEGIZYN (law firms) ---
     43: [
         Rule(key="deadline_docketing", title="Limitations deadlines docketed",
              cost="Missed statutes of limitations and court deadlines are a common cause of malpractice claims and discipline.",
@@ -199,7 +199,7 @@ RULES = {
              action="Train the untrained staff now and restrict their access to client funds and data until done."),
     ],
 
-    # --- 44. CAMPUSARMOR (colleges and universities) ---
+    # --- 44. CAMPUS AEGIZYN (colleges and universities) ---
     44: [
         Rule(key="r2t4_return_funds", title="Return of Title IV funds in 45 days",
              cost="Late returns of Title IV funds are a top program review finding, bringing liabilities, fines and risk to aid eligibility.",
@@ -263,7 +263,7 @@ RULES = {
              action="Complete and document the biennial review now and keep the report available on request."),
     ],
 
-    # --- 45. CHILDARMOR (child care centers) ---
+    # --- 45. CHILD AEGIZYN (child care centers) ---
     45: [
         Rule(key="background_checks", title="Background checks before access",
              cost="Staff working without cleared checks lead to license actions, loss of subsidy funding and abuse lawsuits.",

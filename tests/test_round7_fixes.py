@@ -1,12 +1,12 @@
 """1.16.0: what a strict sixth review found, fixed. Sharper pictures of the app,
 with the headline's one right under its buttons on a phone; one grown-up look
-for the teacher's and parent's Academy pages, the OmniArmor name at the top of
+for the teacher's and parent's Academy pages, the Aegizyn name at the top of
 the computer's side bar, and a reserved corner for the helpers on a phone
 instead of a gutter down the right of every page; lessons that hint instead of
 listing the answers, a celebration when a stage is passed, and a picture that
 grows on the map; kids' screens with no way out to the grown-up pages; and
 smaller polish (the school checklist's own picture, a different third picture
-for classrooms, the phone menu closing, a Print button, the CyberLogix offer
+for classrooms, the phone menu closing, a Print button, the Kryozyn offer
 off the first checklist, Pilot off the Select boxes and the teacher guide)."""
 
 import html
@@ -135,7 +135,7 @@ class TestTheSideBarAndTheHelpersCorner(AppTestCase):
         bar = page[page.index('<nav class="tabbar'):]
         bar = bar[:bar.index("</nav>")]
         self.assertLess(bar.index("data-side-logo"), bar.index('class="tab"'))
-        self.assertIn('aria-label="OmniArmor.ai home"', bar)
+        self.assertIn('aria-label="Aegizyn home"', bar)
         self.assertEqual(page.count('id="blend"'), 1)   # the gradient is defined once
         css = read("omniarmor_app", "static", "app.css")
         wide = css[css.index(".tab-logo{display:none}"):]
@@ -257,7 +257,7 @@ class TestNoWayOutOfAKidsScreen(ProgressCase):
             self.assertNotIn("Sign out", top, path)
             self.assertNotIn("data-nav-menu", top, path)
             self.assertNotIn('<footer class="site">', page, path)
-            self.assertNotIn("RestoArmor", page, path)
+            self.assertNotIn("Resto Aegizyn", page, path)
             self.assertIn("Back to map", page, path)
         result = self.play(1, 1, right=5).data.decode()
         self.assertNotIn("Sign out", result[result.index('<header class="topbar">'):result.index("</header>")])
@@ -318,9 +318,9 @@ class TestPolish(AppTestCase):
     def test_the_cyberlogix_offer_is_in_settings_not_on_the_first_checklist(self):
         self.signup(industries=(2,))
         first = self.client.get("/app/industry/2").data.decode()
-        self.assertNotIn("Let CyberLogix fill this in", first)
+        self.assertNotIn("Let Kryozyn fill this in", first)
         self.assertNotIn("data-bundle>", first)
-        self.assertIn("Let CyberLogix fill this in automatically", self.client.get("/app/settings").data.decode())
+        self.assertIn("Let Kryozyn fill this in automatically", self.client.get("/app/settings").data.decode())
 
     def test_pilot_keeps_off_the_select_boxes_and_the_teacher_guide(self):
         config = read("omniarmor_app", "static", "pilot-omniarmor.js")

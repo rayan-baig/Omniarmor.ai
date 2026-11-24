@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Pricing{% endblock %}
-{% block description %}OmniArmor's plans and prices: {{ facts.pro.name }} {{ facts.pro.price }} and {{ facts.plus.name }} {{ facts.plus.price }} for a business, {{ school.classroom.name }} and {{ school.school.name }} for schools, with a free trial and no card.{% endblock %}
+{% block description %}Aegizyn's plans and prices: {{ facts.pro.name }} {{ facts.pro.price }} and {{ facts.plus.name }} {{ facts.plus.price }} for a business, {{ school.classroom.name }} and {{ school.school.name }} for schools, with a free trial and no card.{% endblock %}
 {% block content %}
 {#- 1.23.0: a page of plan cards (it was a jump to Help's prices). Every name, price and number comes from plans.py
     through plan_facts() and classrooms.public_facts(), the same as Help (#prices stays), the landing page and the
@@ -49,7 +49,7 @@
     <a class="btn quiet" href="{{ url_for('auth.signup') }}">Sign up free</a>
   </section>
 </div>
-<p class="hint mt-s">Billed {% if yr.any %}monthly or yearly{% else %}monthly{% endif %} through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for, and nothing is deleted when it ends. On CyberLogix's {{ facts.bundle.name }} ({{ facts.bundle.price }})? It includes {{ facts.bundle.includes.name }}, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}.</p>
+<p class="hint mt-s">Billed {% if yr.any %}monthly or yearly{% else %}monthly{% endif %} through Stripe. Cancel anytime: the plan stays on until the end of the time you paid for, and nothing is deleted when it ends. On Kryozyn's {{ facts.bundle.name }} ({{ facts.bundle.price }})? It includes {{ facts.bundle.includes.name }}, and {{ facts.plus.name }} costs only the difference, {{ facts.bundle.upgrade_price }}.</p>
 
 <h2 id="schools">For a school</h2>
 <div class="plan-grid" data-pricing-schools>

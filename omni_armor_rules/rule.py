@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Rule format for the OmniArmor catalog.
+Rule format for the Aegizyn catalog.
 
 Each industry has ten rules: the compliance failures that cost businesses in
 that industry the most money through fines, shutdowns, lawsuits or lost
@@ -41,7 +41,7 @@ class Rule:
     warn: Optional[float] = None
     policy: bool = False   # True when the limit is an industry standard or policy, not law
     sample: Union[float, bool, None] = None  # realistic example input for demos
-    method: Optional[str] = None  # OmniArmorPortal method with a more detailed check, if any
+    method: Optional[str] = None  # AegizynPortal method with a more detailed check, if any
 
 
 def _fmt(value, unit):

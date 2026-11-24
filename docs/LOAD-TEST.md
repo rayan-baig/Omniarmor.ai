@@ -1,4 +1,4 @@
-# Load test: how much OmniArmor handles, and when to grow
+# Load test: how much Aegizyn handles, and when to grow
 
 Measured on 3 November 2026 with `tools/load_test.py`, on a shared 4-core
 Linux machine with 16 GB of memory. The load generator ran on the same

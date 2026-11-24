@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Armo, OmniArmor's mascot and helper.
+"""Armo, Aegizyn's mascot and helper.
 
 Armo has personalities people can choose: each one changes how Armo talks and
 what it wears, never the facts. Outside the Academy, Armo watches a company's
@@ -138,7 +138,7 @@ TEACHER_PAGE_HELP = {
     "classes.report": "This is the Trial report: class totals only, never a student's name. Print it for your principal.",
     "classes.certificates": "Certificates show here once a student finishes the first lesson of every world and the "
                             "Class Challenge.",
-    "app.notifications": "This is Reminders. It lists the emails OmniArmor sent about this workspace.",
+    "app.notifications": "This is Reminders. It lists the emails Aegizyn sent about this workspace.",
     "app.audit": "This is History. It records every change: what changed, who changed it and when.",
     "app.settings": "This is Settings. Change the school's name, your timezone and your emails.",
 }

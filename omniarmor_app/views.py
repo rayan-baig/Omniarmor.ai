@@ -72,7 +72,7 @@ def nav_context():
     class_workspace = is_class_workspace(g.org)
     from .demo_mode import TRADE_DEMOS
     if g.get("demo") in TRADE_DEMOS:
-        # A trade demo's menu leads with the trade's own checklist (ShopArmor before PayArmor and HRArmor).
+        # A trade demo's menu leads with the trade's own checklist (Shop Aegizyn before Pay Aegizyn and HR Aegizyn).
         order = TRADE_DEMOS[g.demo][0]
         ids = sorted(ids, key=lambda i: order.index(i) if i in order else len(order))
     return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": access,
@@ -161,7 +161,7 @@ def getting_started(conn, states, ids):
          "detail": "Answer it or enter its date, then press Save."},
         {"key": "first_reminder", "label": "Set your first reminder", "done": bool(dated),
          "next": next_reading(states, ids, dated=True),
-         "detail": "Enter the date of a check that is counted from a date. OmniArmor emails you before it's due."},
+         "detail": "Enter the date of a check that is counted from a date. Aegizyn emails you before it's due."},
         {"key": "team", "label": "Invite a teammate or choose your reminder emails" if owner
          else "Choose your reminder emails", "done": chose or (owner and (teammate or invited)),
          "link": (url_for("app.settings", _anchor="team" if owner else "reminders"),
@@ -192,7 +192,7 @@ def industry(industry_id):
 
 def _bundle(industry_id):
     """The Kitchen Safety Bundle on an industry page: the connection's status
-    and, per temperature check on the page, its open CyberLogix notes. None
+    and, per temperature check on the page, its open Kryozyn notes. None
     when the page has no temperature check."""
     keys = [key for i, key in connections.TEMPERATURE_CHECKS if i == industry_id]
     if not keys:
@@ -208,9 +208,9 @@ def _bundle(industry_id):
 @bp.route("/connections/cyberlogix/review", methods=["POST"])
 @login_required
 def review_note():
-    """Anyone on the team marks a CyberLogix note on a temperature check
+    """Anyone on the team marks a Kryozyn note on a temperature check
     reviewed. The workspace comes from the session; the check must be one
-    CyberLogix fills in, in an industry the workspace tracks."""
+    Kryozyn fills in, in an industry the workspace tracks."""
     industry_id = request.form.get("industry_id", type=int)
     rule_key = request.form.get("rule_key", "")
     day = request.form.get("date", "")
@@ -246,7 +246,7 @@ def read_only_message(access):
         return (f"Your plan is paused until {local_date(access['resumes_at'], g.org)}, so the compliance tracker is"
                 " read-only. Nothing was saved. Your records are safe, and saving comes back when the plan starts"
                 " again (or start it again now on the Plans page).")
-    why = {"bundle_ended": f"CyberLogix stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
+    why = {"bundle_ended": f"Kryozyn stopped sending signed reports, so the Pro your {plans.BUNDLE_NAME} included"
                            " has ended",
            "plan_ended": "Your plan has ended",
            "new_location": "This location has no plan yet (the free trial is one per owner, and was used in your"
@@ -515,7 +515,7 @@ def _csv_response(filename, header, rows):
 @bp.route("/audit.csv")
 @login_required
 def audit_csv():
-    return _csv_response("omniarmor-audit-trail.csv",
+    return _csv_response("aegizyn-audit-trail.csv",
                          [f"Time ({g.org['timezone']})", "Person", "Action", "Industry", "Check", "Before", "After",
                           "Summary"],
                          ([r["at_csv"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
@@ -592,7 +592,7 @@ def report_csv():
     if school_checklist_hidden(g.org):
         return redirect(url_for("app.report"))
     states = sorted(states_for_org(get_db(), g.org), key=lambda s: (s.industry_id, s.sort_key))
-    return _csv_response("omniarmor-compliance-report.csv",
+    return _csv_response("aegizyn-compliance-report.csv",
                          ["Industry", "Check", "Status", "Reading", "Due date", "Rule", "Last updated (UTC)", "Updated by"],
                          _report_rows(states))
 
@@ -644,7 +644,7 @@ def settings():
     return _settings_page()
 
 
-SCHOOL_CHECKLISTS = (8, 51)    # SchoolArmor and SchoolSafetyArmor: the school's own checklists
+SCHOOL_CHECKLISTS = (8, 51)    # School Aegizyn and School Safety Aegizyn: the school's own checklists
 
 
 def settings_scope(conn, org, access=None):
@@ -711,7 +711,7 @@ def _settings_page(new_key=None):
 def connection_create():
     key = connections.create_key(get_db(), g.org["id"], g.user["id"])
     if key is None:
-        flash_error("This workspace already has a CyberLogix connection key. Regenerate it to get a new one.")
+        flash_error("This workspace already has a Kryozyn connection key. Regenerate it to get a new one.")
         return redirect(url_for("app.settings", _anchor="connections"))
     return _settings_page(new_key=key)
 
@@ -726,10 +726,10 @@ def connection_regenerate():
 @owner_required
 def connection_revoke():
     if connections.revoke_key(get_db(), g.org["id"], g.user["id"]):
-        flash("The CyberLogix connection key was revoked. CyberLogix can't send reports until you create a new one.",
+        flash("The Kryozyn connection key was revoked. Kryozyn can't send reports until you create a new one.",
               "ok")
     else:
-        flash_error("There is no active CyberLogix connection key to revoke.")
+        flash_error("There is no active Kryozyn connection key to revoke.")
     return redirect(url_for("app.settings", _anchor="connections"))
 
 

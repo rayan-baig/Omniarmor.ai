@@ -52,7 +52,7 @@ class TestTheReport(ErrorCase):
         body = row["body"]
         self.assertEqual(row["recipient"], INBOX)
         self.assertEqual(row["status"], "logged")       # no SMTP in tests: kept, like every email
-        self.assertRegex(row["subject"], r"^\[OmniArmor\] Server error: RuntimeError \[[0-9a-f]{12}\]$")
+        self.assertRegex(row["subject"], r"^\[Aegizyn\] Server error: RuntimeError \[[0-9a-f]{12}\]$")
         self.assertRegex(body, r"Time: \d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC")
         self.assertIn(f"Version: {__version__}", body)
         self.assertIn("Request: GET /_test/server-error\n", body)   # no query string
@@ -131,7 +131,7 @@ class TestRateLimits(ErrorCase):
             for i in range(errormail.MAX_PER_DAY):
                 conn.execute("INSERT INTO notifications (created_at, kind, recipient, subject, body, status)"
                              " VALUES (?, 'error_report', ?, ?, '', 'sent')",
-                             (iso(utcnow() - timedelta(hours=2)), INBOX, f"[OmniArmor] Server error: X [{i:012x}]"))
+                             (iso(utcnow() - timedelta(hours=2)), INBOX, f"[Aegizyn] Server error: X [{i:012x}]"))
             conn.commit()
         with self.assertLogs("omniarmor.errormail", "WARNING"):
             self.fail()
@@ -211,7 +211,7 @@ class TestDelivery(ErrorCase):
         from omniarmor_app.notify import signed
         text = signed("Body", {"BASE_URL": "https://omniarmor.test"}, kind="error_report")
         self.assertIn("ERRORS_EMAIL", text)
-        self.assertTrue(text.rstrip().endswith("OmniArmor is a product of MTRX Horizyn."))
+        self.assertTrue(text.rstrip().endswith("Aegizyn is a product of MTRX Horizyn."))
 
 
 class TestKeptLikeErrorReports(ErrorCase):

@@ -61,7 +61,7 @@ class RedactingFilter(logging.Filter):
     """Runs every log line, with its traceback, through redact_line().
 
     Put on the handlers that write the server log (create_app does), so it
-    covers OmniArmor's own lines, Flask's crash reports and the development
+    covers Aegizyn's own lines, Flask's crash reports and the development
     server's access log alike.
     """
 

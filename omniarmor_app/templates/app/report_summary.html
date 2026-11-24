@@ -38,7 +38,7 @@
   {% if attention %}
   <ul class="sum-list">
     {% for s, title, st in attention %}
-    <li><span class="tag {{ st.level }}">{{ st.label }}</span> <strong>{{ title }}</strong> <span class="muted">· {{ s.industry.brand }}</span>
+    <li><span class="tag {{ st.level }}">{{ st.label }}</span> <strong>{{ title }}</strong> <span class="muted">· <span class="nowrap">{{ s.industry.brand }}</span></span>
       <span class="sum-detail">{% if st.due_text %}{{ st.due_text }}{% elif st.message %}{{ st.message }}{% endif %}{% if st.reading_line %} · {{ st.reading_line }}{% endif %}</span></li>
     {% endfor %}
   </ul>
@@ -53,7 +53,7 @@
   {% if soon %}
   <ul class="sum-list">
     {% for s, title, st in soon %}
-    <li><strong>{{ title }}</strong> <span class="muted">· {{ s.industry.brand }}</span> <span class="sum-detail">{{ st.due_text }} · {{ st.due_label }}</span></li>
+    <li><strong>{{ title }}</strong> <span class="muted">· <span class="nowrap">{{ s.industry.brand }}</span></span> <span class="sum-detail">{{ st.due_text }} · {{ st.due_label }}</span></li>
     {% endfor %}
   </ul>
   {% if soon_more %}<p class="hint">And {{ soon_more }} more in the <a href="{{ url_for('app.report') }}">full report</a>.</p>{% endif %}
@@ -96,6 +96,6 @@
   <p>Reviewed by: <span class="sum-line"></span></p>
   <p>Date: <span class="sum-line sum-line-short"></span></p>
 </div>
-<p class="hint mt" data-summary-note>Made by OmniArmor on {{ now.strftime('%Y-%m-%d %H:%M %Z') }} from the readings {{ g.org.name }} entered. It is a summary of those records, not an inspection result, a certificate or legal advice.</p>
+<p class="hint mt" data-summary-note>Made by Aegizyn on {{ now.strftime('%Y-%m-%d %H:%M %Z') }} from the readings {{ g.org.name }} entered. It is a summary of those records, not an inspection result, a certificate or legal advice.</p>
 </div>
 {% endblock %}

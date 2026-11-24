@@ -73,7 +73,7 @@ def build_digest(org, triggered, all_states, base_url, today):
         parts.append(f"{len(overdue)} overdue")
     if soon:
         parts.append(f"{len(soon)} coming due")
-    subject = f"OmniArmor: {', '.join(parts)} for {org['name']}"
+    subject = f"Aegizyn: {', '.join(parts)} for {org['name']}"
     lines = [f"Compliance reminders for {org['name']}, {today.isoformat()}.", ""]
     if overdue:
         lines += ["OVERDUE"] + [_line(s) for s in sorted(overdue, key=lambda s: s.days_left)] + [""]
@@ -84,7 +84,7 @@ def build_digest(org, triggered, all_states, base_url, today):
         f" {counts['NONE']} without a reading.",
         f"Open your checks: {base_url}/app",
         "",
-        "You get this email because the daily digest is on in your OmniArmor settings.",
+        "You get this email because the daily digest is on in your Aegizyn settings.",
     ]
     return subject, "\n".join(lines)
 
@@ -210,9 +210,9 @@ def build_clock_alert(org, state, stage, base_url, now):
     """One short email about one clock: it reached its warning point, or it is overdue."""
     overdue = stage == CLOCK_OVERDUE
     if overdue:
-        subject = f"OmniArmor: {state.rule.title}, overdue, was due {state.due_label} ({org['name']})"
+        subject = f"Aegizyn: {state.rule.title}, overdue, was due {state.due_label} ({org['name']})"
     else:
-        subject = f"OmniArmor: {state.rule.title}, due {state.due_label} ({org['name']})"
+        subject = f"Aegizyn: {state.rule.title}, due {state.due_label} ({org['name']})"
     local = now.astimezone(ZoneInfo(org["timezone"]))
     lines = [
         f"Time limit {'overdue' if overdue else 'warning'} for {org['name']}, {local.strftime('%Y-%m-%d %H:%M %Z').strip()}.",
@@ -221,7 +221,7 @@ def build_clock_alert(org, state, stage, base_url, now):
         "",
         f"Open it: {base_url}/app/industry/{state.industry_id}#rule-{state.rule.key}",
         "",
-        "You get this email because time-limit alerts are on in your OmniArmor settings.",
+        "You get this email because time-limit alerts are on in your Aegizyn settings.",
     ]
     return subject, "\n".join(lines)
 

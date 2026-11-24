@@ -69,7 +69,7 @@
       <li><a class="row" data-level="{{ s.level }}"{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %} href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
         <span>
           <span class="title">{{ s.rule.title }}</span>
-          <span class="meta"> · {{ s.industry.brand }}</span><br>
+          <span class="meta"> · <span class="nowrap">{{ s.industry.brand }}</span></span><br>
           <span class="meta">{{ s.message }}</span>
           {% if early_policy(s) %}<br><span class="meta early-note" data-early-note>Why so early: this warning window is a policy setting (an industry standard, not a law), set to give you time to plan.</span>{% endif %}
         </span>
@@ -93,7 +93,7 @@
     {% for s, title, st in upcoming %}
       {#- 1.23.0: one row per tracked item (a food batch due in 4 days), as on the summary. -#}
       <li><a class="row row-stack" href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
-        <span><span class="title">{{ title }}</span><span class="meta"> · {{ s.industry.brand }}</span></span>
+        <span><span class="title">{{ title }}</span><span class="meta"> · <span class="nowrap">{{ s.industry.brand }}</span></span></span>
         {#- 1.22.0: "Due in 5 days", not "in 5 days": a rule whose name has its own interval ("Emergency C-II
             follow-up in 7 days") read as "in 7 days · in 5 days". -#}
         <span class="meta mono" data-due-when>{{ st.due_text }} · {{ st.due_label }}</span>

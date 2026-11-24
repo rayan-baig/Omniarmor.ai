@@ -884,7 +884,7 @@ def _light_question(rule, value, found):
         "BLOCKED": "The reading is past the rule's edge, so the light is red: stop and fix it right away.",
     }[found]
     prompt = (f"Rule: {rule.title}. The {word} is {format_quantity(rule.limit, rule.unit)}. "
-              f"Today's reading is {format_quantity(value, rule.unit)}. Which light should OmniArmor show?")
+              f"Today's reading is {format_quantity(value, rule.unit)}. Which light should Aegizyn show?")
     return Question(prompt, list(LIGHTS), LIGHT_INDEX[found], explain, "light")
 
 
@@ -952,7 +952,7 @@ def _rules_story(company, industry_ids):
     return [
         ("Rules are like game rules", "Games are fair and fun because everyone follows the same rules. Businesses work the same way."),
         ("Who makes them?", "Governments write rules to keep workers, customers and neighbors safe. Inspectors check them."),
-        ("A real one", f"One of {company}'s rules: \"{rule.title}.\" OmniArmor keeps an eye on it every day."),
+        ("A real one", f"One of {company}'s rules: \"{rule.title}.\" Aegizyn keeps an eye on it every day."),
         ("Why it matters", "Breaking a rule can mean a fine (money paid as a penalty), losing customers, or someone getting hurt."),
     ]
 
@@ -961,7 +961,7 @@ def _rules_story(company, industry_ids):
 
 def _lights_story(company, industry_ids):
     return [
-        ("Three lights", "OmniArmor checks every rule and shows a light, just like a traffic light."),
+        ("Three lights", "Aegizyn checks every rule and shows a light, just like a traffic light."),
         ("Green", "All good! The reading is safely inside the rule."),
         ("Yellow", "Careful! It's getting close to the limit. Time to plan a fix."),
         ("Red", "Stop! The rule is broken. Fix it right away to protect people and avoid a fine."),
@@ -976,7 +976,7 @@ def _calendar_story(company, industry_ids):
     return [
         ("Jobs that repeat", "Lots of jobs must be done again and again, like checking safety gear every year."),
         ("A real example", f"\"{example.title}\" has to be done at least every {plural(int(example.limit), 'day')}."),
-        ("Counting days", "OmniArmor counts the days since a job was last done, so nobody has to remember."),
+        ("Counting days", "Aegizyn counts the days since a job was last done, so nobody has to remember."),
         ("Friendly reminders", "It sends reminders 30, 7 and 1 day before a deadline, so the team is never surprised."),
     ]
 
@@ -1011,7 +1011,7 @@ def _team_story(company, industry_ids):
     return [
         ("Owners lead people", f"A business is its people. Leading {company} means helping the team do great work."),
         ("Listen", "Good leaders listen to workers and customers, especially when they raise a problem."),
-        ("Keep records", "OmniArmor's audit trail remembers who changed what, and when. That keeps everyone honest."),
+        ("Keep records", "Aegizyn's audit trail remembers who changed what, and when. That keeps everyone honest."),
         ("Ask for help", "Great owners ask experts for advice: lawyers, accountants and experienced workers."),
     ]
 
@@ -1088,7 +1088,7 @@ def _yes_no_light(rule, answer_yes):
     word = "Yes" if answer_yes else "No"
     explain = ("That's the safe answer, so the light is green." if found == "CLEARED"
                else "That answer means the rule is broken, so the light is red: fix it right away.")
-    return Question(f"Rule: {rule.title}. OmniArmor asks: \"{rule.input}\" The answer is {word}. Which light?",
+    return Question(f"Rule: {rule.title}. Aegizyn asks: \"{rule.input}\" The answer is {word}. Which light?",
                     list(LIGHTS), LIGHT_INDEX[found], explain, "light")
 
 
@@ -1109,8 +1109,8 @@ def _same_requirement(a, b):
 
 
 # Industries that are the same kind of business, so neither is ever a wrong
-# answer for the other: a school follows SchoolArmor's legal duties (8) and
-# SchoolSafetyArmor's safety routines (51) alike.
+# answer for the other: a school follows School Aegizyn's legal duties (8) and
+# School Safety Aegizyn's safety routines (51) alike.
 KINDRED = (frozenset({8, 51}),)
 
 
@@ -1239,9 +1239,9 @@ def _rule_questions(rng, industry_id, index):
                 _wrong_answers(rng, rule.action, [r.action for r in others], below=places[1]),
                 "Knowing the fix ahead of time means acting fast."),
         who,
-        _choice(rng, f"To check \"{rule.title}\", what does OmniArmor ask?", rule.input,
+        _choice(rng, f"To check \"{rule.title}\", what does Aegizyn ask?", rule.input,
                 _wrong_answers(rng, rule.input, [r.input for r in others], below=places[2]),
-                "OmniArmor asks a simple question or reading for every rule."),
+                "Aegizyn asks a simple question or reading for every rule."),
     ]
     if _counts_days_since(rule) and 7 <= rule.limit <= 3650:
         limit = int(rule.limit)
@@ -1262,7 +1262,7 @@ def _rule_story(industry_id, index):
     return [
         (f"{brand} rule {index} of {len(CATALOG[industry_id])}", rule.title),
         ("Why it matters", rule.cost),
-        ("What OmniArmor checks", rule.input),
+        ("What Aegizyn checks", rule.input),
         ("If it goes wrong", rule.action),
     ]
 
@@ -1379,7 +1379,7 @@ _DECOY_NAMES = ["Riverside Services", "Maple Street Group", "Blue Lake Company",
 
 
 # Rules almost any business follows, whatever its trade: an employer's
-# (HRArmor), card payments (PayArmor) and personal data (PrivacyArmor), and
+# (HR Aegizyn), card payments (Pay Aegizyn) and personal data (Privacy Aegizyn), and
 # checks many trades share, like fire extinguishers or safety data sheets.
 # They are never a wrong answer to "which is your company's rule?": "Hours
 # worked records kept" is true for a restaurant with staff too.
@@ -1393,7 +1393,7 @@ UNIVERSAL_RULE = re.compile(
 def is_universal(industry_id, rule):
     """Whether a rule is one nearly every business follows (UNIVERSAL_RULE),
     or the same duty as one of an employer's, card payments' or personal
-    data's rules ("OFAC sanctions screening" is a bank's and PayArmor's)."""
+    data's rules ("OFAC sanctions screening" is a bank's and Pay Aegizyn's)."""
     if industry_id in UNIVERSAL_INDUSTRIES or UNIVERSAL_RULE.search(rule.title):
         return True
     return any(_same_requirement(rule, other) for i in UNIVERSAL_INDUSTRIES for other in CATALOG.get(i, ()))
@@ -1521,7 +1521,7 @@ def _calendar_items(rng, company, ids):
         add(_choice(rng, f"Today is {WEEKDAYS[start]}. A job is due in {ahead} days. Which day is that?", due_day,
                     rng.sample([d for d in WEEKDAYS if d != due_day], 2),
                     f"Count forward {ahead} days from {WEEKDAYS[start]} and you land on {due_day}."), 1)
-    add(_choice(rng, "When does OmniArmor send the first reminder before a deadline?", "30 days before",
+    add(_choice(rng, "When does Aegizyn send the first reminder before a deadline?", "30 days before",
                 ["7 days before", "On the day it's due"],
                 "Reminders go out 30, 7 and 1 day before, on the day, and every week if it's late."), 1)
     add(_choice(rng, "After a job is finished, someone presses \"Done today.\" What happens?",
@@ -2644,7 +2644,7 @@ CLASS_GUIDE = {
 # about the app itself.
 _NOT_FOR_CLASS = re.compile(
     r"\byour (family|parents|uncle|little brother|brother|sister)\b|\bfamily('s)? (shop|store|company|business"
-    r"|bakery|pizza|team)\b|\bomniarmor\b|\binherit", re.I)
+    r"|bakery|pizza|team)\b|\b(omniarmor|aegizyn)\b|\binherit", re.I)
 
 
 def _for_class(*texts):

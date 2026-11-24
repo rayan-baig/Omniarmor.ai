@@ -1,4 +1,4 @@
-"""Every email OmniArmor sends, captured as it leaves for the mail server:
+"""Every email Aegizyn sends, captured as it leaves for the mail server:
 one look (a 600-pixel column in the site's colors), a plain-text part beside
 every HTML part with the same words, the MTRX Horizyn line at the foot, a
 link to choose your reminder emails on every reminder, and no placeholder
@@ -104,7 +104,7 @@ class TestEveryEmail(AppTestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.app.config.update(SMTP_HOST="smtp.example.com", OPERATOR_EMAIL="ops@example.com",
-                               MAIL_FROM="OmniArmor <no-reply@omniarmor.example.com>")
+                               MAIL_FROM="Aegizyn <no-reply@omniarmor.example.com>")
         self.cfg = dict(self.app.config)
 
     def send_every_email(self):
@@ -209,15 +209,15 @@ class TestEveryEmail(AppTestCase):
         self.assertIn("because the daily digest is on", emails["daily digest"])
         self.assertIn("because time-limit alerts are on", emails["time-limit warning"])
         self.assertIn("Choose which reminder emails you get: " + MANAGE, emails["reminder sent again"])
-        self.assertIn("Sent by OmniArmor Autopilot at https://omniarmor.test.", emails["Autopilot problem"])
+        self.assertIn("Sent by Aegizyn Autopilot at https://omniarmor.test.", emails["Autopilot problem"])
         self.assertIn("What to do: Free up space.", emails["Autopilot problem"])
         self.assertIn("Turn this weekly report off", emails["weekly Autopilot report"])
         self.assertNotIn("Turn this weekly report off", emails["Autopilot fixed"])
 
     def test_a_digest_draws_its_headings_lists_and_button(self):
-        text, page = notify.render_email(self.cfg, "OmniArmor: 1 overdue for Acme", "\n".join([
+        text, page = notify.render_email(self.cfg, "Aegizyn: 1 overdue for Acme", "\n".join([
             "Compliance reminders for Acme <Sons> & Co, 2026-11-04.", "",
-            "OVERDUE", "- FleetArmor: Annual review, 3 days overdue (2026-11-01). Do it now.", "",
+            "OVERDUE", "- Fleet Aegizyn: Annual review, 3 days overdue (2026-11-01). Do it now.", "",
             "COMING DUE", "- One", "- Two", "", "Right now: 1 blocked.", "Open your checks: https://omniarmor.test/app",
         ]), kind="reminder")
         self.assertIn("Acme &lt;Sons&gt; &amp; Co", page)           # a company's name is never markup

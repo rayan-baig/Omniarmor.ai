@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 8: DefenseArmor, FoodArmor, DeviceArmor, ChemArmor and
-WasteArmor. Ten rules per industry, costliest first.
+Rule catalog, group 8: Defense Aegizyn, Food Aegizyn, Device Aegizyn, Chem Aegizyn and
+Waste Aegizyn. Ten rules per industry, costliest first.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 36. DEFENSEARMOR (defense contractors) ---
+    # --- 36. DEFENSE AEGIZYN (defense contractors) ---
     36: [
         Rule(key="nist_800_171_safeguarding", title="CUI safeguarded per NIST SP 800-171",
              cost="Claiming cyber compliance that is not in place exposes the contractor to False Claims Act suits, lost awards and contract termination.",
@@ -71,7 +71,7 @@ RULES = {
              action="Submit the registration renewal and fee in DECCS now; do not export until the registration is current."),
     ],
 
-    # --- 37. FOODARMOR (food and beverage manufacturers) ---
+    # --- 37. FOOD AEGIZYN (food and beverage manufacturers) ---
     37: [
         Rule(key="environmental_monitoring", title="Environmental pathogen monitoring",
              cost="Listeria or Salmonella in ready-to-eat food leads to recalls, outbreak lawsuits, plant shutdowns and FDA warning letters.",
@@ -135,7 +135,7 @@ RULES = {
              action="Renew or re-register the facility in FDA's FURLS system now."),
     ],
 
-    # --- 38. DEVICEARMOR (medical device manufacturers) ---
+    # --- 38. DEVICE AEGIZYN (medical device manufacturers) ---
     38: [
         Rule(key="capa_effective", title="CAPA process working",
              cost="CAPA failures are frequently cited FDA inspection findings and lead to warning letters, import holds and consent decrees.",
@@ -199,7 +199,7 @@ RULES = {
              action="Stop shipping unlabeled units; apply UDIs and submit the GUDID records."),
     ],
 
-    # --- 39. CHEMARMOR (chemical plants and facilities) ---
+    # --- 39. CHEM AEGIZYN (chemical plants and facilities) ---
     39: [
         Rule(key="mechanical_integrity_overdue", title="No overdue equipment inspections",
              cost="Mechanical integrity failures cause fires and explosions and are frequently cited PSM items, bringing OSHA and EPA penalties.",
@@ -263,7 +263,7 @@ RULES = {
              action="Keep the employee off hazmat work until recurrent training is completed and recorded."),
     ],
 
-    # --- 40. WASTEARMOR (hazardous waste generators and environmental services) ---
+    # --- 40. WASTE AEGIZYN (hazardous waste generators and environmental services) ---
     40: [
         Rule(key="lqg_90_day_limit", title="LQG 90-day accumulation limit",
              cost="Holding waste past 90 days makes a large quantity generator an unpermitted storage facility, bringing large RCRA penalties.",

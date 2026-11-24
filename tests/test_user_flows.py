@@ -252,7 +252,7 @@ class TestInviteForAnExistingAccount(AppTestCase):
         self.assertEqual(response.status_code, 400)
         # Signing in would only open their own workspace, never this one.
         self.assertNotIn("Sign in instead", page)
-        self.assertIn("already has an OmniArmor account", page)
+        self.assertIn("already has an Aegizyn account", page)
         self.assertIn("Join your team", page)  # the invite is still on the page to try another email
 
 
@@ -584,7 +584,7 @@ class TestBusinessDayDeadlinesOverAWeekend(AppTestCase):
                 self.assertIn('class="tag BLOCKED">Blocked', row)
                 self.assertIn("2026-11-06", row)
                 csv = self.client.get("/app/report.csv").data.decode()
-                line = next(row for row in csv.splitlines() if row.startswith("HRArmor") and "I-9" in row)
+                line = next(row for row in csv.splitlines() if row.startswith("HR Aegizyn") and "I-9" in row)
                 self.assertIn(",Blocked,3 business days,2026-11-06,", line)
                 issues = self.client.get("/app/armo/status").get_json()["issues"]
                 self.assertTrue(any(i["title"] == f"Form I-9 done within 3 business days: overdue by {overdue}"
@@ -990,14 +990,14 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertEqual(self.run_at("2026-11-04T15:00")["alerts"], 1)
         [note] = self.notes()
         self.assertEqual(note["subject"],
-                         "OmniArmor: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)")
+                         "Aegizyn: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)")
         self.assertEqual(note["status"], "logged")
         lines = note["body"].splitlines()
         self.assertEqual(lines[0], "Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.")
         self.assertTrue(lines[2].startswith(
-            "- HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). "), lines[2])
+            "- HR Aegizyn: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). "), lines[2])
         self.assertIn("Open it: https://omniarmor.test/app/industry/30#rule-fatality_report_8h", note["body"])
-        self.assertIn("time-limit alerts are on in your OmniArmor settings", note["body"])
+        self.assertIn("time-limit alerts are on in your Aegizyn settings", note["body"])
         self.assertEqual(self.marks(), [("fatality_report_8h", "2026-11-04T22:00:00+00:00", "clock-warning")])
 
     def test_an_email_when_it_becomes_overdue(self):
@@ -1007,10 +1007,10 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertEqual(self.run_at("2026-11-04T17:01")["alerts"], 1)
         notes = self.notes()
         self.assertEqual(len(notes), 2)
-        self.assertEqual(notes[1]["subject"], "OmniArmor: Report a work fatality in 8 hours, overdue,"
+        self.assertEqual(notes[1]["subject"], "Aegizyn: Report a work fatality in 8 hours, overdue,"
                                               " was due 2026-11-04 17:00 EST (Acme Logistics)")
         self.assertTrue(notes[1]["body"].startswith("Time limit overdue for Acme Logistics, 2026-11-04 17:01 EST."))
-        self.assertIn("- HRArmor: Report a work fatality in 8 hours, 1 min overdue (2026-11-04 17:00 EST).",
+        self.assertIn("- HR Aegizyn: Report a work fatality in 8 hours, 1 min overdue (2026-11-04 17:00 EST).",
                       notes[1]["body"])
         self.assertEqual([m[2] for m in self.marks()], ["clock-warning", "clock-overdue"])
 
@@ -1102,8 +1102,8 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:15"))["alerts"], 0)
         self.assertEqual(run_alerts(cfg, now=at("2026-11-04T09:16"))["alerts"], 1)
         warning, overdue = self.notes()
-        self.assertIn("- MineArmor: Call MSHA within 15 minutes, due in 5 min (2026-11-04 09:15 EST).", warning["body"])
-        self.assertIn("- MineArmor: Call MSHA within 15 minutes, 1 min overdue (2026-11-04 09:15 EST).", overdue["body"])
+        self.assertIn("- Mine Aegizyn: Call MSHA within 15 minutes, due in 5 min (2026-11-04 09:15 EST).", warning["body"])
+        self.assertIn("- Mine Aegizyn: Call MSHA within 15 minutes, 1 min overdue (2026-11-04 09:15 EST).", overdue["body"])
 
     def test_a_workspace_in_another_timezone(self):
         with self.db() as conn:
@@ -1115,7 +1115,7 @@ class TestTimeLimitAlerts(ClockTestCase):
         self.assertEqual(self.run_at("2026-01-10T17:01", tz="Asia/Tokyo")["alerts"], 1)
         warning, overdue = self.notes()
         self.assertEqual(warning["subject"],
-                         "OmniArmor: Report a work fatality in 8 hours, due 2026-01-10 17:00 JST (Acme Logistics)")
+                         "Aegizyn: Report a work fatality in 8 hours, due 2026-01-10 17:00 JST (Acme Logistics)")
         self.assertTrue(warning["body"].startswith("Time limit warning for Acme Logistics, 2026-01-10 15:00 JST."))
         self.assertIn("1 min overdue (2026-01-10 17:00 JST)", overdue["body"])
         self.assertEqual(self.marks()[0][1], "2026-01-10T08:00:00+00:00")

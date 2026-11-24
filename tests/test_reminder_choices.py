@@ -170,8 +170,8 @@ class TestTheSendersRespectThem(ChoicesCase):
             # Problems still reach the operator: only the weekly note is optional.
             with self.db() as conn:
                 autopilot.report(conn, cfg, [autopilot.Finding("disk", "Disk almost full", "1 GB left", "Free space")])
-        self.assertEqual(sent, [("owner@example.com", "[OmniArmor] Weekly Autopilot report"),
-                                ("owner@example.com", "[OmniArmor] Disk almost full")])
+        self.assertEqual(sent, [("owner@example.com", "[Aegizyn] Weekly Autopilot report"),
+                                ("owner@example.com", "[Aegizyn] Disk almost full")])
 
     def test_an_operator_without_an_account_still_gets_it(self):
         cfg = dict(self.app.config, OPERATOR_EMAIL="ops@example.com")

@@ -86,7 +86,7 @@
       {% if mine %}
         <p class="plan-status">{{ status_line(a, facts) }}</p>
       {% elif via_bundle %}
-        <p class="plan-status">Included with your {{ b.name }} while CyberLogix sends signed reports.</p>
+        <p class="plan-status">Included with your {{ b.name }} while Kryozyn sends signed reports.</p>
       {% endif %}
       {% if g.role == 'owner' and not a.paid and not via_bundle %}
         {% if confirming %}
@@ -115,10 +115,10 @@
   {% if show_bundle %}
   <section class="plan-card{% if a.source in ('bundle', 'bundle_grace') %} current{% endif %}" data-plan="bundle">
     <h2>{{ b.name }}</h2>
-    <p class="plan-price">{{ b.price }}, through CyberLogix</p>
+    <p class="plan-price">{{ b.price }}, through Kryozyn</p>
     <ul>
-      <li>CyberLogix, MTRX Horizyn's fridge and freezer alarm app, fills in your temperature checks</li>
-      <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while CyberLogix sends signed reports (one in the last {{ b.fresh_days|plural('day') }})</li>
+      <li>Kryozyn, {{ COMPANY }}'s fridge and freezer alarm app, fills in your temperature checks</li>
+      <li>Includes {{ b.includes.name }} for that {{ facts.location }}, while Kryozyn sends signed reports (one in the last {{ b.fresh_days|plural('day') }})</li>
       <li>If they stop, {{ b.includes.name }} stays on for {{ b.grace_days }} more days with a warning, then the usual rules apply</li>
       <li>Add the Academy with {{ facts.plus.name }} for {{ b.upgrade_price }}, the difference{% if facts.yearly.bundle_upgrade %}, or {{ b.upgrade_yearly_short }} paid yearly{% endif %}</li>
     </ul>

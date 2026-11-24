@@ -3,7 +3,7 @@ added after the slips were printed (and the slips already handed out keep
 working); a teacher's Settings without the business checklist; one lesson
 count per track everywhere, with the Rule Quests shown apart; one helper in
 one corner on a phone; the report as cards on a phone; one notice after
-adding students; a compact demo bar; the shop demo led by ShopArmor; the
+adding students; a compact demo bar; the shop demo led by Shop Aegizyn; the
 daily goal counting passes only; the demo's words naming the page's own
 checklist; and a finished retry heading."""
 
@@ -138,7 +138,7 @@ class TestTeacherSettings(SchoolCase):
             self.assertIn("Save school settings", page)
             self.assertNotIn("Company", page)
             self.assertNotIn('name="industries"', raw)
-            self.assertNotIn("RestoArmor", page)
+            self.assertNotIn("Resto Aegizyn", page)
             self.assertNotIn("Locations", page)
             self.assertNotIn("data-add-location", raw)
             self.assertNotIn("Daily digest", page)
@@ -274,19 +274,19 @@ class TestShopDemo(DemoCase):
         self.open_demo("shop")
         page = text(self.client.get("/app"))
         nav = page[:page.index("Demo Step 1")]
-        self.assertLess(nav.index("ShopArmor"), nav.index("PayArmor"))
+        self.assertLess(nav.index("Shop Aegizyn"), nav.index("Pay Aegizyn"))
         self.assertIn('href="/app/industry/50"', self.client.get("/app").data.decode().split("data-demo-next")[0][-80:])
         shop = text(self.client.get("/app/industry/50"))
-        self.assertIn("ShopArmor: each check says what to do", shop)
+        self.assertIn("Shop Aegizyn: each check says what to do", shop)
 
     def test_the_demo_names_the_page_s_own_checklist(self):
         self.open_demo("salon")
         page = text(self.client.get("/app/industry/30"))
-        self.assertIn("HRArmor: each check says what to do", page)
-        self.assertIn("The HRArmor checklist", page)
-        self.assertNotIn("SalonArmor: each check", page)
+        self.assertIn("HR Aegizyn: each check says what to do", page)
+        self.assertIn("The HR Aegizyn checklist", page)
+        self.assertNotIn("Salon Aegizyn: each check", page)
         own = text(self.client.get("/app/industry/52"))
-        self.assertIn("SalonArmor: each check says what to do", own)
+        self.assertIn("Salon Aegizyn: each check says what to do", own)
 
 
 class TestDailyGoalCountsPasses(ProgressCase):

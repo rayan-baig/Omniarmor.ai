@@ -112,7 +112,7 @@ class TestTopChecks(AppTestCase):
         self.assertEqual(why_line(minors), minors.cost)
 
     def test_public_page_lists_the_top_five_first_with_why(self):
-        page = text(self.client.get("/industries/restoarmor"))
+        page = text(self.client.get("/industries/resto-aegizyn"))
         top = top_checks(2)
         self.assertIn(f"Start with these {TOP_COUNT}", page)
         positions = [page.index(r.title) for r in top]
@@ -207,7 +207,7 @@ class TestGettingStarted(AppTestCase):
         self.signup(industries=(2,))
         page = self.overview()
         self.assertIn("Getting started · 1 of 4 done", page)
-        self.assertIn("Pick your checklists : done · RestoArmor", page)
+        self.assertIn("Pick your checklists : done · Resto Aegizyn", page)
         self.assertIn("Complete your first check : not done yet", page)
         self.assertIn(f"Open {top_checks(2)[0].title}", page)
         self.change(2, "overtime_pay", answer="yes")
@@ -238,31 +238,31 @@ class TestEmptyStates(AppTestCase):
         page = text(self.client.get("/app"))
         first = top_checks(2)[0]
         self.assertIn("Checks that are overdue or close to a limit will show here. None of your checks has a reading"
-                      f" yet, so start with {first.title} in RestoArmor. Open {first.title}", page)
+                      f" yet, so start with {first.title} in Resto Aegizyn. Open {first.title}", page)
         self.assertNotIn("Nice work", page)
         dated = next(r for r in sorted(rules_for(2), key=lambda r: top_rank(2, r.key) or 99) if date_mode(r))
         self.assertIn("Deadlines in the next 60 days will show here once a check counted from a date has its date,"
-                      f" such as {dated.title} in RestoArmor. Open {dated.title}", page)
+                      f" such as {dated.title} in Resto Aegizyn. Open {dated.title}", page)
         self.change(2, "overtime_pay", answer="yes")
         page = text(self.client.get("/app"))
         self.assertIn("Nothing blocked or close to a limit in the 1 check with a reading. 9 still need one;"
-                      f" next up: {first.title} in RestoArmor", page)
+                      f" next up: {first.title} in Resto Aegizyn", page)
 
     def test_a_deadline_past_sixty_days_is_named(self):
         self.signup(industries=(1,))
         self.change(1, "annual_mvr_review", action="done_today")
         page = text(self.client.get("/app"))
         self.assertIn("No tracked deadlines in the next 60 days. The next one is Annual driving record review in"
-                      " FleetArmor, due", page)
+                      " Fleet Aegizyn, due", page)
 
     def test_only_problems_with_nothing_entered_says_why(self):
         self.signup(industries=(2,))
         page = text(self.client.get("/app/industry/2?only=problems"))
-        self.assertIn("Checks that are overdue or close to a limit will show here. No RestoArmor check has a reading"
+        self.assertIn("Checks that are overdue or close to a limit will show here. No Resto Aegizyn check has a reading"
                       f" yet: start with the top {TOP_COUNT}. Show all checks", page)
         self.change(2, "overtime_pay", answer="yes")
         page = text(self.client.get("/app/industry/2?only=problems"))
-        self.assertIn("No problems in RestoArmor right now. 9 checks still need a first reading: Show all checks",
+        self.assertIn("No problems in Resto Aegizyn right now. 9 checks still need a first reading: Show all checks",
                       page)
 
     def test_radar_points_to_a_dated_check(self):

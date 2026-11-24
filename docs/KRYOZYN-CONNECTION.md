@@ -1,65 +1,74 @@
-# The CyberLogix connection: contract
+# The Kryozyn connection: contract
 
-**Kitchen Safety Bundle.** CyberLogix (MTRX Horizyn's fridge and freezer alarm
-app) sends OmniArmor one summary per workspace per day. OmniArmor uses it to
-fill in its temperature-log checks. This page is the contract the CyberLogix
-side builds against. The OmniArmor side is `omniarmor_app/connections.py`,
-tested by `tests/test_cyberlogix.py`, and the two must change together.
+**Kitchen Safety Bundle.** Kryozyn (MTRX Horizyn's fridge and freezer alarm
+app) sends Aegizyn one summary per workspace per day. Aegizyn uses it to
+fill in its temperature-log checks. This page is the contract the Kryozyn
+side builds against. The Aegizyn side is `omniarmor_app/connections.py`,
+tested by `tests/test_kryozyn.py`, and the two must change together.
 
-OmniArmor runs at `omniarmor.mtrxhorizyn.com` and CyberLogix at
-`cyberlogix.mtrxhorizyn.com`, subdomains of MTRX Horizyn's domain
+Aegizyn runs at `aegizyn.mtrxhorizyn.com` and Kryozyn at
+`kryozyn.mtrxhorizyn.com`, subdomains of MTRX Horizyn's domain
 (docs/OPERATIONS.md, section 1).
 
 ## 1. In one paragraph
 
-The workspace owner creates a **connection key** in OmniArmor (Settings,
-Connections) and pastes it into CyberLogix. Once a day, after the site's day
-ends, CyberLogix sends `POST /api/connect/cyberlogix/daily` with that key and
-a JSON summary of the day. If every unit stayed in range all day, OmniArmor
+The workspace owner creates a **connection key** in Aegizyn (Settings,
+Connections) and pastes it into Kryozyn. Once a day, after the site's day
+ends, Kryozyn sends `POST /api/connect/kryozyn/daily` with that key and
+a JSON summary of the day. If every unit stayed in range all day, Aegizyn
 saves the day's warmest reading on its temperature check(s) and the check is
-ticked, with "From CyberLogix: 7 of 7 units in range all day" in the audit
+ticked, with "From Kryozyn: 7 of 7 units in range all day" in the audit
 trail. If anything went out of range, nothing is ticked: the check gets a
 note for a person to review. Sending the same day again changes nothing.
 
-For sites on the **Kitchen Safety Bundle**, CyberLogix also **signs** each
+For sites on the **Kitchen Safety Bundle**, Kryozyn also **signs** each
 report with a secret both apps share (section 3.5). While a workspace
-receives validly signed reports it gets OmniArmor **Pro at no charge**: the
+receives validly signed reports it gets Aegizyn **Pro at no charge**: the
 bundle includes it. An unsigned report does everything else the same.
 
 ## 2. The connection key
 
 - Made by the workspace **owner** only, in Settings, Connections: **Create
-  CyberLogix connection key**. It looks like `clx_` followed by 43 URL-safe
+  Kryozyn connection key**. It looks like `clx_` followed by 43 URL-safe
   characters (`A-Z a-z 0-9 - _`), 47 characters in all.
-- Shown **once**, on the page right after it is made. OmniArmor stores only a
+- Shown **once**, on the page right after it is made. Aegizyn stores only a
   SHA-256 hash of it (as it does for invite and password reset links), so it
   can never show it again. The page shows its last 4 characters afterwards.
 - **One active key per workspace.** **Regenerate key** makes a new one and
   the old one stops working at once. **Revoke key** stops it with no
   replacement. Either way, requests with the old key get `401`.
-- The key identifies the workspace. CyberLogix sends no workspace id: a
+- The key identifies the workspace. Kryozyn sends no workspace id: a
   report always goes to the workspace that owns the key.
-- Store it as a secret on the CyberLogix side (encrypted at rest, never in
+- Store it as a secret on the Kryozyn side (encrypted at rest, never in
   logs, never in a URL).
 
 ## 3. The request
 
 ```
-POST /api/connect/cyberlogix/daily
-Host: omniarmor.mtrxhorizyn.com
+POST /api/connect/kryozyn/daily
+Host: aegizyn.mtrxhorizyn.com
 Authorization: Bearer clx_...the key...
 Content-Type: application/json
-X-CyberLogix-Signature: t=1763110800,v1=5f8a...64 hex characters...
+X-Kryozyn-Signature: t=1763110800,v1=5f8a...64 hex characters...
 ```
 
-The `X-CyberLogix-Signature` header is only for sites on the Kitchen Safety
+The `X-Kryozyn-Signature` header is only for sites on the Kitchen Safety
 Bundle (section 3.5). Leave it out for every other site.
+
+**Names from before the rename (1.24.0).** Kryozyn was called CyberLogix,
+and Aegizyn was called OmniArmor. The old address,
+`POST /api/connect/cyberlogix/daily`, and the old header name,
+`X-CyberLogix-Signature`, still work exactly as before (the new header wins
+when both are sent), and so does the old host, `omniarmor.mtrxhorizyn.com`:
+this one address is answered there, not redirected. Move Kryozyn to the new
+address and header when convenient; nothing needs to change on the same day.
+Keys made before the rename keep their `clx_` start and keep working.
 
 - HTTPS only. JSON only (`Content-Type: application/json`, UTF-8).
 - The body is at most **32 KB**.
 - No cookie and no CSRF token: the key in the `Authorization` header is the
   only authentication. (The signature of section 3.5 is not authentication:
-  it only decides whether the report counts toward the bundle.) This address is the only one in OmniArmor, beside
+  it only decides whether the report counts toward the bundle.) This address is the only one in Aegizyn, beside
   Stripe's signed webhook, that takes a POST without a form token.
 - Send one report per day, after the site's local day has ended (a few
   minutes after midnight at the site is good). Resending is safe (section 6).
@@ -68,14 +77,14 @@ Bundle (section 3.5). Leave it out for every other site.
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
-| `date` | string | yes | The site's local day the report covers, `YYYY-MM-DD`. From 31 days before today to tomorrow, by the workspace's timezone in OmniArmor. |
+| `date` | string | yes | The site's local day the report covers, `YYYY-MM-DD`. From 31 days before today to tomorrow, by the workspace's timezone in Aegizyn. |
 | `site` | string or null | no | A short name for the site, such as `"Main kitchen"`. 1 to 60 characters, no line breaks. |
-| `units_total` | integer | yes | How many fridges and freezers CyberLogix watches at the site. 1 to 500. |
+| `units_total` | integer | yes | How many fridges and freezers Kryozyn watches at the site. 1 to 500. |
 | `units_in_range_all_day` | integer | yes | How many of them stayed in range the whole day. 0 to `units_total`. |
 | `breaches` | array | yes | Every time a unit went out of range that day; `[]` when there were none. At most 50. See 3.2. |
 | `warmest_reading` | number | on a clean day | The warmest temperature any unit read that day, while in range. **Required when every unit stayed in range** (`breaches` is `[]` and `units_in_range_all_day` equals `units_total`): it is the reading the temperature check gets. Optional otherwise. -100 to 250. |
 | `unit_of_measure` | string | with `warmest_reading` | `"°F"` or `"°C"` (`"F"` and `"C"` are accepted). Required whenever `warmest_reading` is sent. |
-| `log_url` | string or null | no | An `https://` link to the day's log in CyberLogix, for an inspector. At most 500 characters, no spaces, and no user name or password in it. OmniArmor shows it as a link and never fetches it. |
+| `log_url` | string or null | no | An `https://` link to the day's log in Kryozyn, for an inspector. At most 500 characters, no spaces, and no user name or password in it. Aegizyn shows it as a link and never fetches it. |
 
 **Consistency rules.** With one or more breaches, `units_in_range_all_day`
 must be less than `units_total`, and the number of different units named in
@@ -87,11 +96,11 @@ Unknown fields are ignored and not stored. Leave them out.
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
-| `unit` | string | yes | The unit's name in CyberLogix, such as `"Walk-in freezer"`. 1 to 60 characters, no line breaks. Name units by what they are, never after a person. |
+| `unit` | string | yes | The unit's name in Kryozyn, such as `"Walk-in freezer"`. 1 to 60 characters, no line breaks. Name units by what they are, never after a person. |
 | `started_at` | string | yes | When it went out of range: ISO 8601 date and time **with its UTC offset**, in the site's local time, such as `"2026-11-12T02:10:00-05:00"` (`Z` for UTC works too). Its date must be the report's `date`, or a day either side. |
 | `ended_at` | string or null | yes (may be null) | When it came back in range, in the same form. `null` if it was still out of range when the report was sent. At or after `started_at`, and at most 48 hours later. |
 | `peak` | number | yes | The worst temperature reached during the breach. -100 to 250. |
-| `limit` | number | yes | The unit's limit in CyberLogix that it went past. -100 to 250. |
+| `limit` | number | yes | The unit's limit in Kryozyn that it went past. -100 to 250. |
 | `unit_of_measure` | string | yes | `"°F"` or `"°C"` (`"F"` and `"C"` are accepted), for `peak` and `limit`. |
 | `acknowledged_by_role` | string or null | yes (may be null) | Who acknowledged the alarm, as a **role, never a name**. `null` if nobody has. One of the list below. |
 | `action` | string or null | yes (may be null) | What was done, as one code from the list below. `null` if nothing is recorded. |
@@ -100,7 +109,7 @@ Unknown fields are ignored and not stored. Leave them out.
 `chef`, `shift lead`, `on-call staff`, `kitchen staff`, `maintenance`,
 `technician`.
 
-**Actions** (`action`), and the words OmniArmor's note uses for them:
+**Actions** (`action`), and the words Aegizyn's note uses for them:
 
 | Code | In the note |
 |---|---|
@@ -114,7 +123,7 @@ Unknown fields are ignored and not stored. Leave them out.
 | `monitoring` | being monitored |
 | `none` | no action yet |
 
-Any other role or action is refused with `422`. This is how OmniArmor keeps
+Any other role or action is refused with `422`. This is how Aegizyn keeps
 names out: a report carries temperatures, unit names and roles only.
 
 ### 3.3 Example: a clean day
@@ -128,7 +137,7 @@ names out: a report carries temperatures, unit names and roles only.
   "breaches": [],
   "warmest_reading": 38.5,
   "unit_of_measure": "°F",
-  "log_url": "https://cyberlogix.mtrxhorizyn.com/logs/2026-11-12"
+  "log_url": "https://kryozyn.mtrxhorizyn.com/logs/2026-11-12"
 }
 ```
 
@@ -154,14 +163,14 @@ names out: a report carries temperatures, unit names and roles only.
   ],
   "warmest_reading": 38.5,
   "unit_of_measure": "°F",
-  "log_url": "https://cyberlogix.mtrxhorizyn.com/logs/2026-11-12"
+  "log_url": "https://kryozyn.mtrxhorizyn.com/logs/2026-11-12"
 }
 ```
 
 ### 3.5 The signature (Kitchen Safety Bundle)
 
-CyberLogix customers pay CyberLogix for the Kitchen Safety Bundle, and it
-includes OmniArmor Pro for that location. A signed report is CyberLogix's
+Kryozyn customers pay Kryozyn for the Kitchen Safety Bundle, and it
+includes Aegizyn Pro for that location. A signed report is Kryozyn's
 statement that the site is on the bundle. **Sign only the reports of sites
 on the bundle**, and stop signing the day a site leaves it.
 
@@ -169,12 +178,12 @@ on the bundle**, and stop signing the day a site leaves it.
 same value; at least 32 random bytes, for example
 `python3 -c "import secrets; print(secrets.token_hex(32))"`). It is not the
 connection key: the key says which workspace, the secret proves the report
-came from CyberLogix's own servers. Keep it on the server side only.
+came from Kryozyn's own servers. Keep it on the server side only.
 
 **The header**, exactly:
 
 ```
-X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>
+X-Kryozyn-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>
 ```
 
 - `t` is the time of signing, in whole Unix seconds (UTC), in plain digits.
@@ -187,7 +196,7 @@ X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_
   body = json.dumps(report).encode("utf-8")
   t = int(time.time())
   v1 = hmac.new(secret.encode(), str(t).encode() + b"." + body, hashlib.sha256).hexdigest()
-  headers["X-CyberLogix-Signature"] = f"t={t},v1={v1}"
+  headers["X-Kryozyn-Signature"] = f"t={t},v1={v1}"
   # then send `body` itself as the request body
   ```
 
@@ -195,11 +204,11 @@ X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_
 - Sign each request when you send it, retries included: a retry gets a new
   `t` and a new `v1`.
 
-**What OmniArmor checks** (`check_signature` in `omniarmor_app/connections.py`):
+**What Aegizyn checks** (`check_signature` in `omniarmor_app/connections.py`):
 
 1. `KITCHEN_BUNDLE_SECRET` is set. Unset, no report counts.
 2. The header is there, with one `t` and a `v1`.
-3. `t` is within **300 seconds** of OmniArmor's clock, either way. Keep the
+3. `t` is within **300 seconds** of Aegizyn's clock, either way. Keep the
    server clock right (NTP).
 4. `v1` matches the HMAC of `t` and the raw body bytes it received, compared
    in constant time.
@@ -208,16 +217,16 @@ X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_
    the same signature again does not count. After that its `t` is stale. The
    report's own per-date idempotency (section 6) would already make a
    replayed report change no readings, but it would still renew the bundle,
-   so OmniArmor keeps the signatures too.
+   so Aegizyn keeps the signatures too.
 
 Only a report that passes all five, and is accepted (`200`), counts. Counting
 records the time it arrived.
 
 **A report without a valid signature is still processed exactly as before**:
 no header, a wrong or malformed `v1`, a stale `t`, a replayed signature, or
-the secret unset on OmniArmor's side. Clean days still tick and breaches
+the secret unset on Aegizyn's side. Clean days still tick and breaches
 still leave notes. It just doesn't count toward the bundle. The signature
-never turns a request into an error: the answer says what OmniArmor made of
+never turns a request into an error: the answer says what Aegizyn made of
 it (section 5.1, `signature`).
 
 **The bundle's cover**, from the arrival time of the last report that counted:
@@ -228,18 +237,18 @@ it (section 5.1, `signature`).
 | 3 to 10 days | Pro still, for a 7-day grace period, with a banner on every page |
 | more than 10 days | the usual rules: its trial, its own plan, or read-only |
 
-A covered workspace can add the Academy with OmniArmor's Plus, paying only
+A covered workspace can add the Academy with Aegizyn's Plus, paying only
 the difference between Plus and Pro.
 
 ## 4. What a report does
 
-OmniArmor looks for the workspace's **temperature-log checks**: the checks
+Aegizyn looks for the workspace's **temperature-log checks**: the checks
 about fridge, freezer and cold-holding temperatures, in the industries the
 workspace tracks. Today there is one in the catalog:
 
 | Industry | Check | Limit |
 |---|---|---|
-| RestoArmor (Restaurants) | Cold holding at 41°F or below (`cold_holding`, FDA Food Code 3-501.16(A)(2)) | 41°F, warns from 40°F |
+| Resto Aegizyn (Restaurants) | Cold holding at 41°F or below (`cold_holding`, FDA Food Code 3-501.16(A)(2)) | 41°F, warns from 40°F |
 
 Then, for each one:
 
@@ -247,13 +256,13 @@ Then, for each one:
 (`breaches` is `[]` and `units_in_range_all_day` equals `units_total`). The
 check's reading becomes `warmest_reading` (converted to °F if sent in °C,
 to one decimal), saved through the same code as a person's Save on the
-industry page. The audit trail shows it from "CyberLogix", for example
-"From CyberLogix: 7 of 7 units in range all day on 2026-11-12; Cold holding
+industry page. The audit trail shows it from "Kryozyn", for example
+"From Kryozyn: 7 of 7 units in range all day on 2026-11-12; Cold holding
 at 41°F or below set to the warmest reading, 38.5°F". The check itself shows
-"Connected to CyberLogix · last report 2026-11-12" and "From CyberLogix: 7
-of 7 units in range all day on 2026-11-12; warmest 38.5°F". OmniArmor judges that reading against its own limit, so a warmest
+"Connected to Kryozyn · last report 2026-11-12" and "From Kryozyn: 7
+of 7 units in range all day on 2026-11-12; warmest 38.5°F". Aegizyn judges that reading against its own limit, so a warmest
 reading of 40°F shows as a Warning and one over 41°F as Blocked, whatever
-the unit's limit in CyberLogix is.
+the unit's limit in Kryozyn is.
 
 A clean day **does not** change the reading, and is recorded as confirming
 the day instead (result `confirmed`), when:
@@ -268,18 +277,18 @@ units in range all day than `units_total` (even with no breach details),
 leaves the reading as it was and puts a note on the check for a person to
 review, for example:
 
-> CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit
+> Kryozyn: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit
 > 0°F); acknowledged by on-call staff; food temperature checked. 6 of 7
 > units in range all day.
 
-Times are shown in the offset CyberLogix sent (the site's clock). The note
+Times are shown in the offset Kryozyn sent (the site's clock). The note
 shows on the check with the report's date, the site and the `log_url` link,
 until someone presses **Mark reviewed**. The audit trail records the same
-note, with the report's date, from "CyberLogix", and who reviewed it.
+note, with the report's date, from "Kryozyn", and who reviewed it.
 
 **The status.** Once a report arrives, the temperature checks and Settings
-show "Connected to CyberLogix · last report 2026-11-12" (the newest `date`
-received). Before that they show "Kitchen Safety Bundle: let CyberLogix fill
+show "Connected to Kryozyn · last report 2026-11-12" (the newest `date`
+received). Before that they show "Kitchen Safety Bundle: let Kryozyn fill
 this in automatically", with a link to Connections.
 
 ## 5. Responses
@@ -297,7 +306,7 @@ Every answer is JSON, with `Cache-Control: no-store`.
   "noted": 0,
   "unchanged": 0,
   "checks": [
-    {"industry": "RestoArmor", "check": "cold_holding",
+    {"industry": "Resto Aegizyn", "check": "cold_holding",
      "title": "Cold holding at 41°F or below", "result": "ticked"}
   ],
   "signature": "valid",
@@ -305,7 +314,7 @@ Every answer is JSON, with `Cache-Control: no-store`.
 }
 ```
 
-`signature` says what OmniArmor made of `X-CyberLogix-Signature`, and
+`signature` says what Aegizyn made of `X-Kryozyn-Signature`, and
 `bundle_counted` whether this report renewed the Kitchen Safety Bundle's
 cover (section 3.5):
 
@@ -314,12 +323,12 @@ cover (section 3.5):
 | `valid` | Signed correctly, first time seen. | `true` |
 | `missing` | No header. Right for a site not on the bundle. | `false` |
 | `invalid` | Malformed, or `v1` doesn't match the body: check the secret, and that you sign the exact bytes you send. | `false` |
-| `stale` | `t` is more than 300 seconds from OmniArmor's clock. Check the clock, and sign at send time. | `false` |
+| `stale` | `t` is more than 300 seconds from Aegizyn's clock. Check the clock, and sign at send time. | `false` |
 | `replayed` | This exact signature was already accepted. Sign each retry afresh. | `false` |
-| `not_configured` | OmniArmor has no `KITCHEN_BUNDLE_SECRET` yet. | `false` |
+| `not_configured` | Aegizyn has no `KITCHEN_BUNDLE_SECRET` yet. | `false` |
 
 Log anything but `valid` and `missing` for a bundle site and alert the
-CyberLogix team: the site's included Pro depends on it.
+Kryozyn team: the site's included Pro depends on it.
 
 `result` for each check is one of:
 
@@ -341,7 +350,7 @@ arrived), and the answer is:
 ```
 
 Treat `matched_checks: 0` as success, not an error. Show the `hint` to the
-CyberLogix user if you like; don't retry.
+Kryozyn user if you like; don't retry.
 
 ### 5.2 Errors
 
@@ -353,17 +362,17 @@ error.
  "errors": [{"field": "breaches[0].acknowledged_by_role", "problem": "null or one of: owner, manager, ..."}]}
 ```
 
-| Status | `error` | When | What CyberLogix should do |
+| Status | `error` | When | What Kryozyn should do |
 |---|---|---|---|
 | `400` | `invalid_json` | The body isn't valid JSON (UTF-8). | Fix the request. Don't retry as is. |
-| `401` | `unauthorized` | No `Authorization: Bearer` header, or the key is wrong, revoked or replaced. Comes with `WWW-Authenticate: Bearer`. | Stop sending. Ask the user for a new key from OmniArmor (Settings, Connections). |
+| `401` | `unauthorized` | No `Authorization: Bearer` header, or the key is wrong, revoked or replaced. Comes with `WWW-Authenticate: Bearer`. | Stop sending. Ask the user for a new key from Aegizyn (Settings, Connections). |
 | `405` | `http_405` | Not a POST. | Fix the request. |
 | `413` | `payload_too_large` | The body is over 32 KB. | Fix the request. |
 | `415` | `unsupported_media_type` | `Content-Type` isn't `application/json`. | Fix the request. |
 | `422` | `invalid_payload` | A field is missing, the wrong type or out of range, or the counts don't add up. `errors` lists every problem, with `field` (like `date` or `breaches[0].peak`) and `problem`. | Fix the data. Don't retry as is. |
 | `429` | `rate_limited` | Too many requests (section 7). Comes with `Retry-After` in seconds. | Wait at least `Retry-After`, then retry. |
-| `500` | `http_500` | Something broke in OmniArmor. | Retry later with backoff (section 6 makes it safe). |
-| `503` | `http_503` | OmniArmor is briefly unavailable. | Retry later with backoff. |
+| `500` | `http_500` | Something broke in Aegizyn. | Retry later with backoff (section 6 makes it safe). |
+| `503` | `http_503` | Aegizyn is briefly unavailable. | Retry later with backoff. |
 
 ## 6. Idempotency and corrections
 
@@ -405,26 +414,26 @@ within 2 days.
   send a person's name, email or phone number, in any field. Roles and
   actions come from fixed lists, so names can't arrive there; keep unit and
   site names free of names too.
-- OmniArmor keeps each report's result (the reading, the note, the site and
+- Aegizyn keeps each report's result (the reading, the note, the site and
   the log link) in the workspace until the workspace is deleted. Unknown
   fields are dropped.
-- For rate limiting, OmniArmor notes the IP address a request came from, and
+- For rate limiting, Aegizyn notes the IP address a request came from, and
   deletes it within 2 days, as for sign-in attempts.
-- OmniArmor's Privacy page (`/privacy`) says this in one line.
+- Aegizyn's Privacy page (`/privacy`) says this in one line.
 
-## 9. Checklist for the CyberLogix side
+## 9. Checklist for the Kryozyn side
 
-1. A place for the user to paste the OmniArmor connection key, stored as a
+1. A place for the user to paste the Aegizyn connection key, stored as a
    secret, with a way to replace and remove it.
 2. A daily job per connected site, after the site's local midnight: build the
    body of section 3, send it, and log the `result` per check (not the key).
 3. On `401`: stop and tell the user to make a new key. On `422`: log the
-   `errors` and alert the CyberLogix team; it is a bug. On `429`, `5xx` or a
+   `errors` and alert the Kryozyn team; it is a bug. On `429`, `5xx` or a
    network error: retry with backoff; it is safe.
-4. Map CyberLogix's people to the roles in 3.2 and its actions to the codes;
+4. Map Kryozyn's people to the roles in 3.2 and its actions to the codes;
    never send names.
-5. Test against a staging copy of OmniArmor (docs/STAGING.md) with a
-   workspace that tracks RestoArmor.
+5. Test against a staging copy of Aegizyn (docs/STAGING.md) with a
+   workspace that tracks Resto Aegizyn.
 6. For sites on the Kitchen Safety Bundle: sign every report (section 3.5)
    with `KITCHEN_BUNDLE_SECRET`, at send time, over the exact body bytes;
    expect `"signature": "valid"` and `"bundle_counted": true`, and alert on

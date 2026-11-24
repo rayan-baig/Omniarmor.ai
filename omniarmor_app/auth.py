@@ -56,7 +56,7 @@ def _taken_message(invite):
         return "An account with that email already exists. Sign in instead."
     # Signing in would only open that account's own workspace: a person
     # belongs to one workspace, so the invite needs a different email.
-    return ("That email already has an OmniArmor account, and an account belongs to one workspace."
+    return ("That email already has an Aegizyn account, and an account belongs to one workspace."
             f" To join {invite['org_name']}, use a different email address.")
 
 
@@ -167,18 +167,18 @@ def signup():
         usage.count(conn, "signups")
         start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
         if invite is not None:
-            flash(f"Welcome to {invite['org_name']} on OmniArmor.", "ok")
+            flash(f"Welcome to {invite['org_name']} on Aegizyn.", "ok")
             return redirect(home_url())
         if teacher:
             # A teacher starts with the class; the free trial is already on.
             days = current_app.config["CLASSROOM_PILOT_DAYS"]
-            flash(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
+            flash(f"Welcome to Aegizyn. Your free {days}-day trial is on: add your class, then your"
                   " students by first name or nickname.", "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.
-        flash(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
-              " or answer once and OmniArmor keeps count from there.", "ok")
+        flash(f"Welcome to Aegizyn. Start with the top {TOP_COUNT} checks below: enter each date"
+              " or answer once and Aegizyn keeps count from there.", "ok")
         return redirect(url_for("app.industry", industry_id=start))
     # ?industry=2 from an industry page; a trade page (trades.py) names several.
     preselected = [i for i in request.args.getlist("industry", type=int) if i in INDUSTRIES][:10]
@@ -265,7 +265,7 @@ def forgot():
                          (token_hash, user["id"], now_iso(), iso(utcnow() + timedelta(hours=RESET_HOURS))))
             conn.commit()
             link = f"{current_app.config['BASE_URL']}{url_for('auth.reset', token=token)}"
-            notify(conn, current_app.config, "password_reset", user["email"], "Reset your OmniArmor password",
+            notify(conn, current_app.config, "password_reset", user["email"], "Reset your Aegizyn password",
                    reset_email(user["name"], link), user_id=user["id"])
         flash("If that email has an account, a reset link is on its way.", "ok")
         return redirect(url_for("auth.login"))
@@ -275,7 +275,7 @@ def forgot():
 def reset_email(name, link):
     """The password reset email's body."""
     hours = f"{RESET_HOURS} hour{'s' if RESET_HOURS != 1 else ''}"
-    return (f"Hi {name},\n\nSomeone, we hope you, asked to reset your OmniArmor password. The link works for {hours},"
+    return (f"Hi {name},\n\nSomeone, we hope you, asked to reset your Aegizyn password. The link works for {hours},"
             f" once.\n\nSet a new password: {link}\n\n"
             "If you didn't ask for this, you can ignore this email. Your password stays as it is.")
 

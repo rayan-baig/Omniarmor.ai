@@ -1,10 +1,10 @@
-"""The Kitchen Safety Bundle: CyberLogix fills in the temperature checks.
+"""The Kitchen Safety Bundle: Kryozyn fills in the temperature checks.
 
 The owner makes a connection key in Settings, Connections (shown once,
-stored as a hash, one active per workspace). CyberLogix sends each day's
+stored as a hash, one active per workspace). Kryozyn sends each day's
 summary to POST /api/connect/cyberlogix/daily with it. A clean day saves the
 check's reading through apply_change, as a person's Save does; a day with a
-breach leaves a note instead. docs/CYBERLOGIX-CONNECTION.md is the contract."""
+breach leaves a note instead. docs/KRYOZYN-CONNECTION.md is the contract."""
 import json
 import os
 import re
@@ -104,7 +104,7 @@ class TestTheKey(BundleCase):
         page = self.client.get("/app/settings").get_data(as_text=True)
         self.assertIn('id="connections"', page)
         self.assertIn("Kitchen Safety Bundle", page)
-        self.assertIn("Let CyberLogix fill this in automatically", page)
+        self.assertIn("Let Kryozyn fill this in automatically", page)
         key = self.create_key()
         with closing(self.db()) as conn:
             row = conn.execute("SELECT * FROM connection_keys").fetchone()
@@ -144,7 +144,7 @@ class TestTheKey(BundleCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.send(key).status_code, 401)
         page = self.client.get("/app/settings").get_data(as_text=True)
-        self.assertIn("Create CyberLogix connection key", page)
+        self.assertIn("Create Kryozyn connection key", page)
         self.assertIn("connection key revoked", self.audit()[-1]["summary"])
 
     def test_owner_only(self):
@@ -157,7 +157,7 @@ class TestTheKey(BundleCase):
         self.signup(email="member@example.com", invite=token, client=member, name="Sam Member")
         page = member.get("/app/settings").get_data(as_text=True)
         self.assertIn('id="connections"', page)
-        self.assertNotIn("Create CyberLogix connection key", page)
+        self.assertNotIn("Create Kryozyn connection key", page)
         for action in ("create", "regenerate", "revoke"):
             response = self.post(f"/app/settings/connections/cyberlogix/{action}", client=member)
             self.assertEqual(response.status_code, 403, action)
@@ -202,7 +202,7 @@ class TestAuthentication(BundleCase):
         before = dict(self.item(other_org["id"]))
         self.assertEqual(self.send(key).status_code, 200)
         self.assertEqual(dict(self.item(other_org["id"])), before)
-        self.assertFalse(any("CyberLogix" in a["summary"] for a in self.audit(other_org["id"])))
+        self.assertFalse(any("Kryozyn" in a["summary"] for a in self.audit(other_org["id"])))
         self.assertEqual(self.item()["value_num"], 38)
         with closing(self.db()) as conn:
             self.assertEqual({r[0] for r in conn.execute("SELECT org_id FROM connection_reports")}, {self.org["id"]})
@@ -227,18 +227,18 @@ class TestACleanDay(BundleCase):
         item = self.item()
         self.assertEqual(item["value_num"], 38)
         self.assertIsNone(item["updated_by"])
-        self.assertEqual(item["updated_by_name"], "CyberLogix")
+        self.assertEqual(item["updated_by_name"], "Kryozyn")
         last = self.audit()[-1]
-        self.assertTrue(last["summary"].startswith("From CyberLogix: 7 of 7 units in range all day"), last["summary"])
-        self.assertEqual((last["user_name"], last["action"], last["rule_key"]), ("CyberLogix", "reading", COLD))
+        self.assertTrue(last["summary"].startswith("From Kryozyn: 7 of 7 units in range all day"), last["summary"])
+        self.assertEqual((last["user_name"], last["action"], last["rule_key"]), ("Kryozyn", "reading", COLD))
         self.assertEqual(last["after"], "38°F")
         page = self.client.get(f"/app/industry/{RESTO}").get_data(as_text=True)
-        self.assertIn(f"Connected to CyberLogix · last report {self.day}", text(page))
+        self.assertIn(f"Connected to Kryozyn · last report {self.day}", text(page))
         self.assertIn("Cleared", page)
         audit = self.client.get("/app/audit").get_data(as_text=True)
-        self.assertIn("From CyberLogix: 7 of 7 units in range all day", audit)
+        self.assertIn("From Kryozyn: 7 of 7 units in range all day", audit)
         settings = self.client.get("/app/settings").get_data(as_text=True)
-        self.assertIn(f"Connected to CyberLogix · last report {self.day}", text(settings))
+        self.assertIn(f"Connected to Kryozyn · last report {self.day}", text(settings))
 
     def test_celsius_is_converted(self):
         key = self.create_key()
@@ -290,13 +290,13 @@ class TestADayWithABreach(BundleCase):
         self.assertEqual((data["matched_checks"], data["ticked"], data["noted"]), (1, 0, 1))
         self.assertIsNone(self.item())
         note = self.reports()[0]["note"]
-        self.assertTrue(note.startswith("CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F"), note)
+        self.assertTrue(note.startswith("Kryozyn: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F"), note)
         self.assertIn("acknowledged by on-call staff", note)
         self.assertIn("6 of 7 units in range all day", note)
         self.assertIn("left for review", self.audit()[-1]["summary"])
         page = self.client.get(f"/app/industry/{RESTO}").get_data(as_text=True)
         self.assertIn("Needs review", page)
-        self.assertIn("CyberLogix: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F", page)
+        self.assertIn("Kryozyn: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F", page)
         self.assertIn("No reading", page)
 
     def test_a_person_marks_it_reviewed(self):
@@ -309,7 +309,7 @@ class TestADayWithABreach(BundleCase):
         self.assertNotIn("Needs review", self.client.get(f"/app/industry/{RESTO}").get_data(as_text=True))
         self.assertIn("note for", self.audit()[-1]["summary"])
         self.assertEqual(self.audit()[-1]["user_name"], "Pat Owner")
-        # A check CyberLogix doesn't fill in is not a note to review.
+        # A check Kryozyn doesn't fill in is not a note to review.
         self.assertEqual(self.post("/app/connections/cyberlogix/review",
                                    {"industry_id": "1", "rule_key": "eld_in_use", "date": self.day}).status_code, 404)
 
@@ -368,7 +368,7 @@ class TestADayWithABreach(BundleCase):
                         acknowledged_by_role=None, action=None)
         self.send(key, self.report(units_in_range_all_day=5, breaches=[breach(), second]))
         note = self.reports()[0]["note"]
-        self.assertIn("CyberLogix: 2 breaches.", note)
+        self.assertIn("Kryozyn: 2 breaches.", note)
         self.assertIn("Prep fridge, from 23:50, still out of range when reported", note)
         self.assertIn("not acknowledged", note)
 
@@ -479,7 +479,7 @@ class TestNoTemperatureCheck(AppTestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual((data["ok"], data["matched_checks"]), (True, 0))
-        self.assertIn("RestoArmor", data["hint"])
+        self.assertIn("Resto Aegizyn", data["hint"])
         # Still a report: Settings says it arrived.
         self.assertIn(f"last report {body['date']}", text(self.client.get("/app/settings").get_data(as_text=True)))
 
@@ -488,9 +488,9 @@ class TestTheBundleNoteOnTheCheck(BundleCase):
     def test_before_connecting_the_offer_is_in_settings_not_on_the_check(self):
         # 1.16.0: a new user's first checklist carries no upsell; the offer lives in Settings, Connections.
         page = self.client.get(f"/app/industry/{RESTO}").get_data(as_text=True)
-        self.assertNotIn("Let CyberLogix fill this in automatically", page)
+        self.assertNotIn("Let Kryozyn fill this in automatically", page)
         self.assertEqual(page.count("data-bundle>"), 0)
-        self.assertIn("Let CyberLogix fill this in automatically", self.client.get("/app/settings").get_data(as_text=True))
+        self.assertIn("Let Kryozyn fill this in automatically", self.client.get("/app/settings").get_data(as_text=True))
         self.assertNotIn("Kitchen Safety Bundle", self.client.get("/app/industry/1").get_data(as_text=True))
 
 
@@ -526,15 +526,15 @@ class TestTheUpgrade(AppTestCase):
 class TestThePrivacyPage(AppTestCase):
     def test_says_what_a_connection_sends(self):
         page = " ".join(self.client.get("/privacy").get_data(as_text=True).split())
-        self.assertIn("When you connect CyberLogix", page)
+        self.assertIn("When you connect Kryozyn", page)
         self.assertIn("never anyone's name", page.replace("&#39;", "'"))
 
 
 class TestTheContract(unittest.TestCase):
-    """docs/CYBERLOGIX-CONNECTION.md names what the code does."""
+    """docs/KRYOZYN-CONNECTION.md names what the code does."""
 
     def setUp(self):
-        with open(os.path.join(ROOT, "docs", "CYBERLOGIX-CONNECTION.md"), encoding="utf-8") as f:
+        with open(os.path.join(ROOT, "docs", "KRYOZYN-CONNECTION.md"), encoding="utf-8") as f:
             self.doc = f.read()
 
     def test_the_doc_lists_the_codes_roles_and_limits(self):

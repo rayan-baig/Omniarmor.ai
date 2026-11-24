@@ -87,10 +87,33 @@ def _unmask(sent):
     return bytes(a ^ b for a, b in zip(packed[:half], packed[half:]))
 
 
-# Signed by Stripe instead; and CyberLogix's daily report, which carries the
+# Signed by Stripe instead; and Kryozyn's daily report, which carries the
 # workspace's connection key in its Authorization header and never reads the
 # session cookie, so a form posted from another site has nothing to borrow.
 CSRF_EXEMPT = {"plan.stripe_webhook", "connect.cyberlogix_daily"}
+
+
+# 1.24.0: the app's old addresses (OLD_HOSTS, names.py) send pages on to the
+# new one. These are answered at the old address as they are: Stripe and
+# Kryozyn post there until their settings change (a redirect would lose the
+# POST), and an uptime monitor may still check the health pages there.
+OLD_HOST_SERVED = {"plan.stripe_webhook", "connect.cyberlogix_daily", "public.healthz", "public.readyz",
+                   "public.stats"}
+
+
+def old_host_redirect():
+    """A request for one of the app's old addresses, sent on (301) to the same
+    path and query at BASE_URL's address."""
+    from flask import current_app
+    old = current_app.config.get("OLD_HOSTS") or ()
+    host = (request.host or "").split(":")[0].lower()
+    if host not in old or request.endpoint in OLD_HOST_SERVED:
+        return None
+    base = current_app.config.get("BASE_URL", "").rstrip("/")
+    if not base or urlsplit(base).hostname == host:
+        return None
+    query = request.query_string.decode("latin-1")
+    return redirect(base + request.path + (f"?{query}" if query else ""), code=301)
 
 
 def check_csrf():

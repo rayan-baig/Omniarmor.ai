@@ -8,7 +8,7 @@
   <h1><span class="blend-text">Catch the fine</span> before it catches you.</h1>
   {#- 1.18.0: on a phone the lead is three lines at most, so the picture's Blocked and Warning rows show in the
       first screen; the trades and the record come in the second line, which a computer also shows. -#}
-  <p class="lead">Enter a date once. OmniArmor counts the days and warns your team before a fine.</p>
+  <p class="lead">Enter a date once. Aegizyn counts the days and warns your team before a fine.</p>
   <p class="lead lead-more" data-lead-more>For small businesses like restaurants, bars, salons, child care, dental offices, construction and shops, with starter lists for {{ facts.industries }} industries in all (<a href="{{ url_for('public.industries') }}">find yours</a>): each tracks the {{ facts.per_industry }} compliance failures that cost it the most, and keeps the record an inspector asks for.</p>
   <div class="cta">
     <a class="btn" href="{{ url_for('auth.signup') }}">Start your free trial</a>
@@ -28,10 +28,10 @@
 
 {{ how_it_works('biz', facts.reminder_days) }}
 
-<section class="features" aria-label="What OmniArmor does">
+<section class="features" aria-label="What Aegizyn does">
   <div>
     <h3>Deadlines that count themselves</h3>
-    <p>Enter when something was last done or when it expires. OmniArmor works out the days left every morning.</p>
+    <p>Enter when something was last done or when it expires. Aegizyn works out the days left every morning.</p>
   </div>
   <div>
     <h3>Reminders before it's late</h3>

@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Terms{% endblock %}
-{% block description %}The rules for using OmniArmor, in plain words: what it is, what it isn't, and what we promise.{% endblock %}
+{% block description %}The rules for using Aegizyn, in plain words: what it is, what it isn't, and what we promise.{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <p class="eyebrow">Terms · Last changed {{ facts.updated }}</p>
-    <h1>The rules for using OmniArmor</h1>
-    <p class="sub">Plain words. By using OmniArmor, you agree to these rules.</p>
+    <h1>The rules for using Aegizyn</h1>
+    <p class="sub">Plain words. By using Aegizyn, you agree to these rules.</p>
   </div>
 </div>
 <div class="plain">
 
 <h2 id="who">Who we are</h2>
-<p>OmniArmor is a product of MTRX Horizyn. "We" and "us" on this page mean MTRX Horizyn. These rules are between you and MTRX Horizyn.</p>
+<p>Aegizyn is a product of {{ COMPANY }}. "We" and "us" on this page mean {{ COMPANY }}. These rules are between you and {{ COMPANY }}.</p>
 
-<h2 id="what">What OmniArmor is</h2>
+<h2 id="what">What Aegizyn is</h2>
 <ul>
   <li>A tracker that helps a business keep up with inspections, deadlines, limits and sign-offs in 54 industries, schools among them.</li>
   <li>The Future Owner Academy: a learning game about running a business, for kids in a grown-up's workspace.</li>
@@ -22,10 +22,10 @@
 
 <h2 id="helper">It helps you. It doesn't decide for you.</h2>
 <ul>
-  <li>OmniArmor is a helper, not a lawyer. It is not legal advice.</li>
+  <li>Aegizyn is a helper, not a lawyer. It is not legal advice.</li>
   <li>Each check names the rule it comes from. Rules change and differ from place to place, so our list can be out of date, missing something, or wrong for you. Check the rules for your business with an expert.</li>
   <li>Some limits are marked "policy". That means common practice, not one fixed law. You can set your own.</li>
-  <li>OmniArmor only knows what you type in. If a date or number is wrong, its status will be wrong too.</li>
+  <li>Aegizyn only knows what you type in. If a date or number is wrong, its status will be wrong too.</li>
   <li>Dates and times are in your workspace's time zone, except where a page says UTC. A check counted in hours or minutes counts from the date and time you enter.</li>
   <li>A check counted in business days skips weekends and US federal holidays only. If your state or your business has other days off, the real deadline can be later. Once the due date has ended, the check is overdue, even on a weekend or a holiday.</li>
   <li>Reminder emails and time-limit alerts can be late or never arrive. Check your deadlines in the app too.</li>
@@ -44,7 +44,7 @@
   <li>Try to break into the site or anyone's account, or try to overload the site.</li>
   <li>Use someone else's account.</li>
   <li>Put in information you don't have the right to share.</li>
-  <li>Use OmniArmor to break the law.</li>
+  <li>Use Aegizyn to break the law.</li>
 </ul>
 <p>If you break these rules, we may remove your access.</p>
 
@@ -54,23 +54,23 @@
   <li>A new workspace gets a free {{ facts.trial_days }}-day trial of everything in {{ pf.plus.name }}, from the day it signs up. No card. The trial is one per owner: a location added later to the same account starts without one.</li>
   <li>After that there are two plans, each a price a month{% if pf.yearly.any %} or a year{% endif %} for each {{ pf.location }} (one workspace is one {{ pf.location }}): <strong>{{ pf.pro.name }}</strong>, {{ pf.pro.price }}{% if pf.yearly.pro %} or {{ pf.pro.yearly_short }}{% endif %}, for the compliance tracker; and <strong>{{ pf.plus.name }}</strong>, {{ pf.plus.price }}{% if pf.yearly.plus %} or {{ pf.plus.yearly_short }}{% endif %}, for everything in {{ pf.pro.name }} and the whole Future Owner Academy.{% if pf.yearly.any %} A yearly plan costs {{ pf.months_paid }} months' price for {{ pf.months_in_year }} months ({{ pf.free_label }}).{% endif %} The first {{ facts.free_worlds }} worlds of the Launchpad track stay free for everyone.</li>
   <li>Without a plan, the compliance tracker is read-only: you can still see, print and download everything you entered, and we don't delete it, but you can't save new checks and reminder emails stop until you choose a plan. You can always download your data and delete your workspace.</li>
-  <li>The {{ pf.bundle.name }} is sold by CyberLogix, not by us. While CyberLogix sends us its signed daily reports for your workspace, your workspace gets {{ pf.bundle.includes.name }} at no charge from us, and {{ pf.plus.name }} costs only the difference ({{ pf.bundle.upgrade_price }}). If those reports stop for more than {{ pf.bundle.fresh_days|plural('day') }}, {{ pf.bundle.includes.name }} stays on for {{ pf.bundle.grace_days }} more days, and then the rules above apply.</li>
+  <li>The {{ pf.bundle.name }} is sold by Kryozyn, not by us. While Kryozyn sends us its signed daily reports for your workspace, your workspace gets {{ pf.bundle.includes.name }} at no charge from us, and {{ pf.plus.name }} costs only the difference ({{ pf.bundle.upgrade_price }}). If those reports stop for more than {{ pf.bundle.fresh_days|plural('day') }}, {{ pf.bundle.includes.name }} stays on for {{ pf.bundle.grace_days }} more days, and then the rules above apply.</li>
   <li>A workspace that paid for the old Academy plan keeps it, at its old price, with the compliance tracker, until it changes plan or the plan ends.</li>
   <li>Stripe handles payments. A plan renews each month, or each year for a yearly plan, until you cancel. You can change plan, switch between monthly and yearly, update your card or cancel any time on the <a href="{{ url_for('plan.plan_page') }}">Plans page</a> (Manage billing). A cancelled plan stays on until the end of the time you paid for: a yearly plan to the end of the year paid for, with no partial refund.</li>
   <li>A monthly plan can be paused for up to {{ facts.pause_most }} months instead: you aren't charged, the tracker is read-only and reminders stop, and it starts again by itself on the date you picked.</li>
 </ul>
 
-<h2 id="pilot">Pilot, the AI assistant</h2>
+<h2 id="pilot">{{ ASSISTANT }}, the AI assistant</h2>
 <ul>
-  <li>Pilot is an optional assistant on OmniArmor's pages for grown-ups. It runs on your own AI key, from an AI company you choose. That company bills your AI key for everything Pilot uses, under its own terms; we don't charge for Pilot and don't pay for it.</li>
-  <li>AI keys are for grown-ups: the AI companies require you to be 18 or over. Pilot is never on a page a student uses.</li>
-  <li>Pilot's answers come from an AI and can be wrong. Like the rest of OmniArmor, they are not legal advice. Pilot changes something in your workspace only after you press Allow, and it never pays, deletes, changes a plan, invites or removes people, or touches a student's account.</li>
+  <li>{{ ASSISTANT }} is an optional assistant on Aegizyn's pages for grown-ups. It runs on your own AI key, from an AI company you choose. That company bills your AI key for everything {{ ASSISTANT }} uses, under its own terms; we don't charge for {{ ASSISTANT }} and don't pay for it.</li>
+  <li>AI keys are for grown-ups: the AI companies require you to be 18 or over. {{ ASSISTANT }} is never on a page a student uses.</li>
+  <li>{{ ASSISTANT }}'s answers come from an AI and can be wrong. Like the rest of Aegizyn, they are not legal advice. {{ ASSISTANT }} changes something in your workspace only after you press Allow, and it never pays, deletes, changes a plan, invites or removes people, or touches a student's account.</li>
 </ul>
 
 <h2 id="promise">What we promise and what we don't</h2>
 <ul>
-  <li>We try hard to keep OmniArmor working and correct. But we can't promise it will always be online, free of mistakes, or right for your business.</li>
-  <li>We're not responsible for fines, losses or missed deadlines, even if OmniArmor got something wrong. Keeping your business within the law is still your job.</li>
+  <li>We try hard to keep Aegizyn working and correct. But we can't promise it will always be online, free of mistakes, or right for your business.</li>
+  <li>We're not responsible for fines, losses or missed deadlines, even if Aegizyn got something wrong. Keeping your business within the law is still your job.</li>
   <li>We may change or stop the service. We may change these rules too. The date at the top shows the last change.</li>
 </ul>
 <p>How we handle your data is on the <a href="{{ url_for('public.privacy') }}">Privacy</a> page.</p>

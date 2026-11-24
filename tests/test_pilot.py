@@ -1,4 +1,4 @@
-"""1.10.0: Pilot, the MTRX Horizyn assistant, on OmniArmor (pilot.py,
+"""1.10.0: Pilot, the MTRX Horizyn assistant, on Aegizyn (pilot.py,
 static/pilot/, docs/PILOT.md).
 
 These check the promises Pilot makes here: it is on the public pages for
@@ -8,7 +8,7 @@ providers' addresses and nothing else; the chat window's code loads only
 when it is opened; keys and AI calls never touch this server; the tag
 carries no one's personal details; the core files are the shared core; no
 model name is written anywhere; and the privacy page says what Pilot does.
-The core's own tests and OmniArmor's tools (confirm first, the forbidden
+The core's own tests and Aegizyn's tools (confirm first, the forbidden
 actions, the bulk-answer rule, first names only) run in Node:
 tests/js/pilot.test.js and tests/js/omniarmor-pilot.test.js.
 """
@@ -37,7 +37,7 @@ MOTION = ("pilot-motion.js", "pilot-actor.js", "pilot-actor.css", "pilot-rest-bo
           "pilot-rest-eyes.webp")
 LAZY = ("pilot-panel.js", "pilot-engine.js", "pilot-providers.js", "pilot-media.js", "pilot-render.js", "pilot-panel.css",
         "pilot-omniarmor-pack.js")
-PUBLIC = ("/", "/industries", "/industries/restoarmor", "/for/salons-and-barbershops", "/for/schools", "/classrooms",
+PUBLIC = ("/", "/industries", "/industries/resto-aegizyn", "/for/salons-and-barbershops", "/for/schools", "/classrooms",
           "/classrooms/guide", "/demo")
 BUSINESS = ("/app", "/app/industry/1", "/app/report", "/app/audit", "/app/notifications", "/app/settings", "/app/plan")
 # ("/app" sends a teacher without Whole school to the classes page: 1.11.0.)
@@ -329,7 +329,7 @@ class TestPilotSecurity(PilotCase):
         # 1.12.0: every status tag, badge and note, not just a Blocked status.
         self.assertRegex(config, r'avoid: \[".tag", ".top-n", ".bundle", ".msg",')
         self.assertIn('".companion-bubble", ".companion-fix", ".companion-badge"', config)
-        self.assertIn('".topbar .nav", ".lockup",', config)   # 1.15.0: and the OmniArmor name
+        self.assertIn('".topbar .nav", ".lockup",', config)   # 1.15.0: and the Aegizyn name
         self.assertIn('".pick", "[data-teacher-guide] p"', config)   # 1.16.0: the Select boxes, the teacher guide
         with open(os.path.join(STATIC, "app.css"), encoding="utf-8") as f:
             css = f.read()

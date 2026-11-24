@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    OMNIARMOR_ENV=production \
+    AEGIZYN_ENV=production \
     DATABASE_PATH=/data/omniarmor.db \
     BACKUP_DIR=/data/backups \
     PORT=8000 \

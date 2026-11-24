@@ -1,7 +1,42 @@
 # Changelog
 
-What changed in OmniArmor, in plain words, newest first. The version number
+What changed in Aegizyn (called OmniArmor until 1.24.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
+
+## 1.24.0 (23 November 2026)
+
+Renamed to Aegizyn. OmniArmor is now **Aegizyn**, and the fridge-alarm app
+CyberLogix is now **Kryozyn**. Nothing else about the app changes: the same
+checks, prices, plans, Academy and Armo.
+
+- **The new address** is `aegizyn.mtrxhorizyn.com`. A page asked for at the
+  old one, `omniarmor.mtrxhorizyn.com`, is sent on to the same page at the
+  new one. Stripe's webhook, Kryozyn's daily report and the health checks are
+  answered at the old address as before, so nothing breaks while settings
+  move (docs/OPERATIONS.md, "Upgrading to 1.24.0", lists the owner's steps).
+- **Checklist names** read "Resto Aegizyn", "Salon Aegizyn", "Pharmacy
+  Aegizyn", "School Safety Aegizyn" and so on, one pattern for all 54. Their
+  pages moved to addresses like `/industries/resto-aegizyn`; the old ones
+  (`/industries/restoarmor`) redirect there.
+- **Kryozyn:** every page, email, Pilot answer and the plan page say Kryozyn.
+  Kryozyn's daily report has a new address, `/api/connect/kryozyn/daily`, and
+  header, `X-Kryozyn-Signature`; the old address and header still work.
+  Readings, notes and history the app wrote under the old names show the new
+  ones (schema version 28).
+- **One place for names that may change:** the company's name and domain,
+  the help address, the assistant's name (Pilot, later Astroxy) and the other
+  apps' names (RankUp, Genesis, Orbyt) live in `omniarmor_app/names.json`.
+  Pages, emails, the legal pages and Pilot's answers read them from there.
+  The company is still MTRX Horizyn for now.
+- **Settings:** `AEGIZYN_ENV` replaces `OMNIARMOR_ENV` (both work; the new one
+  wins). `OLD_HOSTS` lists the old addresses that redirect. Emails are signed
+  "Aegizyn is a product of MTRX Horizyn." Downloads are named
+  `aegizyn-compliance-report.csv` and `aegizyn-audit-trail.csv`.
+- **Pictures:** the screenshots on the public pages, the sharing picture and
+  the Academy previews in the docs were taken again with the new name.
+- The "Future Owner Academy" and Armo keep their names. Folder, module,
+  database and repository names (`omniarmor_app`, `omniarmor.db`) are
+  historical and stay.
 
 ## 1.23.0 (23 November 2026)
 

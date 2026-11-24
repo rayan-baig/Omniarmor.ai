@@ -93,7 +93,7 @@ def scrub(text):
 
 
 def relative(filename):
-    """A stack frame's file, relative: to the project for OmniArmor's own
+    """A stack frame's file, relative: to the project for Aegizyn's own
     code, to site-packages for a library's, the file name alone otherwise."""
     path = os.path.abspath(filename)
     # A library's first, even from a virtual environment inside the project
@@ -138,7 +138,7 @@ def build(exc, method, path, signature, now=None):
         f"The same error is emailed at most once an hour, and no more than {MAX_PER_DAY} errors a day. "
         "Autopilot also lists it with the others: flask --app wsgi autopilot --log",
     ])
-    return f"[OmniArmor] Server error: {kind} [{signature}]", body
+    return f"[Aegizyn] Server error: {kind} [{signature}]", body
 
 
 def _claim(cfg, to, subject, body, signature, now):

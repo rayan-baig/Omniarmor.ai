@@ -278,7 +278,7 @@ def cleanup(conn):
     conn.execute("DELETE FROM join_codes WHERE expires_at < ?", (iso(utcnow()),))
     # Answers kept from a quiz nobody finished (academy_views.QUIZ_CHECK_DAYS).
     conn.execute("DELETE FROM quiz_checks WHERE at < ?", (iso(utcnow() - timedelta(days=30)),))
-    # CyberLogix signatures past their replay window (connections.SIGNATURE_MEMORY).
+    # Kryozyn signatures past their replay window (connections.SIGNATURE_MEMORY).
     conn.execute("DELETE FROM bundle_signatures WHERE seen_at < ?", (iso(utcnow() - timedelta(minutes=10)),))
     usage.trim(conn)
     conn.commit()
@@ -311,7 +311,7 @@ def run_pause_sweep(conn, cfg, now=None):
                     "- Checks can be saved again, and reminder emails come back on.\n\n"
                     "Nothing to do if that suits you. To pause longer or cancel instead:\n\n"
                     f"Open your plan: {base}/app/plan/cancel")
-            notify(conn, cfg, "plan", user["email"], f"Your OmniArmor plan starts again on {day}", body,
+            notify(conn, cfg, "plan", user["email"], f"Your Aegizyn plan starts again on {day}", body,
                    org_id=org["id"], user_id=user["id"])
         conn.execute("UPDATE orgs SET pause_reminded_at = ? WHERE id = ?", (iso(now), org["id"]))
         conn.commit()

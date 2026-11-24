@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""OmniArmor.ai web app. Catch the fine before it catches you.
+"""Aegizyn web app. Catch the fine before it catches you.
 
 create_app() builds the app; wsgi.py runs it in production.
 """
@@ -20,13 +20,14 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import (academy_views, armo_views, autopilot, auth, classroom_views, compress, connections, demo_mode,
                errormail, health, pilot, plan_views, usage, views)
-from .catalog import INDUSTRIES, rules_for, top_checks, why_line
+from . import names
+from .catalog import INDUSTRIES, industry_by_slug, rules_for, top_checks, why_line
 from .config import SettingsError, load_config, support_email
 from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
 from . import shots
 from .redact import RedactingFilter, redact
-from .security import check_csrf, csrf_token, home_url, load_user, security_headers
+from .security import check_csrf, csrf_token, home_url, load_user, old_host_redirect, security_headers
 from .tracking import format_quantity, local_date
 from .version import __version__
 from .words import plural, plural_word
@@ -46,7 +47,7 @@ def home():
     return render_template("home.html", industries=INDUSTRIES, facts=_landing_facts(), lead=lead_trades())
 
 
-# Industries named on the landing page as examples of who OmniArmor is for.
+# Industries named on the landing page as examples of who Aegizyn is for.
 LANDING_EXAMPLES = (2, 1, 29, 45, 5, 28)
 
 
@@ -85,9 +86,12 @@ def industries():
 @public.route("/industries/<slug>")
 def industry_page(slug):
     """A landing page per industry, so each niche finds a page about its own risks."""
-    match = next((i for i in INDUSTRIES.values() if i["brand"].lower() == slug.lower()), None)
+    match, old = industry_by_slug(slug)
     if match is None:
         abort(404)
+    if old or slug != match["slug"]:
+        # An address from before the 1.24.0 rename ("/industries/restoarmor"), or in other letters: one address.
+        return redirect(url_for("public.industry_page", slug=match["slug"]), code=301)
     top = top_checks(match["id"])
     rest = [r for r in rules_for(match["id"]) if r not in top]
     from .connections import TEMPERATURE_CHECKS
@@ -110,7 +114,7 @@ def trade_page(slug):
     demo_kind = TRADE_DEMO_FOR.get(trade.slug, "business")
     demo_name = TRADE_DEMOS[demo_kind][3].lower() if demo_kind in TRADE_DEMOS else "a restaurant"
     return render_template("trade.html", trade=trade, groups=trades.groups(trade), facts=trades.facts(trade),
-                           sister_url=trades.CYBERLOGIX_URL, demo_kind=demo_kind, demo_name=demo_name)
+                           sister_url=names.FRIDGE_URL, demo_kind=demo_kind, demo_name=demo_name)
 
 
 @public.route("/classrooms")
@@ -299,7 +303,7 @@ def robots():
 def sitemap():
     base = current_app.config["BASE_URL"]
     paths = [url_for("public.home"), url_for("public.industries")]
-    paths += [url_for("public.industry_page", slug=i["brand"].lower()) for i in INDUSTRIES.values()]
+    paths += [url_for("public.industry_page", slug=i["slug"]) for i in INDUSTRIES.values()]
     from .trades import TRADES
     paths += [url_for("public.trade_page", slug=t.slug) for t in TRADES]
     paths += [url_for("public.academy_schools"), url_for("public.class_guide")]
@@ -331,7 +335,7 @@ ROOT_ICON_MAX_AGE = 24 * 3600
 
 @public.route("/api/stats")
 def stats():
-    """User counts and daily feature use for the owner's MTRX Horizyn
+    """User counts and daily feature use for the owner's company
     console, and nothing else.
 
     Off unless STATS_KEY is set, and answered only to that key. Counts only:
@@ -392,7 +396,7 @@ ERROR_PAGES = {
 # stylesheet) and leads home.
 PLAIN_ERROR_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow"><title>{title} · OmniArmor.ai</title>
+<meta name="robots" content="noindex, nofollow"><title>{title} · Aegizyn</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/static/app.css"></head>
 <body><main id="main"><div class="wrap"><div class="narrow error-page">
 <p class="eyebrow">Error {code}</p><h1>{title}</h1><p class="sub">{description}</p>
@@ -406,7 +410,7 @@ DATABASE_DOWN = ("unable to open", "database is locked", "disk i/o error", "data
                  "readonly database", "file is not a database", "malformed")
 
 
-class OmniArmorFlask(Flask):
+class AegizynFlask(Flask):
     def log_exception(self, exc_info):
         # Flask's own version writes the page address, which can hold a reset token.
         self.logger.error(f"Exception on {redact(request.path)} [{request.method}]", exc_info=exc_info)
@@ -437,7 +441,7 @@ def percent(part, whole, least=0):
 
 def create_app(**overrides):
     cfg = load_config(**overrides)
-    app = OmniArmorFlask(__name__, instance_relative_config=False)
+    app = AegizynFlask(__name__, instance_relative_config=False)
     app.config.update(cfg)
     if cfg["TRUSTED_PROXIES"] > 0:
         hops = cfg["TRUSTED_PROXIES"]
@@ -453,10 +457,11 @@ def create_app(**overrides):
     except (sqlite3.Error, OSError) as exc:
         # Said plainly in the server log, rather than a traceback ending in
         # "unable to open database file".
-        raise SettingsError(f"OmniArmor can't open its database at {app.config['DATABASE']} (DATABASE_PATH):"
+        raise SettingsError(f"Aegizyn can't open its database at {app.config['DATABASE']} (DATABASE_PATH):"
                             f" {exc}. Check that the disk is attached, writable and not full.") from exc
 
     app.teardown_appcontext(close_db)
+    app.before_request(old_host_redirect)
     app.before_request(load_user)
     app.before_request(check_csrf)
     app.before_request(demo_mode.guard)
@@ -465,6 +470,7 @@ def create_app(**overrides):
     app.after_request(connections.api_headers)
     app.after_request(compress.gzip_response)
     app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
+                                COMPANY=names.COMPANY, ASSISTANT=names.ASSISTANT, NAMES=names.for_pages(),
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config),
                                 pilot_tag=pilot.pilot_tag, lesson_view=academy_views.lesson_view, kid_exit_url=academy_views.kid_exit_url,

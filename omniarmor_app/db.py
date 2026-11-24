@@ -7,6 +7,25 @@ from datetime import datetime, timezone
 
 from flask import current_app, g
 
+def _rename_sql():
+    """Migration 28's statements (1.24.0): CyberLogix to Kryozyn, and each
+    checklist's old name ("RestoArmor") to its new one ("Resto Aegizyn")."""
+    from .catalog import INDUSTRIES
+    sql = ["UPDATE audit SET user_name = 'Kryozyn' WHERE user_id IS NULL AND user_name = 'CyberLogix'",
+           "UPDATE items SET updated_by_name = 'Kryozyn' WHERE updated_by IS NULL AND updated_by_name = 'CyberLogix'",
+           "UPDATE check_entries SET updated_by_name = 'Kryozyn' WHERE updated_by IS NULL"
+           " AND updated_by_name = 'CyberLogix'",
+           "UPDATE connection_reports SET summary = REPLACE(summary, 'CyberLogix', 'Kryozyn'),"
+           " note = REPLACE(note, 'CyberLogix', 'Kryozyn')",
+           "UPDATE audit SET summary = REPLACE(summary, 'CyberLogix', 'Kryozyn')"
+           " WHERE action = 'connection' AND summary LIKE '%CyberLogix%'"]
+    for info in INDUSTRIES.values():
+        old = info["brand"].replace(" Aegizyn", "").replace(" ", "") + "Armor"
+        sql.append(f"UPDATE audit SET summary = REPLACE(summary, '{old}', '{info['brand']}')"
+                   f" WHERE summary LIKE '%{old}%'")
+    return ";\n".join(sql) + ";"
+
+
 MIGRATIONS = [
     (1, """
     CREATE TABLE users (
@@ -312,7 +331,7 @@ MIGRATIONS = [
     ALTER TABLE users ADD COLUMN is_operator INTEGER NOT NULL DEFAULT 0;
     """),
     # The Kitchen Safety Bundle (connections.py): a workspace's connection key
-    # for CyberLogix, MTRX Horizyn's fridge and freezer alarm app, stored as a
+    # for Kryozyn, the company's fridge and freezer alarm app, stored as a
     # hash like invite links, at most one active per workspace and app; and
     # the daily reports it sent, one row per workspace, check and day, which
     # is what makes sending the same day twice change nothing. A report holds
@@ -361,7 +380,7 @@ MIGRATIONS = [
     # had the tracker free until today, so it gets the new trial from today
     # (or keeps a later Academy trial end), as migration 7 did for the
     # Academy. {TRIAL_DAYS} is the ACADEMY_TRIAL_DAYS setting.
-    # bundle_report_at is when the last validly signed CyberLogix report
+    # bundle_report_at is when the last validly signed Kryozyn report
     # arrived (the Kitchen Safety Bundle's cover), and bundle_signatures
     # remembers each accepted signature for 10 minutes, so the same signed
     # request sent again doesn't count twice (connections.py).
@@ -472,8 +491,8 @@ MIGRATIONS = [
     # teacher's, from the teacher sign-up) runs the Academy for classes: its
     # menus, plan page and lessons are made for a classroom (classrooms.py).
     # Workspaces already here that use the classroom plans, the pilot or
-    # classes, and track no checklist but the school ones (SchoolArmor 8 and
-    # SchoolSafetyArmor 51), are schools. And students already in a class
+    # classes, and track no checklist but the school ones (School Aegizyn 8 and
+    # School Safety Aegizyn 51), are schools. And students already in a class
     # move to the Classroom track, made for a class (academy.py); what they
     # finished before still counts in the class view and the pilot report.
     (25, """
@@ -541,6 +560,11 @@ MIGRATIONS = [
         WHERE class_id IS NOT NULL AND id IN (SELECT learner_id FROM learner_progress);
     ALTER TABLE learner_days ADD COLUMN passed INTEGER NOT NULL DEFAULT 0;
     """),
+    # 1.24.0, the rename: what the app itself wrote under its old names shows
+    # the new ones (the fridge app's name on the readings, notes and history it
+    # filled in, and the checklists' names in the history). What people
+    # typed, and the log of emails already sent, are left as they were.
+    (28, _rename_sql()),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]
@@ -628,7 +652,7 @@ def user_name(conn, user_id):
 def record_audit(conn, org_id, user_id, action, summary, industry_id=None, rule_key=None, before=None, after=None,
                  actor=None):
     """One row of the audit trail. `actor` names who made a change that no
-    person made (an app sending a report, such as "CyberLogix"); it is used
+    person made (an app sending a report, such as "Kryozyn"); it is used
     only when user_id is None."""
     name = user_name(conn, user_id) if user_id is not None else actor
     conn.execute(

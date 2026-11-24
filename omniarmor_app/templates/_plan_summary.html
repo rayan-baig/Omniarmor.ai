@@ -1,4 +1,4 @@
-{# The plans in short, for the landing page and the industry pages. The Kitchen Safety Bundle shows only where show_bundle is set: the pages of the industries CyberLogix fills in (connections.TEMPERATURE_CHECKS). Every price and number comes from plans.py through plan_facts(). The monthly/yearly toggle is two radio buttons and CSS (app.css), no script; it shows only when a plan can be paid yearly. #}
+{# The plans in short, for the landing page and the industry pages. The Kitchen Safety Bundle shows only where show_bundle is set: the pages of the industries Kryozyn fills in (connections.TEMPERATURE_CHECKS). Every price and number comes from plans.py through plan_facts(). The monthly/yearly toggle is two radio buttons and CSS (app.css), no script; it shows only when a plan can be paid yearly. #}
 {% set pf = plan_facts() %}
 {% set yr = pf.yearly %}
 <div class="billing" data-billing>
@@ -26,7 +26,7 @@
   {% if show_bundle %}
   <div data-plan="bundle">
     <p class="eyebrow">{{ pf.bundle.name }}</p>
-    <p>On CyberLogix's {{ pf.bundle.name }} ({{ pf.bundle.price }})? It includes <b>{{ pf.bundle.includes.name }}</b>, and {{ pf.plus.name }} costs only the difference, <span{% if yr.bundle_upgrade %} class="when-month"{% endif %}>{{ pf.bundle.upgrade_price }}</span>{% if yr.bundle_upgrade %}<span class="when-year">{{ pf.bundle.upgrade_yearly_price }}</span>{% endif %}.</p>
+    <p>On Kryozyn's {{ pf.bundle.name }} ({{ pf.bundle.price }})? It includes <b>{{ pf.bundle.includes.name }}</b>, and {{ pf.plus.name }} costs only the difference, <span{% if yr.bundle_upgrade %} class="when-month"{% endif %}>{{ pf.bundle.upgrade_price }}</span>{% if yr.bundle_upgrade %}<span class="when-year">{{ pf.bundle.upgrade_yearly_price }}</span>{% endif %}.</p>
   </div>
   {% endif %}
 </div>

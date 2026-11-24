@@ -8,7 +8,7 @@ no row per use to trace back to anyone.
 
 Only the operator sees the totals: the last 30 days are on the Settings page
 of the operator's account (auth.is_operator), and in /api/stats, which only
-answers MTRX Horizyn's console with STATS_KEY. Totals older than KEEP_DAYS
+answers the company's console with STATS_KEY. Totals older than KEEP_DAYS
 are deleted by the daily job.
 """
 

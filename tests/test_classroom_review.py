@@ -169,7 +169,7 @@ class TestTwoAudiences(AppTestCase):
     def test_the_bundle_only_where_it_fits(self):
         self.assertNotIn(plans.BUNDLE_NAME, words(self.client.get("/").data.decode()))
         self.assertNotIn(plans.BUNDLE_NAME, words(self.client.get("/for/salons-and-barbershops").data.decode()))
-        self.assertIn(plans.BUNDLE_NAME, words(self.client.get("/industries/restoarmor").data.decode()))
+        self.assertIn(plans.BUNDLE_NAME, words(self.client.get("/industries/resto-aegizyn").data.decode()))
 
     def test_the_landing_page_has_fewer_prices(self):
         page = self.client.get("/").data.decode()
@@ -188,7 +188,7 @@ class TestIndustryLists(AppTestCase):
         self.assertEqual(names, [name for name, _, _ in trades.LEAD_TRADES])
         self.assertTrue(6 <= len(names) <= 8)
         for info in INDUSTRIES.values():
-            self.assertIn(f'href="/industries/{info["brand"].lower()}"', page)
+            self.assertIn(f'href="/industries/{info["slug"]}"', page)
         self.assertEqual(len(INDUSTRIES), 54)
         self.assertEqual(sum(len(rules) for rules in CATALOG.values()), 540)
 
@@ -269,7 +269,7 @@ class TestClassroomTrack(AppTestCase):
     def test_no_rule_quests_and_no_app_questions(self):
         self.assertFalse(self.t.rule_quests)
         self.assertFalse(any(self.t.has(w) for w in academy.INDUSTRY_WORLDS))
-        self.assertNotIn(4, self.t.topics)   # the app's own lights ("Which light should OmniArmor show?")
+        self.assertNotIn(4, self.t.topics)   # the app's own lights ("Which light should Aegizyn show?")
         self.assertNotIn(5, self.t.topics)   # the app's reminders
         self.assertNotIn(1, self.t.topics)   # "your family's company"
         for n in self.t.topics:
@@ -346,8 +346,8 @@ class TestMenuLabels(SchoolCase):
         page = self.client.get("/app/academy/classes").data.decode()
         top = page[page.index('<nav class="nav"'):page.index("</nav>")]
         self.assertIn(SCHOOL_NAME, top)
-        self.assertNotIn("SchoolSafetyArmor", top)
-        self.assertNotIn("RestoArmor", top)
+        self.assertNotIn("School Safety Aegizyn", top)
+        self.assertNotIn("Resto Aegizyn", top)
         # The school checklist comes with Whole school: until then, no Checklist tab and no first
         # steps for it (the cafeteria check was one).
         self.assertEqual(self.tab_labels(page), ["Home", "Reminders", "History", "Settings"])

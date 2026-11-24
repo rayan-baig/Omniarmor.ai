@@ -1,11 +1,11 @@
-# Pilot on OmniArmor
+# Pilot on Aegizyn
 
 Pilot is the MTRX Horizyn AI assistant. It runs on **the person's own AI key**, from their browser:
-OmniArmor never sees the key or the conversation, has no Pilot address on its server, and pays
-nothing for the AI. The shared core (**Pilot core 1.4.3**, since OmniArmor 1.22.0; 1.4.2 since 1.20.0, 1.4.1 since 1.18.0, 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
+Aegizyn never sees the key or the conversation, has no Pilot address on its server, and pays
+nothing for the AI. The shared core (**Pilot core 1.4.3**, since Aegizyn 1.22.0; 1.4.2 since 1.20.0, 1.4.1 since 1.18.0, 1.4.0 since 1.17.0) is the same in every MTRX Horizyn app and is
 described in full in the MTRX Horizyn site's `docs/PILOT.md`: the robot and the window, keys and
 providers, what is sent and to whom, confirm cards and plans, voice, memory, the moving robot, and the
-security rules. This page covers only what is OmniArmor's own.
+security rules. This page covers only what is Aegizyn's own.
 
 ## Who gets Pilot, and where
 
@@ -38,8 +38,8 @@ forgets the last person's chat and any key kept for that tab only.
 | `static/pilot/` | the core 1.4.0, copied unchanged from the MTRX Horizyn site: 13 files, the two robot pictures, the robot's three layers (`pilot-rest-body/head/eyes.webp`) and the `poses/` folder |
 | `templates/_pilot.html` | the one script tag (included by `base.html`, left out by `error.html`), with the server's facts |
 | `pilot.py` | the provider hosts for the security policy, the page lists, the facts on the tag, and the pose pictures (`POSES`, `poses()`) |
-| `static/pilot-omniarmor.js` | the config: OmniArmor's own welcome for each audience (`tagline`, `welcomePills`, and since 1.17.0 the answers and links that need no AI key, `answerMore`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
-| `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and OmniArmor's tools, loaded on first open |
+| `static/pilot-omniarmor.js` | the config: Aegizyn's own welcome for each audience (`tagline`, `welcomePills`, and since 1.17.0 the answers and links that need no AI key, `answerMore`), screens, suggestions, the AI key and 18+ note, `hideKeySections`, `kidView()`, `avoid`, `yieldTo`, `keepInViewport` and `gutter` |
+| `static/pilot-omniarmor-pack.js` | the knowledge pack, the "why it's better" list and Aegizyn's tools, loaded on first open |
 
 The tag carries: who is there (`visitor`, `business` or `teacher`), whether it's the demo or a
 read-only workspace, an opaque account mark (a keyed hash), the workspace's checklists (ids and
@@ -50,7 +50,7 @@ moving robot's files (`data-motion`, `data-actor`, `data-actor-css`, `data-rest-
 pose is added by putting its picture there). Never a
 person's name, an email, a business record or a student. The pack never types a price.
 
-## The robot on OmniArmor
+## The robot on Aegizyn
 
 The core robot is smaller on phones (56 px), and once the page is idle it comes to life: it
 breathes and blinks, and now and then waves, does a small trick or strolls near its corner and back.
@@ -58,10 +58,10 @@ It keeps still while its window is open, and under `prefers-reduced-motion` the 
 even fetched (`pilot.js` checks before loading `pilot-motion.js` and `pilot-actor.js`). Like Pilot
 itself, it is never on a page a student uses.
 
-Since core 1.1.1 (OmniArmor 1.12.0) the robot keeps off the page's own words and buttons wherever the
+Since core 1.1.1 (Aegizyn 1.12.0) the robot keeps off the page's own words and buttons wherever the
 page is scrolled to, and off a box being typed in. While the page scrolls it only checks its own spot
 (and tucks away there if words are under it); once scrolling stops it may move to a free corner. With no
-free corner it tucks away until tapped. Since core 1.2.0 (OmniArmor 1.14.0, `keepInViewport: true`) tucked
+free corner it tucks away until tapped. Since core 1.2.0 (Aegizyn 1.14.0, `keepInViewport: true`) tucked
 away means shrunk into its corner (to 0.42 of its size on a phone, 0.5 on a computer), fully on the
 screen, never hanging off the edge. On the first page of a visit it shows whole for 4 seconds, so people
 notice it, then steps aside as usual.
@@ -83,7 +83,7 @@ Armo lives in the bottom-left corner and the robot in the bottom-right on a wide
   `.wrap` does, so that is the column. (1.13.0 had `gutter: false`, when the robot never tucked on a phone.)
   1.16.0: on a signed-in page (a tab bar) it is `false` again, because the robot has its own reserved
   corner above the tab bar there (app.css), so the column keeps its own even room.
-- No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs (Armo's bubble is a helper's, and is
+- No `modals`: Aegizyn has no pop-ups that aren't marked as dialogs (Armo's bubble is a helper's, and is
   in `yieldTo`), and the core already steps back for any page-covering layer.
 
 **One helper, one corner on a phone** (1.13.0, `app.css` only; the core is unchanged). At 720 px or
@@ -116,22 +116,22 @@ empty right end of the tab bar, 8 px from the edges, exactly where the core chec
 (The tab bar is always there, so it isn't in `avoid`: the core would count every bottom corner as taken
 and send the robot to the top.) The window opens beside the robot, above the tab bar.
 
-**OmniArmor's own welcome** (1.14.0, core 1.2.0's `tagline` and `welcomePills`; the owner approved
+**Aegizyn's own welcome** (1.14.0, core 1.2.0's `tagline` and `welcomePills`; the owner approved
 app-specific pills on websites). The config picks it from who is there (`data-who` on Pilot's tag):
 
 | Who | Tagline | Pills |
 |---|---|---|
 | A business | Your checklist helper | What's due or overdue?, Explain this check, Summarise my report, What does this colour mean?, Add my AI key |
 | A teacher | Your classroom helper | Add students, How do join codes work?, Plan a week of lessons, Print certificates, Add my AI key |
-| A visitor on `/classrooms` or the teacher guide | Your OmniArmor helper (1.15.0) | Is it safe for students?, How does the free trial work?, Plan a week of lessons, Explain this page, Add my AI key |
-| Any other visitor | Your OmniArmor helper (1.15.0) | What does OmniArmor do?, Which checklist fits me?, See the prices (1.17.0), Explain this page, Add my AI key |
+| A visitor on `/classrooms` or the teacher guide | Your Aegizyn helper (1.15.0) | Is it safe for students?, How does the free trial work?, Plan a week of lessons, Explain this page, Add my AI key |
+| Any other visitor | Your Aegizyn helper (1.15.0) | What does Aegizyn do?, Which checklist fits me?, See the prices (1.17.0), Explain this page, Add my AI key |
 
 Print certificates has the paper icon (`copy`), not a chart (1.15.0). Core 1.3.0: the "Add my AI key"
 pill is the welcome's one ask for a key (no key card beside it), the key settings say "AI key", and the
 welcome's note is one line, `keyNoteShort` "AI keys are for grown-ups (18+)." (the full `keyNote` stays
 beside the key settings and in help).
 
-**Core 1.4.1** (OmniArmor 1.18.0, MTRX Horizyn f221ffc, the thirteen files byte for byte): the welcome's pills
+**Core 1.4.1** (Aegizyn 1.18.0, MTRX Horizyn f221ffc, the thirteen files byte for byte): the welcome's pills
 come back as a compact row under an answer of the app's own; long answers open at their start; an app's own answer
 is never sent to the AI provider (a stand-in keeps the turns); on a phone the robot fades out (`.pilot-away`) rather
 than cover a link, a button, a bar that stays put or something in `avoid`, and keeps one bottom corner while the
@@ -139,13 +139,13 @@ page is scrolled. Pilot's tag also gives the robot's pictures at the sizes they 
 `data-rest-body-set`, `data-rest-head-set`, `data-rest-eyes-set`; `pilot-robot-112/168/176.webp`,
 `pilot-rest-*-112/168.webp`), so it is crisp on phones.
 
-**Core 1.4.2** (OmniArmor 1.20.0, MTRX Horizyn a1c9253, the thirteen files byte for byte, no new pictures). A corner
+**Core 1.4.2** (Aegizyn 1.20.0, MTRX Horizyn a1c9253, the thirteen files byte for byte, no new pictures). A corner
 raised above the tab bar is measured where it is, so signed-in pages drop 1.19.0's `hideWhenCrowded: false` and use
 the core's "hide rather than cover" everywhere; `app.css`'s computer rule moves the tucked robot up or down by
 `var(--pilot-keep-dy)` (the core's own room), not `var(--pilot-keep-d)`, so it is drawn just above the tab bar,
 where it is measured. Hidden with the page still, the core's **handle** (a 44 px slice of the robot at the screen's
 edge, only where it covers no link, button, box, bar or anything in `avoid`) opens Pilot; it is on (no `handle`
-setting). The suggestion after the page's own is `screenChip: {label: "Explain this page", answer}`: OmniArmor's
+setting). The suggestion after the page's own is `screenChip: {label: "Explain this page", answer}`: Aegizyn's
 built-in look at the page (its headings, what it is for, its counts), with or without a key, instead of the core's
 "Summarise this", which needs the AI. **Typed questions with no key**: each pill and suggestion that answers with
 no AI has `match` words (`MATCH` in `pilot-omniarmor.js`), so "What needs attention?", "What does red mean?",
@@ -153,8 +153,8 @@ no AI has `match` words (`MATCH` in `pilot-omniarmor.js`), so "What needs attent
 "Here's what I can tell you without an AI key:", nothing sent; anything else waits for a key as before. With no
 key, a suggestion that asks what a pill asks stayed out even once a chat had started (until 1.22.0, below).
 
-**Core 1.4.3** (OmniArmor 1.22.0, MTRX Horizyn ea7498b, the thirteen files byte for byte, no new pictures). With
-no key, a typed question none of OmniArmor's answers fits stays in the chat (the core's `noKeyReply`, in its own
+**Core 1.4.3** (Aegizyn 1.22.0, MTRX Horizyn ea7498b, the thirteen files byte for byte, no new pictures). With
+no key, a typed question none of Aegizyn's answers fits stays in the chat (the core's `noKeyReply`, in its own
 words: "I need an AI key to answer that one. Here's what I can help with right now:"), with this page's
 suggestions and the welcome's pills that answer with no key, then "Add my AI key", and the words waiting in the
 box. Typing a button's own words always gets its answer. A pill and a suggestion that ask one thing in their own
@@ -175,8 +175,8 @@ says so). "Is my data safe?" starts "No, we don't sell your data." and says wher
 Security page's facts on the script tag (`offsite_backup`, `backup_keep`; `invite_days` for the teammate answer).
 On a computer the page's column keeps the robot's corner free (`app.css`), so it shows whole instead of tucking.
 
-**OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
-and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
+**Aegizyn's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
+and `app.css` (".pilot-root.omni-pilot") gives the window Aegizyn's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of
 its own. The core's files are unchanged.
 
@@ -202,7 +202,7 @@ and the facts on the tag, or a `link`.
 | What does this colour mean? | the four statuses, with this page's totals, and a link to Help |
 | How do join codes work? | how a student joins (the join page, once, the code's days), the class's student count and missing codes (counts only, never a name), and a link to that class's join codes (or to each class's) |
 | Print certificates | a link: the class's certificates on a class page or with one class, else the classes page |
-| What does OmniArmor do? / See the prices | an answer from the plans' facts, with links to the demo and the industries / a link to the prices on the Help page |
+| What does Aegizyn do? / See the prices | an answer from the plans' facts, with links to the demo and the industries / a link to the prices on the Help page |
 | Is it safe for students? / How does the free trial work? | answers from the site's own facts, with links to the privacy page and the classroom prices |
 
 **1.19.0: one helper, and the due list everywhere.** On a tablet or a computer (721 px and wider) a page with
@@ -231,16 +231,16 @@ Classroom or Whole school, lesson length, Is anything saved in the demo). An ans
 marked `data-pilot-private` and never lists a student: the class page is counted (`data-total`,
 `data-codes-missing`), never its table. Under an answer, "Want more? Add your AI key to ask anything."
 (`answerMore`) offers the key until one is added. Once a chat has started, the suggestions end with "Explain this
-page" (core 1.4.2's `screenChip`, OmniArmor's own answer), never the core's "Summarise this", which used the AI.
+page" (core 1.4.2's `screenChip`, Aegizyn's own answer), never the core's "Summarise this", which used the AI.
 
 "Add my AI key" opens key settings. The taglines fit on one line at
 320 px. A pill pressed before there is a key stays waiting in the box and is sent once a key is saved (the
 core). The picture and video key sections are hidden (`hideKeySections`): Pilot here has no use for them.
 
-The chat window shows OmniArmor's own suggestions for the page under the pills, leaving out any that
+The chat window shows Aegizyn's own suggestions for the page under the pills, leaving out any that
 asks what a pill already asks (so nothing shows twice), and all of them first once a chat has started
 ("Add students", "How do join codes work?", "What's overdue?" and the page's own). It keeps the 18+ note
-above the message box, so a phone's keyboard never hides it. OmniArmor's note says in one sentence what
+above the message box, so a phone's keyboard never hides it. Aegizyn's note says in one sentence what
 an AI key is and where a grown-up gets one.
 
 The page keeps its last lines clear with the core's gutter: on a signed-in page the body keeps room
@@ -259,7 +259,7 @@ moving robot's files and pictures come from this site, it moves with the Web Ani
 
 ## The tools
 
-They work through OmniArmor's own pages and forms, in the browser, with the person's own session
+They work through Aegizyn's own pages and forms, in the browser, with the person's own session
 and the form token the page carries. A read opens the same pages the person could open; a change
 posts the same form they would press, after they press **Allow** on a card that names the exact check.
 
@@ -288,7 +288,7 @@ robot fetched late and never under reduce motion, keeping clear of Armo, the sec
 no model names, the privacy page) also runs the Node tests: `node --test tests/js/pilot.test.js`
 (the core's own tests, with the moving robot, where it may sit and core 1.2.0's welcome, keepInViewport and
 pop-ups) and `node --test tests/js/omniarmor-pilot.test.js` (the pack, confirm first, the forbidden actions,
-the bulk-answer rule, first names only, OmniArmor's own welcome for each audience, and 1.17.0's answers
+the bulk-answer rule, first names only, Aegizyn's own welcome for each audience, and 1.17.0's answers
 with no key, on small pages built in the test). `tests/test_core140.py` checks the core's version (1.4.3), the
 tag's facts and that a student's pages still have no Pilot; `tests/test_round11_fixes.py` checks the 1.4.3 config.
 `tests/test_pilot_welcome.py` checks the stylesheet's keepInViewport rules and the phone rules of 1.13.0.

@@ -738,7 +738,7 @@ def apply_change(conn, org, user_id, industry_id, rule_key, action, form, commit
     With commit=False the change is left uncommitted, for apply_bulk.
 
     A connected app (connections.py) makes its changes through here too, as
-    a person would, with user_id None, `actor` naming the app ("CyberLogix")
+    a person would, with user_id None, `actor` naming the app ("Kryozyn")
     for the record, and `summary` as the audit trail's line for the change."""
     rule = find_rule(industry_id, rule_key)
     if rule is None:

@@ -35,7 +35,7 @@ def words(page):
 
 class TestOneCountingRule(AppTestCase):
     """The reviewer's Sams Taqueria: two food batches (one 9 days old, one due in 4 days) and two coolers (one at
-    44°F, one at 38°F) on RestoArmor's 10 checks. Home said 10 checks, the summary 12, and Home's "Coming due"
+    44°F, one at 38°F) on Resto Aegizyn's 10 checks. Home said 10 checks, the summary 12, and Home's "Coming due"
     left out the batch due in 4 days."""
 
     def setUp(self):
@@ -71,9 +71,9 @@ class TestOneCountingRule(AppTestCase):
     def test_a_batch_due_soon_is_coming_due_on_home_too(self):
         page = self.client.get("/app").data.decode()
         block = words(page[page.index('id="coming-due"'):page.index("Your industries")])
-        self.assertIn("Ready-to-eat food 7-day limit · Chicken tinga · RestoArmor Due in 4 days", block)
+        self.assertIn("Ready-to-eat food 7-day limit · Chicken tinga · Resto Aegizyn Due in 4 days", block)
         summary = words(self.client.get("/app/report/summary").data.decode())
-        self.assertIn("Ready-to-eat food 7-day limit · Chicken tinga · RestoArmor Due in 4 days", summary)
+        self.assertIn("Ready-to-eat food 7-day limit · Chicken tinga · Resto Aegizyn Due in 4 days", summary)
 
     def test_adding_a_batch_says_its_own_reminder_not_the_worst_one_s(self):
         from omniarmor_app.tracking import org_today
@@ -159,7 +159,7 @@ class TestHistoryInLocalTime(AppTestCase):
         self.assertTrue(csv[1].startswith("2026-11-20T10:07:31-06:00,"), csv[1])
         self.assertEqual(views._short_moment("2026-11-20T16:07:31+00:00"), "20 Nov 16:07")
         summary = self.client.get("/app/report/summary").data.decode()
-        self.assertRegex(words(summary), r"Made by OmniArmor on \d{4}-\d\d-\d\d \d\d:\d\d C[SD]T")
+        self.assertRegex(words(summary), r"Made by Aegizyn on \d{4}-\d\d-\d\d \d\d:\d\d C[SD]T")
 
 
 # --- 5. A family's ranks, and the certificates in order ---------------------------------------------------------

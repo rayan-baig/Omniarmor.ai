@@ -1,7 +1,7 @@
-"""1.20.0: Pilot core 1.4.2 on OmniArmor.
+"""1.20.0: Pilot core 1.4.2 on Aegizyn.
 
 The thirteen core files are MTRX Horizyn's core 1.4.2 (a1c9253), unchanged
-(tests/test_core140.py checks every header). OmniArmor's own config uses what
+(tests/test_core140.py checks every header). Aegizyn's own config uses what
 1.4.2 adds: `match` words so a typed question with no key finds the app's own
 answer, its own "Explain this page" in place of the AI-only "Summarise this"
 (screenChip), and the core's handle; it drops the 1.4.1 workaround

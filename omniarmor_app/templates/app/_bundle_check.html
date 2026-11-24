@@ -1,14 +1,14 @@
-{# The Kitchen Safety Bundle on a temperature check: CyberLogix's status, and its notes for a person to review.
-   Before a connection there is nothing here (1.16.0): the offer to connect CyberLogix lives in Settings,
+{# The Kitchen Safety Bundle on a temperature check: Kryozyn's status, and its notes for a person to review.
+   Before a connection there is nothing here (1.16.0): the offer to connect Kryozyn lives in Settings,
    Connections, not on a new user's first checklist. #}
 {% set latest = bundle.latest[r.key] %}
 {% if bundle.connected or bundle.notes[r.key] %}
 <div class="bundle" data-bundle>
   {% if bundle.connected and bundle.last_report %}
-    <p class="bundle-status"><span class="bundle-dot on"></span>Connected to CyberLogix · last report <span class="nowrap">{{ bundle.last_report }}</span>{% if latest and latest.log_url %} · <a href="{{ latest.log_url }}" rel="noopener noreferrer nofollow" target="_blank">CyberLogix log</a>{% endif %}</p>
+    <p class="bundle-status"><span class="bundle-dot on"></span>Connected to Kryozyn · last report <span class="nowrap">{{ bundle.last_report }}</span>{% if latest and latest.log_url %} · <a href="{{ latest.log_url }}" rel="noopener noreferrer nofollow" target="_blank">Kryozyn log</a>{% endif %}</p>
     {% if latest and latest.outcome in ('ticked', 'confirmed') %}<p class="bundle-line">{{ latest.summary }}.</p>{% endif %}
   {% elif bundle.connected %}
-    <p class="bundle-status"><span class="bundle-dot"></span>Connected to CyberLogix · waiting for the first report</p>
+    <p class="bundle-status"><span class="bundle-dot"></span>Connected to Kryozyn · waiting for the first report</p>
   {% endif %}
   {% for n in bundle.notes[r.key] %}
     <div class="bundle-note" data-bundle-note>
@@ -19,7 +19,7 @@
         <input type="hidden" name="industry_id" value="{{ info.id }}">
         <input type="hidden" name="rule_key" value="{{ r.key }}">
         <input type="hidden" name="date" value="{{ n.report_date }}">
-        <button class="linkbtn" type="submit">Mark reviewed</button>{% if n.log_url %} <a href="{{ n.log_url }}" rel="noopener noreferrer nofollow" target="_blank">Open the CyberLogix log</a>{% endif %}
+        <button class="linkbtn" type="submit">Mark reviewed</button>{% if n.log_url %} <a href="{{ n.log_url }}" rel="noopener noreferrer nofollow" target="_blank">Open the Kryozyn log</a>{% endif %}
       </form>
     </div>
   {% endfor %}

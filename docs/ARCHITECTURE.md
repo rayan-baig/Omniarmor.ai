@@ -1,4 +1,4 @@
-# How OmniArmor fits together
+# How Aegizyn fits together
 
 ```
 Browser (HTML forms, no JavaScript needed)
@@ -16,7 +16,7 @@ omniarmor_app (Flask)
    ├── reminders.py  daily digests per company
    ├── jobs.py       the timer: alerts each minute; reminders, cleanup, backup daily
    ├── notify.py     email, or the saved log when email isn't set up
-   ├── connections.py CyberLogix's daily report fills in the temperature checks
+   ├── connections.py Kryozyn's daily report fills in the temperature checks
    └── db.py         SQLite, schema migrations, audit writes
    ▼
 SQLite database (one file on a persistent disk) + daily backups
@@ -39,13 +39,13 @@ SQLite database (one file on a persistent disk) + daily backups
    finds deadlines at 30/7/1/0 days or overdue, records each one in
    `reminder_marks` so it's sent once, and emails each team member a digest.
 
-A reading can also come from CyberLogix, MTRX Horizyn's fridge and freezer
+A reading can also come from Kryozyn, MTRX Horizyn's fridge and freezer
 alarm app (the Kitchen Safety Bundle). Its daily report to
-`/api/connect/cyberlogix/daily` is signed in by the workspace's connection
+`/api/connect/kryozyn/daily` is signed in by the workspace's connection
 key instead of a cookie and form token; `connections.py` checks it, and a
 clean day goes through the same `tracking.apply_change` as step 3, with
-CyberLogix as who made the change. The contract is
-[CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md).
+Kryozyn as who made the change. The contract is
+[KRYOZYN-CONNECTION.md](KRYOZYN-CONNECTION.md).
 
 ## Data model
 
@@ -71,7 +71,7 @@ CyberLogix as who made the change. The contract is
 
 ## The demos
 
-`demo_mode.py` lets a visitor try OmniArmor without an account: `/demo/business`
+`demo_mode.py` lets a visitor try Aegizyn without an account: `/demo/business`
 (a pretend restaurant) and `/demo/classroom` (a teacher's class). Opening one
 puts a demo pass in the session (rate limited per address, 30 minutes). On the
 app's own pages, `security.load_user` then signs the visitor in as the demo's
@@ -131,7 +131,7 @@ Plans (`plans.py`, where the prices live): a free trial from sign-up, then
 Pro (the compliance tracker) or Plus (Pro and the whole Academy), per
 location a month; a location is a workspace. `plans.access()` says what a
 workspace can use: without a plan the tracker is read-only and reminders
-pause; a validly signed CyberLogix report in the last 3 days gives the
+pause; a validly signed Kryozyn report in the last 3 days gives the
 Kitchen Safety Bundle's Pro, then a 7-day grace period. Stripe Checkout
 handles payment (`academy_plan.py`, `plan_views.py`) and a signed webhook
 (`/billing/stripe/webhook`) keeps `orgs.plan` and `orgs.academy_status`

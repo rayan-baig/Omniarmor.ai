@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 7: PrivacyArmor, PayArmor, CryptoArmor, MortgageArmor and
-CollectArmor. Ten rules per industry, costliest first.
+Rule catalog, group 7: Privacy Aegizyn, Pay Aegizyn, Crypto Aegizyn, Mortgage Aegizyn and
+Collect Aegizyn. Ten rules per industry, costliest first.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 31. PRIVACYARMOR (software/SaaS and data-driven companies) ---
+    # --- 31. PRIVACY AEGIZYN (software/SaaS and data-driven companies) ---
     31: [
         Rule(key="gdpr_breach_72h", title="Breach notice to authority in 72 hours",
              cost="Late breach notice draws GDPR fines from supervisory authorities on top of the breach costs and follow-on claims.",
@@ -71,7 +71,7 @@ RULES = {
              action="Complete the DPIA before continuing; consult the supervisory authority if high risk remains after mitigation."),
     ],
 
-    # --- 32. PAYARMOR (merchants and payment processors) ---
+    # --- 32. PAY AEGIZYN (merchants and payment processors) ---
     32: [
         Rule(key="no_sad_storage", title="No CVV or track data after auth",
              cost="Storing sensitive authentication data turns a breach into card-brand assessments, forensic costs, higher fees and possible loss of card acceptance.",
@@ -135,7 +135,7 @@ RULES = {
              action="Lower the surcharge to the cap, confirm your state allows it, disclose it and stop surcharging debit cards."),
     ],
 
-    # --- 33. CRYPTOARMOR (crypto exchanges and money services businesses) ---
+    # --- 33. CRYPTO AEGIZYN (crypto exchanges and money services businesses) ---
     33: [
         Rule(key="aml_program", title="Effective AML program",
              cost="AML program failures are the basis of the largest FinCEN and DOJ crypto settlements, with monitorships and forced exits from the U.S. market.",
@@ -199,7 +199,7 @@ RULES = {
              action="Stop any deletion of BSA records and set retention to at least five years."),
     ],
 
-    # --- 34. MORTGAGEARMOR (mortgage lenders and servicers) ---
+    # --- 34. MORTGAGE AEGIZYN (mortgage lenders and servicers) ---
     34: [
         Rule(key="fair_lending", title="No unexplained lending disparities",
              cost="Pricing, underwriting or redlining disparities by race or other protected traits lead to DOJ and CFPB settlements with penalties and loan subsidy funds.",
@@ -263,7 +263,7 @@ RULES = {
              action="Do not close until flood insurance is in place; send the borrower notice and force-place coverage if it lapses."),
     ],
 
-    # --- 35. COLLECTARMOR (debt collectors and collection agencies) ---
+    # --- 35. COLLECT AEGIZYN (debt collectors and collection agencies) ---
     35: [
         Rule(key="tcpa_consent", title="Consent for autodialed cell calls",
              cost="TCPA class actions carry statutory damages per call with no cap, so calls to cell phones without consent can bring very large judgments.",

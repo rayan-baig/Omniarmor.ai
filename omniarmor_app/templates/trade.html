@@ -49,13 +49,13 @@
 
 <h2 id="checklists">The checklists that fit {{ trade.one }}</h2>
 {% if trade.own %}
-<p class="muted" data-trade-own>OmniArmor has checklists made for {{ trade.name|lower }}: {% for ind in facts.own %}<a href="{{ url_for('public.industry_page', slug=ind.brand|lower) }}">{{ ind.brand }}</a> ({{ ind.sector|lower }}){{ ' and ' if not loop.last }}{% endfor %}. Each check is a reminder to do something and write it down, so the record is there when someone asks. Sign up from this page and they're picked for you.</p>
+<p class="muted" data-trade-own>Aegizyn has checklists made for {{ trade.name|lower }}: {% for ind in facts.own %}<a href="{{ url_for('public.industry_page', slug=ind.slug) }}">{{ ind.brand }}</a> ({{ ind.sector|lower }}){{ ' and ' if not loop.last }}{% endfor %}. Each check is a reminder to do something and write it down, so the record is there when someone asks. Sign up from this page and they're picked for you.</p>
 {% else %}
-<p class="muted">OmniArmor doesn't have a checklist made only for {{ trade.name|lower }}. These are the ones in OmniArmor that fit, and the checks in them that matter most to {{ trade.one }}. Sign up from this page and they're picked for you.</p>
+<p class="muted">Aegizyn doesn't have a checklist made only for {{ trade.name|lower }}. These are the ones in Aegizyn that fit, and the checks in them that matter most to {{ trade.one }}. Sign up from this page and they're picked for you.</p>
 {% endif %}
 {% for grp in groups %}
   <section class="trade-group" data-trade-industry="{{ grp.industry.id }}">
-    <h3><a href="{{ url_for('public.industry_page', slug=grp.industry.brand|lower) }}">{{ grp.industry.brand }}</a> · {{ grp.industry.sector }}</h3>
+    <h3><a href="{{ url_for('public.industry_page', slug=grp.industry.slug) }}">{{ grp.industry.brand }}</a> · {{ grp.industry.sector }}</h3>
     {% if grp.note %}<p class="hint">{{ grp.note }}</p>{% endif %}
     <ul class="trade-list">
       {% for c in grp.checks %}
@@ -70,7 +70,7 @@
 {% endfor %}
 
 <h2>Reminders</h2>
-<p class="muted" data-trade-reminders>{{ facts.dated }} of these checks are counted from a date. Enter the date once and OmniArmor counts for you: your team gets an email {{ days[:-1]|join(', ') }} and {{ days[-1] }} day{{ 's' if days[-1] != 1 }} before each one is due, on the day, and each week it stays overdue. Everyone picks which emails they get.</p>
+<p class="muted" data-trade-reminders>{{ facts.dated }} of these checks are counted from a date. Enter the date once and Aegizyn counts for you: your team gets an email {{ days[:-1]|join(', ') }} and {{ days[-1] }} day{{ 's' if days[-1] != 1 }} before each one is due, on the day, and each week it stays overdue. Everyone picks which emails they get.</p>
 
 {% if trade.sister %}
 <div class="trade-note" data-trade-sister>
@@ -87,11 +87,11 @@
 {% endif %}
 
 <div class="trade-note" data-trade-outside>
-  <p><strong>What OmniArmor doesn't cover for {{ trade.name|lower }}</strong></p>
+  <p><strong>What Aegizyn doesn't cover for {{ trade.name|lower }}</strong></p>
   <p>{{ trade.outside }}</p>
 </div>
 
-<p class="hint mt" data-trade-honest>OmniArmor helps you stay on top of your checklists. It doesn't guarantee compliance and it isn't legal advice: rules change and differ from place to place, so check yours with an expert. Each check names the rule it comes from.</p>
+<p class="hint mt" data-trade-honest>Aegizyn helps you stay on top of your checklists. It doesn't guarantee compliance and it isn't legal advice: rules change and differ from place to place, so check yours with an expert. Each check names the rule it comes from.</p>
 {% if trade.academy %}
 <p class="cta mt"><a class="btn" href="{{ url_for('auth.signup', then='classes') }}">Start a free trial</a> <a class="btn ghost" href="{{ url_for('demo.start', kind='classroom') }}" rel="nofollow">See the classroom demo</a></p>
 {% else %}

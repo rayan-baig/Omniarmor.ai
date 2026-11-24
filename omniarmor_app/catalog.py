@@ -8,9 +8,26 @@ from omni_armor_platform import MoonstoneThemeColors
 from omni_armor_rules import CATALOG, get_rule
 
 INDUSTRIES = {}
+# 1.24.0: each industry's page address (/industries/<slug>) is its name in
+# lower case with hyphens ("Resto Aegizyn": resto-aegizyn). OLD_SLUGS holds
+# the addresses they had before the rename ("restoarmor"), which redirect.
+OLD_SLUGS = {}
 for _id, _info in sorted(MoonstoneThemeColors.INDUSTRIES.items()):
     _brand, _, _sector = _info["name"].partition(" (")
-    INDUSTRIES[_id] = {"id": _id, "brand": _brand, "sector": _sector.rstrip(")")}
+    _slug = re.sub(r"[^a-z0-9]+", "-", _brand.lower()).strip("-")
+    INDUSTRIES[_id] = {"id": _id, "brand": _brand, "sector": _sector.rstrip(")"), "slug": _slug}
+    OLD_SLUGS[_brand.replace(" Aegizyn", "Armor").replace(" ", "").lower()] = _slug
+
+
+def industry_by_slug(slug):
+    """(industry, is_old_address) for /industries/<slug>, or (None, False)."""
+    slug = (slug or "").lower()
+    match = next((i for i in INDUSTRIES.values() if i["slug"] == slug), None)
+    if match is not None:
+        return match, False
+    if slug in OLD_SLUGS:
+        return next(i for i in INDUSTRIES.values() if i["slug"] == OLD_SLUGS[slug]), True
+    return None, False
 
 _SINCE = re.compile(r"\bdays? since\b", re.I)
 _UNTIL = re.compile(r"\bdays? until\b", re.I)

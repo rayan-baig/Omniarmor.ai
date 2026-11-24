@@ -114,7 +114,7 @@ BOX = {"date (since)": "date", "date (until)": "date", "business days": "date", 
 
 class TestEveryIndustryEndToEnd(AppTestCase):
     def sign_up_from_the_brand_page(self, info):
-        page = self.client.get(f"/industries/{info['brand'].lower()}")
+        page = self.client.get(f"/industries/{info['slug']}")
         self.assertEqual(page.status_code, 200)
         text = page.data.decode()
         for rule in rules_for(info["id"]):
@@ -250,7 +250,7 @@ def _make(industry_id):
 
 
 for _id, _info in INDUSTRIES.items():
-    setattr(TestEveryIndustryEndToEnd, f"test_{_id:02d}_{_info['brand'].lower()}", _make(_id))
+    setattr(TestEveryIndustryEndToEnd, f"test_{_id:02d}_{_info['slug'].replace('-', '_')}", _make(_id))
 
 
 class TestTheCasesCoverEveryKind(AppTestCase):

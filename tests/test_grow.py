@@ -675,7 +675,7 @@ class TestTradePages(AppTestCase):
             self.assertEqual(response.status_code, 200, t.slug)
             page = response.get_data(as_text=True)
             text = words(page)
-            self.assertIn(f"<title>{html.escape(t.title, quote=True)} · OmniArmor.ai</title>", page)
+            self.assertIn(f"<title>{html.escape(t.title, quote=True)} · Aegizyn</title>", page)
             self.assertIn(f'<meta name="description" content="{html.escape(t.description, quote=True)}">', page)
             self.assertIn(f'<link rel="canonical" href="https://omniarmor.test/for/{t.slug}">', page)
             if t.academy:

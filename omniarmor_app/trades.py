@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """Pages for trades (/for/<slug>): salons and barbershops, tattoo and piercing
 studios, and gyms and fitness studios, which have a starter list of their
-own (1.11.0: SalonArmor, InkArmor and GymArmor) beside the staff-pay and
+own (1.11.0: Salon Aegizyn, Ink Aegizyn and Gym Aegizyn) beside the staff-pay and
 card-payment checks they share with other shops; shops, which don't have an
-industry of their own; and schools, which have two (SchoolSafetyArmor for a
-school's safety routines and SchoolArmor for its legal duties): the page
+industry of their own; and schools, which have two (School Safety Aegizyn for a
+school's safety routines and School Aegizyn for its legal duties): the page
 brings them together, with the Academy for classrooms beside it.
 
-Each page is honest about what OmniArmor does for that trade today: which of
+Each page is honest about what Aegizyn does for that trade today: which of
 its industries' checklists fit, and which checks in them (named by their
 catalog keys, so the titles, rules and limits are the catalog's own and a
 test checks every key exists), which of those come with reminder emails, and
-what the trade also keeps track of that OmniArmor doesn't cover. Prices come
+what the trade also keeps track of that Aegizyn doesn't cover. Prices come
 from plans.py like every other page. No page promises compliance or gives
 legal advice, and none quotes statistics, testimonials or other companies.
 
@@ -31,17 +31,16 @@ class Trade:
     slug: str
     name: str                 # "Salons and barbershops"
     one: str                  # "a salon or barbershop"
-    title: str                # the page's <title>, before " · OmniArmor.ai"
+    title: str                # the page's <title>, before " · Aegizyn"
     description: str          # its meta description
     intro: str
     groups: tuple             # ((industry id, (rule keys...), note or ""), ...)
-    outside: str              # what OmniArmor doesn't cover for this trade
+    outside: str              # what Aegizyn doesn't cover for this trade
     own: tuple = ()           # the industries made for this trade, when there are some
-    sister: str = ""          # what CyberLogix, the sister app, can do for this trade
+    sister: str = ""          # what Kryozyn, the sister app, can do for this trade
     academy: bool = False     # links to the Academy for schools and teachers
 
 
-CYBERLOGIX_URL = "https://cyberlogix.mtrxhorizyn.com"
 SCHOOL_INDUSTRY = 51
 
 TRADES = (
@@ -55,13 +54,13 @@ TRADES = (
                      " payments."),
         intro=("Behind every chair there's a checklist: the shop and stylist licenses, tools disinfected between"
                " clients, fresh disinfectant every day, pedicure tubs cleaned and logged, and the safety sheets"
-               " for color and acrylics. OmniArmor keeps them in one place, one entry per jar or tub where it"
+               " for color and acrylics. Aegizyn keeps them in one place, one entry per jar or tub where it"
                " helps, and emails you before something is due."),
         groups=(
             (52, ("shop_license_renewal", "operator_licenses_current", "tool_disinfection", "disinfectant_changed",
                   "foot_spa_cleaning", "single_use_items", "safety_data_sheets", "nail_ventilation",
                   "blood_spill_kit", "fire_extinguisher_monthly"),
-             "SalonArmor, made for salons and barbershops. Your state board sets the details, and they differ"
+             "Salon Aegizyn, made for salons and barbershops. Your state board sets the details, and they differ"
              " from state to state: check your local rules and set each limit to match."),
             (30, ("i9_section_2", "overtime_pay", "minimum_wage", "hours_records"),
              "For a shop with employees. Some checks in this checklist are for bigger employers (health plans,"
@@ -82,13 +81,13 @@ TRADES = (
                      " offers and client records."),
         intro=("Clean needles and a working sterilizer are the job. So is the paperwork that proves it: the"
                " permit, each sterilizer's spore tests, sharps handled right, a yearly look at your plan for blood"
-               " exposure and the vaccine offer for new artists. OmniArmor counts the days for you, one entry per"
+               " exposure and the vaccine offer for new artists. Aegizyn counts the days for you, one entry per"
                " sterilizer, and emails before each one is due."),
         groups=(
             (53, ("studio_permit_renewal", "artist_registration", "spore_test", "single_use_needles",
                   "sharps_disposal", "exposure_control_plan", "hepb_vaccine_offer", "client_records",
                   "minors_rules", "surfaces_disinfected"),
-             "InkArmor, made for tattoo and piercing studios. Body art rules are set by your city, county or"
+             "Ink Aegizyn, made for tattoo and piercing studios. Body art rules are set by your city, county or"
              " state and differ a lot: check your local rules and set each limit to match. The OSHA checks are"
              " for studios with employees."),
             (30, ("i9_section_2", "overtime_pay", "hours_records"), "For a studio with employees."),
@@ -107,13 +106,13 @@ TRADES = (
                      " cleaning logs, pool chlorine, chemical safety, membership contracts, staff pay and card"
                      " payments."),
         intro=("Memberships renew every month, and so do the checks: the AED, the equipment, the cleaning log, the"
-               " pool, and contracts with the cancel rights your state requires. OmniArmor keeps those checklists"
+               " pool, and contracts with the cancel rights your state requires. Aegizyn keeps those checklists"
                " in one place, one entry per AED or pool, and reminds you before something is due."),
         groups=(
             (54, ("aed_check", "staff_cpr", "equipment_inspection", "cleaning_log", "pool_chlorine",
                   "safety_data_sheets", "membership_contracts", "fire_extinguisher_monthly", "first_aid_kit",
                   "member_agreements"),
-             "GymArmor, made for gyms and fitness studios. Health club, AED and pool rules differ from state to"
+             "Gym Aegizyn, made for gyms and fitness studios. Health club, AED and pool rules differ from state to"
              " state: check your local rules and set each limit to match. Leave the pool check blank if you have"
              " no pool."),
             (30, ("i9_section_2", "overtime_pay", "minimum_wage", "hours_records", "hospitalization_report_24h"),
@@ -135,7 +134,7 @@ TRADES = (
         description=("Checklists and reminders for shops and retail stores: staff pay and new-hire forms, card"
                      " payments and surcharges, and orders, reviews and emails if you also sell online."),
         intro=("A shop has a till, a team and, more and more, a website. Each comes with a checklist: paying"
-               " staff right, keeping card payments safe, and shipping online orders on time. OmniArmor keeps"
+               " staff right, keeping card payments safe, and shipping online orders on time. Aegizyn keeps"
                " them in one place and emails you before something is due."),
         groups=(
             (30, ("i9_section_2", "overtime_pay", "minimum_wage", "hours_records"),
@@ -145,7 +144,7 @@ TRADES = (
              "If you also sell online."),
         ),
         outside=("Business licenses, sales tax for your shop's own state, and rules for what you sell (alcohol,"
-                 " tobacco, food) are set where you are. OmniArmor has separate checklists for bars and liquor"
+                 " tobacco, food) are set where you are. Aegizyn has separate checklists for bars and liquor"
                  " and for firearms dealers; it doesn't cover the others yet."),
     ),
     Trade(
@@ -157,7 +156,7 @@ TRADES = (
                      " the school nurse, the cafeteria, buses, athletics, visitors, the science lab and staff"
                      " background checks."),
         intro=("A school runs on routines: drills, kit checks, the nurse's log, the cafeteria, the buses. Each one"
-               " is easy to miss in a busy week and hard to prove later. OmniArmor keeps them in one checklist,"
+               " is easy to miss in a busy week and hard to prove later. Aegizyn keeps them in one checklist,"
                " reminds the right person before each one is due, and keeps the record when someone asks."),
         groups=(
             (SCHOOL_INDUSTRY, ("drills_logged", "aed_first_aid_check", "play_equipment_check",
@@ -168,15 +167,15 @@ TRADES = (
              " your own state, district or insurer."),
             (8, ("staff_background_check", "ferpa_disclosure", "edtech_student_data", "ahera_reinspection",
                  "food_safety_inspections"),
-             "From SchoolArmor, a school's legal duties. Some, like FERPA and the school meal inspections, come"
+             "From School Aegizyn, a school's legal duties. Some, like FERPA and the school meal inspections, come"
              " with federal funding and may not apply to every private school: leave those blank if they don't."),
             (30, ("i9_section_2", "hours_records"),
              "For staff pay and new-hire forms. Leave blank the checks for bigger employers that don't apply to you."),
         ),
         outside=("Student records, special education paperwork, state testing and accreditation have rules of"
-                 " their own. OmniArmor doesn't have a checklist for those, so keep them on your own list."),
+                 " their own. Aegizyn doesn't have a checklist for those, so keep them on your own list."),
         own=(SCHOOL_INDUSTRY, 8),
-        sister=("The nurse's office and cafeteria fridges can be watched 24/7 by CyberLogix AI, OmniArmor's"
+        sister=("The nurse's office and cafeteria fridges can be watched 24/7 by Kryozyn, Aegizyn's"
                 " sister app. It sends an alert the moment a fridge gets too warm."),
         academy=True,
     ),
@@ -225,7 +224,7 @@ def lead_trades():
     out = []
     for name, kind, ref in LEAD_TRADES:
         if kind == "industry":
-            out.append((name, "public.industry_page", {"slug": INDUSTRIES[ref]["brand"].lower()},
+            out.append((name, "public.industry_page", {"slug": INDUSTRIES[ref]["slug"]},
                         INDUSTRIES[ref]["brand"]))
         else:
             out.append((name, "public.trade_page", {"slug": ref}, "Trade page"))
@@ -233,7 +232,7 @@ def lead_trades():
 
 
 def describe(rule):
-    """How OmniArmor keeps track of a check, in plain words."""
+    """How Aegizyn keeps track of a check, in plain words."""
     mode = date_mode(rule)
     if mode is not None:
         return "dated", "Dated · reminder emails"

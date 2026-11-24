@@ -51,7 +51,7 @@ class AutopilotTest(unittest.TestCase):
     def operator_mail(self, weekly=True):
         """What the operator was sent; weekly=False leaves out the Monday report."""
         return [s for s in self.sent if s[0] == "owner@omniarmor.test"
-                and (weekly or s[1] != "[OmniArmor] Weekly Autopilot report")]
+                and (weekly or s[1] != "[Aegizyn] Weekly Autopilot report")]
 
     def test_all_clear_sends_nothing(self):
         result = autopilot.run(self.cfg, force=True)
@@ -120,7 +120,7 @@ class AutopilotTest(unittest.TestCase):
         conn.commit()
         self.crash()
         autopilot.run(self.cfg, force=True)
-        self.assertTrue(self.operator_mail(weekly=False)[-1][1].startswith("[OmniArmor] Still open: Bug:"))
+        self.assertTrue(self.operator_mail(weekly=False)[-1][1].startswith("[Aegizyn] Still open: Bug:"))
         # It stops happening for a day: a "Fixed" email, then silence.
         conn.execute("UPDATE app_errors SET at = ?", (iso(utcnow() - timedelta(hours=25)),))
         conn.commit()
@@ -128,7 +128,7 @@ class AutopilotTest(unittest.TestCase):
         autopilot.run(self.cfg, force=True)
         mail = self.operator_mail(weekly=False)
         self.assertEqual(len(mail), 3)
-        self.assertTrue(mail[-1][1].startswith("[OmniArmor] Fixed: Bug:"))
+        self.assertTrue(mail[-1][1].startswith("[Aegizyn] Fixed: Bug:"))
         self.assertIn("hasn't happened for a day", mail[-1][2])
 
     def test_each_bug_gets_its_own_fingerprint(self):
@@ -239,7 +239,7 @@ class AutopilotTest(unittest.TestCase):
             autopilot.run(self.cfg, force=True)
             autopilot.run(self.cfg, force=True)
             autopilot.run(self.cfg)
-        reports = [m for m in self.operator_mail() if m[1] == "[OmniArmor] Weekly Autopilot report"]
+        reports = [m for m in self.operator_mail() if m[1] == "[Aegizyn] Weekly Autopilot report"]
         self.assertEqual(len(reports), 1)
 
     def test_a_daily_finding_is_not_called_fixed_by_the_next_quick_pass(self):
@@ -255,7 +255,7 @@ class AutopilotTest(unittest.TestCase):
             with mock.patch("omniarmor_app.autopilot.utcnow", return_value=base + timedelta(minutes=10)):
                 autopilot.run(self.cfg)
         subjects = [m[1] for m in self.operator_mail(weekly=False)]
-        self.assertEqual(subjects, ["[OmniArmor] 1 broken Academy quiz"])
+        self.assertEqual(subjects, ["[Aegizyn] 1 broken Academy quiz"])
 
     def test_cli(self):
         runner = self.app.test_cli_runner()

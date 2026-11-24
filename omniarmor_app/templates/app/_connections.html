@@ -1,27 +1,27 @@
-{# Settings, Connections: the Kitchen Safety Bundle's CyberLogix key. Everyone sees the status; only the owner changes the key. #}
+{# Settings, Connections: the Kitchen Safety Bundle's Kryozyn key. Everyone sees the status; only the owner changes the key. #}
 {% set c = connection %}
 <h2 id="connections">Connections</h2>
 <div class="bundle-card" data-connections>
-  <p class="bundle-card-title"><span class="bundle-tag">Kitchen Safety Bundle</span> CyberLogix</p>
+  <p class="bundle-card-title"><span class="bundle-tag">Kitchen Safety Bundle</span> Kryozyn</p>
   {% if c.connected and c.last_report %}
-    <p class="bundle-status"><span class="bundle-dot on"></span>Connected to CyberLogix · last report <span class="nowrap">{{ c.last_report }}</span></p>
+    <p class="bundle-status"><span class="bundle-dot on"></span>Connected to Kryozyn · last report <span class="nowrap">{{ c.last_report }}</span></p>
   {% elif c.connected %}
-    <p class="bundle-status"><span class="bundle-dot"></span>Connected to CyberLogix · waiting for the first report</p>
+    <p class="bundle-status"><span class="bundle-dot"></span>Connected to Kryozyn · waiting for the first report</p>
   {% else %}
-    <p class="bundle-status">Let CyberLogix fill this in automatically. CyberLogix, MTRX Horizyn's fridge and freezer alarm app, can fill in your temperature checks from its own readings.</p>
+    <p class="bundle-status">Let Kryozyn fill this in automatically. Kryozyn, {{ COMPANY }}'s fridge and freezer alarm app, can fill in your temperature checks from its own readings.</p>
   {% endif %}
-  <p class="muted">Once a day CyberLogix sends a summary: how many units stayed in range, the warmest reading and any breaches. A clean day fills in the check for you, recorded in the audit trail. A breach is never ticked: it leaves a note on the check for someone to review. It sends temperatures, unit names and roles, never anyone's name.</p>
+  <p class="muted">Once a day Kryozyn sends a summary: how many units stayed in range, the warmest reading and any breaches. A clean day fills in the check for you, recorded in the audit trail. A breach is never ticked: it leaves a note on the check for someone to review. It sends temperatures, unit names and roles, never anyone's name.</p>
   {% if c.checks %}
     <p class="hint">Fills in: {% for ind, rule in c.checks %}<a href="{{ url_for('app.industry', industry_id=ind, _anchor='rule-' ~ rule.key) }}">{{ rule.title }}</a> ({{ industries[ind].brand }}){{ ', ' if not loop.last }}{% endfor %}.</p>
   {% else %}
-    <p class="hint">None of your industries has a temperature-log check yet. CyberLogix fills in {% for ind, rule in all_temperature_checks %}{{ rule.title }} ({{ ind.brand }}){{ ', ' if not loop.last }}{% endfor %}{% if g.role == 'owner' %}: add that industry under Company above{% endif %}.</p>
+    <p class="hint">None of your industries has a temperature-log check yet. Kryozyn fills in {% for ind, rule in all_temperature_checks %}{{ rule.title }} ({{ ind.brand }}){{ ', ' if not loop.last }}{% endfor %}{% if g.role == 'owner' %}: add that industry under Company above{% endif %}.</p>
   {% endif %}
 
   {% if new_key %}
     <div class="key-once" data-new-key>
-      <p class="key-once-title">Your CyberLogix connection key</p>
+      <p class="key-once-title">Your Kryozyn connection key</p>
       <p class="key mono">{{ new_key }}</p>
-      <p class="hint">Copy it now and paste it into CyberLogix where it asks for an OmniArmor connection key. It is shown only this once: OmniArmor keeps only a scrambled copy (a hash) and can't show it again. Lost it? Regenerate it.</p>
+      <p class="hint">Copy it now and paste it into Kryozyn where it asks for an Aegizyn connection key. It is shown only this once: Aegizyn keeps only a scrambled copy (a hash) and can't show it again. Lost it? Regenerate it.</p>
     </div>
   {% endif %}
 
@@ -42,11 +42,11 @@
       {% else %}
         <form method="post" action="{{ url_for('app.connection_create') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn" type="submit">Create CyberLogix connection key</button>
+          <button class="btn" type="submit">Create Kryozyn connection key</button>
         </form>
       {% endif %}
     </div>
-    {% if c.key %}<p class="hint">Regenerating makes a new key and stops the old one at once; paste the new one into CyberLogix. Revoking stops CyberLogix sending reports until you create a key again.</p>{% endif %}
+    {% if c.key %}<p class="hint">Regenerating makes a new key and stops the old one at once; paste the new one into Kryozyn. Revoking stops Kryozyn sending reports until you create a key again.</p>{% endif %}
   {% else %}
     <p class="hint">Only the workspace owner can create, regenerate or revoke the connection key.</p>
   {% endif %}

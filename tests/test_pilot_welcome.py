@@ -1,4 +1,4 @@
-"""1.14.0: Pilot core 1.2.0 on OmniArmor. Pilot's welcome is OmniArmor's own
+"""1.14.0: Pilot core 1.2.0 on Aegizyn. Pilot's welcome is Aegizyn's own
 and fits who is there (a business owner's checklist questions, a teacher's
 class questions, a visitor's for the side of the site they are on); the
 tucked-away robot shrinks into its corner with the core's keepInViewport
@@ -79,7 +79,7 @@ class TestTheStylesheet(unittest.TestCase):
         # called it 'pilot-hello', which is also the chat window's greeting bubble, so this stylesheet must
         # never use that name to mean the first look.
         self.assertIn(":not(.pilot-revealing) .pilot-launcher{", phone_block(self.css))
-        # 1.18.0: the only use of the name is the greeting bubble's colours, in OmniArmor's theme.
+        # 1.18.0: the only use of the name is the greeting bubble's colours, in Aegizyn's theme.
         # (core 1.4.1's --pilot-hello-* theme variables are only names of colours.)
         for selector in re.findall(r"([^{}]*pilot-hello[^{]*)\{", re.sub(r"--pilot-hello[\w-]*", "", self.css)):
             for part in selector.split(","):

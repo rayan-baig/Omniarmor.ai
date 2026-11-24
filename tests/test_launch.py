@@ -145,7 +145,7 @@ def png_size(data):
     return struct.unpack(">II", data[16:24])
 
 
-PUBLIC = ["/", "/industries", "/industries/fleetarmor", "/industries/casinoarmor", "/help", "/terms", "/privacy",
+PUBLIC = ["/", "/industries", "/industries/fleet-aegizyn", "/industries/casino-aegizyn", "/help", "/terms", "/privacy",
           "/signup", "/login"]
 BASE = "https://omniarmor.test"
 
@@ -242,8 +242,8 @@ class TestIconsAndSharePreviews(AppTestCase):
                 self.assertEqual(png_size(image.data), (int(meta["og:image:width"]), int(meta["og:image:height"])))
             self.assertEqual(png_size(image.data), (1200, 630))
             self.assertTrue(meta["og:image:alt"])
-        upper = Head(self.client.get("/industries/FleetArmor").get_data(as_text=True))
-        self.assertEqual(upper.meta["og:url"], BASE + "/industries/fleetarmor")
+        upper = Head(self.client.get("/industries/fleet-aegizyn").get_data(as_text=True))
+        self.assertEqual(upper.meta["og:url"], BASE + "/industries/fleet-aegizyn")
 
     def test_private_pages_have_no_share_preview(self):
         self.signup()

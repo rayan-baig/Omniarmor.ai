@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 10: HotelArmor, BarArmor, FirearmArmor, CasinoArmor and
-ShopArmor. Ten rules per industry, costliest first. None of these industries
+Rule catalog, group 10: Hotel Aegizyn, Bar Aegizyn, Firearm Aegizyn, Casino Aegizyn and
+Shop Aegizyn. Ten rules per industry, costliest first. None of these industries
 has a detailed check yet, so no rule sets `method`.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 46. HOTELARMOR (hotels, motels and short-term lodging) ---
+    # --- 46. HOTEL AEGIZYN (hotels, motels and short-term lodging) ---
     46: [
         Rule(key="total_price_upfront", title="Total price shown with all fees",
              cost="Hidden resort and service fees draw FTC civil penalties and consumer class actions, and force refunds.",
@@ -72,7 +72,7 @@ RULES = {
              action="Train untrained staff on the safety data sheets and labels for their chemicals before their next shift."),
     ],
 
-    # --- 47. BARARMOR (bars, breweries and liquor retailers) ---
+    # --- 47. BAR AEGIZYN (bars, breweries and liquor retailers) ---
     47: [
         Rule(key="no_sales_under_21", title="No alcohol sold to minors",
              cost="Sales to minors bring license suspension or revocation, fines, and dram shop liability if the minor causes harm.",
@@ -136,7 +136,7 @@ RULES = {
              action="Decline or return the inducement and document it; check your state's tied-house rules before accepting anything."),
     ],
 
-    # --- 48. FIREARMARMOR (federal firearms licensees / gun dealers) ---
+    # --- 48. FIREARM AEGIZYN (federal firearms licensees / gun dealers) ---
     48: [
         Rule(key="form_4473_complete", title="Form 4473 fully completed",
              cost="Incomplete or wrong Forms 4473 are frequently cited at ATF inspections, and willful violations lead to license revocation.",
@@ -200,7 +200,7 @@ RULES = {
              action="Stop the sale and ship the handgun to a licensed dealer in the buyer's state instead."),
     ],
 
-    # --- 49. CASINOARMOR (casinos and card clubs) ---
+    # --- 49. CASINO AEGIZYN (casinos and card clubs) ---
     49: [
         Rule(key="ctr_filed_15_days", title="CTR filed within 15 days",
              cost="Missed CTRs are a core BSA failure that brings FinCEN penalties and enforcement actions against casinos.",
@@ -264,7 +264,7 @@ RULES = {
              action="Restore or rebuild missing records and set a five-year retention hold."),
     ],
 
-    # --- 50. SHOPARMOR (e-commerce and online retailers) ---
+    # --- 50. SHOP AEGIZYN (e-commerce and online retailers) ---
     50: [
         Rule(key="ship_or_notify_30_days", title="Ship on time or offer cancellation",
              cost="Late shipments without notice break the FTC Mail Order Rule, leading to civil penalties, refunds and chargebacks.",

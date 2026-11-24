@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Rule catalog, group 12 (1.11.0): starter lists for three trades that had
-only borrowed checks before: SalonArmor (salons and barbershops), InkArmor
-(tattoo and piercing studios) and GymArmor (gyms and fitness studios).
+only borrowed checks before: Salon Aegizyn (salons and barbershops), Ink Aegizyn
+(tattoo and piercing studios) and Gym Aegizyn (gyms and fitness studios).
 
 Most of what these trades follow is set by a state board or a city or county
 health department, and differs from place to place. So most checks here are
@@ -36,7 +36,7 @@ _HAZCOM = dict(
            " and go over them with the team.")
 
 RULES = {
-    # --- 52. SALONARMOR (salons and barbershops) ---
+    # --- 52. SALON AEGIZYN (salons and barbershops) ---
     52: [
         Rule(key="shop_license_renewal", title="Shop license renewed on time",
              cost="Working with an expired shop license can bring state board fines and an order to stop work until"
@@ -117,7 +117,7 @@ RULES = {
         Rule(**_EXTINGUISHER),
     ],
 
-    # --- 53. INKARMOR (tattoo and piercing studios) ---
+    # --- 53. INK AEGIZYN (tattoo and piercing studios) ---
     53: [
         Rule(key="studio_permit_renewal", title="Studio permit renewed on time",
              cost="Working without a current body art permit can bring fines and a closed studio until it is"
@@ -210,7 +210,7 @@ RULES = {
              action="Clean and disinfect the station before the next client and change every barrier."),
     ],
 
-    # --- 54. GYMARMOR (gyms and fitness studios) ---
+    # --- 54. GYM AEGIZYN (gyms and fitness studios) ---
     54: [
         Rule(key="aed_check", title="AED ready and checked",
              cost="An AED with a dead battery or expired pads can cost a life, and some states require health clubs"

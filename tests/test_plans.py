@@ -1,11 +1,11 @@
 """Paid plans: the free trial, Pro and Plus per location, read-only without a
-plan, the Kitchen Safety Bundle's included Pro from signed CyberLogix
+plan, the Kitchen Safety Bundle's included Pro from signed Kryozyn
 reports, and the old Academy plan.
 
 Every price on every page comes from plans.py; checkout bills the location
 count; Stripe's webhook moves the plan and ignores replayed and late events;
 a workspace without a plan can read, download and delete everything but
-save nothing; and only a validly signed CyberLogix report counts toward the
+save nothing; and only a validly signed Kryozyn report counts toward the
 bundle."""
 
 import hashlib
@@ -23,7 +23,7 @@ from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from test_cyberlogix import COLD, RESTO, URL, BundleCase  # noqa: E402
+from test_kryozyn import COLD, RESTO, URL, BundleCase  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
 from omniarmor_app import academy, academy_plan, connections, plans  # noqa: E402
@@ -81,7 +81,7 @@ class PlanCase(AppTestCase):
 # --- Prices: one place, every page -------------------------------------------------
 
 class TestPricesComeFromTheCode(PlanCase):
-    PAGES = ["/", "/help", "/terms", "/industries/restoarmor", "/app/plan", "/app/settings"]
+    PAGES = ["/", "/help", "/terms", "/industries/resto-aegizyn", "/app/plan", "/app/settings"]
 
     def test_every_page_shows_the_plans_from_plans_py(self):
         for path in self.PAGES:
@@ -571,7 +571,7 @@ class TestTheCoverRunsOut(SignedCase):
         self.assertEqual((access["source"], access["tracker"]), ("bundle_grace", True))
         page = self.client.get("/app").get_data(as_text=True)
         self.assertIn("data-grace-banner", page)
-        self.assertIn("CyberLogix hasn't sent a signed report since", words(page))
+        self.assertIn("Kryozyn hasn't sent a signed report since", words(page))
         self.assertNotIn("Pro included with your Kitchen Safety Bundle",
                          words(self.client.get("/app/settings").get_data(as_text=True)))
         self.assertEqual(self.change(RESTO, COLD, value="36").status_code, 302)
@@ -580,7 +580,7 @@ class TestTheCoverRunsOut(SignedCase):
         self.assertEqual((access["read_only"], access["reason"]), (True, "bundle_ended"))
         page = self.client.get("/app").get_data(as_text=True)
         self.assertIn("data-readonly-banner", page)
-        self.assertIn("CyberLogix stopped sending signed reports", words(page))
+        self.assertIn("Kryozyn stopped sending signed reports", words(page))
         self.change(RESTO, COLD, value="35")
         self.assertEqual(self.item()["value_num"], 36)
         # A new signed report brings it back.
@@ -687,10 +687,10 @@ class TestYearlyPrices(YearlyCase):
             self.assertIn(plans.PLUS.yearly_short, text, path)
             self.assertIn(plans.free_label(), text, path)
             self.assertIn(plans.PRO.price, text, path)
-        for path in ("/", "/industries/restoarmor", "/app/plan"):
+        for path in ("/", "/industries/resto-aegizyn", "/app/plan"):
             self.assertIn("data-billing-toggle", self.page(path), path)
         self.assertIn("$300 a year", words(self.page("/help")), "the bundle's difference, yearly")
-        self.assertIn("$300 a year", words(self.page("/industries/restoarmor")))
+        self.assertIn("$300 a year", words(self.page("/industries/resto-aegizyn")))
         self.assertNotIn("$300 a year", words(self.page("/")), "the bundle isn't on the landing page")
 
     def test_changed_prices_change_the_yearly_prices(self):
@@ -1029,8 +1029,8 @@ class TestTheDocs(unittest.TestCase):
             self.assertNotIn(gone, render)
 
     def test_the_contract_has_the_header(self):
-        doc = self.read("docs", "CYBERLOGIX-CONNECTION.md")
-        self.assertIn('X-CyberLogix-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>',
+        doc = self.read("docs", "KRYOZYN-CONNECTION.md")
+        self.assertIn('X-Kryozyn-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>',
                       doc)
         self.assertIn("KITCHEN_BUNDLE_SECRET", doc)
         self.assertIn(f"{connections.SIGNATURE_TOLERANCE} seconds", doc)

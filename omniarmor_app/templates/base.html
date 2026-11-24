@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}OmniArmor{% endblock %} · OmniArmor.ai</title>
+  <title>{% block title %}Aegizyn{% endblock %}{% if self.title()|trim != 'Aegizyn' %} · Aegizyn{% endif %}</title>
   <meta name="description" content="{% block description %}{{ SLOGAN }} Compliance checks, deadlines and reminders for 54 regulated industries.{% endblock %}">
   {% set listed = public_page() and not noindex %}
   {% if not listed %}<meta name="robots" content="noindex, nofollow">{% endif %}
@@ -15,12 +15,12 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   {% if listed %}
   {% set page_url = canonical_url() %}
-  {% set share_title = self.title()|trim ~ ' · OmniArmor.ai' %}
+  {% set share_title = self.title()|trim ~ ' · Aegizyn' %}
   {% set share_text = self.description()|trim %}
   {% set share_image = config.BASE_URL ~ url_for('static', filename='og-image.png') %}
   <link rel="canonical" href="{{ page_url }}">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="OmniArmor.ai">
+  <meta property="og:site_name" content="Aegizyn">
   <meta property="og:url" content="{{ page_url }}">
   <meta property="og:title" content="{{ share_title }}">
   <meta property="og:description" content="{{ share_text }}">
@@ -28,12 +28,12 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="OmniArmor.ai: {{ SLOGAN }}">
+  <meta property="og:image:alt" content="Aegizyn: {{ SLOGAN }}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ share_title }}">
   <meta name="twitter:description" content="{{ share_text }}">
   <meta name="twitter:image" content="{{ share_image }}">
-  <meta name="twitter:image:alt" content="OmniArmor.ai: {{ SLOGAN }}">
+  <meta name="twitter:image:alt" content="Aegizyn: {{ SLOGAN }}">
   {% endif %}
   <link rel="preload" href="{{ url_for('static', filename='fonts/ibm-plex-sans-400.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
@@ -53,11 +53,11 @@
         <path d="M20 2 L37 8 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V8 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
         <circle cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"/>
       </svg>
-      <span class="wordmark">OmniArmor<span class="dim">.ai</span></span>{% endmacro %}
+      <span class="wordmark">Aegizyn</span>{% endmacro %}
     {% if kid_screen %}
     <span class="lockup" data-lockup-still>{{ logo_mark() }}</span>
     {% else %}
-    <a class="lockup" href="{{ home_url() if g.user else (url_for('academy.level_map', learner_id=g.kid.id) if g.kid else url_for('public.home')) }}" aria-label="OmniArmor.ai home">
+    <a class="lockup" href="{{ home_url() if g.user else (url_for('academy.level_map', learner_id=g.kid.id) if g.kid else url_for('public.home')) }}" aria-label="Aegizyn home">
       {{ logo_mark() }}
     </a>
     {% endif %}
@@ -136,13 +136,13 @@
       {% elif pa.read_only %}
         <div class="plan-banner readonly no-print" data-readonly-banner>
           <p><strong>Read-only.</strong>
-          {% if pa.reason == 'bundle_ended' %}CyberLogix stopped sending signed reports, so the Pro your Kitchen Safety Bundle included has ended.{% elif pa.reason == 'plan_ended' %}Your plan has ended.{% elif pa.reason == 'new_location' %}This location has no plan yet: the free trial is one per owner, and was used in your first location.{% else %}Your free trial has ended.{% endif %}
+          {% if pa.reason == 'bundle_ended' %}Kryozyn stopped sending signed reports, so the Pro your Kitchen Safety Bundle included has ended.{% elif pa.reason == 'plan_ended' %}Your plan has ended.{% elif pa.reason == 'new_location' %}This location has no plan yet: the free trial is one per owner, and was used in your first location.{% else %}Your free trial has ended.{% endif %}
           Your records are safe: see, print and download them any time, and nothing is deleted. New checks can't be saved and reminders are paused until you
           <a href="{{ url_for('plan.plan_page') }}">choose Pro or Plus</a>.</p>
         </div>
       {% elif pa.source == 'bundle_grace' %}
         <div class="plan-banner no-print" data-grace-banner>
-          <p><strong>Kitchen Safety Bundle.</strong> CyberLogix hasn't sent a signed report since {{ pa.bundle.last|local_date }}. Pro stays included until {{ pa.bundle.grace_ends|local_date }}; after that the compliance tracker becomes read-only, unless reports start again or you choose a plan.
+          <p><strong>Kitchen Safety Bundle.</strong> Kryozyn hasn't sent a signed report since {{ pa.bundle.last|local_date }}. Pro stays included until {{ pa.bundle.grace_ends|local_date }}; after that the compliance tracker becomes read-only, unless reports start again or you choose a plan.
           <a href="{{ url_for('app.settings', _anchor='connections') }}">Check the connection</a> · <a href="{{ url_for('plan.plan_page') }}">See the plans</a></p>
         </div>
       {% endif %}
@@ -162,7 +162,7 @@
 {% if not kid_screen %}
 <footer class="site">
   <div class="wrap">
-    <span>OmniArmor.ai · {{ SLOGAN }} · A product of MTRX Horizyn</span>
+    <span>Aegizyn · {{ SLOGAN }} · A product of {{ COMPANY }}</span>
     <span>Decision support, not legal advice. Each check names the rule it comes from.</span>
     <nav aria-label="Rules"><a href="{{ url_for('public.help') }}">Help</a><a href="{{ url_for('public.terms') }}">Terms</a><a href="{{ url_for('public.privacy') }}">Privacy</a><a href="{{ url_for('public.security') }}">Security and your data</a></nav>
   </div>
@@ -186,7 +186,7 @@
       <a class="companion-fix" data-bubble-fix hidden href="#"></a>
       <button type="button" class="companion-next" data-bubble-next hidden></button>
       <a class="companion-more" href="{{ url_for('armo.page') }}">See everything</a>
-      {% if pilot_tag() %}<button type="button" class="companion-pilot" data-ask-pilot>Ask Pilot</button>{% endif %}
+      {% if pilot_tag() %}<button type="button" class="companion-pilot" data-ask-pilot>Ask {{ ASSISTANT }}</button>{% endif %}
     </p>
     <button type="button" class="companion-close" data-bubble-close aria-label="Close">&times;</button>
   </div>
@@ -224,8 +224,8 @@
 </nav>
 {% else %}
 <nav class="tabbar no-print" aria-label="Sections">
-  {#- On a computer the tabs are a side bar, with the OmniArmor name at its top (app.css, 1.16.0). -#}
-  <a class="tab-logo lockup" href="{{ home_url() }}" aria-label="OmniArmor.ai home" data-side-logo>{{ logo_mark() }}</a>
+  {#- On a computer the tabs are a side bar, with the Aegizyn name at its top (app.css, 1.16.0). -#}
+  <a class="tab-logo lockup" href="{{ home_url() }}" aria-label="Aegizyn home" data-side-logo>{{ logo_mark() }}</a>
   {% if class_workspace %}
   {% set tabs = [
       ('classes.index', 'Home', 'Your classes', 'academy', ep.startswith(('classes.', 'academy.'))),

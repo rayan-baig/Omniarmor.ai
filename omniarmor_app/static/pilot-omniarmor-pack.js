@@ -1,4 +1,4 @@
-// Pilot's knowledge pack for OmniArmor, and OmniArmor's tools.
+// Pilot's knowledge pack for Aegizyn, and Aegizyn's tools.
 // Fetched only when someone first opens Pilot. Written from the real app,
 // its pages and docs (README.md, help.html, docs/HANDBOOK.md): if something
 // here stops being true, change it here (tests/test_pilot.py and
@@ -8,7 +8,7 @@
 // plans.py and settings through Pilot's script tag (pilot.py), so the pack
 // never states a price the app doesn't charge.
 //
-// The tools work through OmniArmor's own pages and forms, in this browser,
+// The tools work through Aegizyn's own pages and forms, in this browser,
 // with the person's own session and the form token those pages carry: a
 // read looks at the same pages the person could open, and a change posts the
 // same form the person would press. Only a few forms are allowed at all
@@ -24,14 +24,16 @@
   const who = () => facts().who || data().who || "";
   const signedIn = () => who() === "business" || who() === "teacher";
   const readOnly = () => facts().readonly === true || data().readonly === "on";
+  // 1.24.0: the company's and the assistant's names, from the server (names.py, on Pilot's script tag).
+  const N = Object.assign({ company: "", app: "Aegizyn", assistant: "Pilot", fridge_app: "Kryozyn" }, facts().names || {});
 
-  const KNOWLEDGE = `## OmniArmor
-OmniArmor.ai is a compliance tracker by MTRX Horizyn: "Catch the fine before it catches you." Each industry has a checklist of ten checks: the compliance failures that cost businesses in that industry the most, that are common, expensive when missed and cheap to prevent with a deadline, a limit or a yes-or-no control. It is made for small businesses first (restaurants, bars, salons, child care, dental offices, construction, shops) and for schools, with starter lists for many more industries. Each checklist has its own name, like RestoArmor for restaurants or SchoolSafetyArmor for a school's safety routines.
-OmniArmor is decision support, not legal advice. Each check names the rule it comes from; rules change and differ by place, so a business should confirm each rule with an expert for its area. OmniArmor only knows what people type in.
+  const KNOWLEDGE = `## Aegizyn
+Aegizyn is a compliance tracker by ${N.company}: "Catch the fine before it catches you." Each industry has a checklist of ten checks: the compliance failures that cost businesses in that industry the most, that are common, expensive when missed and cheap to prevent with a deadline, a limit or a yes-or-no control. It is made for small businesses first (restaurants, bars, salons, child care, dental offices, construction, shops) and for schools, with starter lists for many more industries. Each checklist has its own name, like Resto Aegizyn for restaurants or School Safety Aegizyn for a school's safety routines.
+Aegizyn is decision support, not legal advice. Each check names the rule it comes from; rules change and differ by place, so a business should confirm each rule with an expert for its area. Aegizyn only knows what people type in.
 
 ## Checks
 - A check is one rule to keep: an inspection due every so often, a limit that must not be passed, or a yes-or-no control that must be in place. Each industry page lists its ten checks. Start with the ones marked "Top" (the costliest first), with "Why this matters".
-- People enter a date, a number or a yes-or-no answer once and press Save. OmniArmor counts the days from there by itself, every morning, in the company's time zone. Some checks count hours or minutes from a start time ("Done now" starts the clock again from this minute).
+- People enter a date, a number or a yes-or-no answer once and press Save. Aegizyn counts the days from there by itself, every morning, in the company's time zone. Some checks count hours or minutes from a start time ("Done now" starts the clock again from this minute).
 - "Rule and source" (under each check): what it costs when it's missed, and the rule it comes from (the citation). The page also shows the question, the limit and when it warns.
 - "Done today": duties that repeat (a yearly inspection, a monthly test) have a Done today button. It saves today as the last time it was done, so the next cycle starts.
 - Dates: "the date it last happened" for a duty that repeats, or "the due or expiry date" for something that runs out (a licence, a certificate).
@@ -58,7 +60,7 @@ The totals at the top of a page and the thin bar under them use the same colours
 - History: the audit trail. Every reading, limit and team change, with who made it and when; Export CSV.
 - Reminders: the email log (above).
 - Academy: the Future Owner Academy (below).
-- Settings: company name, time zone and checklists (the owner), your reminder emails, the team (the owner invites with a link that works once for 7 days, and removes people), locations, the CyberLogix connection, the plan, and deleting the workspace.
+- Settings: company name, time zone and checklists (the owner), your reminder emails, the team (the owner invites with a link that works once for 7 days, and removes people), locations, the Kryozyn connection, the plan, and deleting the workspace.
 - Armo, the little shield above the tab bar, jumps up when something is blocked, overdue, due soon or a reminder email failed, with a link to the fix. People can pick one of 14 personalities or hide him.
 - A location is one workspace with its own checks, team and plan; the owner adds and switches locations in Settings.
 
@@ -68,10 +70,10 @@ The totals at the top of a page and the thin bar under them use the same colours
 - Plus: everything in Pro and the whole Future Owner Academy at no extra cost. The Academy's first worlds stay free for everyone.
 - Prices are per location (one workspace), billed through Stripe; the owner manages the plan on the Plans page (Settings, Plan). A monthly plan can be paused or cancelled there; a cancelled plan stays on until the end of the time paid for.
 - Without a plan the tracker is read-only: every record can still be seen, printed and downloaded and nothing is deleted, but checks can't be saved and reminders pause. Export and delete always work.
-- Kitchen Safety Bundle: with CyberLogix (MTRX Horizyn's fridge and freezer alarm app), a restaurant's cold-holding check fills itself in from CyberLogix's daily readings, and a breach leaves a note to review. The bundle includes Pro while signed CyberLogix reports keep coming.
+- Kitchen Safety Bundle: with Kryozyn (${N.company}'s fridge and freezer alarm app), a restaurant's cold-holding check fills itself in from Kryozyn's daily readings, and a breach leaves a note to review. The bundle includes Pro while signed Kryozyn reports keep coming.
 
-## OmniArmor for schools and teachers
-- Schools have two sides: SchoolSafetyArmor (the school's safety routines: drills, AED and first-aid kits, playground and gym, the nurse's medication log, cafeteria, buses, concussion and heat checks, visitors, lab chemicals, background-check renewals) and the Future Owner Academy for a class.
+## Aegizyn for schools and teachers
+- Schools have two sides: School Safety Aegizyn (the school's safety routines: drills, AED and first-aid kits, playground and gym, the nurse's medication log, cafeteria, buses, concussion and heat checks, visitors, lab chemicals, background-check renewals) and the Future Owner Academy for a class.
 - Teacher sign-up: name, school email, password and the school's name, with no list of industries. It lands on the Classes page ("Home") and starts the free classroom trial.
 - Adding students: open a class, type each student's first name or nickname, one per line. No email, no last name, no birthdate, no photo. A name that can't be added (it looks like an email, it's too long, or it's already in the class) is listed with the reason and put back in the box. A name that looks like a first and last name ("Ava Thompson") isn't added until the teacher chooses: add it as a first name and last initial ("Ava T", suggested), keep it if it's all first name (like Mary Jane), or leave it out.
 - Join codes: print one code per student; each works once, on a school device, and lets that device open the student's Academy and nothing else.
@@ -89,11 +91,11 @@ A learning game for the kids who may one day run the family business: tracks fro
 "See a demo" opens a pretend restaurant (some checks done, one overdue, a reminder and a report) or a pretend class, with no sign-up. Nothing in a demo is saved and nothing is sent.
 
 ## Data and privacy
-No ads, no tracking or analytics, and pages, fonts and pictures all come from OmniArmor's own server. The workspace owner can download everything and delete the workspace at any time (cancel a paid plan first). The Privacy page has the details.
+No ads, no tracking or analytics, and pages, fonts and pictures all come from Aegizyn's own server. The workspace owner can download everything and delete the workspace at any time (cancel a paid plan first). The Privacy page has the details.
 
-## Pilot (this assistant)
-Pilot runs on the person's own AI key (Anthropic, OpenAI, Google Gemini or an OpenAI-compatible API) from their browser; OmniArmor never sees the key or the chat, and the provider bills the key. AI keys are for grown-ups. Pilot is never on a student's pages.
-Signed in, Pilot can read what's due or overdue, explain a check and its rule, summarise the report and say what a colour means. After the person presses Allow it can mark a check done today, update a check's answer, number or date, set a reminder date, answer several yes-or-no checks at once (never Yes where Yes means a problem) and, for a teacher, add students by first name. It never changes a plan, deletes anything, invites or removes team members, or does anything on a student's account: people do those themselves in Settings or on the class page.`;
+## ${N.assistant} (this assistant)
+${N.assistant} runs on the person's own AI key (Anthropic, OpenAI, Google Gemini or an OpenAI-compatible API) from their browser; Aegizyn never sees the key or the chat, and the provider bills the key. AI keys are for grown-ups. ${N.assistant} is never on a student's pages.
+Signed in, ${N.assistant} can read what's due or overdue, explain a check and its rule, summarise the report and say what a colour means. After the person presses Allow it can mark a check done today, update a check's answer, number or date, set a reminder date, answer several yes-or-no checks at once (never Yes where Yes means a problem) and, for a teacher, add students by first name. It never changes a plan, deletes anything, invites or removes team members, or does anything on a student's account: people do those themselves in Settings or on the class page.`;
 
   // Genuine strengths, only from the real features. No rival is named and
   // there are no made-up numbers.
@@ -109,9 +111,9 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     "No ads, no tracking or analytics, and no other company's fonts, scripts or pictures on its pages.",
     "For schools: students are added by first name or nickname only (no email, birthdate or photo), join codes work once on a school device, and the trial report has totals only.",
     "A free classroom trial with no card, a printable teacher guide, and an invoice option for schools.",
-    "With the Kitchen Safety Bundle, a restaurant's fridge checks fill themselves in from real CyberLogix readings.",
+    "With the Kitchen Safety Bundle, a restaurant's fridge checks fill themselves in from real Kryozyn readings.",
     "Armo points straight at what's blocked, overdue or due soon, with a one-click link to the fix.",
-    "Pilot works with the AI provider you already use, on your own AI key, and asks before it changes anything.",
+    `${N.assistant} works with the AI provider you already use, on your own AI key, and asks before it changes anything.`,
   ];
 
   function liveFacts() {
@@ -120,16 +122,16 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     const lines = [];
     lines.push(`Plans for businesses (the app's real prices): ${f.pro}, ${f.pro_price}${f.pro_yearly ? ` or ${f.pro_yearly} (${f.free_label})` : ""}; `
       + `${f.plus}, ${f.plus_price}${f.plus_yearly ? ` or ${f.plus_yearly} (${f.free_label})` : ""}. The free trial is ${f.trial_days} days of everything in ${f.plus}, no card.`);
-    lines.push(`Kitchen Safety Bundle: ${f.bundle_price} through CyberLogix, which includes ${f.pro}; ${f.plus} then costs only the difference, ${f.bundle_upgrade}.`);
+    lines.push(`Kitchen Safety Bundle: ${f.bundle_price} through Kryozyn, which includes ${f.pro}; ${f.plus} then costs only the difference, ${f.bundle_upgrade}.`);
     lines.push(`Classroom plans (yearly): ${f.classroom}, ${f.classroom_price}: ${f.classroom_summary} ${f.school}, ${f.school_price}: ${f.school_summary} `
       + `The free classroom trial is ${f.pilot_days} days, one class of up to ${f.class_size} students, no card.`);
     lines.push(`The Classroom track: ${f.class_worlds} worlds and ${f.class_lessons} lessons; a lesson is ${f.lesson_questions} questions, about ${f.lesson_minutes} minutes. The class's pretend business is ${f.class_business}.`);
-    lines.push(`OmniArmor covers ${f.industries} industries and ${f.checks} checks; start with the top ${f.top_count} of each. Reminder emails go ${(f.reminder_days || []).join(", ")} day(s) before a due date, on the day, and weekly while overdue. A family workspace can add up to ${f.max_learners} Academy learners.`);
+    lines.push(`Aegizyn covers ${f.industries} industries and ${f.checks} checks; start with the top ${f.top_count} of each. Reminder emails go ${(f.reminder_days || []).join(", ")} day(s) before a due date, on the day, and weekly while overdue. A family workspace can add up to ${f.max_learners} Academy learners.`);
     if (f.support) lines.push(`Help: the Help page, or write to ${f.support}.`);
     return lines.join("\n");
   }
 
-  // ---------------------------------------------------------------- reading OmniArmor's own pages
+  // ---------------------------------------------------------------- reading Aegizyn's own pages
 
   const io = {
     fetch: (...a) => W.fetch(...a),
@@ -148,7 +150,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
   async function page(url) {
     const r = await io.fetch(url, { credentials: "same-origin", headers: { Accept: "text/html" } });
     if (signedOut(r)) throw new Error(signedOutError);
-    if (!r.ok) throw new Error(`OmniArmor couldn't open that page (error ${r.status})`);
+    if (!r.ok) throw new Error(`Aegizyn couldn't open that page (error ${r.status})`);
     return io.parse(await r.text());
   }
 
@@ -193,7 +195,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
   const FRESH_MS = 60 * 1000;
 
   async function loadIndex(fresh) {
-    if (!signedIn()) throw new Error("Sign in to OmniArmor first: Pilot reads your checks only inside your own workspace");
+    if (!signedIn()) throw new Error(`Sign in to Aegizyn first: ${N.assistant} reads your checks only inside your own workspace`);
     if (!fresh && index && Date.now() - indexAt < FRESH_MS) return index;
     if (!loading) {
       loading = (async () => {
@@ -246,7 +248,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       fields: { bulk_action: ["yes", "no", "done", "date"], keys: true, date: true } },
     { name: "students", re: /^\/app\/academy\/classes\/\d{1,18}\/students$/, fields: { names: true }, teacher: true },
   ];
-  const NEVER = "Pilot can't do that. It only marks checks done, updates a check, sets a reminder date, answers several checks or adds students to a class. "
+  const NEVER = `${N.assistant} can't do that. It only marks checks done, updates a check, sets a reminder date, answers several checks or adds students to a class. `
     + "It never changes a plan, deletes anything, invites or removes team members, or touches a student's account: do those yourself in Settings or on the class page.";
 
   function refuse(url, fields) {
@@ -268,7 +270,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     return input ? input.value : "";
   }
 
-  // Posts one of OmniArmor's own forms with the person's session and the
+  // Posts one of Aegizyn's own forms with the person's session and the
   // page's form token, follows it back to the page, and reads what the app
   // said (its flash messages).
   async function post(url, fields) {
@@ -292,7 +294,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       said.push(text(f));
       if (f.classList.contains("error")) failed = true;
     }
-    if (!r.ok && !said.length) return { ok: false, error: r.status === 400 ? "The page's form had expired, so nothing changed. Reload the page and ask me again." : `OmniArmor said no (error ${r.status}).` };
+    if (!r.ok && !said.length) return { ok: false, error: r.status === 400 ? "The page's form had expired, so nothing changed. Reload the page and ask me again." : `Aegizyn said no (error ${r.status}).` };
     return { ok: !failed, said, doc };
   }
 
@@ -301,7 +303,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     if (r.error) return { error: r.error };
     const out = { done: r.ok, omniarmor_said: r.said };
     if (r.ok) out.note = afterChange;
-    else out.error = r.said.join(" ") || "OmniArmor didn't save it.";
+    else out.error = r.said.join(" ") || "Aegizyn didn't save it.";
     return Object.assign(out, extra || {});
   }
 
@@ -335,7 +337,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
   const rulePath = (c) => `/app/industry/${c.checklistId}/rule/${c.key}`;
   const checkParams = {
     check: { type: "string", maxLength: 120, description: "The check's name, as it shows on the page." },
-    checklist: { type: "string", maxLength: 60, description: "The checklist it's in (like RestoArmor), if more than one has a check with that name." },
+    checklist: { type: "string", maxLength: 60, description: "The checklist it's in (like Resto Aegizyn), if more than one has a check with that name." },
   };
 
   // ---------------------------------------------------------------- statuses
@@ -419,7 +421,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
     },
     {
       name: "what_colour_means", kind: "read", available: () => true,
-      description: "What a status or colour on OmniArmor's pages means (Blocked, Warning, Cleared, No reading; red, orange, grey).",
+      description: "What a status or colour on Aegizyn's pages means (Blocked, Warning, Cleared, No reading; red, orange, grey).",
       parameters: { type: "object", properties: { colour_or_status: { type: "string", maxLength: 30, description: "A colour or status word, or leave out for all." } } },
       run: (args) => {
         const w = norm(args.colour_or_status);
@@ -614,7 +616,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
   ];
 
   // Before the Allow card for adding students, a line that says where the
-  // names go (the teacher's own AI provider, never OmniArmor), with a link to
+  // names go (the teacher's own AI provider, never Aegizyn), with a link to
   // type them on the class page instead, which cancels the card. Put just
   // above the card once the window has drawn it, and gone with it.
   function namesNote(cls) {
@@ -630,7 +632,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
       const note = document.createElement("p");
       note.className = "omni-names-note";
       note.setAttribute("data-names-note", "");
-      note.append("Student names you give Pilot are sent to your own AI provider, the company your AI key is from. ");
+      note.append(`Student names you give ${N.assistant} are sent to your own AI provider, the company your AI key is from. `);
       const link = document.createElement("a");
       link.href = url;
       link.textContent = "Type them myself instead";
@@ -710,7 +712,7 @@ Signed in, Pilot can read what's due or overdue, explain a check and its rule, s
   }
 
   // Ready the checks and classes when Pilot opens on a signed-in page, so a
-  // confirm card can name the exact check. These are OmniArmor's own pages,
+  // confirm card can name the exact check. These are Aegizyn's own pages,
   // read in this browser: nothing goes to the AI until a tool runs.
   function warmUp() {
     if (!signedIn() || typeof W.fetch !== "function") return;

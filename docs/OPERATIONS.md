@@ -1,39 +1,39 @@
-# Running OmniArmor
+# Running Aegizyn
 
-OmniArmor is built to run on its own. Once it's deployed, a built-in daily job
+Aegizyn is built to run on its own. Once it's deployed, a built-in daily job
 sends reminders, backs up the database and cleans up old data with no one
 touching it. This guide covers the few things a person has to do once.
 
 ## 1. Launch (about 15 minutes)
 
-**The address.** OmniArmor is a product of MTRX Horizyn, and MTRX Horizyn owns
+**The address.** Aegizyn is a product of MTRX Horizyn, and MTRX Horizyn owns
 the one domain: its own site is on the domain itself (and `www`), and each
-product gets a subdomain. The domain is `mtrxhorizyn.com`, and OmniArmor lives
-at `omniarmor.mtrxhorizyn.com`, beside `cyberlogix.mtrxhorizyn.com` and
-`rankup.mtrxhorizyn.com`. There is no domain to buy for OmniArmor.
+product gets a subdomain. The domain is `mtrxhorizyn.com`, and Aegizyn lives
+at `aegizyn.mtrxhorizyn.com`, beside `kryozyn.mtrxhorizyn.com` and
+`rankup.mtrxhorizyn.com`. There is no domain to buy for Aegizyn.
 
-A subdomain, not a folder (`mtrxhorizyn.com/omniarmor`), on purpose: each
-subdomain is its own origin, so OmniArmor's sign-in cookie, the browser's
-storage for it and anything it installs stay with OmniArmor and never reach
+A subdomain, not a folder (`mtrxhorizyn.com/aegizyn`), on purpose: each
+subdomain is its own origin, so Aegizyn's sign-in cookie, the browser's
+storage for it and anything it installs stay with Aegizyn and never reach
 the other apps. The app keeps it that way: its cookie has no `Domain`, so it
-goes back only to `omniarmor.mtrxhorizyn.com`, and it sends no CORS headers, so no
+goes back only to `aegizyn.mtrxhorizyn.com`, and it sends no CORS headers, so no
 other site (a sibling app included) can read its pages from a browser.
 
 1. **DNS:** where the domain's DNS is managed, add one record for the
-   subdomain. On Render, a `CNAME` named `omniarmor` pointing at the service's
+   subdomain. On Render, a `CNAME` named `aegizyn` pointing at the service's
    `onrender.com` address; on your own server, an `A` record named
-   `omniarmor` pointing at its IP address.
+   `aegizyn` pointing at its IP address.
 2. **The host:** Render: the service, then Settings > Custom Domains, add
-   `omniarmor.mtrxhorizyn.com` and wait for it to verify. Your own server: set
-   `DOMAIN=omniarmor.mtrxhorizyn.com` in `.env` for Caddy.
+   `aegizyn.mtrxhorizyn.com` and wait for it to verify. Your own server: set
+   `DOMAIN=aegizyn.mtrxhorizyn.com` in `.env` for Caddy.
 3. **HTTPS:** Render and Caddy both get the certificate themselves once DNS
-   answers. Check `https://omniarmor.mtrxhorizyn.com` opens before going on: the
+   answers. Check `https://aegizyn.mtrxhorizyn.com` opens before going on: the
    sign-in cookie is marked secure in production and needs it.
-4. **The app:** set `BASE_URL=https://omniarmor.mtrxhorizyn.com` (no slash at the
+4. **The app:** set `BASE_URL=https://aegizyn.mtrxhorizyn.com` (no slash at the
    end). Every link in an email is built from it.
-5. **MTRX Horizyn:** in MTRX Horizyn's settings, OmniArmor's address is
-   `https://omniarmor.mtrxhorizyn.com` and its stats address is
-   `https://omniarmor.mtrxhorizyn.com/api/stats` (see `STATS_KEY`). It answers
+5. **MTRX Horizyn:** in MTRX Horizyn's settings, Aegizyn's address is
+   `https://aegizyn.mtrxhorizyn.com` and its stats address is
+   `https://aegizyn.mtrxhorizyn.com/api/stats` (see `STATS_KEY`). It answers
    only a request carrying that key (`Authorization: Bearer <STATS_KEY>`),
    and doesn't exist without it: the number of accounts, how many were used
    in the last 30 days, and the daily usage counts (section 5).
@@ -53,7 +53,7 @@ custom domain and set `BASE_URL` as above.
 docker build -t omniarmor .
 docker run -d --name omniarmor -p 8000:8000 -v omniarmor-data:/data \
   -e SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
-  -e BASE_URL=https://omniarmor.mtrxhorizyn.com \
+  -e BASE_URL=https://aegizyn.mtrxhorizyn.com \
   --restart unless-stopped omniarmor
 ```
 
@@ -73,16 +73,16 @@ All of MTRX Horizyn's apps send from its one domain, so the records that keep
 mail out of spam are set up once, on that domain, by whoever runs it: **SPF**
 (which servers may send for it), **DKIM** (a signature on each message) and
 **DMARC** (what to do with mail that fails those two). The email provider
-gives the exact values. OmniArmor then sends from an address of its own, such
-as `MAIL_FROM=OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, so people can tell
-the apps apart. A sending subdomain like `omniarmor.mtrxhorizyn.com` must be
+gives the exact values. Aegizyn then sends from an address of its own, such
+as `MAIL_FROM=Aegizyn <no-reply@aegizyn.mtrxhorizyn.com>`, so people can tell
+the apps apart. A sending subdomain like `aegizyn.mtrxhorizyn.com` must be
 verified with the provider too (it adds a DKIM record for it); the parent
 domain's DMARC covers it. Check the records with any free DMARC checker before
-real customers depend on reminders. Every email ends with "OmniArmor is a
+real customers depend on reminders. Every email ends with "Aegizyn is a
 product of MTRX Horizyn."
 
 The public Help page (`/help`) answers common questions. Set `SUPPORT_EMAIL`
-to an address people can write to (live: `help@omniarmor.mtrxhorizyn.com`),
+to an address people can write to (live: `help@aegizyn.mtrxhorizyn.com`),
 and its last answer names it; without it,
 the page points only to the help inside the app.
 
@@ -218,7 +218,7 @@ traceback, scrubbed the same way as the error reports below: anything that
 looks like an email address, an IP address, a token, a secret or a reset or
 invite link is replaced, and file paths are relative.
 
-**The operator's account.** One OmniArmor account can be the operator's: its
+**The operator's account.** One Aegizyn account can be the operator's: its
 Settings page shows the usage counts (below) and the switch for the weekly
 Autopilot report. Having the `OPERATOR_EMAIL` address is not enough to get
 it, because sign-up doesn't check that an address is yours, and a stranger
@@ -263,7 +263,7 @@ or a secret is replaced (`[email]`, `[ip]`, `[token]`, `[hidden]`).
   recorded and Autopilot still emails `OPERATOR_EMAIL` about new bugs. The
   two can be the same address.
 
-**Usage counts.** OmniArmor counts how often a few features are used, one
+**Usage counts.** Aegizyn counts how often a few features are used, one
 total per feature per day (UTC): checks updated (one at a time or in bulk),
 bulk updates, lessons started (a lesson page opened) and passed,
 certificates earned, Help page views and sign-ups. Nothing else is kept: no
@@ -275,7 +275,7 @@ daily job.
 
 ### Health checks
 
-Two addresses tell a machine whether OmniArmor is working. Both answer
+Two addresses tell a machine whether Aegizyn is working. Both answer
 anyone, so they say "ok" or "fail" and nothing else: no settings, no
 passwords, no names, no file paths.
 
@@ -326,9 +326,9 @@ monitor: UptimeRobot (free plan: checks every 5 minutes) or Better Stack
 domain is on Cloudflare. Add two monitors, type HTTP(s), alert by email and
 by text if the plan allows:
 
-1. **"OmniArmor site"**: `https://omniarmor.mtrxhorizyn.com/healthz`.
+1. **"Aegizyn site"**: `https://aegizyn.mtrxhorizyn.com/healthz`.
    Alert when it doesn't answer 200.
-2. **"OmniArmor inside"**: `https://omniarmor.mtrxhorizyn.com/readyz`.
+2. **"Aegizyn inside"**: `https://aegizyn.mtrxhorizyn.com/readyz`.
    Alert when it doesn't answer 200. If the monitor can look for a keyword,
    use `"status":"ok"`.
 
@@ -339,9 +339,9 @@ Docker image marks itself unhealthy the same way (`HEALTHCHECK`, shown by
 
 **What each alert means, and what to do:**
 
-- **"OmniArmor site" is down** (and "inside" too): nobody can open the
+- **"Aegizyn site" is down** (and "inside" too): nobody can open the
   site.
-  1. Open `https://omniarmor.mtrxhorizyn.com` on your phone. If it opens,
+  1. Open `https://aegizyn.mtrxhorizyn.com` on your phone. If it opens,
      the monitor had a hiccup: wait for the next check.
   2. Look at the host. Render: the service's **Events** and **Logs**
      tabs (a failed deploy, or the app crashing at start). Your own server:
@@ -358,7 +358,7 @@ Docker image marks itself unhealthy the same way (`HEALTHCHECK`, shown by
      `docker compose up -d --build`.
   6. Still down after that: restart it (Render: Manual Deploy, "Restart
      service"; your own server: `docker compose restart app`).
-- **Only "OmniArmor inside" is down**: the site opens, but something behind
+- **Only "Aegizyn inside" is down**: the site opens, but something behind
   it needs you (reminders, backups, the timers, or a setting). Run
   `flask --app wsgi ready` on the server (Render: the Shell tab; Docker:
   `docker compose exec app flask --app wsgi ready`). It names the check and
@@ -406,7 +406,7 @@ sets your own. It never mixes into real data:
   accounts, workspaces or learners at all, and checks again inside the
   write, so a sign-up at the same moment is never mixed in.
 - `--force` must name a new or empty file, never the database the app uses.
-- In production (`OMNIARMOR_ENV=production`) it refuses the app's own
+- In production (`AEGIZYN_ENV=production`) it refuses the app's own
   database even when it is empty, since a new deployment's empty database is
   about to become the real one. Seed a separate file there, such as
   `--force /data/omniarmor-demo.db`, and run a separate service on it.
@@ -423,6 +423,63 @@ Deploy the new version; the database schema upgrades itself at start-up.
 Back up first. Run the tests before every deploy: `python3 -m unittest
 discover -s tests` (GitHub Actions does this on every push).
 
+**Upgrading to 1.24.0 (the rename to Aegizyn).** OmniArmor is now
+**Aegizyn**, and the fridge-alarm app CyberLogix is now **Kryozyn**. The
+company is still MTRX Horizyn for now, on `mtrxhorizyn.com`; its name, its
+domain, the help address, the assistant's name and the other apps' names are
+typed in one place only, `omniarmor_app/names.json` (read by
+`omniarmor_app/names.py`), so renaming the company later is a change to its
+`company` and `domain` lines. The code's folder and module names
+(`omniarmor_app`, `omni_armor_rules`), the database file (`omniarmor.db`),
+the Render service and disk names and the GitHub repository's name are
+historical and stay as they are. Schema version 28 runs by itself on start:
+the readings, notes and history the app wrote under the old names show the
+new ones (what people typed and the log of emails already sent are left as
+they were). Nothing breaks on deploy day: the steps below can follow at your
+own pace.
+
+What only you can do, outside the code:
+
+1. **DNS:** add a record for the new subdomain, `aegizyn` on
+   `mtrxhorizyn.com` (a `CNAME` to the service's `onrender.com` address on
+   Render), as in section 1. Keep the old `omniarmor` record.
+2. **Render:** in the service's Settings > Custom Domains add
+   `aegizyn.mtrxhorizyn.com` and keep `omniarmor.mtrxhorizyn.com` attached.
+   The app sends every page asked for at the old address on to the new one
+   with a permanent redirect (`OLD_HOSTS`, which by default lists
+   `omniarmor.mtrxhorizyn.com`); Stripe's webhook, Kryozyn's daily report and
+   `/healthz` and `/readyz` are answered at the old address as before, so
+   nothing that posts there breaks.
+3. **Settings on the service:** `BASE_URL=https://aegizyn.mtrxhorizyn.com`;
+   `MAIL_FROM=Aegizyn <no-reply@aegizyn.mtrxhorizyn.com>`; `SUPPORT_EMAIL`,
+   if it named the old subdomain, to the new one. `AEGIZYN_ENV=production`
+   replaces `OMNIARMOR_ENV` (the Docker image sets it already; the old name
+   still works, and the new one wins when both are set).
+4. **Email:** if the sending provider verified `omniarmor.mtrxhorizyn.com`
+   as its own sending domain, verify `aegizyn.mtrxhorizyn.com` too (SPF,
+   DKIM, DMARC as in section 2). If it verified the whole of
+   `mtrxhorizyn.com`, there is nothing to do.
+5. **Stripe:** change the webhook's address to
+   `https://aegizyn.mtrxhorizyn.com/billing/stripe/webhook` (the old one keeps
+   working meanwhile), and the product names and the public business name to
+   Aegizyn where they said OmniArmor.
+6. **Kryozyn:** point it at `https://aegizyn.mtrxhorizyn.com/api/connect/kryozyn/daily`
+   with the `X-Kryozyn-Signature` header when convenient. The old address,
+   `/api/connect/cyberlogix/daily`, and the old header,
+   `X-CyberLogix-Signature`, keep working
+   ([KRYOZYN-CONNECTION.md](KRYOZYN-CONNECTION.md)). Connection keys don't
+   change.
+7. **The company's console:** Aegizyn's address and stats address are now
+   `https://aegizyn.mtrxhorizyn.com` and `.../api/stats` (same `STATS_KEY`).
+8. **Uptime monitors** and any saved links: move them to the new address.
+9. **When the company's new name and domain are chosen:** change `company`
+   and `domain` in `omniarmor_app/names.json`, add the old app address
+   (`aegizyn.mtrxhorizyn.com`) to `OLD_HOSTS`, and repeat steps 1 to 8 for
+   the new domain. Two pictures carry the company's name as drawn text and
+   are redrawn then: the sharing picture (`omniarmor_app/static/og-image.png`,
+   "A product of ...") and, only if they show it, the screenshots in
+   `omniarmor_app/static/shots/`.
+
 **Upgrading from 1.1.1 or earlier: one step.** Until 1.1.2 any account with
 the `OPERATOR_EMAIL` address was the operator's. After the upgrade no account
 is, not even yours, so the usage counts and the weekly report's switch are
@@ -432,10 +489,10 @@ with the `OPERATOR_EMAIL` address (section 5, "The operator's account") and
 check that the account it prints is yours.
 
 **Upgrading to 1.2.0:** nothing to do. Schema version 17 adds the tables for
-the Kitchen Safety Bundle; CyberLogix reports start once a workspace owner
-creates a connection key in Settings, Connections. CyberLogix calls
-`https://omniarmor.mtrxhorizyn.com/api/connect/cyberlogix/daily`
-([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md)); if a firewall or proxy
+the Kitchen Safety Bundle; Kryozyn reports start once a workspace owner
+creates a connection key in Settings, Connections. Kryozyn calls
+`https://aegizyn.mtrxhorizyn.com/api/connect/kryozyn/daily`
+([KRYOZYN-CONNECTION.md](KRYOZYN-CONNECTION.md)); if a firewall or proxy
 sits in front of the app, let POSTs to that address through.
 
 **Upgrading to 1.3.0 (Pro and Plus):** schema version 18 runs by itself on
@@ -467,8 +524,8 @@ Before deploying, in Stripe (test mode first, on staging):
 
 For the Kitchen Safety Bundle, generate `KITCHEN_BUNDLE_SECRET`
 (`python3 -c "import secrets; print(secrets.token_hex(32))"`) and set the
-same value on CyberLogix. CyberLogix signs the reports of bundle sites with
-it ([CYBERLOGIX-CONNECTION.md](CYBERLOGIX-CONNECTION.md), section 3.5); a
+same value on Kryozyn. Kryozyn signs the reports of bundle sites with
+it ([KRYOZYN-CONNECTION.md](KRYOZYN-CONNECTION.md), section 3.5); a
 workspace whose signed reports arrive gets Pro at no charge. Unset, reports
 still fill in the checks and nobody gets the bundle's Pro. To change the
 secret, set the new value on both apps at once: reports signed with the old
@@ -592,7 +649,7 @@ offers each person was shown. Nothing changes for anyone's plan.
 it adds the `classes` table, `learners.class_id` and each workspace's pilot
 dates. Nothing changes for anyone's plan. What's new:
 
-- **SchoolArmor**, industry 51, a checklist for K-12 schools, and the trade
+- **School Aegizyn**, industry 51, a checklist for K-12 schools, and the trade
   page `/for/schools`. Nothing to set up.
 - **The Academy for classrooms**: a teacher adds a class in the Academy
   (Classes) and students by first name or nickname only. A free pilot of
@@ -658,7 +715,7 @@ already saved:
   restaurant checks that now hold one entry per item (cold holding, hot
   holding and the 7-day date marking) "Fridge 1", "Hot-holding unit 1" or
   "Food batch 1": that value is the check's first entry, in the same row, so
-  nothing is moved and CyberLogix keeps writing to it. Other entries go in
+  nothing is moved and Kryozyn keeps writing to it. Other entries go in
   the new `check_entries` table.
 - It adds the `illness_log` table (first names or initials only; deleting a
   workspace deletes it with everything else).
@@ -669,7 +726,7 @@ already saved:
   now; ranks and certificates are worked out from the lessons that exist.
 - Classes made from now on start with the leaderboard off; existing classes
   keep their setting.
-- Three new industries (52 SalonArmor, 53 InkArmor, 54 GymArmor) appear in
+- Three new industries (52 Salon Aegizyn, 53 Ink Aegizyn, 54 Gym Aegizyn) appear in
   sign-up and the industry list; nobody is moved onto them.
 
 To roll back to 1.10.1, restore the backup taken before the upgrade (1.10.1
@@ -731,15 +788,15 @@ opened", and they never send email. Nothing else to do.
   `SCHOOL_YEARLY_STRIPE_PRICE` ("Upgrading to 1.6.0"; a school can also pay
   by invoice: `SCHOOL_INVOICE_EMAIL`), and
   in Stripe add the webhook
-  `https://omniarmor.mtrxhorizyn.com/billing/stripe/webhook` with the events
+  `https://aegizyn.mtrxhorizyn.com/billing/stripe/webhook` with the events
   `checkout.session.completed`, `customer.subscription.created`,
   `customer.subscription.updated`, `customer.subscription.deleted` and
   `invoice.payment_failed`. The prices people see are in
   `omniarmor_app/plans.py`: change them there and in Stripe together.
 - The Kitchen Safety Bundle: set `KITCHEN_BUNDLE_SECRET` to the same value
-  as on CyberLogix.
-- Add the `omniarmor` subdomain on MTRX Horizyn's domain and point it at the
-  app (section 1). OmniArmor has no domain of its own.
+  as on Kryozyn.
+- Add the `aegizyn` subdomain on MTRX Horizyn's domain and point it at the
+  app (section 1). Aegizyn has no domain of its own.
 - Set up two free uptime monitors, on `/healthz` and `/readyz` (section 5,
   "If the app is down"), so you hear within minutes when the site, or
   something behind it, stops working.

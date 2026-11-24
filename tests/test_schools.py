@@ -1,4 +1,4 @@
-"""OmniArmor for schools: the SchoolSafetyArmor checklist and the /for/schools page,
+"""Aegizyn for schools: the School Safety Aegizyn checklist and the /for/schools page,
 and the Future Owner Academy for classrooms (classes added by a teacher with
 first names or nicknames only, the class progress view, certificates, the
 leaderboard, the free trial and its report, and the classroom plans)."""
@@ -31,9 +31,9 @@ def words(page):
 
 class TestSchoolChecklist(unittest.TestCase):
     def test_schools_are_an_industry_of_their_own(self):
-        self.assertEqual(INDUSTRIES[SCHOOL]["brand"], "SchoolSafetyArmor")
+        self.assertEqual(INDUSTRIES[SCHOOL]["brand"], "School Safety Aegizyn")
         self.assertEqual(INDUSTRIES[SCHOOL]["sector"], "School Safety & Operations")
-        self.assertEqual(INDUSTRIES[8]["brand"], "SchoolArmor")   # the legal duties, beside it
+        self.assertEqual(INDUSTRIES[8]["brand"], "School Aegizyn")   # the legal duties, beside it
         validate_rules({SCHOOL: CATALOG[SCHOOL]}, [SCHOOL])
 
     def test_it_covers_what_a_school_runs_into(self):
@@ -87,12 +87,12 @@ class TestSchoolPages(AppTestCase):
         self.assertIn("Schools", page)
         for rule in CATALOG[SCHOOL]:
             self.assertIn(rule.title, page)
-        self.assertIn("OmniArmor has checklists made for schools: SchoolSafetyArmor", page)
+        self.assertIn("Aegizyn has checklists made for schools: School Safety Aegizyn", page)
         self.assertIn("It doesn't guarantee compliance", page)
         self.assertNotRegex(page.lower(), r"(?<!doesn't )guarantees? (your )?compliance|we ensure")
-        self.assertIn("CyberLogix AI", page)
+        self.assertIn("Kryozyn", page)
         self.assertIn("watched 24/7", page)
-        self.assertIn('href="https://cyberlogix.mtrxhorizyn.com"', response.data.decode())
+        self.assertIn('href="https://kryozyn.mtrxhorizyn.com"', response.data.decode())
         self.assertIn('href="/classrooms"', response.data.decode())
         # A school signs up as a school, and sees the classroom demo and prices.
         self.assertIn("/signup?then=classes", response.data.decode())
@@ -105,7 +105,7 @@ class TestSchoolPages(AppTestCase):
         sitemap = self.client.get("/sitemap.xml").data.decode()
         self.assertIn("<loc>https://omniarmor.test/for/schools</loc>", sitemap)
         self.assertIn("<loc>https://omniarmor.test/classrooms</loc>", sitemap)
-        self.assertIn("<loc>https://omniarmor.test/industries/schoolsafetyarmor</loc>", sitemap)
+        self.assertIn("<loc>https://omniarmor.test/industries/school-safety-aegizyn</loc>", sitemap)
         trades_list = self.client.get("/industries").data.decode()
         by_trade = trades_list[trades_list.index('data-trades'):trades_list.index("data-all-industries")]
         self.assertIn('href="/for/schools"', by_trade)

@@ -102,7 +102,7 @@ def plan_page():
     yearly_toggle = any(o[plans.YEAR]["offered"] for o in offers.values())
     from .connections import TEMPERATURE_CHECKS
     from .tracking import org_industry_ids
-    # The Kitchen Safety Bundle only for a workspace it can help (one CyberLogix
+    # The Kitchen Safety Bundle only for a workspace it can help (one Kryozyn
     # fills in a check for) or one already on it.
     ids = set(org_industry_ids(get_db(), g.org["id"]))
     show_bundle = access["bundle"]["state"] != "none" or any(i in ids for i, _ in TEMPERATURE_CHECKS)

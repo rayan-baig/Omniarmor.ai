@@ -1,5 +1,5 @@
 """1.18.0: what a strict eighth review asked for. Every Pilot welcome button
-answers with no AI key, and Pilot wears OmniArmor's colours with nothing framed
+answers with no AI key, and Pilot wears Aegizyn's colours with nothing framed
 behind the tucked robot; the Academy mixes its lesson formats (scenarios,
 matching, sorting, true or false), asks the idea in other words instead of
 copying its card, draws the map as a path and makes clearing a world (and a
@@ -124,7 +124,7 @@ class TestPilotFacts(AppTestCase):
         self.assertIn('themeClass: "omni-pilot"', js)
 
 
-class TestPilotLooksLikeOmniArmor(unittest.TestCase):
+class TestPilotLooksLikeAegizyn(unittest.TestCase):
     def test_the_theme_is_the_app_s_own_css(self):
         css = read("omniarmor_app", "static", "app.css")
         self.assertIn(".pilot-root.omni-pilot{--pilot-blue:#F7743A", css)
