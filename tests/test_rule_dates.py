@@ -296,7 +296,7 @@ class TestBusinessDayDeadlines(unittest.TestCase):
         self.assertEqual((s.days_left, s.overdue_by, s.due_text), (-days, _plural(days), f"{_plural(days)} overdue"),
                          where)
         # The count alone shows it once it is past the limit; until then the message says when it ended.
-        self.assertIn(f"limit ended on {due}" if count <= self.I9.limit else "is over the 3 business days limit",
+        self.assertIn(f"limit ended on {due}" if count <= self.I9.limit else "is over the 3-business-day limit",
                       s.message, where)
         self.assertIn(self.I9.action, s.message)
         self.assertEqual(reminder_window(s.days_left), "overdue-week-0", where)

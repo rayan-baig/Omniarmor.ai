@@ -401,7 +401,7 @@ class TestCountdownWords(unittest.TestCase):
         self.assertIn("close to the 135°F minimum (it warns at 140°F or less)",
                       evaluate(find_rule(2, "hot_holding"), 138.0)[2])
         self.assertIn("exactly the 135°F minimum", evaluate(find_rule(2, "hot_holding"), 135.0)[2])
-        self.assertIn("close to the 7 days limit (it warns from 6 days)", evaluate(find_rule(2, "date_marking"), 6.0)[2])
+        self.assertIn("close to the 7-day limit (it warns from 6 days)", evaluate(find_rule(2, "date_marking"), 6.0)[2])
 
 
 class TestErrorReportPaths(unittest.TestCase):

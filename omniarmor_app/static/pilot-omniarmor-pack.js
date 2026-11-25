@@ -60,7 +60,7 @@ The totals at the top of a page and the thin bar under them use the same colours
 - History: the audit trail. Every reading, limit and team change, with who made it and when; Export CSV.
 - Reminders: the email log (above).
 - Academy: the Future Owner Academy (below).
-- Settings: company name, time zone and checklists (the owner), your reminder emails, the team (the owner invites with a link that works once for 7 days, and removes people), locations, the Kryozyn connection, the plan, and deleting the workspace.
+- Settings: company name, time zone and checklists (the owner), your reminder emails, your password (the current one and a new one; every other device is signed out), the team (the owner invites with a link that works once for 7 days, and removes people), locations, the Kryozyn connection, the plan, and deleting the workspace.
 - Armo, the little shield above the tab bar, jumps up when something is blocked, overdue, due soon or a reminder email failed, with a link to the fix. People can pick one of 14 personalities or hide him.
 - A location is one workspace with its own checks, team and plan; the owner adds and switches locations in Settings.
 

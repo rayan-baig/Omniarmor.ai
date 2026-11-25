@@ -123,7 +123,7 @@
             <input type="date" id="{{ fid }}-d" name="date" value="{{ s.value_date.isoformat() if s.value_date else '' }}"{% if s.mode == 'since' %} max="{{ today.isoformat() }}"{% endif %}>
           </div>
         {% endif %}
-        <span class="limits" id="{{ fid }}-l">{% if r.kind == 'max' %}Limit {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns from {{ s.effective.warn|qty(r.unit) }}{% endif %}{% else %}Minimum {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns at {{ s.effective.warn|qty(r.unit) }} or less{% endif %}{% endif %}{% if s.overridden %} · your setting{% endif %}</span>
+        <span class="limits" id="{{ fid }}-l">{{ s.limits_text }}</span>
         <div class="inline">
           <button class="btn quiet" type="submit" name="action" value="save">Save</button>
           {% if s.mode == 'since' %}<button class="btn" type="submit" name="action" value="done_today">{{ 'Done now' if counts_time(r) else 'Done today' }}</button>{% endif %}

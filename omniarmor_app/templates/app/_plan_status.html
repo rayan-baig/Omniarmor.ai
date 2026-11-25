@@ -1,5 +1,6 @@
-{# What the workspace's plan is right now, in one sentence (plans.access), for Settings and the plan page. #}
-{% macro status_line(a, facts) -%}
+{# What the workspace's plan is right now, in one sentence (plans.access), for Settings and the plan page. 1.26.0:
+   headed, under a heading that already says "You're on Plus" (the plan page), it doesn't say it again. #}
+{% macro status_line(a, facts, headed=false) -%}
 {%- if a.pause_open -%}
 {{ a.plan_name }} is paused, with no end date: no charges, reminders are off and the workspace is read-only. Everything is kept, and it starts again when the pause is lifted.
 {%- elif a.paused -%}
@@ -8,16 +9,24 @@
 Your last payment for {{ a.plan_name }} didn't go through. {{ 'Update your card' if g.role == 'owner' else 'The workspace owner can update the card' }} to keep it.
 {%- elif a.paid and a.ends_at -%}
 {{ a.plan_name }}{{ ', paid yearly,' if a.yearly }} is cancelled and ends {{ a.ends_at|local_date }}{% if a.yearly %}, the end of the year you paid for. A yearly plan isn't refunded for the part of the year left{% endif %}.
+{%- elif a.legacy and headed -%}
+The Academy plan from before {{ facts.pro.name }} and {{ facts.plus.name }}: the whole Academy and the compliance tracker, at its old price, until you change plan{% if a.renews_at %}. It renews {{ a.renews_at|local_date }}{% endif %}.
 {%- elif a.legacy -%}
 You're on the Academy plan from before {{ facts.pro.name }} and {{ facts.plus.name }}: the whole Academy and the compliance tracker, at its old price, until you change plan{% if a.renews_at %}. It renews {{ a.renews_at|local_date }}{% endif %}.
+{%- elif a.paid and a.kind == 'plus_bundle' and headed -%}
+At the {{ facts.bundle.name }} price{{ ', billed yearly' if a.yearly }}: the whole Academy{% if a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}. {{ facts.bundle.includes.name }} comes from the bundle.
 {%- elif a.paid and a.kind == 'plus_bundle' -%}
 You're on {{ facts.plus.name }} at the {{ facts.bundle.name }} price{{ ', billed yearly' if a.yearly }}: the whole Academy{% if a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}. {{ facts.bundle.includes.name }} comes from the bundle.
+{%- elif a.paid and headed -%}
+{{ 'Billed yearly' if a.yearly else 'Billed monthly' }}{% if a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}.
 {%- elif a.paid -%}
 You're on {{ a.plan_name }}{{ ', billed yearly' if a.yearly }}{% if a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}.
 {%- elif a.source == 'bundle' -%}
 No charge from Aegizyn while Kryozyn sends signed reports. Last signed report {{ a.bundle.last|local_date }}.
 {%- elif a.source == 'bundle_grace' -%}
 Kryozyn hasn't sent a signed report since {{ a.bundle.last|local_date }}. {{ facts.bundle.includes.name }} stays included until {{ a.bundle.grace_ends|local_date }}.
+{%- elif a.trial and headed -%}
+{{ a.trial_days }} day{{ 's' if a.trial_days != 1 }} left of everything in {{ facts.plus.name }}.
 {%- elif a.trial -%}
 Free trial: {{ a.trial_days }} day{{ 's' if a.trial_days != 1 }} left of everything in {{ facts.plus.name }}.
 {%- else -%}

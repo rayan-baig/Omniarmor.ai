@@ -69,7 +69,7 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(evaluate(r, 11)[0], WARNING)
         level, status, message = evaluate(r, 11.5)
         self.assertEqual((level, status), (BLOCKED, "OVER LIMIT"))
-        self.assertEqual(message, "11.5 h is over the 11 h limit. Fix it.")
+        self.assertEqual(message, "11.5 h is over the 11-hour limit. Fix it.")
 
     def test_min(self):
         r = make("min", unit="%", limit=90, warn=92)

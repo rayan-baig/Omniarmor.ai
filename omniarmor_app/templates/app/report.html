@@ -28,7 +28,7 @@
           <tr data-check="{{ url_for('app.industry', industry_id=group.industry.id) }}#rule-{{ s.rule.key }}"{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %}>
             <td>{{ s.rule.title }}</td>
             <td><span class="tag {{ s.level }}">{{ s.label }}</span></td>
-            <td class="num" data-label="Reading">{{ s.shown_value or '—' }}</td>
+            <td class="num reading" data-label="Reading">{{ s.report_reading or '—' }}</td>
             <td class="num mono" data-label="Due">{{ s.due_label or '—' }}</td>
             <td class="mono" data-label="Rule">{{ s.rule.citation }}</td>
             <td class="num upd" data-label="Last updated">{{ s.updated_at|local_date if s.updated_at else '—' }}{% if s.updated_by %}<span class="upd-by" data-pilot-private><span class="upd-sep"> · </span>{{ s.updated_by }}</span>{% endif %}</td>
@@ -37,7 +37,7 @@
           <tr class="entry-row" data-entry-row>
             <td>· {{ e.label }}</td>
             <td><span class="tag {{ e.state.level }}">{{ e.state.label }}</span></td>
-            <td class="num" data-label="Reading">{{ e.state.shown_value or '—' }}</td>
+            <td class="num reading" data-label="Reading">{{ e.state.report_reading or '—' }}</td>
             <td class="num mono" data-label="Due">{{ e.state.due_label or '—' }}</td>
             <td class="rc-empty"></td>
             <td class="num upd" data-label="Last updated">{{ e.state.updated_at|local_date if e.state.updated_at else '—' }}</td>

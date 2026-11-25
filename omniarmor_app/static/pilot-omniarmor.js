@@ -389,22 +389,34 @@
       + `Teaching a class? [The classroom plans](/classrooms#price) are yearly. [All the prices](/pricing)`;
   }
 
-  // "Explain this page": from its own headings and what it says it's for.
+  // "Explain this page": from its own headings and what it says it's for. 1.26.0: the page's name once ("Report:
+  // the compliance report", not "...: Compliance report" after it), no heading that only repeats it, and no link
+  // to the page you're already on (on /help, no "Read the help page").
   function explainPageAnswer() {
     const main = one("main") || document.body;
-    const title = heading() || words(document.title);
+    const low = (t) => String(t || "").toLowerCase();
+    const bare = words(document.title).replace(/\s+[·|–—-]\s+[^·|–—]*$/, "");
+    const title = heading() || bare;
     const purpose = said(one(".page-head .sub, .hero p.lead, p.lead, p.sub, p.ac-lead", main));
-    const parts = all("main h2", main).map((h) => said(h)).filter((t) => t && t.length < 90);
+    const where = words(screenName());
+    const same = (a, b) => !!a && !!b && (low(a).includes(low(b)) || low(b).includes(low(a)));
+    const named = !where || where === words(document.title) ? (title || "This page") : same(where, title) || !title ? where : `${where}: ${title}`;
+    const parts = all("main h2", main).map((h) => said(h)).filter((t) => t && t.length < 90 && !same(t, title));
     const seen = new Set();
     const uniq = parts.filter((t) => { const k = t.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 7);
-    const where = words(screenName());
-    const out = [`**${where && where !== words(document.title) ? where : (title || "This page")}**${title && where && !where.includes(title) ? `: ${title}` : ""}`];
-    if (purpose) out.push("", purpose);
+    const out = [`**${named}**`];
+    if (purpose && !same(purpose, title)) out.push("", purpose);
     if (uniq.length) out.push("", "**On this page:**", ...uniq.map((t) => `- ${t}`));
     const c = pageCounts();
     if (c) out.push("", `Right now: ${countsLine(c)}.`);
-    out.push("", who === "visitor" ? "[Read the help page](/help) for the common questions, or [see a demo](/demo)."
-      : "Ask me about anything you see here, or press another button above.");
+    if (who === "visitor") {
+      const elsewhere = [["/help", "Read the help page", "for the common questions"], ["/demo", "see a demo", "with pretend data"]]
+        .filter(([to]) => path !== to && !path.startsWith(`${to}/`));
+      const offers = elsewhere.map(([to, label, why], n) => `[${n ? label : label[0].toUpperCase() + label.slice(1)}](${to}) ${why}`);
+      out.push("", offers.length ? `${offers.join(", or ")}.` : "Ask me about anything you see here.");
+    } else {
+      out.push("", "Ask me about anything you see here, or press another button above.");
+    }
     return out.join("\n");
   }
 
@@ -571,10 +583,22 @@
   // at once (chips() below hands it to the core's typed matching), unless this page's own buttons and
   // suggestions already answer it.
   const signedIn = who === "business" || who === "teacher";
-  // 1.23.0: it starts with the answer to the question most people mean ("No, we don't sell your data.") and says
-  // where the data is kept, in the Security page's own words (one database on one server at the hosting company,
-  // and the second storage company only when off-site backups are on). `asked` is what was typed or pressed.
+  // 1.23.0: it starts with the answer to the question most people mean and says where the data is kept, in the
+  // Security page's own words (one database on one server at the hosting company, and the second storage company
+  // only when off-site backups are on). `asked` is what was typed or pressed. 1.26.0: the first words answer the
+  // question asked: "Is my data safe?" starts "Yes.", "Do you sell my data?" "No, we don't sell your data.",
+  // "Do you use tracking cookies?" "No tracking cookies.", "Where is my data stored?" with where.
   const SELL_WORDS = /\b(sell|sells|selling|sold|share|shares|sharing|shared|ads|advertis\w*|third|partners?)\b/i;
+  const COOKIE_WORDS = /\b(cookies?|track|tracks|tracking|tracked|analytics)\b/i;
+  const WHERE_WORDS = /\b(where|stored|store|kept|keep|server|servers|hosted|hosting|located|country)\b/i;
+  function safeLead(asked) {
+    const q = String(asked || "");
+    if (SELL_WORDS.test(q)) return "No, we don't sell your data. We don't share it for ads, and no ad, analytics or tracking company sees the pages you open.";
+    if (COOKIE_WORDS.test(q)) return "No tracking cookies, and no ad or analytics company sees the pages you open. Aegizyn uses one cookie, to keep you signed in. We don't sell your data.";
+    if (WHERE_WORDS.test(q)) return "With our hosting company, in one place: the details are just below. We don't sell your data or share it for ads.";
+    if (/\b(encrypt\w*|https|ssl|tls)\b/i.test(q)) return "On its way to and from you, yes: every page comes over a secure connection (HTTPS). Passwords are stored scrambled. We don't sell your data.";
+    return "Yes. We don't sell your data, we don't share it for ads, and no ad, analytics or tracking company sees the pages you open.";
+  }
   function storedLine(x) {
     const kept = Number(x.backup_keep) > 0 ? ` The newest ${count(Number(x.backup_keep), "daily copy", "daily copies")} are kept.` : "";
     return `- **Where it's stored:** in one database on one server, run for ${N.company} (who make Aegizyn) by our hosting company. `
@@ -584,9 +608,7 @@
   function safeAnswer(f, asked) {
     const x = f || {};
     const security = typeof x.security_path === "string" && /^\/[\w/-]*$/.test(x.security_path) ? x.security_path : "/security";
-    const sell = !asked || SELL_WORDS.test(String(asked)) || labelOf(asked) === "is my data safe";
-    const out = [sell ? "No, we don't sell your data. We don't share it for ads, and no ad, analytics or tracking company sees the pages you open."
-      : "We keep it safe, and no, we don't sell your data or share it for ads.", "",
+    const out = [safeLead(asked), "",
     storedLine(x),
     "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to Aegizyn.",
     `- ${N.assistant}, this helper, runs in your browser on your own AI key: Aegizyn's server never sees the key or the chat.`];
@@ -597,7 +619,6 @@
       "", `[Security and your data](${security}) has every detail, and [the privacy page](/privacy) says who can see what.`);
     return out.join("\n");
   }
-  const labelOf = (t) => String(t || "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   // 1.23.0: Help's top how-tos, answered with no key wherever they're typed (GLOBAL below).
   function teammateAnswer(f) {
     const days = Number((f || {}).invite_days) || 7;
@@ -633,12 +654,19 @@
       + `- **Download the report and History first** if you need them. Backups keep a copy for ${backups}.\n\n`
       + "[Only cancel the plan instead](/help#cancel) · [Deleting, in Help](/help#delete)";
   }
-  // 1.25.0: changing or resetting a password is one way, the emailed link (there is no password box in Settings).
+  // 1.25.0: resetting a forgotten password is the emailed link. 1.26.0: signed in, a password is changed in
+  // Settings (Your password: the current one and a new one), so that comes first; the link is for a forgotten one.
   function passwordAnswer(f) {
     const hours = Number((f || {}).reset_hours) || 1;
-    const start = signedIn ? "Sign out, then on the sign-in page press **Forgot your password?**" : "On the sign-in page, press **Forgot your password?**";
-    return `${start} and type your email. We email you a link that works once, for ${count(hours, "hour")}: open it and choose the new password. `
-      + "Every other device you were signed in on is signed out. No email? Check spam, or ask again after a few minutes. [Reset my password](/forgot)";
+    const link = `We email you a link that works once, for ${count(hours, "hour")}: open it and choose the new password.`;
+    if (signedIn) {
+      return "In [Settings](/app/settings#password), under **Your password**, type your current password and a new one, then press **Change password**. "
+        + "Every other device you're signed in on is signed out.\n\n"
+        + `**Forgot the current one?** Sign out, then on the sign-in page press **Forgot your password?** and type your email. ${link} [Reset my password](/forgot)`;
+    }
+    return `On the sign-in page, press **Forgot your password?** and type your email. ${link} `
+      + "Every other device you were signed in on is signed out. No email? Check spam, or ask again after a few minutes. "
+      + "Once you're signed in, you can also change it in Settings, under **Your password**. [Reset my password](/forgot)";
   }
   // "What does it cost?": the plans' real names and prices.
   function pricesAnswer(f) {
@@ -659,6 +687,40 @@
     out.push(`For a school: **${words(x.classroom) || "Classroom"}** ${yearly(x.classroom_price)} or **${words(x.school) || "Whole school"}** ${yearly(x.school_price)}.`, "",
       who === "business" ? "Your own plan is on the [Plans page](/app/plan). [All the prices](/pricing)" : "[All the prices](/pricing)");
     return out.join("\n");
+  }
+  // 1.26.0: "Do you have a free plan?" and "Is there a yearly discount?", from the real plans (pilot.py's facts).
+  function freePlanAnswer(f) {
+    const x = f || {};
+    if (who === "teacher" || schoolSide) {
+      return `**No free plan, but a free trial:** one class, for ${x.pilot_days || 30} days, with no card. `
+        + `After it, **${words(x.classroom) || "Classroom"}** is ${yearly(x.classroom_price)} and **${words(x.school) || "Whole school"}** ${yearly(x.school_price)}. `
+        + "When a trial ends nothing is deleted: the class and its progress are kept. "
+        + (who === "teacher" ? "[Your plan](/app/plan)" : "[See the prices](/classrooms#price)");
+    }
+    const yearlyToo = x.pro_yearly || x.plus_yearly ? ` (or yearly, ${words(x.free_label) || "for less"})` : "";
+    return "**No free plan for the compliance tracker, but a free trial:** "
+      + `${x.trial_days ? `every new workspace gets ${x.trial_days} days of everything in ${words(x.plus) || "Plus"}` : "every new workspace starts with a free trial"}, with no card. `
+      + `After it, **${words(x.pro) || "Pro"}** is ${words(x.pro_price)} and **${words(x.plus) || "Plus"}** ${words(x.plus_price)}${yearlyToo}.\n\n`
+      + "Without a plan nothing is deleted: you can still see, print and download your records, but new checks can't be saved and reminders pause. "
+      + "The Academy's first worlds stay free for everyone. "
+      + (who === "business" ? "[Your plan](/app/plan) · [All the prices](/pricing)" : "[All the prices](/pricing)");
+  }
+  function yearlyAnswer(f) {
+    const x = f || {};
+    if (who === "teacher" || schoolSide) {
+      return `A school's plans are paid yearly only: **${words(x.classroom) || "Classroom"}** ${yearly(x.classroom_price)}, `
+        + `**${words(x.school) || "Whole school"}** ${yearly(x.school_price)}. There's no monthly price to compare, so no yearly discount. `
+        + (who === "teacher" ? "[Your plan](/app/plan)" : "[See the prices](/classrooms#price)");
+    }
+    const lines = [[x.pro, x.pro_price, x.pro_yearly, "Pro"], [x.plus, x.plus_price, x.plus_yearly, "Plus"]]
+      .filter(([, , y]) => y).map(([name, month, y, fallback]) => `- **${words(name) || fallback}:** ${words(month)}, or ${words(y)} paid yearly.`);
+    if (!lines.length) {
+      return `Not right now: **${words(x.pro) || "Pro"}** and **${words(x.plus) || "Plus"}** are billed monthly (${words(x.pro_price)} and ${words(x.plus_price)}). [All the prices](/pricing)`;
+    }
+    const where = who === "business" ? "the [Plans page](/app/plan)" : "the Plans page, once you're signed in";
+    return `**Yes: paying yearly gives ${words(x.free_label) || "a lower price"}.**\n\n${lines.join("\n")}\n\n`
+      + `The workspace owner picks yearly, or switches a monthly plan to it, on ${where}. `
+      + "A yearly plan isn't refunded for the part of the year left if you cancel. [All the prices](/pricing)";
   }
   // The words for "Is this legal advice?", here and on the industry pages' own button (MATCH). 1.22.0: "Does
   // this guarantee I'm compliant?", "Will I get fined?".
@@ -723,7 +785,13 @@
         "sell", "sold", "share", "shared", "tracking", "cookies", "stored"] },
     { label: "What does it cost?", answer: (ctx) => pricesAnswer(ctx && ctx.facts),
       match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars",
-        "billing", "bill", "charge", "charged", "afford", "monthly", "yearly"] },
+        "billing", "bill", "charge", "charged", "afford", "monthly"] },
+    // 1.26.0: "Do you have a free plan?", "Is there a yearly discount?" (two words each, so they win over the price
+    // answer, which no longer has "yearly").
+    { label: "Is there a free plan?", answer: (ctx) => freePlanAnswer(ctx && ctx.facts),
+      match: ["free", "forever", "freemium", "tier", "unpaid"] },
+    { label: "Is there a yearly discount?", answer: (ctx) => yearlyAnswer(ctx && ctx.facts),
+      match: ["yearly", "annual", "annually", "year", "discount", "discounts", "save", "saving", "savings", "deal", "cheaper"] },
     { label: "Is this legal advice?", answer: LEGAL, match: LEGAL_WORDS },
     // 1.23.0: "close" and "account" are deleting the workspace now (below), which isn't cancelling.
     { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",

@@ -48,12 +48,12 @@
       <label class="field"><span>Business or school name</span>
         <input type="text" name="org_name" value="{{ form.get('org_name', '') }}" autocomplete="organization" required maxlength="120" aria-describedby="org-hint">
         <span class="hint" id="org-hint">Shown on your reports and reminder emails. You can change it later.</span></label>
-      <label class="field"><span>Timezone</span>
+      <label class="field"><span>Time zone</span>
         <select name="timezone"{% if not form.get('timezone') %} data-auto-timezone{% endif %}>
           {% set chosen = form.get('timezone', 'America/New_York') %}
           {% for tz in timezones %}<option value="{{ tz }}" {% if tz == chosen %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
         </select>
-        <span class="hint">Set from your device. Deadlines roll over at midnight in this timezone.</span></label>
+        <span class="hint">Set from your device. Due dates roll over at midnight in this time zone; you can change it later in Settings.</span></label>
       <fieldset class="plain">
         <legend class="plain"><span class="muted">Your industries: pick one or more</span></legend>
         <p class="hint signup-find">Each one adds its checklist. You can add or remove them later in Settings.</p>

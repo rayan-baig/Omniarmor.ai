@@ -246,6 +246,12 @@ function fmt(value, unit) {
   if (unit === "$") return "$" + number;
   return number + " " + unit;
 }
+// A time limit said as one word before "limit" or "minimum" (as rule.py's limit_words): "7-day", "2-hour".
+const LIMIT_UNITS = {"days": "day", "business days": "business-day", "working days": "working-day", "work days": "work-day",
+  "months": "month", "years": "year", "weeks": "week", "h": "hour", "min": "minute"};
+function limitWords(value, unit) {
+  return LIMIT_UNITS[unit] ? fmt(value, "") + "-" + LIMIT_UNITS[unit] : fmt(value, unit);
+}
 function evaluate(rule, value) {
   const source = rule.policy ? " (policy setting)" : "";
   if (rule.kind === "required" || rule.kind === "forbidden") {
@@ -258,7 +264,7 @@ function evaluate(rule, value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return ["NONE", "NO READING", "Enter a reading to check this rule."];
   }
-  const limit = fmt(rule.limit, rule.unit), shown = fmt(value, rule.unit);
+  const limit = limitWords(rule.limit, rule.unit), shown = fmt(value, rule.unit);
   // Where the warning starts, when that isn't the limit itself (as rule.py's _warns).
   const warns = (word) => {
     const policy = rule.policy ? "policy setting" : "";

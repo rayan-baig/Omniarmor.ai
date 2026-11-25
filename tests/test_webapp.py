@@ -205,7 +205,7 @@ class TestAccounts(AppTestCase):
         self.assertEqual(r.status_code, 400)
         page = r.data.decode()
         for text in ["Enter your name", "valid email", "at least 10 characters", "company name", "at least one industry",
-                     "valid timezone"]:
+                     "valid time zone"]:
             self.assertIn(text, page)
 
     def test_duplicate_email_rejected(self):

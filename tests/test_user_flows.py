@@ -568,14 +568,14 @@ class TestBusinessDayDeadlinesOverAWeekend(AppTestCase):
         with self.at("2026-11-06"):
             page = self.client.get("/app/industry/30").data.decode()
             self.assertIn("Due today", page)
-            self.assertIn("3 business days is close to the 3 business days limit", page)
+            self.assertIn("3 business days is close to the 3-business-day limit", page)
         for day, overdue in (("2026-11-07", "1 day"), ("2026-11-08", "2 days")):
             with self.subTest(day=day), self.at(day):
                 page = self.client.get("/app/industry/30?only=problems").data.decode()
                 self.assertIn('id="rule-i9_section_2"', page)
                 self.assertIn(f"{overdue} overdue", page)
                 self.assertIn("limit ended on 2026-11-06", page)
-                self.assertNotIn("close to the 3 business days limit", page)
+                self.assertNotIn("close to the 3-business-day limit", page)
                 overview = self.client.get("/app").data.decode()
                 self.assertIn("limit ended on 2026-11-06", overview)
                 self.assertIn('class="tag BLOCKED">Blocked', overview)
@@ -585,7 +585,7 @@ class TestBusinessDayDeadlinesOverAWeekend(AppTestCase):
                 self.assertIn("2026-11-06", row)
                 csv = self.client.get("/app/report.csv").data.decode()
                 line = next(row for row in csv.splitlines() if row.startswith("HR Aegizyn") and "I-9" in row)
-                self.assertIn(",Blocked,3 business days,2026-11-06,", line)
+                self.assertIn(",Blocked,Hired 3 business days ago,2026-11-06,", line)   # 1.26.0: the summary's words
                 issues = self.client.get("/app/armo/status").get_json()["issues"]
                 self.assertTrue(any(i["title"] == f"Form I-9 done within 3 business days: overdue by {overdue}"
                                     for i in issues), issues)
@@ -688,8 +688,8 @@ class TestHourClocks(ClockTestCase):
             self.assertEqual((round(s.value, 2), s.level, s.due_text), (hours, level, due), now)
             self.assertEqual(s.due_label, "2026-11-04 17:00 EST")
             self.assertEqual(s.warn_at.strftime("%H:%M"), "15:00")
-        self.assertIn("8 h is close to the 8 h limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:00").message)
-        self.assertIn("is over the 8 h limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:01").message)
+        self.assertIn("8 h is close to the 8-hour limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:00").message)
+        self.assertIn("is over the 8-hour limit", self.state(30, "fatality_report_8h", start, "2026-11-04T17:01").message)
 
     def test_one_hour_and_shorter_limits(self):
         # 49 CFR 191.5: call the National Response Center within 1 hour (warns from 45 minutes).
@@ -796,7 +796,8 @@ class TestHourClocks(ClockTestCase):
         overview = self.client.get("/app").data.decode()
         self.assertRegex(overview, r"in (7 h|6 h 59 min) · \d{4}-\d\d-\d\d \d\d:\d\d E[SD]T")
         csv = self.client.get("/app/report.csv").data.decode()
-        self.assertTrue(re.search(r"Report a work fatality in 8 hours,Cleared,[\d.]+ h,\d{4}-\d\d-\d\d \d\d:\d\d E[SD]T", csv))
+        # 1.26.0: the Reading in the summary's words ("Event 1 h ago").
+        self.assertTrue(re.search(r"Report a work fatality in 8 hours,Cleared,[A-Z][a-z ]+ [\d.]+ h ago,\d{4}-\d\d-\d\d \d\d:\d\d E[SD]T", csv), csv)
 
     def test_a_future_time_or_a_date_alone_is_refused(self):
         from datetime import timedelta
@@ -922,7 +923,7 @@ class TestMinuteClocks(ClockTestCase):
         for now, (minutes, level, due) in cases.items():
             s = self.state(23, "accident_notice", start, now)
             self.assertEqual((s.value, s.level, s.due_text, s.due_label), (minutes, level, due, "2026-11-04 09:15 EST"), now)
-        self.assertIn("16 min is over the 15 min limit", self.state(23, "accident_notice", start, "2026-11-04T09:16").message)
+        self.assertIn("16 min is over the 15-minute limit", self.state(23, "accident_notice", start, "2026-11-04T09:16").message)
 
     def test_a_welfare_check_round_through_the_app(self):
         from datetime import timedelta

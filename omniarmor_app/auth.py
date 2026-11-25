@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sign up, sign in, sign out, password reset and team invites."""
+"""Sign up, sign in, sign out, password reset, changing a password and team invites."""
 
 import sqlite3
 from datetime import timedelta
@@ -16,8 +16,8 @@ from .trades import SCHOOL_INDUSTRY, SIGNUP_LEAD
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
 from .security import (
-    clean_text, clear_failures, client_ip, flash_error, hash_token, home_url, new_token, normalize_email, password_problem, rate_limited,
-    record_event, record_failure,
+    clean_text, clear_failures, client_ip, flash_error, hash_token, home_url, login_required, new_token, normalize_email,
+    password_problem, rate_limited, record_event, record_failure,
     safe_next, start_session, too_many_failures, valid_email,
 )
 
@@ -32,6 +32,10 @@ COMMON_TIMEZONES = [
 TEACHER_TIMEZONE = "America/New_York"   # a teacher's workspace when the device sent no timezone we know
 INVITE_DAYS = 7
 RESET_HOURS = 1
+# 1.26.0: changing a password in Settings, as many tries as asking for a reset link: 3 an hour for one person,
+# 20 an hour from one place.
+CHANGES_PER_HOUR = 3
+CHANGES_PER_HOUR_FROM_ONE_PLACE = 20
 SIGNUPS_PER_HOUR = 10
 GENERIC_LOGIN_ERROR = "That email and password don't match an account."
 
@@ -116,7 +120,7 @@ def signup():
             if not picked:
                 errors.append("Pick at least one industry.")
             if not valid_timezone(tz):
-                errors.append("Pick a valid timezone.")
+                errors.append("Pick a valid time zone.")
         if not errors and conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             errors.append(_taken_message(invite))
         if errors:
@@ -173,12 +177,12 @@ def signup():
             # A teacher starts with the class; the free trial is already on.
             days = current_app.config["CLASSROOM_PILOT_DAYS"]
             flash(f"Welcome to Aegizyn. Your free {days}-day trial is on: add your class, then your"
-                  " students by first name or nickname.", "ok")
+                  f" students by first name or nickname. {_zone_line(tz)}", "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.
         flash(f"Welcome to Aegizyn. Start with the top {TOP_COUNT} checks below: enter each date"
-              " or answer once and Aegizyn keeps count from there.", "ok")
+              f" or answer once and Aegizyn keeps count from there. {_zone_line(tz)}", "ok")
         return redirect(url_for("app.industry", industry_id=start))
     # ?industry=2 from an industry page; a trade page (trades.py) names several.
     preselected = [i for i in request.args.getlist("industry", type=int) if i in INDUSTRIES][:10]
@@ -186,6 +190,16 @@ def signup():
     return render_template("auth/signup.html", invite=invite, token=token, industries=INDUSTRIES,
                            timezones=COMMON_TIMEZONES, signup_lead=SIGNUP_LEAD, form=form, picked=set(preselected),
                            start_industry=preselect, then_classes=_then_classes(request.args))
+
+
+def _zone_line(tz):
+    """The welcome's line about the workspace's time zone (1.26.0), the one the sign-up page took from the device
+    (signup.js): "Due dates roll over at midnight Chicago time (America/Chicago). Not where you are? Change it in
+    Settings."."""
+    from .views import zone_words
+    words = zone_words({"timezone": tz})
+    named = words if words == "UTC" else f"{words} ({tz})"
+    return f"Due dates roll over at midnight {named}. Not where you are? Change it in Settings."
 
 
 def _school_workspace(conn, user_id, name, tz, now):
@@ -305,6 +319,57 @@ def reset(token):
         start_session(user)
         return redirect(home_url())
     return render_template("auth/reset.html", token=token)
+
+
+@bp.route("/app/settings/password", methods=["POST"])
+@login_required
+def change_password():
+    """Settings, Your password (1.26.0): the current password and a new one. The same length rule and the same
+    limit on tries as a reset; every other device is signed out (the reset links still open are spent too), each
+    workspace's History says so, and an email tells the person, in case it wasn't them."""
+    back = redirect(url_for("app.settings", _anchor="password"))
+    user = g.user
+    current = request.form.get("current_password", "")
+    new = request.form.get("new_password", "")
+    keys = [f"password-change:{user['id']}", f"password-change-ip:{client_ip()}"]
+    if rate_limited([(keys[0], CHANGES_PER_HOUR), (keys[1], CHANGES_PER_HOUR_FROM_ONE_PLACE)], timedelta(hours=1)):
+        flash_error("Too many tries in the last hour. Wait a while, or sign out and use Forgot your password?")
+        return back
+    problem = password_problem(new)
+    if problem:
+        flash_error(problem)
+        return back
+    record_event(keys)
+    if not check_password_hash(user["password_hash"], current):
+        flash_error("That isn't your current password. Nothing was changed.")
+        return back
+    if check_password_hash(user["password_hash"], new):
+        flash_error("That's the password you have now. Choose a new one.")
+        return back
+    conn = get_db()
+    conn.execute("UPDATE users SET password_hash = ?, session_epoch = session_epoch + 1 WHERE id = ?",
+                 (generate_password_hash(new), user["id"]))
+    conn.execute("UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL", (now_iso(), user["id"]))
+    for row in conn.execute("SELECT org_id FROM memberships WHERE user_id = ?", (user["id"],)).fetchall():
+        record_audit(conn, row["org_id"], user["id"], "team", f"{user['name']} changed their password")
+    conn.commit()
+    clear_failures(user["email"])
+    notify(conn, current_app.config, "password_changed", user["email"], "Your Aegizyn password was changed",
+           changed_email(user["name"], f"{current_app.config['BASE_URL']}{url_for('auth.forgot')}"), user_id=user["id"])
+    # A fresh session for this device only, in the same workspace.
+    org_id = session.get("org_id")
+    start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone())
+    if org_id is not None:
+        session["org_id"] = org_id
+    flash("Your password is changed. Every other device was signed out.", "ok")
+    return back
+
+
+def changed_email(name, link):
+    """The email after a password is changed in Settings."""
+    return (f"Hi {name},\n\nYour Aegizyn password was just changed, in Settings, and every other device was signed"
+            " out.\n\nIf that was you, there's nothing to do.\n\n"
+            f"If it wasn't, reset your password now: {link}\nThen tell the workspace owner.")
 
 
 def create_invite(conn, org_id, user_id):

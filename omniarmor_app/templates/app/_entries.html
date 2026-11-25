@@ -56,5 +56,5 @@
     </form>
   </details>
   {% endif %}
-  <span class="limits">{% if r.kind == 'max' %}Limit {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns from {{ s.effective.warn|qty(r.unit) }}{% endif %}{% else %}Minimum {{ s.effective.limit|qty(r.unit) }}{% if s.effective.warn is not none %} · warns at {{ s.effective.warn|qty(r.unit) }} or less{% endif %}{% endif %}{% if s.overridden %} · your setting{% endif %}</span>
+  <span class="limits">{{ s.limits_text }}</span>
 </div>

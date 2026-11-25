@@ -18,7 +18,7 @@ from .config import support_email
 from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, entry_date_words, find_rule,
                       multi_check, rules_for, top_rank, why_line)
 from .db import get_db, now_iso, record_audit
-from .security import clean_text, flash_error, home_url, login_required, owner_required
+from .security import MIN_PASSWORD, clean_text, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, LEVEL_ORDER, ValidationError, add_illness,
                        apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, item_rows, local_date, org_industry_ids,
                        org_now, org_today, remove_illness, states_for_org, tally, tracked_items)
@@ -609,14 +609,15 @@ def _csv_moment(text, tz):
 
 def _report_rows(states, tz=timezone.utc):
     """The report's rows: one per check, then, for a check with several
-    entries, one per entry ("Cold holding · Walk-in cooler")."""
+    entries, one per entry ("Cold holding · Walk-in cooler"). 1.26.0: the
+    Reading in the summary's words ("Last done 35 days ago", "41 days left")."""
     for s in states:
-        yield [s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.shown_value, s.due_label,
+        yield [s.industry["brand"], s.rule.title, LEVEL_LABEL[s.level], s.report_reading, s.due_label,
                s.rule.citation, _csv_moment(s.updated_at, tz), s.updated_by or ""]
         if len(s.entries) > 1:
             for e in s.entries:
                 es = e["state"]
-                yield [s.industry["brand"], f"{s.rule.title} · {e['label']}", LEVEL_LABEL[es.level], es.shown_value,
+                yield [s.industry["brand"], f"{s.rule.title} · {e['label']}", LEVEL_LABEL[es.level], es.report_reading,
                        es.due_label, s.rule.citation, _csv_moment(es.updated_at, tz), es.updated_by or ""]
 
 
@@ -707,7 +708,7 @@ def _settings_page(new_key=None):
                            switch_yearly=switch_offer(current_app.config, g.org, access, plans.YEAR),
                            can_add_location=scope["locations"] and sum(1 for l in locations if l["role"] == "owner") < MAX_LOCATIONS,
                            picked=set(scope["picked"]), industries={i: INDUSTRIES[i] for i in scope["industries"]},
-                           timezones=COMMON_TIMEZONES, open_invites=invites,
+                           timezones=COMMON_TIMEZONES, open_invites=invites, min_password=MIN_PASSWORD,
                            access=access, operator=operator, class_limits=plans.class_limits(g.org),
                            usage=usage.last_days(conn) if operator else None, usage_events=usage.EVENTS,
                            support_email=support_email(current_app.config),
@@ -783,7 +784,7 @@ def settings_company():
     if not name:
         flash_error(f"Enter your {word} name, without line breaks.")
     elif not valid_timezone(tz):
-        flash_error("Pick a valid timezone.")
+        flash_error("Pick a valid time zone.")
     elif not picked:
         flash_error("Keep at least one industry.")
     else:
@@ -794,8 +795,10 @@ def settings_company():
                          [(g.org["id"], i) for i in picked])
         added = [INDUSTRIES[i]["brand"] for i in picked if i not in before]
         removed = [INDUSTRIES[i]["brand"] for i in before if i not in picked]
+        # 1.26.0: a new time zone is said in History too ("time zone UTC to America/Chicago").
+        moved = f"time zone {g.org['timezone']} to {tz}" if tz != g.org["timezone"] else ""
         detail = "; ".join(filter(None, [f"added {', '.join(added)}" if added else "",
-                                         f"removed {', '.join(removed)}" if removed else ""]))
+                                         f"removed {', '.join(removed)}" if removed else "", moved]))
         record_audit(conn, g.org["id"], g.user["id"], "workspace",
                      f"{word.title()} settings updated{': ' + detail if detail else ''}")
         conn.commit()

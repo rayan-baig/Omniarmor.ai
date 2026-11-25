@@ -820,7 +820,9 @@ test("1.18.0: explain this page says what it's for and lists its parts, from its
     h("p", { class: "sub" }, "Click around a workspace that's already in use.")), h("h2", {}, "For a business"), h("h2", {}, "For a class"),
   h("h2", {}, h("span", { "data-pilot-private": "" }, "Jordan Lee")));
   const text = mountOn("visitor", "/demo", page).answer("Explain this page");
-  assert.match(text, /^\*\*Demos: try Aegizyn without signing up\*\*: Try Aegizyn/);
+  // 1.26.0: the page's name once (its heading "Try Aegizyn" is already in it), and no link to the demo page itself.
+  assert.match(text, /^\*\*Demos: try Aegizyn without signing up\*\*\n/);
+  assert.ok(!linksIn(text).includes("/demo"));
   assert.match(text, /Click around a workspace that's already in use\./);
   assert.match(text, /\*\*On this page:\*\*\n- For a business\n- For a class/);
   assert.ok(!text.includes("Jordan"));
@@ -1273,15 +1275,17 @@ test("1.23.0: the header button's words, typed, get its answer on every grown-up
   }
 });
 
-test("1.23.0: the safety answer starts with 'No, we don't sell your data.' and says where the data is stored", () => {
+test("1.23.0: the safety answer answers the question first and says where the data is stored", () => {
+  // 1.26.0: "Is my data safe?" starts "Yes."; "Do you sell my data?" still starts "No, we don't sell your data."
+  const leads = { "Do you sell my data?": "No, we don't sell your data.", "Is my data safe?": "Yes. We don't sell your data" };
   for (const [who, where] of GROWN_UP_PAGES.filter(([, w]) => !w.startsWith("/classrooms"))) {
     for (const offsite of [true, false]) {
-      const ask = typedEverywhere(who, where, { facts: { offsite_backup: offsite, backup_keep: 14 } });
+      const ask = typedEverywhere(who, where, { facts: { offsite_backup: offsite, backup_keep: 14 }, label: true });
       for (const q of ["Do you sell my data?", "Is my data safe?"]) {
         const got = ask(q);
         assert.ok(got, `${who} ${where}: ${q}`);
         assert.equal(got.label, "Is my data safe?");
-        assert.ok(got.text.startsWith("No, we don't sell your data."), `${who} ${where}: ${got.text.slice(0, 60)}`);
+        assert.ok(got.text.startsWith(leads[q]), `${who} ${where}: ${q}: ${got.text.slice(0, 60)}`);
         assert.match(got.text, /Where it's stored:\*\* in one database on one server/);
         assert.match(got.text, /newest 14 daily copies/);
         assert.equal(/second, separate storage company/.test(got.text), offsite, `${where} offsite ${offsite}`);
@@ -1357,7 +1361,8 @@ test("1.25.0: changing or resetting a password answers with no key, on every gro
       assert.ok(linksIn(got.text).includes("/forgot"));
     }
   }
-  assert.match(typedEverywhere("business", "/app")("reset password").text, /^Sign out, then/);
+  // 1.26.0: signed in, it starts with Settings' own Change password; a visitor starts with the emailed link.
+  assert.match(typedEverywhere("business", "/app")("reset password").text, /^In \[Settings\]\(\/app\/settings#password\), under \*\*Your password\*\*/);
   assert.match(typedEverywhere("visitor", "/")("reset password").text, /^On the sign-in page/);
 });
 
@@ -1422,4 +1427,80 @@ test("1.25.0: \"Can I get a refund?\" starts with the answer to it", () => {
 test("1.25.0: deleting says \"Download the report and History first\"", () => {
   const got = typedEverywhere("business", "/app")("How do I delete my workspace?");
   assert.match(got.text, /\*\*Download the report and History first\*\* if you need them/);
+});
+
+// ---------------------------------------------------------------- 1.26.0: a strict fourteenth review
+
+test("1.26.0: \"Is my data safe?\" starts \"Yes.\", and each safety question gets its own first words", () => {
+  for (const [who, where] of [["business", "/app"], ["visitor", "/"], ["visitor", "/security"], ["teacher", "/app/settings"]]) {
+    const ask = typedEverywhere(who, where, { label: true });
+    const leads = [["Is my data safe?", /^Yes\. We don't sell your data/], ["Is it secure?", /^Yes\. /],
+      ["Do you sell my data?", /^No, we don't sell your data\./], ["Who do you share my data with?", /^No, we don't sell your data\./],
+      ["Do you use tracking cookies?", /^No tracking cookies/], ["Where is my data stored?", /^With our hosting company, in one place/],
+      ["Is my data encrypted?", /^On its way to and from you, yes/]];
+    for (const [q, lead] of leads) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}"`);
+      assert.equal(got.label, "Is my data safe?", `${who} ${where}: "${q}"`);
+      assert.match(got.text, lead, `${who} ${where}: "${q}": ${got.text.slice(0, 70)}`);
+      assert.match(got.text, /Where it's stored:\*\*/);
+    }
+  }
+});
+
+test("1.26.0: signed in, \"How do I change my password?\" points to Settings, Your password", () => {
+  for (const [who, where] of [["business", "/app"], ["business", "/app/settings"], ["teacher", "/app/academy/classes"]]) {
+    const got = typedEverywhere(who, where, { facts: { reset_hours: 1 } })("How do I change my password?");
+    assert.ok(linksIn(got.text).includes("/app/settings#password"), `${who} ${where}`);
+    assert.match(got.text, /\*\*Change password\*\*/);
+    assert.match(got.text, /\*\*Forgot the current one\?\*\*/);
+  }
+  const visitor = typedEverywhere("visitor", "/help", { facts: { reset_hours: 1 } })("How do I change my password?");
+  assert.ok(!linksIn(visitor.text).some((l) => l.startsWith("/app")));
+  assert.match(visitor.text, /change it in Settings, under \*\*Your password\*\*/);
+});
+
+test("1.26.0: Explain this page names the page once and doesn't link to the page you're on", () => {
+  const explain = (c) => c.screenChip.answer({ facts: c.facts, screen: {} });
+  const report = mountOn("business", "/app/report", h("main", {}, h("div", { class: "page-head" }, h("h1", {}, "Compliance report"),
+    h("p", { class: "sub" }, "Current status of every check.")), h("h2", {}, "Compliance report"), h("h2", {}, "Resto Aegizyn")));
+  const text = explain(report);
+  assert.match(text, /^\*\*Report: the compliance report\*\*\n/);
+  assert.doesNotMatch(text, /: Compliance report/);
+  assert.match(text, /\*\*On this page:\*\*\n- Resto Aegizyn\n\n/, "a heading that only repeats the page's name is left out");
+  const help = explain(mountOn("visitor", "/help", h("main", {}, h("h1", {}, "Help"), h("h2", {}, "Getting started"))));
+  assert.ok(!linksIn(help).includes("/help"), help);
+  assert.ok(linksIn(help).includes("/demo"));
+  const home = explain(mountOn("visitor", "/", h("main", {}, h("h1", {}, "Catch the fine"))));
+  assert.deepEqual(linksIn(home), ["/help", "/demo"]);
+});
+
+test("1.26.0: \"Do you have a free plan?\" and \"Is there a yearly discount?\" answer from the real plans, with no key", () => {
+  const facts = { pro_yearly: "PRO-YEAR", plus_yearly: "PLUS-YEAR" };
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/pricing"], ["business", "/app"], ["business", "/app/plan"]]) {
+    const ask = typedEverywhere(who, where, { facts });
+    for (const q of ["Do you have a free plan?", "Is there a free plan?", "Is it free forever?"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}"`);
+      assert.equal(got.label, "Is there a free plan?", `${who} ${where}: "${q}"`);
+      assert.match(got.text, /^\*\*No free plan for the compliance tracker, but a free trial:\*\* every new workspace gets 14 days of everything in Plus/);
+      assert.match(got.text, /PRO-PRICE/);
+      assert.match(got.text, /PLUS-PRICE/);
+      assert.match(got.text, /nothing is deleted/);
+    }
+    for (const q of ["Is there a yearly discount?", "yearly discount?", "Do you offer an annual discount?", "yearly"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}"`);
+      assert.equal(got.label, "Is there a yearly discount?", `${who} ${where}: "${q}"`);
+      assert.match(got.text, /^\*\*Yes: paying yearly gives 2 months free\.\*\*/);
+      assert.match(got.text, /- \*\*Pro:\*\* PRO-PRICE, or PRO-YEAR paid yearly\./);
+      assert.match(got.text, /- \*\*Plus:\*\* PLUS-PRICE, or PLUS-YEAR paid yearly\./);
+    }
+    assert.ok(!["Is there a free plan?", "Is there a yearly discount?"].includes(ask("How much does it cost?").label), `${who} ${where}`);
+    if (who === "visitor") for (const q of ["Do you have a free plan?", "yearly discount?"]) for (const l of linksIn(ask(q).text)) assert.ok(!l.startsWith("/app"), `${where}: ${q} links ${l}`);
+  }
+  // With no yearly prices set up, it says so; a school's plans are yearly only.
+  assert.match(typedEverywhere("visitor", "/")("yearly discount?").text, /^Not right now: \*\*Pro\*\* and \*\*Plus\*\* are billed monthly/);
+  assert.match(typedEverywhere("visitor", "/classrooms")("yearly discount?").text, /^A school's plans are paid yearly only: \*\*Classroom\*\* CLASSROOM-PRICE a year/);
+  assert.match(typedEverywhere("teacher", "/app/settings")("Do you have a free plan?").text, /^\*\*No free plan, but a free trial:\*\* one class, for 30 days/);
 });

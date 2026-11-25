@@ -138,8 +138,9 @@ class TestSinceWords(unittest.TestCase):
         from datetime import date
         rule = next(r for r in rules_for(2) if r.key == "date_marking")
         st = dataclasses.replace(compute_state(2, rule, None, date(2026, 11, 24)), value=9)
-        self.assertEqual(st.reading_line, "made or opened 9 days ago")
-        self.assertEqual(st.recorded_line, "Made or opened 9 days ago")
+        # 1.26.0: day 9 of the 7-day rule is 8 days after the day it was made (the make day is day 1).
+        self.assertEqual(st.reading_line, "made or opened 8 days ago (day 9)")
+        self.assertEqual(st.recorded_line, "Made or opened 8 days ago (day 9)")
 
 
 # --- 2. The full report prints with every name whole -------------------------------------------------------------
@@ -393,7 +394,7 @@ class TestBackupNames(AppTestCase):
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.25.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 25, 0))
         log = read("CHANGELOG.md")
         section = log[log.index("## 1.25.0"):log.index("## 1.24.0")]
         for said in ("hired", "recorded", "Letter and A4", "password", "/pricing", "time zone", "footer", "refund",

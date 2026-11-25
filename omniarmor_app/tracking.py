@@ -20,7 +20,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from omni_armor_rules import evaluate
-from omni_armor_rules.rule import _fmt as format_quantity
+from omni_armor_rules.rule import _fmt as format_quantity, limit_words
 
 from .catalog import (FIRST_ENTRY, ILLNESS_LOG_CHECKS, INDUSTRIES, can_override, counts_first_day, counts_time,
                       date_mode, date_unit, effective_rule, find_rule, multi_check, rules_for, since_word)
@@ -84,6 +84,11 @@ def _one(text, n):
 
 def _plural_days(n):
     return plural(n, "day")
+
+
+def _ago(days, amount):
+    """How long ago a day was, in days: "today", "1 day ago", "8 days ago" (1.26.0: never "0 days ago")."""
+    return "today" if days == 0 else f"{amount(days)} ago"
 
 
 @dataclass
@@ -186,17 +191,27 @@ class ItemState:
         return format_quantity(self.value, self.rule.unit)
 
     @property
+    def first_day(self):
+        """Whether this check counts the day it starts from as day 1 (catalog.counts_first_day: a food batch's 7-day
+        date mark). Its reading is then the day it is on, one more than the days since: food made 8 days ago is on
+        day 9."""
+        return counts_first_day(self.rule)
+
+    @property
     def reading_text(self):
         """The reading in words that say what the number is (1.23.0): "44°F", "Yes", "35 days ago" for a check
         counted from when it was done, "41 days left" for a deadline or licence (the summary said "last
-        reading 41 days" for both)."""
+        reading 41 days" for both). 1.26.0: a check that counts its first day as day 1 says the days since and the
+        day it is on: "8 days ago (day 9)", "today (day 1)", never "9 days ago" for food made 8 days ago."""
         shown = self.shown_value
         if not shown or not self.mode or isinstance(self.value, bool):
             return shown
         # 1.25.0: "1 business day ago", not "1 business days ago".
         amount = lambda v: _one(format_quantity(v, self.rule.unit), v)  # noqa: E731
         if self.mode == "since":
-            return f"{amount(self.value)} ago"
+            if self.first_day:
+                return f"{_ago(self.value - 1, amount)} (day {self.value})"
+            return _ago(self.value, amount) if self.rule.unit == "days" else f"{amount(self.value)} ago"
         return f"{amount(self.value)} left" if self.value >= 0 else f"{amount(-self.value)} past due"
 
     @property
@@ -208,8 +223,8 @@ class ItemState:
     def reading_line(self):
         """The summary's detail for a reading, by the kind of check (1.25.0): "last reading 44°F", "last done 35
         days ago" for a duty done, "event 47 days ago" or "hired 2 business days ago" for a check counted from
-        something that happened (never "last done" for what isn't done yet), "made or opened 9 days ago" for a
-        food batch. A deadline or licence says nothing here: its due line ("Due in 41 days") already says it."""
+        something that happened (never "last done" for what isn't done yet), "made or opened 8 days ago (day 9)"
+        for a food batch. A deadline or licence says nothing here: its due line ("Due in 41 days") already says it."""
         text = self.reading_text
         if not text:
             return ""
@@ -220,12 +235,49 @@ class ItemState:
         return f"last reading {text}"
 
     @property
+    def summary_detail(self):
+        """The summary's line under a check that needs action (1.26.0): its due line, or else its message, then
+        its reading in words, said once: "44°F is over the 41°F limit..." already says 44°F, so no "· last reading
+        44°F" after it."""
+        lead = self.due_text or self.message or ""
+        line = self.reading_line
+        if line and not self.due_text and not self.mode and self.shown_value and lead.startswith(self.shown_value):
+            line = ""
+        return " · ".join(part for part in (lead, line) if part)
+
+    @property
     def recorded_line(self):
         """The summary's "Last checks recorded" reading, from its own kind (1.25.0): "Hired 2 business days ago",
         "Last done 260 days ago", "41 days left", "Yes", "44°F"."""
         since = self.mode == "since" and not isinstance(self.value, bool)
         line = self.reading_line if since else self.reading_text
         return line[:1].upper() + line[1:] if line else "No reading"
+
+    @property
+    def report_reading(self):
+        """The full report's and its CSV's Reading (1.26.0), in the summary's words: "Last done 35 days ago",
+        "Made or opened 8 days ago (day 9)", "41 days left", "44°F", "Yes"; "" with no reading (it said "35 days",
+        which didn't say since or until)."""
+        return self.recorded_line if self.shown_value else ""
+
+    @property
+    def limits_text(self):
+        """The line under a check's box (1.26.0): "31-day limit · warns from 25 days", "41°F limit", "30-day minimum
+        · warns at 35 days or less", and for a deadline (a minimum of 0 days left) "Due by its date · warns from 30
+        days left" (it said "Limit 31 days" and "Minimum 0 days")."""
+        rule, eff = self.rule, self.effective
+        if rule.kind not in ("max", "min") or eff.limit is None:
+            return ""
+        warn = None if eff.warn is None else format_quantity(eff.warn, rule.unit)
+        if warn and self.first_day:
+            warn = f"day {format_quantity(eff.warn, '')}"   # a food batch warns from day 6 of 7
+        if rule.kind == "max":
+            text = f"{limit_words(eff.limit, rule.unit)} limit" + (f" · warns from {warn}" if warn else "")
+        elif eff.limit == 0 and self.mode == "until":
+            text = "Due by its date" + (f" · warns from {warn} left" if warn else "")
+        else:
+            text = f"{limit_words(eff.limit, rule.unit)} minimum" + (f" · warns at {warn} or less" if warn else "")
+        return text + (" · your setting" if self.overridden else "")
 
     @property
     def sort_key(self):
@@ -440,8 +492,20 @@ def _past_due(rule, due_date):
     third one has ended: a check due on a Friday is overdue on the Saturday,
     not on the Monday."""
     source = " (policy setting)" if rule.policy else ""
-    limit = format_quantity(rule.limit, rule.unit)
+    limit = limit_words(rule.limit, rule.unit)
     return "BLOCKED", "OVER LIMIT", f"The {limit} limit ended on {due_date.isoformat()}{source}. {rule.action}"
+
+
+def _day_message(industry_id, rule, value, value_date, message):
+    """A check that counts its first day as day 1 says which day it is on, and from what date (1.26.0): "Day 9
+    (made or opened 2026-11-16) is over the 7-day limit", not "9 days is over...", which read as nine days since."""
+    shown = format_quantity(value, rule.unit)
+    if not message.startswith(shown + " "):
+        return message
+    word = since_word(industry_id, rule) or "started"
+    message = f"Day {value} ({word} {value_date.isoformat()}){message[len(shown):]}"
+    message = re.sub(r" is close to the (\S+) limit: it is at the limit now", r" is the last day of the \1 limit", message)
+    return re.sub(r"\(it warns from (\d+) days\)", r"(it warns from day \1)", message)
 
 
 def compute_state(industry_id, rule, row, today, now=None, tz=None):
@@ -476,6 +540,8 @@ def compute_state(industry_id, rule, row, today, now=None, tz=None):
         level, status, message = "NONE", "NO READING", "No reading yet."
     else:
         level, status, message = evaluate(eff, value)
+        if value_date is not None and counts_first_day(rule):
+            message = _day_message(industry_id, rule, value, value_date, message)
 
     due_date = warn_date = due_at = warn_at = minutes_left = None
     if value_at is not None:

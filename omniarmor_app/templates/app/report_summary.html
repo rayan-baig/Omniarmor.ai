@@ -42,7 +42,8 @@
   <ul class="sum-list">
     {% for s, title, st in attention %}
     <li><span class="tag {{ st.level }}">{{ st.label }}</span> <strong>{{ title }}</strong> <span class="muted">· <span class="nowrap">{{ s.industry.brand }}</span></span>
-      <span class="sum-detail">{% if st.due_text %}{{ st.due_text }}{% elif st.message %}{{ st.message }}{% endif %}{% if st.reading_line %} · {{ st.reading_line }}{% endif %}</span></li>
+      {#- 1.26.0: the due line or message, then the reading, said once (tracking.summary_detail). -#}
+      <span class="sum-detail">{{ st.summary_detail }}</span></li>
     {% endfor %}
   </ul>
   {% if attention_more %}<p class="hint">And {{ attention_more }} more in the <a href="{{ url_for('app.report') }}">full report</a>.</p>{% endif %}

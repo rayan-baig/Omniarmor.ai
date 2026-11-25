@@ -57,6 +57,20 @@ def _fmt(value, unit):
     return f"{number} {unit}"
 
 
+# A time limit said as one word before "limit" or "minimum" (1.26.0): "the 7-day limit", "the 3-business-day
+# limit", "the 2-hour limit", not "the 7 days limit". Other units keep their usual form ("the 41°F limit").
+_LIMIT_UNITS = {"days": "day", "business days": "business-day", "working days": "working-day", "work days": "work-day",
+                "months": "month", "years": "year", "weeks": "week", "h": "hour", "min": "minute"}
+
+
+def limit_words(value, unit):
+    """A limit as it is said before "limit" or "minimum": "7-day", "3-business-day", "41°F"."""
+    word = _LIMIT_UNITS.get(unit)
+    if word is None:
+        return _fmt(value, unit)
+    return f"{_fmt(value, '')}-{word}"
+
+
 def evaluate(rule, value):
     """Returns (level, status, message) for one input value."""
     source = " (policy setting)" if rule.policy else ""
@@ -72,7 +86,7 @@ def evaluate(rule, value):
         raise TypeError(f"{rule.key} expects a number, got {value!r}")
     if not math.isfinite(value):
         raise ValueError(f"{rule.key} expects a finite number, got {value!r}")
-    limit = _fmt(rule.limit, rule.unit)
+    limit = limit_words(rule.limit, rule.unit)
     shown = _fmt(value, rule.unit)
     if rule.kind == "max":
         if value > rule.limit:

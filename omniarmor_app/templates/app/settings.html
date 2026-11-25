@@ -28,6 +28,20 @@
 <p class="row">{% if g.user.armo == 'off' %}Armo is hidden.{% else %}Armo's personality: {{ armo_personality(g.user.armo).name }}, {{ armo_personality(g.user.armo).tagline|lower }}.{% endif %}
   <a href="{{ url_for('armo.page') }}">Change</a></p>
 
+{#- 1.26.0: change the password here, signed in (auth.change_password); a reset link is for a forgotten one. -#}
+<h2 id="password">Your password</h2>
+<form method="post" action="{{ url_for('auth.change_password') }}" class="narrow" data-change-password>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="text" name="username" value="{{ g.user.email }}" autocomplete="username" hidden>
+  <label class="field"><span>Current password</span>
+    <input type="password" name="current_password" autocomplete="current-password" required></label>
+  <label class="field"><span>New password</span>
+    <input type="password" name="new_password" autocomplete="new-password" required minlength="{{ min_password }}" aria-describedby="new-pw-hint">
+    <span class="hint" id="new-pw-hint">At least {{ min_password }} characters. Every other device you're signed in on will be signed out.</span></label>
+  <button class="btn quiet" type="submit">Change password</button>
+  <p class="hint">Forgot it? Sign out and press <strong>Forgot your password?</strong> on the sign-in page.</p>
+</form>
+
 {% if g.role == 'owner' %}
   {% set word = 'School' if scope.school else 'Company' %}
   <h2 id="workspace">{{ word }}</h2>
@@ -35,11 +49,12 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="narrow">
       <label class="field"><span>{{ word }} name</span><input type="text" name="name" value="{{ g.org.name }}" required maxlength="120"></label>
-      <label class="field"><span>Timezone</span>
-        <select name="timezone">
+      <label class="field"><span>Time zone</span>
+        <select name="timezone" aria-describedby="tz-hint">
           {% set tzs = timezones if g.org.timezone in timezones else [g.org.timezone] + timezones %}
           {% for tz in tzs %}<option value="{{ tz }}" {% if tz == g.org.timezone %}selected{% endif %}>{{ tz.replace('_', ' ') }}</option>{% endfor %}
-        </select></label>
+        </select>
+        <span class="hint" id="tz-hint" data-tz-hint>Due dates roll over at midnight in this time zone, and History and the reports show their times in it. Readings stay as they are when you change it.</span></label>
     </div>
     {% if industries %}
     <fieldset class="plain" data-industries="{{ industries|length }}">
@@ -106,7 +121,7 @@
   <form method="post" action="{{ url_for('app.add_location') }}" class="narrow mt-s" data-add-location>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label class="field"><span>Add a location</span><input type="text" name="name" maxlength="120" required placeholder="For example: {{ g.org.name }} Downtown"></label>
-    <p class="hint" data-location-trial>It starts with this location's industries and timezone. It has no free trial: the free trial is one per owner, and yours came with your first workspace. Choose a plan for the new location on its Plans page; until then it is read-only. Deleting a location and adding it again doesn't bring a trial back. You own it; invite its team from its Settings.</p>
+    <p class="hint" data-location-trial>It starts with this location's industries and time zone. It has no free trial: the free trial is one per owner, and yours came with your first workspace. Choose a plan for the new location on its Plans page; until then it is read-only. Deleting a location and adding it again doesn't bring a trial back. You own it; invite its team from its Settings.</p>
     <button class="btn quiet" type="submit">Add location</button>
   </form>
 {% endif %}

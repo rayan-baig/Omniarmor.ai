@@ -115,7 +115,7 @@
 <h2 id="help">How do I get help?</h2>
 <ul>
   <li>Start with Armo: his page (See everything) lists what needs attention, with a fix for each.</li>
-  <li>Can't sign in? Use the <a href="{{ url_for('auth.forgot') }}">Forgot your password?</a> link on the sign-in page. The link we email works once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}.</li>
+  <li>Can't sign in? Use the <a href="{{ url_for('auth.forgot') }}">Forgot your password?</a> link on the sign-in page. The link we email works once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. Signed in and want a new one? Change it in Settings, under Your password.</li>
   <li>Need access, a new invite or a change to the company settings? Ask your workspace owner: only they can invite or remove people and change the company.</li>
   <li>Still stuck? Write to us at <a href="mailto:{{ facts.support_email }}" data-support-email>{{ facts.support_email }}</a>.</li>
 </ul>

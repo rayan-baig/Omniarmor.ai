@@ -8,7 +8,7 @@
   <div>
     <p class="eyebrow">{{ g.org.name }} · Plans</p>
     <h1>{% if a.paused %}Your plan is paused{% elif a.paid %}You're on {{ a.plan_name }}{% elif a.source == 'bundle' %}{{ b.includes.name }} included with your {{ b.name }}{% elif a.source == 'bundle_grace' %}Your {{ b.name }} needs a look{% elif a.trial %}Your free trial is on{% else %}Choose a plan{% endif %}</h1>
-    <p class="sub" data-plan-line>{{ status_line(a, facts) }}</p>
+    <p class="sub" data-plan-line>{{ status_line(a, facts, headed=true) }}</p>
   </div>
 </div>
 

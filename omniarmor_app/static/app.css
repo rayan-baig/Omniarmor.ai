@@ -260,6 +260,8 @@ table{width:100%;border-collapse:collapse;font-size:14.5px}
 th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 1.26.0: the report's Reading is in words now ("Last done 35 days ago"), so it wraps. */
+td.num.reading{white-space:normal;min-width:9em}
 .pager{display:flex;gap:12px;margin-top:16px}
 /* The report on a phone (1.13.0): each check is a card, its name and status on top and each column labelled
    below, so nothing (the Due date among them) is cut off at the side. Printing keeps the table. */
@@ -474,14 +476,14 @@ body:not(.has-tabs):has(> .companion) main{padding-bottom:120px}
   table.report-cards td{padding:4px 5px;white-space:normal;overflow-wrap:anywhere}
   table.report-cards .mono{font-size:8pt}
   table.report-cards tr{break-inside:avoid}
-  table.report-cards .c-check{width:25%}
-  table.report-cards .c-status{width:13%}
-  table.report-cards .c-reading{width:10%}
+  table.report-cards .c-check{width:22%}
+  table.report-cards .c-status{width:11%}
+  table.report-cards .c-reading{width:16%}
   table.report-cards .tag{height:auto;padding:1px 4px;font-size:7pt;letter-spacing:.02em;white-space:normal;text-align:center}
   table.report-cards .tag.CLEARED,table.report-cards .tag.NONE{padding:1px 0}
-  table.report-cards .c-due{width:13%}
-  table.report-cards .c-rule{width:21%}
-  table.report-cards .c-upd{width:18%}
+  table.report-cards .c-due{width:12%}
+  table.report-cards .c-rule{width:20%}
+  table.report-cards .c-upd{width:19%}
   table.report-cards .upd-by{display:block}
   table.report-cards .upd-sep{display:none}
   a{color:#000}
