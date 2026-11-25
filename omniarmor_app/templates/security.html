@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Security and your data{% endblock %}
-{% block description %}Where Aegizyn keeps your data, how it is backed up, who can see a student's name, how to delete everything and who to write to, in plain words.{% endblock %}
+{% block description %}Where OmniArmor keeps your data, how it is backed up, who can see a student's name, how to delete everything and who to write to, in plain words.{% endblock %}
 {% block content %}
 {#- 1.18.0: the trust page. Every line matches the Privacy page and what the code does today; the numbers come
     from the settings (_rules_facts), like the Privacy page's. -#}
@@ -15,7 +15,7 @@
 
 <h2 id="where">Where your data lives</h2>
 <ul>
-  <li>Everything you type into Aegizyn is kept in <strong>one database on one server</strong>, run for {{ COMPANY }} by our hosting company. {{ COMPANY }} makes Aegizyn and looks after that data.</li>
+  <li>Everything you type into OmniArmor is kept in <strong>one database on one server</strong>, run for {{ COMPANY }} by our hosting company. {{ COMPANY }} makes OmniArmor and looks after that data.</li>
   <li>Every page is sent over a secure connection (HTTPS), and browsers are told to use only the secure address. The sign-in cookie is sent only over that connection, and the page's own code can't read it.</li>
   <li>Passwords are stored scrambled (hashed), so nobody can read them, not even us. Card numbers go straight to Stripe and never reach us.</li>
   <li>Our pages, fonts and pictures all come from our own server. No ad, analytics or tracking company sees when you or a student opens a page.</li>
@@ -29,12 +29,12 @@
   {% else %}
   <li>The whole database is copied <strong>once a day</strong>, and each copy is checked before it is kept.</li>
   {% endif %}
-  <li>Autopilot, the part of Aegizyn that watches the service, makes a missed backup by itself and emails the people who run Aegizyn if backups keep failing or the disk runs low.</li>
+  <li>Autopilot, the part of OmniArmor that watches the service, makes a missed backup by itself and emails the people who run OmniArmor if backups keep failing or the disk runs low.</li>
   {% if facts.offsite_backup %}
   <li>A copy of each day's backup also goes to <strong>a second, separate storage company</strong>, so the data survives even if our main hosting company loses its disk. Something you delete can stay in that copy for as long as that company keeps old copies.</li>
-  <li>The backups are there to bring Aegizyn back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
+  <li>The backups are there to bring OmniArmor back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
   {% else %}
-  <li>The backups are copies of the same database, kept by the same hosting company. They are there to bring Aegizyn back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
+  <li>The backups are copies of the same database, kept by the same hosting company. They are there to bring OmniArmor back after a problem, not to keep anything you deleted: {% if facts.backup_keep > 0 %}a deleted record can stay in a backup for about {{ facts.backup_keep|plural('day') }}, then it is gone{% else %}a deleted record can stay in an older backup{% endif %}.</li>
   {% endif %}
 </ul>
 
@@ -45,7 +45,7 @@
   <li>A student who joins with a code sees only their own lessons. If the teacher turns the class leaderboard on (it starts off), classmates see each other's first name or nickname and lessons done, for that class only.</li>
   <li>The one-page trial report for the school office shows totals only, never a name.</li>
   <li>{{ ASSISTANT }} never reads the class list. A name goes to the teacher's AI company only if the teacher types it to add students.</li>
-  <li>The people at {{ COMPANY }} who run Aegizyn can open the database when they need to fix something. They don't use it for anything else, and we never sell or share it for ads.</li>
+  <li>The people at {{ COMPANY }} who run OmniArmor can open the database when they need to fix something. They don't use it for anything else, and we never sell or share it for ads.</li>
 </ul>
 
 <h2 id="delete">How to delete it</h2>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 11: School Safety Aegizyn, a K-12 school's safety and
-operations routines (private, charter and public), beside School Aegizyn's
+Rule catalog, group 11: SchoolSafetyArmor, a K-12 school's safety and
+operations routines (private, charter and public), beside SchoolArmor's
 legal duties (industry 8: FERPA, IDEA, Title IX, AHERA). Ten checks a
 school office runs into, most of them a reminder to do
 something and write it down: drills, AED and first-aid kits, playground and
@@ -16,7 +16,7 @@ setting a school can change to match its own state and insurer. No rule sets
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 51. SCHOOLSAFETY AEGIZYN (school safety and operations) ---
+    # --- 51. SCHOOLSAFETYARMOR (school safety and operations) ---
     51: [
         Rule(key="drills_logged", title="Fire and lockdown drills logged",
              cost="A missed or unlogged drill is a common fire marshal finding, can bring fines, and leaves no record"

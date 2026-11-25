@@ -1,6 +1,6 @@
-// Aegizyn's Pilot pack and tools, run in Node:
+// OmniArmor's Pilot pack and tools, run in Node:
 // `node --test tests/js/omniarmor-pilot.test.js` (tests/test_pilot.py runs it too).
-// The browser is faked: Aegizyn's pages, its forms and the AI provider.
+// The browser is faked: OmniArmor's pages, its forms and the AI provider.
 // Nothing leaves this machine.
 "use strict";
 const test = require("node:test");
@@ -33,7 +33,7 @@ function loadPack(who, extra = {}) {
   return pack;
 }
 
-// A pretend browser: the form token on the page, and Aegizyn answering a
+// A pretend browser: the form token on the page, and OmniArmor answering a
 // form with its flash messages (and, after adding students, any name it
 // couldn't add).
 function fakeBrowser(pack, answer = () => ({ flashes: [{ kind: "ok", text: "Saved." }] })) {
@@ -62,16 +62,16 @@ function fakeBrowser(pack, answer = () => ({ flashes: [{ kind: "ok", text: "Save
 }
 
 const CHECKS = [
-  { checklistId: 2, checklist: "Resto Aegizyn", key: "date_marking", title: "Date marking of ready-to-eat food", level: "BLOCKED", status: "Blocked",
+  { checklistId: 2, checklist: "RestoArmor", key: "date_marking", title: "Date marking of ready-to-eat food", level: "BLOCKED", status: "Blocked",
     says: "Overdue by 2 days", due: "Overdue by 2 days · 2026-11-18", days: -2, kind: "max", mode: "since", timed: false, top: "Top 3 · #1",
     question: "When were the labels last checked?", limits: "Limit 7 days", cost: "Food made people sick.", rule: "FDA Food Code 3-501.17" },
-  { checklistId: 2, checklist: "Resto Aegizyn", key: "sick_worker", title: "Sick employee working", level: "NONE", status: "No reading",
+  { checklistId: 2, checklist: "RestoArmor", key: "sick_worker", title: "Sick employee working", level: "NONE", status: "No reading",
     says: "", due: "", days: null, kind: "forbidden", mode: "", timed: false, top: "", question: "Is a sick employee working?", limits: "", cost: "", rule: "FDA Food Code 2-201.12" },
-  { checklistId: 2, checklist: "Resto Aegizyn", key: "handwash_sink", title: "Handwashing sink stocked", level: "NONE", status: "No reading",
+  { checklistId: 2, checklist: "RestoArmor", key: "handwash_sink", title: "Handwashing sink stocked", level: "NONE", status: "No reading",
     says: "", due: "", days: null, kind: "required", mode: "", timed: false, top: "Top 3 · #2", question: "Is every handwashing sink stocked?", limits: "", cost: "", rule: "FDA Food Code 6-301.12" },
-  { checklistId: 30, checklist: "HR Aegizyn", key: "i9_new_hire", title: "Form I-9 for a new hire", level: "WARNING", status: "Warning",
+  { checklistId: 30, checklist: "HRArmor", key: "i9_new_hire", title: "Form I-9 for a new hire", level: "WARNING", status: "Warning",
     says: "Due tomorrow", due: "Due in 1 day · 2026-11-21", days: 1, kind: "max", mode: "due", timed: false, top: "", question: "When is it due?", limits: "", cost: "", rule: "8 CFR 274a.2" },
-  { checklistId: 30, checklist: "HR Aegizyn", key: "poster", title: "Labor law posters up", level: "CLEARED", status: "Cleared",
+  { checklistId: 30, checklist: "HRArmor", key: "poster", title: "Labor law posters up", level: "CLEARED", status: "Cleared",
     says: "", due: "Due in 20 days · 2026-12-10", days: 20, kind: "max", mode: "due", timed: false, top: "", question: "", limits: "", cost: "", rule: "29 CFR 516.4" },
 ];
 
@@ -85,7 +85,7 @@ function engineFor(pack, { replies, confirm = [], plan = "all" }) {
     confirm: async (label) => { asked.confirm.push(label); return confirm.length ? confirm.shift() : false; },
     plan: async (labels) => { asked.plan.push(labels); return plan; },
   };
-  const engine = Engine.create({ store, providers, host, config: { appName: "Aegizyn", tools: pack.tools, kidView: () => false,
+  const engine = Engine.create({ store, providers, host, config: { appName: "OmniArmor", tools: pack.tools, kidView: () => false,
     knowledge: pack.knowledge, strengths: pack.strengths } });
   return { engine, asked, sent };
 }
@@ -108,7 +108,7 @@ test("the knowledge pack is written from the real app, with prices only from the
   for (const price of ["PRO-PRICE", "PLUS-PRICE", "CLASSROOM-PRICE", "SCHOOL-PRICE", "BUNDLE-PRICE"]) assert.ok(live.includes(price), price);
 });
 
-test("Aegizyn's tools: four kinds of reading, five changes that ask first", () => {
+test("OmniArmor's tools: four kinds of reading, five changes that ask first", () => {
   const pack = loadPack("teacher");
   const tools = pack.tools();
   assert.deepEqual(tools.filter((t) => t.kind === "read").map((t) => t.name),
@@ -172,7 +172,7 @@ test("a change waits for Allow: Cancel posts nothing, Allow posts the app's own 
     const { engine, asked, sent } = engineFor(pack, { confirm: [allow],
       replies: [{ toolCalls: [call("mark_done_today", { check: "Date marking of ready-to-eat food" })] }, { text: "ok" }] });
     await engine.send("Mark date marking done today");
-    assert.deepEqual(asked.confirm, ["Mark “Date marking of ready-to-eat food” (Resto Aegizyn) done today; its next cycle starts today"]);
+    assert.deepEqual(asked.confirm, ["Mark “Date marking of ready-to-eat food” (RestoArmor) done today; its next cycle starts today"]);
     assert.equal(posts.length, posted);
     if (allow) {
       assert.deepEqual(posts[0], { url: "/app/industry/2/rule/date_marking", fields: { csrf_token: "page-token", action: "done_today" },
@@ -194,8 +194,8 @@ test("update a check, add a reminder: each asks first and says exactly what will
   await engine.send("The sinks aren't stocked");
   await engine.send("Remind us about the I-9");
   assert.deepEqual(asked.confirm, [
-    "Answer No to “Handwashing sink stocked” (Resto Aegizyn). No means a problem here, so it will show Blocked",
-    "Set “Form I-9 for a new hire” (HR Aegizyn) as due on 2026-12-01; the team gets reminder emails 30, 7, 1 days before, and on the day"]);
+    "Answer No to “Handwashing sink stocked” (RestoArmor). No means a problem here, so it will show Blocked",
+    "Set “Form I-9 for a new hire” (HRArmor) as due on 2026-12-01; the team gets reminder emails 30, 7, 1 days before, and on the day"]);
   assert.deepEqual(posts.map((p) => [p.url, p.fields.action, p.fields.answer || p.fields.date]),
     [["/app/industry/2/rule/handwash_sink", "save", "no"], ["/app/industry/30/rule/i9_new_hire", "save", "2026-12-01"]]);
 });
@@ -283,8 +283,8 @@ test("a plan of single answers can't slip Yes onto a check where Yes means a pro
     call("update_check", { check: "Handwashing sink stocked", answer: "yes" }, "a"),
     call("update_check", { check: "Sick employee working", answer: "yes" }, "b")] }, { text: "ok" }] });
   await engine.send("Answer yes to both");
-  assert.deepEqual(asked.plan, [["Answer Yes to “Handwashing sink stocked” (Resto Aegizyn)",
-    "Not answer Yes to “Sick employee working” (Resto Aegizyn) with other changes: Yes means a problem there, so it's answered on its own"]]);
+  assert.deepEqual(asked.plan, [["Answer Yes to “Handwashing sink stocked” (RestoArmor)",
+    "Not answer Yes to “Sick employee working” (RestoArmor) with other changes: Yes means a problem there, so it's answered on its own"]]);
   assert.deepEqual(posts.map((p) => p.url), ["/app/industry/2/rule/handwash_sink"]);
   assert.match(toolResult(sent, "a"), /Not done: “Sick employee working”/);
 });
@@ -346,12 +346,12 @@ test("before the Allow card for adding students, a line says the names go to the
   }
 });
 
-// ---------------------------------------------------------------- 1.14.0: Aegizyn's own welcome (core 1.2.0)
+// ---------------------------------------------------------------- 1.14.0: OmniArmor's own welcome (core 1.2.0)
 
 const fs = require("node:fs");
 const vm = require("node:vm");
 
-// Aegizyn's config, run for one person on one page: what it gives Pilot.mount.
+// OmniArmor's config, run for one person on one page: what it gives Pilot.mount.
 // chat: the messages already in this tab's chat (the welcome shows before any).
 function mountFor(who, pathname, { facts = {}, chat = [], ready = false } = {}) {
   let given = null;
@@ -360,7 +360,7 @@ function mountFor(who, pathname, { facts = {}, chat = [], ready = false } = {}) 
   const sessionStorage = { getItem: () => null, setItem() {} };
   vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
     window: { Pilot: { mount: (c) => { given = c; return true; }, store }, location: { pathname }, sessionStorage },
-    document: { getElementById: () => ({ dataset }), title: "Aegizyn", querySelector: () => null },
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: () => null },
   });
   // Values from the config's own realm, made plain so deepEqual compares them fairly.
   const plain = (v) => JSON.parse(JSON.stringify(v));
@@ -401,15 +401,15 @@ test("1.14.0 welcome: a teacher gets their class's five pills and tagline, on ev
   assert.equal(typeof given[3].link, "string");
 });
 
-test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on (1.15.0: under \"Your Aegizyn helper\")", () => {
+test("1.14.0 welcome: a visitor gets the pills for the side of the site they are on (1.15.0: under \"Your OmniArmor helper\")", () => {
   for (const where of ["/", "/industries", "/for/salons-and-barbershops", "/demo"]) {
     const c = mountFor("visitor", where);
-    assert.equal(c.tagline, "Your Aegizyn helper", where);
-    assert.deepEqual(labels(c), ["What does Aegizyn do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
+    assert.equal(c.tagline, "Your OmniArmor helper", where);
+    assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
   }
   for (const where of ["/classrooms", "/classrooms/guide"]) {
     const c = mountFor("visitor", where);
-    assert.equal(c.tagline, "Your Aegizyn helper", where);
+    assert.equal(c.tagline, "Your OmniArmor helper", where);
     assert.deepEqual(labels(c), ["Is it safe for students?", "How does the free trial work?", "Plan a week of lessons", "Explain this page", "Add my AI key"], where);
   }
 });
@@ -567,7 +567,7 @@ function select(root, sel) {
   return found;
 }
 
-// Aegizyn's config on one page: what it gives Pilot.mount, with that page.
+// OmniArmor's config on one page: what it gives Pilot.mount, with that page.
 function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [], hash = "", due = [] } = {}) {
   let given = null;
   const store = { prefix: "omniarmor-pilot", loadChat: () => [], clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
@@ -580,7 +580,7 @@ function mountOn(who, pathname, page, { facts = {}, classes = [], checklists = [
     setTimeout: (fn) => fn(),
     window: { Pilot: { mount: (c) => { given = c; return true; }, store, close: () => closed.push(true) }, location: { pathname, hash }, innerHeight: 800,
       sessionStorage: { getItem: () => null, setItem() {} }, fetch: (...a) => { sent.push(a); throw new Error("no network"); } },
-    document: { getElementById: () => ({ dataset }), title: "Aegizyn", querySelector: (s) => body.querySelector(s),
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: (s) => body.querySelector(s),
       querySelectorAll: (s) => body.querySelectorAll(s) },
     fetch: (...a) => { sent.push(a); throw new Error("no network"); },
   });
@@ -610,7 +610,7 @@ function overviewPage() {
       h("span", {}, h("b", {}, "3"), "without a reading")),
     h("section", { "data-needs-attention": "" }, h("ul", { class: "list" },
       h("li", {}, h("a", { class: "row", "data-level": "BLOCKED", href: "/app/industry/2#rule-hood" },
-        h("span", {}, h("span", { class: "title" }, "Hood cleaning"), h("span", { class: "meta" }, " · Resto Aegizyn")),
+        h("span", {}, h("span", { class: "title" }, "Hood cleaning"), h("span", { class: "meta" }, " · RestoArmor")),
         h("span", { class: "tag BLOCKED" }, "OVERDUE"))),
       h("li", {}, h("a", { class: "row", "data-level": "WARNING", href: "/app/industry/2#rule-fridge" },
         h("span", {}, h("span", { class: "title" }, "Walk-in fridge *temperature*")), h("span", { class: "tag WARNING" }, "Warning"))))),
@@ -624,7 +624,7 @@ function industryPage() {
   const rule = (key, level, days, title, extra = []) => h("li", { class: "rule", id: `rule-${key}`, "data-level": level,
     ...(days === null ? {} : { "data-days": String(days) }), rect: key === "fridge" ? { top: 200, bottom: 500, left: 0, right: 300 } : undefined },
   h("div", { class: "rule-top" }, h("h2", {}, title), h("span", { class: `tag ${level}` }, level === "NONE" ? "No reading" : level)), ...extra);
-  return h("main", {}, h("h1", {}, "Resto Aegizyn"), h("ul", { class: "list" },
+  return h("main", {}, h("h1", {}, "RestoArmor"), h("ul", { class: "list" },
     rule("hood", "BLOCKED", -3, "Hood cleaning", [h("p", { class: "msg BLOCKED" }, "Overdue by 3 days."), h("p", { class: "due mono" }, "3 days overdue · Nov 19")]),
     rule("fridge", "WARNING", null, "Walk-in fridge", [
       h("p", { class: "why-line" }, h("span", { class: "top-n" }, "Top 3 · #1"), "Why this matters: food kept cold stays safe."),
@@ -691,8 +691,8 @@ test("1.17.0: explain this check reads the check asked for (or in view), its rul
   assert.ok(!due.includes("Jordan"));
   // Away from a page with checks: a link to Home, still with no key.
   assert.match(mountOn("business", "/app/settings", h("main")).answer("What's due or overdue?"), /\[Home\]\(\/app\)/);
-  assert.match(mountOn("business", "/app/settings", h("main"), { checklists: [{ id: 2, name: "Resto Aegizyn" }] }).answer("Explain this check"),
-    /\[Resto Aegizyn\]\(\/app\/industry\/2\)/);
+  assert.match(mountOn("business", "/app/settings", h("main"), { checklists: [{ id: 2, name: "RestoArmor" }] }).answer("Explain this check"),
+    /\[RestoArmor\]\(\/app\/industry\/2\)/);
 });
 
 test("1.17.0: a teacher's join codes answer counts, never names, and goes to that class's codes; certificates is a link", () => {
@@ -722,9 +722,9 @@ test("1.17.0: a teacher's join codes answer counts, never names, and goes to tha
   assert.equal(typeof c.pill("Plan a week of lessons").answer, "function");
 });
 
-test("1.17.0: a visitor learns what Aegizyn does and the free trial with no key; the prices (1.21.0: the plans, then the link)", () => {
+test("1.17.0: a visitor learns what OmniArmor does and the free trial with no key; the prices (1.21.0: the plans, then the link)", () => {
   const c = mountOn("visitor", "/", h("main"));
-  const what = c.answer("What does Aegizyn do?");
+  const what = c.answer("What does OmniArmor do?");
   assert.match(what, /\*\*Starter checklists\*\* for 51 industries \(510 checks\)/);
   assert.match(what, /to your team 30, 7 and 1 day before a due date/);
   assert.match(what, /Free for 14 days, no card\./);
@@ -742,7 +742,7 @@ test("1.17.0: a visitor learns what Aegizyn does and the free trial with no key;
   // Page suggestions that are answers too.
   assert.match(school.answer("Classroom or Whole school?"), /\*\*Whole school\*\* \(SCHOOL-PRICE a year\): Every class\./);
   assert.match(mountOn("visitor", "/demo", h("main")).answer("Is anything saved?"), /nothing you do is saved/);
-  assert.match(mountOn("visitor", "/industries", h("main")).answer("Is this legal advice?"), /^No\. Aegizyn is decision support/);
+  assert.match(mountOn("visitor", "/industries", h("main")).answer("Is this legal advice?"), /^No\. OmniArmor is decision support/);
   assert.match(mountOn("business", "/app/report", h("main")).answer("How do I export it?"), /\*\*Export CSV\*\*/);
 });
 
@@ -754,7 +754,7 @@ test("1.17.0: every answer and link survives the core's cleaning, links stay on 
     ["business", "/app/notifications", h("main")], ["teacher", "/app/academy/classes/12", classPage()], ["visitor", "/", h("main")],
     ["visitor", "/industries", h("main")], ["visitor", "/classrooms", h("main")], ["visitor", "/classrooms/guide", h("main")], ["visitor", "/demo", h("main")]];
   for (const [who, where, page] of pages) {
-    const c = mountOn(who, where, page, { classes: [{ id: 12, name: "Room 12" }], checklists: [{ id: 2, name: "Resto Aegizyn" }] });
+    const c = mountOn(who, where, page, { classes: [{ id: 12, name: "Room 12" }], checklists: [{ id: 2, name: "RestoArmor" }] });
     const base = `https://omniarmor.example${where}`;
     const pills = P.welcomePills(c.welcomePills, base);
     assert.equal(pills.length, 5, `${who} ${where}`);
@@ -773,7 +773,7 @@ test("1.17.0: every answer and link survives the core's cleaning, links stay on 
 
 // ---------------------------------------------------------------- 1.18.0: every welcome button answers with no key
 
-const TRADES = [{ name: "Restaurants and cafés", path: "/industries/resto-aegizyn" }, { name: "Salons and barbershops", path: "/for/salons-and-barbershops" },
+const TRADES = [{ name: "Restaurants and cafés", path: "/industries/restoarmor" }, { name: "Salons and barbershops", path: "/for/salons-and-barbershops" },
   { name: "Evil", path: "https://evil.example/x" }];
 const CLASS_PLAN = [{ title: "Meet the Class Stand", lessons: 5, talk: "What would we sell?" }, { title: "Business Words", lessons: 8, talk: "Which word was new?" },
   { title: "Rules at the Stand", lessons: 6, talk: "Why keep it cold?" }, { title: "Money at the Stand", lessons: 6, talk: "" },
@@ -798,7 +798,7 @@ test("1.18.0: every welcome button but the key answers with no key, for everyone
 test("1.18.0: which checklist fits asks what kind of business, with a link to each trade's page, only on this site", () => {
   const text = mountOn("visitor", "/industries", h("main"), { facts: { trades: TRADES } }).answer("Which checklist fits me?");
   assert.match(text, /^\*\*What kind of business is it\?\*\*/);
-  assert.deepEqual(linksIn(text), ["/industries/resto-aegizyn", "/for/salons-and-barbershops", "/industries", "/demo"]);
+  assert.deepEqual(linksIn(text), ["/industries/restoarmor", "/for/salons-and-barbershops", "/industries", "/demo"]);
   assert.ok(!text.includes("evil"));
 });
 
@@ -816,12 +816,12 @@ test("1.18.0: which plan fits compares the plans from the app's own data, and th
 });
 
 test("1.18.0: explain this page says what it's for and lists its parts, from its own headings, never a private name", () => {
-  const page = h("main", {}, h("div", { class: "page-head" }, h("h1", {}, "Try Aegizyn"),
+  const page = h("main", {}, h("div", { class: "page-head" }, h("h1", {}, "Try OmniArmor"),
     h("p", { class: "sub" }, "Click around a workspace that's already in use.")), h("h2", {}, "For a business"), h("h2", {}, "For a class"),
   h("h2", {}, h("span", { "data-pilot-private": "" }, "Jordan Lee")));
   const text = mountOn("visitor", "/demo", page).answer("Explain this page");
-  // 1.26.0: the page's name once (its heading "Try Aegizyn" is already in it), and no link to the demo page itself.
-  assert.match(text, /^\*\*Demos: try Aegizyn without signing up\*\*\n/);
+  // 1.26.0: the page's name once (its heading "Try OmniArmor" is already in it), and no link to the demo page itself.
+  assert.match(text, /^\*\*Demos: try OmniArmor without signing up\*\*\n/);
   assert.ok(!linksIn(text).includes("/demo"));
   assert.match(text, /Click around a workspace that's already in use\./);
   assert.match(text, /\*\*On this page:\*\*\n- For a business\n- For a class/);
@@ -884,7 +884,7 @@ test("1.18.0: explain this check says a sentence once, not under both 'Why it ma
   assert.match(text, /- \*\*If it's missed:\*\* Grease fires spread fast\./);
 });
 
-test("1.18.0: the window wears Aegizyn's colours through the app's own theme class, not the core's files", () => {
+test("1.18.0: the window wears OmniArmor's colours through the app's own theme class, not the core's files", () => {
   const c = mountFor("visitor", "/");
   assert.equal(c.themeClass, "omni-pilot");
   const css = fs.readFileSync(site("app.css"), "utf8");
@@ -895,9 +895,9 @@ test("1.18.0: the window wears Aegizyn's colours through the app's own theme cla
 // ---------------------------------------------------------------- 1.19.0
 
 const DUE = [
-  { level: "urgent", title: "Hood cleaning: overdue by 3 days", where: "Resto Aegizyn", url: "/app/industry/2#rule-hood" },
-  { level: "soon", title: "Form I-9: due in 1 day", where: "HR Aegizyn", url: "/app/industry/30#rule-i9" },
-  { level: "info", title: "Health permit: due in 12 days", where: "Resto Aegizyn", url: "/app/industry/2#rule-permit" },
+  { level: "urgent", title: "Hood cleaning: overdue by 3 days", where: "RestoArmor", url: "/app/industry/2#rule-hood" },
+  { level: "soon", title: "Form I-9: due in 1 day", where: "HRArmor", url: "/app/industry/30#rule-i9" },
+  { level: "info", title: "Health permit: due in 12 days", where: "RestoArmor", url: "/app/industry/2#rule-permit" },
   { level: "urgent", title: "Sneaky [link](https://evil.example)", where: "X", url: "https://evil.example/x" },
 ];
 
@@ -905,7 +905,7 @@ test("1.19.0: what's due lists the real items with links on every page, the repo
   for (const where of ["/app/report", "/app/audit", "/app/notifications", "/app/settings", "/app/plan"]) {
     const text = mountOn("business", where, h("main"), { due: DUE }).answer("What's due or overdue?");
     assert.match(text, /\*\*Needs attention: 2\.\*\*/, where); // the one with a link off the site is left out
-    assert.match(text, /- \[Hood cleaning: overdue by 3 days\]\(\/app\/industry\/2#rule-hood\) · Resto Aegizyn/, where);
+    assert.match(text, /- \[Hood cleaning: overdue by 3 days\]\(\/app\/industry\/2#rule-hood\) · RestoArmor/, where);
     assert.match(text, /\*\*Coming up, or still to fill in:\*\*\n- \[Health permit: due in 12 days\]/, where);
     const links = linksIn(text);
     assert.ok(links.includes("/app/industry/30#rule-i9"), where);
@@ -922,7 +922,7 @@ test("1.19.0: what's due lists the real items with links on every page, the repo
 });
 
 test("1.19.0: a visitor is never sent to a signed-in page like Settings; the public explanation instead", () => {
-  for (const where of ["/", "/industries", "/industries/resto-aegizyn", "/for/salons-and-barbershops", "/classrooms", "/classrooms/guide", "/demo"]) {
+  for (const where of ["/", "/industries", "/industries/restoarmor", "/for/salons-and-barbershops", "/classrooms", "/classrooms/guide", "/demo"]) {
     const c = mountOn("visitor", where, h("main", {}, h("h1", {}, "Page")), { facts: { trades: TRADES, class_plan: CLASS_PLAN } });
     const answers = [...c.welcomePills].filter((p) => p.answer !== undefined).map((p) => c.answer(p.label))
       .concat([...c.chips()].filter((x) => x.answer !== undefined).map((x) => c.answer(x.label)));
@@ -954,7 +954,7 @@ function typedOn(who, where, opts = {}) {
   return (q) => { const m = P.matchTyped(q, items); return m ? m.label : null; };
 }
 
-test("1.20.0: with no key, a typed question that clearly asks one of Aegizyn's own questions gets its answer (core 1.4.2 match words)", () => {
+test("1.20.0: with no key, a typed question that clearly asks one of OmniArmor's own questions gets its answer (core 1.4.2 match words)", () => {
   const cases = {
     "business /app": [["What's overdue?", "What's due or overdue?"], ["What needs attention?", "What's due or overdue?"],
       ["What is due today?", "What's due or overdue?"], ["What does red mean?", "What does this colour mean?"],
@@ -969,7 +969,7 @@ test("1.20.0: with no key, a typed question that clearly asks one of Aegizyn's o
       ["plan my week", "Plan a week of lessons"], ["certificates", "Print certificates"]],
     "teacher /app/settings": [["How much does it cost?", "Classroom or Whole school?"], ["Which plan is right for my school?", "Classroom or Whole school?"],
       ["invite a teammate", "Invite a colleague"]],
-    "visitor /": [["What is Aegizyn?", "What does Aegizyn do?"], ["How much does it cost?", "See the prices"],
+    "visitor /": [["What is OmniArmor?", "What does OmniArmor do?"], ["How much does it cost?", "See the prices"],
       ["Which checklist do I need?", "Which checklist fits me?"], ["restaurant", "Which checklist fits me?"],
       ["What is this page about?", "Explain this page"], ["Which plan should I choose?", "Which plan fits me?"]],
     "visitor /industries": [["Is this legal advice?", "Is this legal advice?"], ["salon checklist", "Which checklist fits me?"]],
@@ -1027,7 +1027,7 @@ test("1.20.0: under the app's own answer each question shows once, with or witho
   }
 });
 
-test("1.20.0: the suggestion after this page's own is Aegizyn's built-in look at the page, with or without a key", () => {
+test("1.20.0: the suggestion after this page's own is OmniArmor's built-in look at the page, with or without a key", () => {
   const P = panel();
   const page = h("main", {}, h("h1", {}, "Reminders"), h("p", { class: "sub" }, "Every reminder email, kept here."), h("h2", {}, "This week"));
   for (const who of ["business", "teacher", "visitor"]) {
@@ -1080,7 +1080,7 @@ function typedEverywhere(who, where, { facts = {}, due = [], classes = [], label
     setTimeout: () => 0,
     window: { Pilot: { mount: (c) => { given = c; return true; }, store }, PilotPanel: P, location: { pathname: where, href: base, hash: "" },
       innerHeight: 800, sessionStorage: { getItem: () => null, setItem() {} } },
-    document: { getElementById: () => ({ dataset }), title: "Aegizyn", querySelector: () => null, querySelectorAll: () => [],
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: () => null, querySelectorAll: () => [],
       addEventListener: (type, fn, capture) => { if (type === "submit" && capture) listeners.push(fn); } },
   });
   const ctx = { facts: given.facts, ready: false, screen: {} };
@@ -1096,7 +1096,7 @@ function typedEverywhere(who, where, { facts = {}, due = [], classes = [], label
 }
 
 const GROWN_UP_PAGES = [
-  ["visitor", "/"], ["visitor", "/industries"], ["visitor", "/industries/resto-aegizyn"], ["visitor", "/for/salons-and-barbershops"],
+  ["visitor", "/"], ["visitor", "/industries"], ["visitor", "/industries/restoarmor"], ["visitor", "/for/salons-and-barbershops"],
   ["visitor", "/classrooms"], ["visitor", "/classrooms/guide"], ["visitor", "/demo"],
   ["visitor", "/pricing"], ["visitor", "/help"], ["visitor", "/security"],
   ["business", "/app"], ["business", "/app/industry/2"], ["business", "/app/report"], ["business", "/app/audit"],
@@ -1187,7 +1187,7 @@ test("1.21.0: the answers on every page never show as buttons, and a key turns t
 
 // ---------------------------------------------------------------- 1.22.0: Pilot core 1.4.3
 
-test("1.22.0: core 1.4.3's no-key reply is on: a question nothing answers stays in the chat with Aegizyn's own buttons and the key pill", () => {
+test("1.22.0: core 1.4.3's no-key reply is on: a question nothing answers stays in the chat with OmniArmor's own buttons and the key pill", () => {
   const P = panel();
   for (const [who, where] of GROWN_UP_PAGES) {
     const c = mountFor(who, where);
@@ -1327,9 +1327,11 @@ test("1.23.0: Help's top how-tos answer with no key: a teammate, reminder emails
 test("1.24.0: the pack names the company and the assistant from names.json, and no old name", () => {
   const names = require(path.join(__dirname, "..", "..", "omniarmor_app", "names.json"));
   const pack = loadPack("visitor");
-  assert.ok(pack.knowledge.includes(`Aegizyn is a compliance tracker by ${names.company}`));
+  assert.ok(pack.knowledge.includes(`OmniArmor.ai is a compliance tracker by ${names.company}`));
   assert.ok(pack.knowledge.includes(`## ${names.assistant} (this assistant)`));
-  assert.doesNotMatch(pack.knowledge, /OmniArmor|CyberLogix|[A-Z][A-Za-z]*Armor\b/);
+  // 1.26.0: back to the name OmniArmor (RestoArmor, SchoolSafetyArmor...); no Aegizyn, CyberLogix or Astroxy.
+  assert.doesNotMatch(pack.knowledge, /Aegizyn|CyberLogix|Astroxy/);
+  assert.match(pack.knowledge, /RestoArmor/);
   const bare = (() => { globalThis.window = { Pilot: { config: { facts: { who: "visitor" } } } };
     delete require.cache[site("pilot-omniarmor-pack.js")]; const p = require(site("pilot-omniarmor-pack.js"));
     delete globalThis.window; return p; })();
@@ -1340,7 +1342,7 @@ test("1.24.0: the pack names the company and the assistant from names.json, and 
 
 test("1.25.0: \"What's due this week?\" and the like get What's due or overdue? with no key", () => {
   for (const where of ["/app", "/app/report", "/app/audit", "/app/settings"]) {
-    const ask = typedEverywhere("business", where, { due: [{ level: "BLOCKED", title: "Staff checked for exclusion", where: "Pharmacy Aegizyn", url: "/app/industry/28#rule-x" }] });
+    const ask = typedEverywhere("business", where, { due: [{ level: "BLOCKED", title: "Staff checked for exclusion", where: "PharmacyArmor", url: "/app/industry/28#rule-x" }] });
     for (const q of ["What's due this week?", "What's due soon?", "What's due today?", "anything coming up next week?", "What's due next month?", "due"]) {
       const got = ask(q);
       assert.ok(got, `${where}: "${q}" found nothing`);
@@ -1385,8 +1387,8 @@ test("1.25.0: Pilot's own questions on /pricing, /help and /security, with the v
     "/security": ["Is my data safe?", "How do I delete my workspace?", "How do I export the report?"] };
   for (const [where, want] of Object.entries(chips)) {
     const c = mountFor("visitor", where);
-    assert.equal(c.tagline, "Your Aegizyn helper", where);
-    assert.deepEqual(labels(c), ["What does Aegizyn do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
+    assert.equal(c.tagline, "Your OmniArmor helper", where);
+    assert.deepEqual(labels(c), ["What does OmniArmor do?", "Which checklist fits me?", "See the prices", "Explain this page", "Add my AI key"], where);
     assert.deepEqual(c.chipLabels(), want, where);
   }
   const bundle = typedEverywhere("visitor", "/pricing")("What's the Kitchen Safety Bundle?");
@@ -1463,11 +1465,11 @@ test("1.26.0: signed in, \"How do I change my password?\" points to Settings, Yo
 test("1.26.0: Explain this page names the page once and doesn't link to the page you're on", () => {
   const explain = (c) => c.screenChip.answer({ facts: c.facts, screen: {} });
   const report = mountOn("business", "/app/report", h("main", {}, h("div", { class: "page-head" }, h("h1", {}, "Compliance report"),
-    h("p", { class: "sub" }, "Current status of every check.")), h("h2", {}, "Compliance report"), h("h2", {}, "Resto Aegizyn")));
+    h("p", { class: "sub" }, "Current status of every check.")), h("h2", {}, "Compliance report"), h("h2", {}, "RestoArmor")));
   const text = explain(report);
   assert.match(text, /^\*\*Report: the compliance report\*\*\n/);
   assert.doesNotMatch(text, /: Compliance report/);
-  assert.match(text, /\*\*On this page:\*\*\n- Resto Aegizyn\n\n/, "a heading that only repeats the page's name is left out");
+  assert.match(text, /\*\*On this page:\*\*\n- RestoArmor\n\n/, "a heading that only repeats the page's name is left out");
   const help = explain(mountOn("visitor", "/help", h("main", {}, h("h1", {}, "Help"), h("h2", {}, "Getting started"))));
   assert.ok(!linksIn(help).includes("/help"), help);
   assert.ok(linksIn(help).includes("/demo"));

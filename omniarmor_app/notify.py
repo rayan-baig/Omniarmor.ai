@@ -6,7 +6,7 @@ Every email goes out the same way: a plain-text part and an HTML part, both
 made from the one plain-text body the sender wrote (the copy Radar keeps),
 with the same footer: the company line (names.py), and on a reminder a link to
 choose which reminder emails you get. The HTML part is one 600-pixel column
-in Aegizyn's colors (templates/email/message.html). Its building blocks
+in OmniArmor's colors (templates/email/message.html). Its building blocks
 come from the body's shape:
 
     a line in capitals ("OVERDUE")       a heading
@@ -34,9 +34,9 @@ log = logging.getLogger("omniarmor.notify")
 # names the product; this line, at the foot of every email, names the
 # company behind it (names.py).
 SIGNATURE = names.SIGNATURE
-# The line emails ended with before the 1.24.0 rename: a stored copy may still
-# carry it, and it is taken off like the current one.
-OLD_SIGNATURES = ("OmniArmor is a product of MTRX Horizyn.",)
+# The line emails ended with in 1.24.0 and 1.25.0, under the name Aegizyn: a
+# stored copy may still carry it, and it is taken off like the current one.
+OLD_SIGNATURES = ("Aegizyn is a product of MTRX Horizyn.",)
 # Where a person chooses which reminder emails they get.
 MANAGE_PATH = "/app/settings#reminders"
 REMINDER_KINDS = {"reminder"}
@@ -53,12 +53,12 @@ def footer_lines(cfg, kind=None):
     if kind in REMINDER_KINDS:
         lines.append(f"Choose which reminder emails you get: {base}{MANAGE_PATH}")
     elif kind in ("autopilot", "autopilot_weekly"):
-        lines.append(f"Sent by Aegizyn Autopilot at {base}. It fixes small problems by itself and only emails"
+        lines.append(f"Sent by OmniArmor Autopilot at {base}. It fixes small problems by itself and only emails"
                      " you about these.")
         if kind == "autopilot_weekly":
             lines.append(f"Turn this weekly report off (signed in to the operator's account): {base}{MANAGE_PATH}")
     elif kind == "error_report":
-        lines.append(f"Sent by Aegizyn at {base} because a page failed with a server error. It goes to the"
+        lines.append(f"Sent by OmniArmor at {base} because a page failed with a server error. It goes to the"
                      " ERRORS_EMAIL address; unset it to stop these.")
     lines.append(SIGNATURE)
     return lines

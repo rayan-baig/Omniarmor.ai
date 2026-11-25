@@ -2,17 +2,17 @@
 """
 Rule catalog, group 2: industries 6-10.
 
-6  AI Aegizyn       companies building or deploying AI systems
-7  Library Aegizyn  public libraries
-8  School Aegizyn   K-12 schools
-9  Prop Aegizyn     residential property managers and landlords
-10 Auto Aegizyn     new and used car dealerships
+6  AIArmor       companies building or deploying AI systems
+7  LibraryArmor  public libraries
+8  SchoolArmor   K-12 schools
+9  PropArmor     residential property managers and landlords
+10 AutoArmor     new and used car dealerships
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 6. AI AEGIZYN ---
+    # --- 6. AIARMOR ---
     6: [
         Rule(key="post_market_drift", title="Post-market drift monitoring",
              cost="Unchecked drift in a high-risk AI system can lead to regulator orders to withdraw it from the market, fines and claims from people it harmed.",
@@ -83,7 +83,7 @@ RULES = {
              action="Pull the unsupported claims from all marketing now and keep only claims backed by documented testing."),
     ],
 
-    # --- 7. LIBRARY AEGIZYN ---
+    # --- 7. LIBRARYARMOR ---
     7: [
         Rule(key="cipa_filter", title="CIPA internet filter active",
              cost="Libraries without a working filter lose E-rate and LSTA internet funding and may have to repay funds already received.",
@@ -155,7 +155,7 @@ RULES = {
              action="Book a licensed extinguisher service now and tag every unit after maintenance."),
     ],
 
-    # --- 8. SCHOOL AEGIZYN ---
+    # --- 8. SCHOOLARMOR ---
     8: [
         Rule(key="ferpa_disclosure", title="FERPA consent before disclosure",
              cost="Improper release of student records can end federal education funding and brings complaints, corrective orders and lawsuits under state law.",
@@ -225,7 +225,7 @@ RULES = {
              action="Request the missing inspection from the local health department and post the latest report."),
     ],
 
-    # --- 9. PROP AEGIZYN ---
+    # --- 9. PROPARMOR ---
     9: [
         Rule(key="deposit_separate_account", title="Deposits in a separate account",
              cost="Mixing tenant deposits with operating cash can forfeit the right to keep any deposit and brings damages, penalties and license action.",
@@ -298,7 +298,7 @@ RULES = {
              action="Restore access and utilities immediately and use the court eviction process instead."),
     ],
 
-    # --- 10. AUTO AEGIZYN ---
+    # --- 10. AUTOARMOR ---
     10: [
         Rule(key="used_car_buyers_guide", title="Buyers Guide on every used car",
              cost="Missing Buyers Guides are a top FTC Used Car Rule citation and bring civil penalties per vehicle.",

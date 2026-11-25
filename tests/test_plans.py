@@ -81,7 +81,7 @@ class PlanCase(AppTestCase):
 # --- Prices: one place, every page -------------------------------------------------
 
 class TestPricesComeFromTheCode(PlanCase):
-    PAGES = ["/", "/help", "/terms", "/industries/resto-aegizyn", "/app/plan", "/app/settings"]
+    PAGES = ["/", "/help", "/terms", "/industries/restoarmor", "/app/plan", "/app/settings"]
 
     def test_every_page_shows_the_plans_from_plans_py(self):
         for path in self.PAGES:
@@ -687,10 +687,10 @@ class TestYearlyPrices(YearlyCase):
             self.assertIn(plans.PLUS.yearly_short, text, path)
             self.assertIn(plans.free_label(), text, path)
             self.assertIn(plans.PRO.price, text, path)
-        for path in ("/", "/industries/resto-aegizyn", "/app/plan"):
+        for path in ("/", "/industries/restoarmor", "/app/plan"):
             self.assertIn("data-billing-toggle", self.page(path), path)
         self.assertIn("$300 a year", words(self.page("/help")), "the bundle's difference, yearly")
-        self.assertIn("$300 a year", words(self.page("/industries/resto-aegizyn")))
+        self.assertIn("$300 a year", words(self.page("/industries/restoarmor")))
         self.assertNotIn("$300 a year", words(self.page("/")), "the bundle isn't on the landing page")
 
     def test_changed_prices_change_the_yearly_prices(self):

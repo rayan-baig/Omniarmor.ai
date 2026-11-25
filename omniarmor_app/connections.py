@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The Kitchen Safety Bundle: Kryozyn fills in Aegizyn's temperature checks.
+"""The Kitchen Safety Bundle: Kryozyn fills in OmniArmor's temperature checks.
 
 Kryozyn is the company's fridge and freezer alarm app. A workspace owner
 creates a connection key in Settings, Connections (shown once, stored as a
@@ -67,7 +67,7 @@ BUNDLE = "Kitchen Safety Bundle"
 # holding temperature checks, as (industry id, rule key). Each one is a
 # maximum in °F, which tests check.
 TEMPERATURE_CHECKS = (
-    (2, "cold_holding"),   # Resto Aegizyn: Cold holding at 41°F or below (FDA Food Code 3-501.16(A)(2))
+    (2, "cold_holding"),   # RestoArmor: Cold holding at 41°F or below (FDA Food Code 3-501.16(A)(2))
 )
 
 KEY_PREFIX = "clx_"
@@ -564,8 +564,8 @@ def receive(conn, org, key_row, report, signature=("missing", None)):
                          for i, rule, r in results],
               "signature": status, "bundle_counted": counted}
     if not results:
-        answer["hint"] = ("This workspace tracks no temperature-log check, so nothing was filled in. In Aegizyn,"
-                          " the owner can add Resto Aegizyn (Restaurants) in Settings, Company, to track cold holding.")
+        answer["hint"] = ("This workspace tracks no temperature-log check, so nothing was filled in. In OmniArmor,"
+                          " the owner can add RestoArmor (Restaurants) in Settings, Company, to track cold holding.")
     return answer
 
 

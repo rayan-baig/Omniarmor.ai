@@ -1,10 +1,10 @@
-"""1.17.0: Pilot core 1.4.0 on Aegizyn, useful before an AI key.
+"""1.17.0: Pilot core 1.4.0 on OmniArmor, useful before an AI key.
 
 The thirteen core files are the MTRX Horizyn site's core 1.4.0, unchanged.
 The welcome buttons and page suggestions that need no AI now answer at once,
 from what the page shows and the plain facts on Pilot's script tag, or go
 straight to a page: what's due or overdue, explaining a check, what a colour
-means, how join codes work, printing certificates, what Aegizyn does and
+means, how join codes work, printing certificates, what OmniArmor does and
 its prices. Answers never name a student (a class is counted), and a
 student's page still has no Pilot. The answers themselves are checked in
 Node (tests/js/omniarmor-pilot.test.js, run by tests/test_pilot.py).
@@ -68,7 +68,7 @@ class TestTheConfigUsesThem(unittest.TestCase):
     def test_the_welcome_pills_that_need_no_ai_are_answers_or_links(self):
         for pill in ('ANSWER("bolt", "What\'s due or overdue?", dueAnswer)', 'ANSWER("help", "Explain this check", explainAnswer)',
                      'ANSWER("spark", "What does this colour mean?", colourAnswer)', 'ANSWER("help", "How do join codes work?"',
-                     'LINK("copy", "Print certificates", certificatesLink())', 'ANSWER("chat", "What does Aegizyn do?"',
+                     'LINK("copy", "Print certificates", certificatesLink())', 'ANSWER("chat", "What does OmniArmor do?"',
                      # 1.21.0: the prices answer with the plans themselves, then the link.
                      'ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts))',
                      'ANSWER("help", "Is it safe for students?", SAFE)',

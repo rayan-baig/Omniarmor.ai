@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from omni_armor_platform import AegizynPortal  # noqa: E402
+from omni_armor_platform import OmniArmorPortal  # noqa: E402
 from omni_armor_rules import BLOCKED, CATALOG, CLEARED, WARNING, Rule, evaluate, get_rule  # noqa: E402
 from omni_armor_rules.rule import validate_rules  # noqa: E402
 
@@ -28,10 +28,10 @@ class TestCatalogShape(unittest.TestCase):
         validate_rules(CATALOG, range(1, 55))
 
     def test_every_industry_has_theme_entry(self):
-        self.assertEqual(sorted(AegizynPortal(verbose=False).theme.INDUSTRIES), sorted(CATALOG))
+        self.assertEqual(sorted(OmniArmorPortal(verbose=False).theme.INDUSTRIES), sorted(CATALOG))
 
     def test_first_rule_links_to_the_detailed_check(self):
-        portal = AegizynPortal(verbose=False)
+        portal = OmniArmorPortal(verbose=False)
         for module_id in range(1, 26):
             method = CATALOG[module_id][0].method
             self.assertTrue(method, f"industry {module_id} rule 1 has no method")
@@ -45,7 +45,7 @@ class TestCatalogShape(unittest.TestCase):
                 self.assertTrue(message)
 
     def test_methods_only_on_known_checks(self):
-        portal = AegizynPortal(verbose=False)
+        portal = OmniArmorPortal(verbose=False)
         for rules in CATALOG.values():
             for r in rules:
                 if r.method:
@@ -119,7 +119,7 @@ class TestEvaluate(unittest.TestCase):
 
 class TestPortalCatalog(unittest.TestCase):
     def setUp(self):
-        self.p = AegizynPortal(verbose=False)
+        self.p = OmniArmorPortal(verbose=False)
 
     def test_check_rule_logs_result(self):
         rule = CATALOG[1][0]

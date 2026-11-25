@@ -12,7 +12,7 @@ from test_webapp import AppTestCase  # noqa: E402
 
 from omniarmor_app.tracking import org_today  # noqa: E402
 
-# Industry 1 (Fleet Aegizyn): duties that repeat, yes-or-no questions and a due date.
+# Industry 1 (FleetArmor): duties that repeat, yes-or-no questions and a due date.
 REPEATING = ["annual_mvr_review", "clearinghouse_annual_query", "annual_vehicle_inspection"]
 YES_NO = ["eld_in_use", "cdl_valid", "pre_employment_drug_test"]
 DUE_DATE = "medical_certificate"
@@ -185,7 +185,7 @@ class TestBulkRefusals(BulkCase):
         self.assert_nothing_saved()
 
     def test_another_workspaces_checks(self):
-        # Another company, in Fleet Aegizyn too, with its own reading.
+        # Another company, in FleetArmor too, with its own reading.
         other = self.app.test_client()
         self.signup(email="rival@example.com", industries=(1, 2), client=other)
         self.bulk([YES_NO[0]], "yes", client=other)

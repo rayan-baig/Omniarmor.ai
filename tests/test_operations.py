@@ -46,7 +46,7 @@ class TestBackupDrill(AppTestCase):
         cfg = dict(self.app.config)
         result = jobs.run_daily(cfg, force=True)
         self.assertNotIn("failed", result)
-        backups = [f for f in os.listdir(cfg["BACKUP_DIR"]) if f.startswith("aegizyn-") and f.endswith(".db")]
+        backups = [f for f in os.listdir(cfg["BACKUP_DIR"]) if f.startswith("omniarmor-") and f.endswith(".db")]
         self.assertEqual(len(backups), 1, os.listdir(cfg["BACKUP_DIR"]))
         backup = os.path.join(cfg["BACKUP_DIR"], backups[0])
         # The backup is one file, checked, with nothing beside it.
@@ -156,11 +156,11 @@ class TestRestoreRehearsal(AppTestCase):
                          200)
         cfg = dict(self.app.config, DAILY_JOB_HOUR_UTC=0)
         self.assertNotIn("failed", jobs.run_daily(cfg))               # today's digest, then the daily backup
-        daily = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "aegizyn-*.db")))   # 1.25.0: was omniarmor-*.db
+        daily = sorted(glob.glob(os.path.join(cfg["BACKUP_DIR"], "omniarmor-*.db")))   # 1.26.0: omniarmor-*.db again
         self.assertEqual(len(daily), 1)
         made = self.app.test_cli_runner().invoke(args=["backup"])     # and one by hand, the same way
         self.assertEqual(made.exit_code, 0, made.output)
-        self.assertTrue(os.path.basename(made.output.strip()).startswith("aegizyn-"), made.output)
+        self.assertTrue(os.path.basename(made.output.strip()).startswith("omniarmor-"), made.output)
         # The daily one: the copy holds the day's claim, not yet finished.
         backup = daily[0]
         with self.db() as conn:
@@ -384,8 +384,8 @@ class TestAutopilotEmails(unittest.TestCase):
         low = [Finding("disk", "The server is running out of disk space", "0.9 GB free", "Make the disk bigger.")]
         for n in range(12):  # two hours of passes
             autopilot.report(self.conn, self.cfg, low if n % 2 == 0 else [])
-        self.assertEqual(self.sent, ["[Aegizyn] The server is running out of disk space",
-                                     "[Aegizyn] Fixed: The server is running out of disk space"])
+        self.assertEqual(self.sent, ["[OmniArmor] The server is running out of disk space",
+                                     "[OmniArmor] Fixed: The server is running out of disk space"])
         # Still on the record, every time.
         levels = [r[0] for r in self.conn.execute("SELECT level FROM autopilot_events WHERE check_key = 'disk' ORDER BY id")]
         self.assertEqual(levels, ["alert", "resolved"] * 6)
@@ -393,9 +393,9 @@ class TestAutopilotEmails(unittest.TestCase):
         self.conn.execute("UPDATE autopilot_events SET at = ?", (iso(utcnow() - timedelta(hours=2)),))
         self.conn.commit()
         autopilot.report(self.conn, self.cfg, low)
-        self.assertEqual(self.sent[-1], "[Aegizyn] The server is running out of disk space")
+        self.assertEqual(self.sent[-1], "[OmniArmor] The server is running out of disk space")
         autopilot.report(self.conn, self.cfg, [])
-        self.assertEqual(self.sent[-1], "[Aegizyn] Fixed: The server is running out of disk space")
+        self.assertEqual(self.sent[-1], "[OmniArmor] Fixed: The server is running out of disk space")
 
     def test_never_more_than_ten_emails_an_hour(self):
         many = [Finding(f"bug:{n:04d}", f"Bug {n}") for n in range(25)]

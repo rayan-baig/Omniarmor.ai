@@ -1,6 +1,6 @@
 """1.16.0: what a strict sixth review found, fixed. Sharper pictures of the app,
 with the headline's one right under its buttons on a phone; one grown-up look
-for the teacher's and parent's Academy pages, the Aegizyn name at the top of
+for the teacher's and parent's Academy pages, the OmniArmor name at the top of
 the computer's side bar, and a reserved corner for the helpers on a phone
 instead of a gutter down the right of every page; lessons that hint instead of
 listing the answers, a celebration when a stage is passed, and a picture that
@@ -135,7 +135,7 @@ class TestTheSideBarAndTheHelpersCorner(AppTestCase):
         bar = page[page.index('<nav class="tabbar'):]
         bar = bar[:bar.index("</nav>")]
         self.assertLess(bar.index("data-side-logo"), bar.index('class="tab"'))
-        self.assertIn('aria-label="Aegizyn home"', bar)
+        self.assertIn('aria-label="OmniArmor.ai home"', bar)
         self.assertEqual(page.count('id="blend"'), 1)   # the gradient is defined once
         css = read("omniarmor_app", "static", "app.css")
         wide = css[css.index(".tab-logo{display:none}"):]
@@ -257,7 +257,7 @@ class TestNoWayOutOfAKidsScreen(ProgressCase):
             self.assertNotIn("Sign out", top, path)
             self.assertNotIn("data-nav-menu", top, path)
             self.assertNotIn('<footer class="site">', page, path)
-            self.assertNotIn("Resto Aegizyn", page, path)
+            self.assertNotIn("RestoArmor", page, path)
             self.assertIn("Back to map", page, path)
         result = self.play(1, 1, right=5).data.decode()
         self.assertNotIn("Sign out", result[result.index('<header class="topbar">'):result.index("</header>")])

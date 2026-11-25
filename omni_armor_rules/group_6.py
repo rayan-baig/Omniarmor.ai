@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 6: Senior Aegizyn, Dental Aegizyn, Pharmacy Aegizyn, Build Aegizyn
-and HR Aegizyn. Ten rules per industry, costliest first. None of these
+Rule catalog, group 6: SeniorArmor, DentalArmor, PharmacyArmor, BuildArmor
+and HRArmor. Ten rules per industry, costliest first. None of these
 industries has a detailed check yet, so no rule sets `method`.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 26. SENIOR AEGIZYN (nursing homes and assisted living) ---
+    # --- 26. SENIORARMOR (nursing homes and assisted living) ---
     26: [
         Rule(key="abuse_report_2_hours", title="Abuse allegation reported in 2 hours",
              cost="Late abuse reporting is cited as immediate jeopardy, bringing civil money penalties, payment denials and possible loss of Medicare certification.",
@@ -72,7 +72,7 @@ RULES = {
              action="Review and update the emergency plan, risk assessment and communication plan now, and document the review."),
     ],
 
-    # --- 27. DENTAL AEGIZYN (dental and small medical practices) ---
+    # --- 27. DENTALARMOR (dental and small medical practices) ---
     27: [
         Rule(key="no_false_claims", title="No false or unsupported claims",
              cost="Billing for services not provided or not documented brings False Claims Act damages, penalties and exclusion from Medicare and Medicaid.",
@@ -136,7 +136,7 @@ RULES = {
              action="Install or repair a compliant amalgam separator, follow the best management practices, and file the compliance report."),
     ],
 
-    # --- 28. PHARMACY AEGIZYN (retail and independent pharmacies) ---
+    # --- 28. PHARMACYARMOR (retail and independent pharmacies) ---
     28: [
         Rule(key="corresponding_responsibility", title="Controlled Rx red flags resolved",
              cost="Filling illegitimate controlled-substance prescriptions brings DEA registration loss, civil penalties and opioid lawsuits.",
@@ -200,7 +200,7 @@ RULES = {
              action="Remove the unlicensed person from duty or stop operating under the expired permit until it is renewed."),
     ],
 
-    # --- 29. BUILD AEGIZYN (construction contractors) ---
+    # --- 29. BUILDARMOR (construction contractors) ---
     29: [
         Rule(key="fall_protection_6ft", title="Fall protection at 6 feet",
              cost="Fall protection is frequently cited by OSHA, and falls lead to serious penalties, stop-work orders and injury lawsuits.",
@@ -264,7 +264,7 @@ RULES = {
              action="Stop paint-disturbing work until the firm is certified and a certified renovator directs lead-safe practices."),
     ],
 
-    # --- 30. HR AEGIZYN (every employer) ---
+    # --- 30. HRARMOR (every employer) ---
     30: [
         Rule(key="overtime_pay", title="Overtime paid over 40 hours",
              cost="Unpaid overtime brings back wages plus equal liquidated damages, attorney fees and class or collective action lawsuits.",

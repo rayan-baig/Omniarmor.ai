@@ -479,7 +479,7 @@ class TestNoTemperatureCheck(AppTestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual((data["ok"], data["matched_checks"]), (True, 0))
-        self.assertIn("Resto Aegizyn", data["hint"])
+        self.assertIn("RestoArmor", data["hint"])
         # Still a report: Settings says it arrived.
         self.assertIn(f"last report {body['date']}", text(self.client.get("/app/settings").get_data(as_text=True)))
 

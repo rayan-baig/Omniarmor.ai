@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load test: many workspaces using Aegizyn at once, and how long its sweeps take.
+"""Load test: many workspaces using OmniArmor at once, and how long its sweeps take.
 
 Everything runs on a throwaway database in a temporary folder, deleted at the end.
 

@@ -1,8 +1,8 @@
-// Pilot on Aegizyn: the small per-app config (docs/PILOT.md).
+// Pilot on OmniArmor: the small per-app config (docs/PILOT.md).
 // The shared core is in static/pilot/ (copied unchanged from the company's
 // main site); this file only says who we are, who is using it, which
 // screen they are on, which suggestions fit it, and where the knowledge pack
-// and Aegizyn's tools are (pilot-omniarmor-pack.js, fetched only when
+// and OmniArmor's tools are (pilot-omniarmor-pack.js, fetched only when
 // Pilot is first opened). pilot.js loads this file once the page has loaded.
 //
 // Pilot is for grown-ups: business owners, their teams and teachers. The
@@ -18,7 +18,7 @@
   try { facts = JSON.parse(d.facts || "{}") || {}; } catch (_) { facts = {}; }
   // 1.24.0: the company's and the assistant's names come from the server (names.py, on Pilot's script tag), so
   // they are typed in one place only.
-  const N = Object.assign({ company: "", app: "Aegizyn", assistant: "Pilot", fridge_app: "Kryozyn" }, facts.names || {});
+  const N = Object.assign({ company: "", app: "OmniArmor", assistant: "Pilot", fridge_app: "Kryozyn" }, facts.names || {});
   const path = (window.location.pathname.replace(/\/+$/, "") || "/");
 
   // A student's page or a kid's device: never Pilot (the server already
@@ -38,7 +38,7 @@
     if (path.startsWith("/for/")) return `Trade page: ${heading()}`;
     if (path === "/classrooms") return "The Academy for schools and teachers";
     if (path === "/classrooms/guide") return "Teacher guide (the Classroom track)";
-    if (path === "/demo") return "Demos: try Aegizyn without signing up";
+    if (path === "/demo") return "Demos: try OmniArmor without signing up";
     if (path === "/app") return who === "teacher" ? "Checklist: the school safety checklist overview" : "Home: what needs attention";
     if (path.startsWith("/app/industry/")) return `${who === "teacher" ? "Checklist" : "Industry page"}: ${heading()} (its checks)`;
     if (path === "/app/report") return "Report: the compliance report";
@@ -56,7 +56,7 @@
 
   function screen() {
     const lines = [];
-    if (who === "visitor") lines.push("The person isn't signed in: they are looking at Aegizyn's public pages.");
+    if (who === "visitor") lines.push("The person isn't signed in: they are looking at OmniArmor's public pages.");
     if (who === "business") lines.push("The person is signed in to a business's workspace.");
     if (who === "teacher") lines.push("The person is signed in to a school's workspace as a teacher or school staff.");
     if (d.demo === "on") lines.push("This is the demo, with pretend data: nothing is saved and no emails go out.");
@@ -114,7 +114,7 @@
   // A link of this site's own (a path), or "".
   const pathOf = (a) => { const h = a && a.getAttribute ? a.getAttribute("href") || "" : ""; return /^\/(?![/\\])\S*$/.test(h) ? h : ""; };
   const linked = (label, href) => (href ? `[${label}](${href})` : label);
-  const NOT_ADVICE = "Aegizyn is decision support, not legal advice: confirm the rule with an expert for your area.";
+  const NOT_ADVICE = "OmniArmor is decision support, not legal advice: confirm the rule with an expert for your area.";
   const STATUS = [
     "- **Blocked** (red): past the limit, overdue, or a yes-or-no answer that breaks the rule. Fix it now.",
     "- **Warning** (orange): getting close to the limit or the due date. Plan the fix.",
@@ -306,11 +306,11 @@
     return cls ? `/app/academy/classes/${cls.id}/certificates` : "/app/academy/classes";
   }
 
-  // A visitor's: what Aegizyn does, the free trial, and safety for students.
+  // A visitor's: what OmniArmor does, the free trial, and safety for students.
   function whatAnswer(f) {
     const x = f || {};
     const days = dayList(x.reminder_days);
-    return "Aegizyn keeps a small business's compliance checks in one place, so nothing slips past a deadline or a limit.\n\n"
+    return "OmniArmor keeps a small business's compliance checks in one place, so nothing slips past a deadline or a limit.\n\n"
       + `- **Starter checklists** for ${x.industries || "many"} industries (${x.checks || "hundreds of"} checks), the failures that cost each industry the most, with the rule each comes from.\n`
       + "- **Enter a date, a number or a yes-or-no answer once.** It counts the days every morning and shows each check as Cleared, Warning or Blocked.\n"
       + `- **Reminder emails** to your team${days ? ` ${days} before a due date,` : ""} on the day, and weekly while overdue.\n`
@@ -366,7 +366,7 @@
     const x = f || {};
     const list = (Array.isArray(x.trades) ? x.trades : []).filter((t) => t && typeof t.name === "string" && /^\/[\w/-]*$/.test(t.path || ""));
     const links = list.slice(0, 12).map((t) => `- [${words(t.name)}](${t.path})`).join("\n");
-    return `**What kind of business is it?** Pick yours to see the checklists that fit it, what each one checks, and what Aegizyn doesn't cover:\n\n${links || "- [Every industry](/industries)"}\n\n`
+    return `**What kind of business is it?** Pick yours to see the checklists that fit it, what each one checks, and what OmniArmor doesn't cover:\n\n${links || "- [Every industry](/industries)"}\n\n`
       + `Not there? [All ${x.industries || ""} industries](/industries) each have their own starter list of ${x.top_count ? "the checks that cost them the most" : "checks"}. `
       + "You can pick more than one when you sign up. [Or see a demo](/demo) first.";
   }
@@ -507,7 +507,7 @@
     const x = f || {};
     const app = words(N.fridge_app) || "the fridge app";
     return `**The Kitchen Safety Bundle** is for kitchens that use ${app}, ${N.company}'s fridge and freezer alarm app. `
-      + `You pay ${app} ${words(x.bundle_price) || "for the bundle"}, and it includes Aegizyn's ${words(x.pro) || "Pro"} for that location while ${app} sends its daily reports, `
+      + `You pay ${app} ${words(x.bundle_price) || "for the bundle"}, and it includes OmniArmor's ${words(x.pro) || "Pro"} for that location while ${app} sends its daily reports, `
       + "which fill in your fridge temperature checks by themselves.\n\n"
       + `Want the Academy too? ${words(x.plus) || "Plus"} costs only the difference${x.bundle_upgrade ? `, ${words(x.bundle_upgrade)}` : ""}. [See every plan](/pricing)`;
   }
@@ -521,7 +521,7 @@
   const WEEK = A(weekAnswer);
   const JOIN = A(joinAnswer);
   function pageChips() {
-    if (path === "/") return [C("What does Aegizyn do?", A(whatAnswer)),
+    if (path === "/") return [C("What does OmniArmor do?", A(whatAnswer)),
       C("Which plan fits me?", A(planFitAnswer)),
       C("How do reminders work?", A(reminderAnswer))];
     if (path === "/industries" || path.startsWith("/industries/") || path.startsWith("/for/")) {
@@ -545,7 +545,7 @@
     if (path === "/security") return [C("Is my data safe?", { answer: (ctx) => safeAnswer(ctx && ctx.facts, ctx && ctx.label) }),
       C("How do I delete my workspace?", A(deleteAnswer)),
       C("How do I export the report?", { answer: exportAnswer })];
-    // A teacher's pages: Aegizyn's own suggestions, about their classes. The
+    // A teacher's pages: OmniArmor's own suggestions, about their classes. The
     // school checklist's "What's overdue?" only on Whole school.
     if (path === "/app/academy/classes" || /^\/app\/academy\/classes\/\d+(\/join-codes)?$/.test(path)) {
       return [C("Add students", { answer: addStudentsAnswer }),
@@ -567,12 +567,12 @@
     }
     if (path === "/app/settings" || path === "/app/plan") return [C("Choose my emails", { answer: EMAILS }),
       C("What do the plans include?", A(planFitAnswer))];
-    // Anywhere else: Aegizyn's own suggestions for who is here.
+    // Anywhere else: OmniArmor's own suggestions for who is here.
     if (who === "teacher") return [C("Add students", { answer: addStudentsAnswer }),
       C("How do join codes work?", JOIN)];
     if (who === "business") return [C("What's overdue?", { answer: dueAnswer }),
       C("How do reminders work?", A(reminderAnswer))];
-    return [C("What does Aegizyn do?", A(whatAnswer))];
+    return [C("What does OmniArmor do?", A(whatAnswer))];
   }
 
   // ---------------------------------------------------------------- 1.21.0: answers on every grown-up page
@@ -594,14 +594,14 @@
   function safeLead(asked) {
     const q = String(asked || "");
     if (SELL_WORDS.test(q)) return "No, we don't sell your data. We don't share it for ads, and no ad, analytics or tracking company sees the pages you open.";
-    if (COOKIE_WORDS.test(q)) return "No tracking cookies, and no ad or analytics company sees the pages you open. Aegizyn uses one cookie, to keep you signed in. We don't sell your data.";
+    if (COOKIE_WORDS.test(q)) return "No tracking cookies, and no ad or analytics company sees the pages you open. OmniArmor uses one cookie, to keep you signed in. We don't sell your data.";
     if (WHERE_WORDS.test(q)) return "With our hosting company, in one place: the details are just below. We don't sell your data or share it for ads.";
     if (/\b(encrypt\w*|https|ssl|tls)\b/i.test(q)) return "On its way to and from you, yes: every page comes over a secure connection (HTTPS). Passwords are stored scrambled. We don't sell your data.";
     return "Yes. We don't sell your data, we don't share it for ads, and no ad, analytics or tracking company sees the pages you open.";
   }
   function storedLine(x) {
     const kept = Number(x.backup_keep) > 0 ? ` The newest ${count(Number(x.backup_keep), "daily copy", "daily copies")} are kept.` : "";
-    return `- **Where it's stored:** in one database on one server, run for ${N.company} (who make Aegizyn) by our hosting company. `
+    return `- **Where it's stored:** in one database on one server, run for ${N.company} (who make OmniArmor) by our hosting company. `
       + `It is copied once a day, and each copy is checked before it is kept.${kept}`
       + (x.offsite_backup ? " A copy of each day's backup also goes to a second, separate storage company." : "");
   }
@@ -610,8 +610,8 @@
     const security = typeof x.security_path === "string" && /^\/[\w/-]*$/.test(x.security_path) ? x.security_path : "/security";
     const out = [safeLead(asked), "",
     storedLine(x),
-    "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to Aegizyn.",
-    `- ${N.assistant}, this helper, runs in your browser on your own AI key: Aegizyn's server never sees the key or the chat.`];
+    "- Every page comes over a secure connection (HTTPS). Passwords are stored scrambled, so nobody can read them, and card numbers go straight to Stripe, never to OmniArmor.",
+    `- ${N.assistant}, this helper, runs in your browser on your own AI key: OmniArmor's server never sees the key or the chat.`];
     if (who === "teacher" || schoolSide) {
       out.push(`- Students are added by first name or nickname only, have no accounts, and ${N.assistant} is never on a student's page.`);
     }
@@ -728,7 +728,7 @@
     "compliant", "compliance", "guarantee", "guaranteed", "fine", "fined", "sue", "sued", "court"];
   const LEGAL = `No. ${NOT_ADVICE}\n\n`
     + "Each check names the rule it comes from (open **Rule and source**), so you can look it up or ask. Rules change, and a city or state can add its own, "
-    + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. Aegizyn keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
+    + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. OmniArmor keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
   // 1.25.0: "Can I get a refund?" starts with the answer to that, then how to cancel.
   const REFUND_WORDS = /\b(refunds?|refunded|money|back)\b/i;
   function refundLead() {
@@ -824,17 +824,17 @@
   function taskPrompt() {
     if (path.startsWith("/app/industry/")) return "Mark this check done today: ";
     if (TASKS[path]) return TASKS[path];
-    return who === "visitor" ? "Help me pick the right Aegizyn checklist for my business: " : "Help me with this page.";
+    return who === "visitor" ? "Help me pick the right OmniArmor checklist for my business: " : "Help me with this page.";
   }
 
-  // Core 1.2.0: the welcome is Aegizyn's own (docs/PILOT.md), and fits who
+  // Core 1.2.0: the welcome is OmniArmor's own (docs/PILOT.md), and fits who
   // is here: a business owner gets their checklist's questions, a teacher
   // their class's. A visitor gets the questions for the side of the site
   // they are looking at (the schools pages, or the business pages), under
-  // "Your Aegizyn helper". Each pill's icon fits what it does: certificates
+  // "Your OmniArmor helper". Each pill's icon fits what it does: certificates
   // are sheets of paper (copy), not a chart. The key pill is the welcome's
   // one ask for a key (core 1.3.0 shows no key card beside it).
-  // Core 1.4.0 (Aegizyn 1.17.0): the pills that need no AI work with no key:
+  // Core 1.4.0 (OmniArmor 1.17.0): the pills that need no AI work with no key:
   // an answer from this page and the site's facts, or a link. 1.18.0: every
   // welcome button does (summing up the report, adding students, planning a
   // week, which checklist or plan fits, explaining the page); only the key
@@ -862,7 +862,7 @@
         KEY],
     },
     school: {
-      tagline: "Your Aegizyn helper",
+      tagline: "Your OmniArmor helper",
       pills: [ANSWER("help", "Is it safe for students?", SAFE),
         ANSWER("bolt", "How does the free trial work?", (ctx) => trialAnswer(ctx && ctx.facts)),
         ANSWER("spark", "Plan a week of lessons", WEEK.answer),
@@ -870,8 +870,8 @@
         KEY],
     },
     visitor: {
-      tagline: "Your Aegizyn helper",
-      pills: [ANSWER("chat", "What does Aegizyn do?", (ctx) => whatAnswer(ctx && ctx.facts)),
+      tagline: "Your OmniArmor helper",
+      pills: [ANSWER("chat", "What does OmniArmor do?", (ctx) => whatAnswer(ctx && ctx.facts)),
         ANSWER("help", "Which checklist fits me?", (ctx) => checklistAnswer(ctx && ctx.facts)),
         // 1.21.0: the real plans and prices, with the link to Help under them (was only the link).
         ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts)),
@@ -924,7 +924,7 @@
     "How does the free trial work?": ["trial", "free", "card"],
     "How long is a lesson?": ["minute", "minutes", "long", "time"],
     // A visitor's
-    "What does Aegizyn do?": ["aegizyn", "omniarmor", "about", "work"],
+    "What does OmniArmor do?": ["omniarmor", "aegizyn", "about", "work"],
     "Which checklist fits me?": ["checklist", "industry", "trade", "restaurant", "cafe", "salon", "barber", "gym", "shop", "tattoo", "pharmacy", "kind"],
     "See the prices": ["price", "prices", "cost", "much", "pricing", "expensive", "pay"],
     "Explain this page": ["page", "about", "summary", "summarise", "summarize", "overview"],
@@ -995,7 +995,7 @@
   }
 
   const mounted = window.Pilot.mount({
-    appName: "Aegizyn",
+    appName: "OmniArmor",
     name: N.assistant,
     tagline: welcome.tagline,
     welcomePills: welcome.pills,
@@ -1011,14 +1011,14 @@
     // raised above the tab bar (app.css) where it really is, so signed-in pages use that rule too (1.19.0 kept
     // 1.4.0's "tuck where it covers least" there). Hidden with the page still, the core's handle (a slice of the
     // robot at the screen's edge, where it covers nothing) opens Pilot; on by default.
-    // Core 1.4.2: the suggestion after this page's own is Aegizyn's built-in look at the page (its headings,
+    // Core 1.4.2: the suggestion after this page's own is OmniArmor's built-in look at the page (its headings,
     // what it is for and its counts), with or without a key, instead of "Summarise this" (AI only).
     screenChip: { label: "Explain this page", answer: explainPageAnswer },
-    // No `modals`: Aegizyn has no pop-ups that aren't marked as dialogs
+    // No `modals`: OmniArmor has no pop-ups that aren't marked as dialogs
     // (Armo's bubble is a helper's, in yieldTo below), and the core already
     // steps back for anything covering the whole screen.
     storagePrefix: "omniarmor-pilot",
-    // 1.18.0: Aegizyn's own colours for the window (app.css, ".pilot-root.omni-pilot"): warm black with the
+    // 1.18.0: OmniArmor's own colours for the window (app.css, ".pilot-root.omni-pilot"): warm black with the
     // orange-to-red edge, not the core's navy and violet. Layout and words stay the core's.
     themeClass: "omni-pilot",
     pack: d.pack || "",
@@ -1036,7 +1036,7 @@
     keyNoteShort: "AI keys are for grown-ups (18+).",
     audienceNote: `The people using ${N.assistant} here are grown-ups: small-business owners and their teams, and teachers or school staff. `
       + `Students never use ${N.assistant}. Never ask for or repeat students' names; a teacher may type first names for adding students, and that's all. `
-      + "Aegizyn is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",
+      + "OmniArmor is decision support, not legal advice: for what a rule means in their area, suggest checking with an expert.",
     kidView,
     // Pilot core 1.2.0 keeps the robot out of the way: it keeps off the
     // page's own words and buttons wherever the page is scrolled to, and off
@@ -1044,7 +1044,7 @@
     // his bubble) room, and never sits on a status tag (NO READING, BLOCKED
     // and the rest), a Top 5 badge, the Kitchen Safety Bundle note, a check's
     // message, a flash or banner, Armo's bubble and badge, the "First name
-    // only?" card or the menu and the Aegizyn name at the top (Sign out among it). When one of
+    // only?" card or the menu and the OmniArmor name at the top (Sign out among it). When one of
     // those is where it sits, it moves to a free corner, or tucks away at the
     // edge until tapped, shrunk into its corner (keepInViewport). The tab bar
     // is kept clear by app.css, which puts the robot's bottom corners above it.

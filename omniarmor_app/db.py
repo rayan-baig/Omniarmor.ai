@@ -7,10 +7,14 @@ from datetime import datetime, timezone
 
 from flask import current_app, g
 
+import re
+
+
 def _rename_sql():
-    """Migration 28's statements (1.24.0): CyberLogix to Kryozyn, and each
-    checklist's old name ("RestoArmor") to its new one ("Resto Aegizyn")."""
-    from .catalog import INDUSTRIES
+    """Migration 28's statements (1.24.0): CyberLogix to Kryozyn. (1.24.0 also
+    renamed each checklist in the history, "RestoArmor" to "Resto Aegizyn";
+    1.26.0 went back to the old names, so a database upgraded from before 1.24.0
+    keeps them, and migration 29 brings back those 28 changed.)"""
     sql = ["UPDATE audit SET user_name = 'Kryozyn' WHERE user_id IS NULL AND user_name = 'CyberLogix'",
            "UPDATE items SET updated_by_name = 'Kryozyn' WHERE updated_by IS NULL AND updated_by_name = 'CyberLogix'",
            "UPDATE check_entries SET updated_by_name = 'Kryozyn' WHERE updated_by IS NULL"
@@ -19,10 +23,23 @@ def _rename_sql():
            " note = REPLACE(note, 'CyberLogix', 'Kryozyn')",
            "UPDATE audit SET summary = REPLACE(summary, 'CyberLogix', 'Kryozyn')"
            " WHERE action = 'connection' AND summary LIKE '%CyberLogix%'"]
+    return ";\n".join(sql) + ";"
+
+
+def aegizyn_brand(brand):
+    """A checklist's name as 1.24.0 and 1.25.0 wrote it: "RestoArmor" was "Resto Aegizyn", "SchoolSafetyArmor"
+    "School Safety Aegizyn"."""
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", brand[:-len("Armor")]) + " Aegizyn"
+
+
+def _names_back_sql():
+    """Migration 29's statements (1.26.0, back to the name OmniArmor): the checklists' names in the history go back
+    from "Resto Aegizyn" to "RestoArmor"."""
+    from .catalog import INDUSTRIES
+    sql = []
     for info in INDUSTRIES.values():
-        old = info["brand"].replace(" Aegizyn", "").replace(" ", "") + "Armor"
-        sql.append(f"UPDATE audit SET summary = REPLACE(summary, '{old}', '{info['brand']}')"
-                   f" WHERE summary LIKE '%{old}%'")
+        old = aegizyn_brand(info["brand"])
+        sql.append(f"UPDATE audit SET summary = REPLACE(summary, '{old}', '{info['brand']}') WHERE summary LIKE '%{old}%'")
     return ";\n".join(sql) + ";"
 
 
@@ -491,8 +508,8 @@ MIGRATIONS = [
     # teacher's, from the teacher sign-up) runs the Academy for classes: its
     # menus, plan page and lessons are made for a classroom (classrooms.py).
     # Workspaces already here that use the classroom plans, the pilot or
-    # classes, and track no checklist but the school ones (School Aegizyn 8 and
-    # School Safety Aegizyn 51), are schools. And students already in a class
+    # classes, and track no checklist but the school ones (SchoolArmor 8 and
+    # SchoolSafetyArmor 51), are schools. And students already in a class
     # move to the Classroom track, made for a class (academy.py); what they
     # finished before still counts in the class view and the pilot report.
     (25, """
@@ -562,9 +579,11 @@ MIGRATIONS = [
     """),
     # 1.24.0, the rename: what the app itself wrote under its old names shows
     # the new ones (the fridge app's name on the readings, notes and history it
-    # filled in, and the checklists' names in the history). What people
-    # typed, and the log of emails already sent, are left as they were.
+    # filled in). What people typed, and the log of emails already sent, are
+    # left as they were.
     (28, _rename_sql()),
+    # 1.26.0, back to the name OmniArmor: the checklists' names in the history.
+    (29, _names_back_sql()),
 ]
 
 SCHEMA_VERSION = MIGRATIONS[-1][0]

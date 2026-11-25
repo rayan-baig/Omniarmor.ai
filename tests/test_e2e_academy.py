@@ -55,7 +55,7 @@ def _reading(text):
 def _light_truth(q, industry_id=None):
     """The lights a reading really gets, from the rule named in the question
     (its copy in the industry when the quiz is about one industry). One rule
-    title is in four industries, and Crypto Aegizyn's copy warns earlier."""
+    title is in four industries, and CryptoArmor's copy warns earlier."""
     m = re.match(r"Rule: (.+?)\. The (limit|minimum) is (.+?)\. Today's reading is (.+?)\. Which light", q.prompt)
     if m:
         title, _, limit, reading = m.groups()
@@ -63,7 +63,7 @@ def _light_truth(q, industry_id=None):
         value = _reading(reading)
         value = int(value) if value.is_integer() else value
         return {evaluate(r, value)[0] for r in rules}
-    m = re.match(r'Rule: (.+?)\. Aegizyn asks: ".*" The answer is (Yes|No)\. Which light\?$', q.prompt, re.S)
+    m = re.match(r'Rule: (.+?)\. OmniArmor asks: ".*" The answer is (Yes|No)\. Which light\?$', q.prompt, re.S)
     if m:
         return {evaluate(r, m.group(2) == "Yes")[0] for r in _rules_titled(m.group(1), industry_id)}
     return set()
@@ -88,7 +88,7 @@ def _siblings(rule):
 
 
 RULE_FACTS = [(r'^Why does "(.+)" matter\?$', "cost"), (r'^If "(.+)" is broken, what should the team do\?$', "action"),
-              (r'^To check "(.+)", what does Aegizyn ask\?$', "input"),
+              (r'^To check "(.+)", what does OmniArmor ask\?$', "input"),
               (r'^Which kind of business follows "(.+)"\?$', "sector")]
 
 
@@ -422,7 +422,7 @@ class TestKidCannotReachTheGrownUps(KidCase):
 
     def url_for_rule(self, rule):
         values = {"learner_id": self.lid, "industry_id": 1, "rule_key": "annual_mvr_review", "user_id": 1,
-                  "world_number": 1, "stage": 1, "duel_id": 1, "friend_id": self.lid, "slug": "fleet-aegizyn",
+                  "world_number": 1, "stage": 1, "duel_id": 1, "friend_id": self.lid, "slug": "fleetarmor",
                   "token": "x", "filename": "app.css", "org_id": 1, "kind": "academy", "class_id": 1}
         url = rule.rule
         for arg in rule.arguments:

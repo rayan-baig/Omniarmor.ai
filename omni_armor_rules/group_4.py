@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Rule catalog, group 4: industries 16-20 (Jail Aegizyn, Insure Aegizyn, Bank Aegizyn,
-Fintech Aegizyn, Petro Aegizyn). Rule 1 of each industry mirrors the detailed check
+"""Rule catalog, group 4: industries 16-20 (JailArmor, InsureArmor, BankArmor,
+FintechArmor, PetroArmor). Rule 1 of each industry mirrors the detailed check
 in omni_armor_platform.py named by its `method`."""
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 16. JAIL AEGIZYN (JAILS AND PRISONS) ---
+    # --- 16. JAILARMOR (JAILS AND PRISONS) ---
     16: [
         Rule(key="welfare_check_interval", title="Restrictive housing welfare checks",
              cost="Missed checks are central to in-custody death lawsuits and settlements, and can cost a facility its accreditation.",
@@ -71,7 +71,7 @@ RULES = {
              action="Issue a written response to the grievance now and log the date it was delivered to the inmate."),
     ],
 
-    # --- 17. INSURE AEGIZYN (INSURANCE) ---
+    # --- 17. INSUREARMOR (INSURANCE) ---
     17: [
         Rule(key="tcpa_written_consent", title="TCPA consent for marketing calls",
              cost="Each unlawful call or text carries statutory damages, and TCPA class actions against insurers and lead buyers settle for large sums.",
@@ -139,7 +139,7 @@ RULES = {
              action="File the SAR with FinCEN now and keep the supporting records for five years."),
     ],
 
-    # --- 18. BANK AEGIZYN (BANKS AND CREDIT UNIONS) ---
+    # --- 18. BANKARMOR (BANKS AND CREDIT UNIONS) ---
     18: [
         Rule(key="ctr_cash_threshold", title="Currency Transaction Report",
              cost="Missed CTRs and ignored structuring bring FinCEN and bank regulator penalties and BSA consent orders.",
@@ -205,7 +205,7 @@ RULES = {
              action="Send the written acknowledgment now and do not collect the disputed amount until the error is resolved."),
     ],
 
-    # --- 19. FINTECH AEGIZYN (ADVISERS, BROKER-DEALERS, FINTECH) ---
+    # --- 19. FINTECHARMOR (ADVISERS, BROKER-DEALERS, FINTECH) ---
     19: [
         Rule(key="form_adv_annual_amendment", title="Form ADV annual amendment",
              cost="Late Form ADV filings draw SEC or state deficiency findings and fines, and a long lapse can end registration.",
@@ -270,7 +270,7 @@ RULES = {
              action="Stop business that uses capital, notify the SEC and FINRA the same day, and add capital before resuming."),
     ],
 
-    # --- 20. PETRO AEGIZYN (OIL AND GAS PRODUCTION AND PIPELINES) ---
+    # --- 20. PETROARMOR (OIL AND GAS PRODUCTION AND PIPELINES) ---
     20: [
         Rule(key="valve_inspection_interval", title="Transmission valve inspection",
              cost="Missed valve inspections are common PHMSA findings that lead to civil penalties and orders to fix or shut in lines.",

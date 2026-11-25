@@ -1,8 +1,8 @@
-# Aegizyn: The Complete Handbook
+# OmniArmor.ai: The Complete Handbook
 
 *Catch the fine before it catches you.*
 
-This handbook explains Aegizyn from top to bottom in plain language: what it is, who it's for, how every part works, how the code is laid out, how to run it, how it was built, where things stand today, and what is left to do. The appendices at the end list every one of the 510 compliance checks, every Academy world, every Armo personality, every web address the app answers, and every setting.
+This handbook explains OmniArmor from top to bottom in plain language: what it is, who it's for, how every part works, how the code is laid out, how to run it, how it was built, where things stand today, and what is left to do. The appendices at the end list every one of the 510 compliance checks, every Academy world, every Armo personality, every web address the app answers, and every setting.
 
 **If you are picking this project up in a new account:** this document is the project's memory. The code lives in the GitHub repository `rayan-baig/omniarmor.ai`. The latest work is on the branch `claude/wonderful-heisenberg-77tbq9`. Part 12 explains how to keep working on the project the same way it has been built so far.
 
@@ -10,7 +10,7 @@ This handbook explains Aegizyn from top to bottom in plain language: what it is,
 
 ## Contents
 
-1. What Aegizyn is
+1. What OmniArmor is
 2. The compliance service, step by step
 3. Reminders, the daily job and the record
 4. Armo, the helper
@@ -31,13 +31,13 @@ This handbook explains Aegizyn from top to bottom in plain language: what it is,
 
 ---
 
-## 1. What Aegizyn is
+## 1. What OmniArmor is
 
 ### 1.1 The short version
 
-Aegizyn is a self-running compliance service for businesses in regulated industries. A company signs up, picks the industries it works in, and enters each date or reading once. From then on, Aegizyn counts the days by itself, warns the team by email before anything is due, shows what is blocked or close to a limit, and keeps a record of every change that an inspector, auditor or insurer can be shown.
+OmniArmor.ai is a self-running compliance service for businesses in regulated industries. A company signs up, picks the industries it works in, and enters each date or reading once. From then on, OmniArmor counts the days by itself, warns the team by email before anything is due, shows what is blocked or close to a limit, and keeps a record of every change that an inspector, auditor or insurer can be shown.
 
-It covers 54 industries; the newest three, Salon Aegizyn, Ink Aegizyn and Gym Aegizyn, are starter lists for salons and barbershops, tattoo and piercing studios, and gyms. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 510 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
+It covers 54 industries; the newest three, SalonArmor, InkArmor and GymArmor, are starter lists for salons and barbershops, tattoo and piercing studios, and gyms. Each industry has ten checks: the compliance failures that cost businesses in that industry the most money through fines, shutdowns, lawsuits or lost revenue. That makes 510 checks in all. Every check names the rule it comes from, says what a miss costs, and says exactly what to do when it's broken.
 
 Two extra parts sit on top of the compliance service:
 
@@ -48,9 +48,9 @@ Behind all of it, **Autopilot** keeps the service itself healthy. It fixes small
 
 ### 1.2 The name and the language
 
-- The product is **Aegizyn**, often just **Aegizyn**.
+- The product is **OmniArmor.ai**, often just **OmniArmor**.
 - The slogan is **"Catch the fine before it catches you."**
-- Each industry has a checklist name of the form "<trade> Aegizyn", for example **Fleet Aegizyn** for motor carriers, **Resto Aegizyn** for restaurants, **HR Aegizyn** for employers and **Shop Aegizyn** for e-commerce. The full list is in Appendix A.
+- Each industry has a checklist name of the form "<trade>Armor", for example **FleetArmor** for motor carriers, **RestoArmor** for restaurants, **HRArmor** for employers and **ShopArmor** for e-commerce. The full list is in Appendix A.
 - The app's six main screens have short names, shown in a tab bar at the bottom of every page:
   - **Home**: the overview of everything (a school's workspace: its classes).
   - **Report**: the compliance report.
@@ -77,7 +77,7 @@ Every check gives one of three answers, plus a fourth state for checks with no r
 
 ### 1.5 What it is not
 
-Aegizyn is decision support, not legal advice. Each check names the rule it applies so that the company and its compliance professional can confirm the rule for their jurisdiction. The footer of every page says so: "Decision support, not legal advice. Each check names the rule it comes from."
+OmniArmor is decision support, not legal advice. Each check names the rule it applies so that the company and its compliance professional can confirm the rule for their jurisdiction. The footer of every page says so: "Decision support, not legal advice. Each check names the rule it comes from."
 
 The ten checks per industry are the costliest and most common failures, not every rule an industry has.
 
@@ -92,7 +92,7 @@ A new customer opens the sign-up page and enters:
 - their name and email address,
 - a password of at least 10 characters,
 - the business or school name (shown on reports and reminder emails),
-- the company's timezone (used to count days and hours correctly; the page fills in the device's own timezone, so most people never change it), and
+- the company's time zone (used to count days and hours correctly; the page fills in the device's own time zone, so most people never change it, and the welcome message names it: "Due dates roll over at midnight Chicago time (America/Chicago). Not where you are? Change it in Settings."; the owner can change it in Settings, which History notes, and a workspace already on UTC stays on UTC until the owner changes it), and
 - every industry that applies, ticked from the list of 51 (already ticked, and listed first, when they came from that industry's or a trade's public page). A box above the list finds an industry by typing part of its name or sector.
 
 That creates a **workspace** for the company. The person who signs up is its **owner**. They land right away on the page of their first industry (the one whose public page they came from, if any), with its top 5 checks first, every check in place and waiting for a first reading. People who join by invitation land on Home. A teacher who signs up from the Academy for schools page (`/signup?...&then=classes`) lands on the classes page instead (section 5.13). On a brand-new industry page, "Update several at once" is folded away and one line says to start with the Top 5. Saving a date says when the reminder emails for it go out ("Reminder set: ... 30, 7 and 1 day before it's due on ..."), or that an overdue check is in the weekly reminder.
@@ -120,11 +120,11 @@ Each step ticks itself from what is saved, not from what was clicked. When all f
 
 ### 2.1.3 The demos
 
-Version 1.7.0. Anyone can try Aegizyn without an account (`demo_mode.py`):
+Version 1.7.0. Anyone can try OmniArmor without an account (`demo_mode.py`):
 
-- **The business demo** (`/demo/business`, "See a demo" on the landing page and every trade page): Sample Kitchen (demo), a pretend restaurant tracking Resto Aegizyn and HR Aegizyn, with a pretend owner and cook, a few checks done, one overdue (the 7-day date marking), an I-9 due tomorrow, a COBRA notice coming due, the audit trail, this morning's reminder digest under Reminders (kept, never sent) and the report.
+- **The business demo** (`/demo/business`, "See a demo" on the landing page and every trade page): Sample Kitchen (demo), a pretend restaurant tracking RestoArmor and HRArmor, with a pretend owner and cook, a few checks done, one overdue (the 7-day date marking), an I-9 due tomorrow, a COBRA notice coming due, the audit trail, this morning's reminder digest under Reminders (kept, never sent) and the report.
 - **The classroom demo** (`/demo/classroom`, from the Academy for schools page, the home page and the schools trade page): Sample School (demo) on the free pilot, with Room 12's eight students under pretend first names, their progress, join codes that work nowhere (`KID-DEMO0001`...) and a sample first lesson to play.
-- **A demo per trade** (1.12.0: `/demo/salon`, `/demo/tattoo`, `/demo/gym` and `/demo/shop`, `TRADE_DEMOS`). Each trade page's "See a demo" opens its own: Sample Salon, Sample Tattoo Studio and Sample Gym track their own checklist (Salon Aegizyn, Ink Aegizyn, Gym Aegizyn) and HR Aegizyn; Sample Shop tracks Shop Aegizyn first, then HR Aegizyn and Pay Aegizyn (1.13.0: its menu and tour lead with Shop Aegizyn). On another of the workspace's checklists (HR Aegizyn in a salon) the demo bar names that page's own checklist. On a phone the bar is one line (the step and the next page), with the rest folded under "About this demo". `_trade_plan` gives the trade's checklist one task overdue, one due soon, two done and two yes-or-no answers, each found by trying the date (`demo.reading_for`), so it always shows the level it is meant to. The demo page lists them under the restaurant.
+- **A demo per trade** (1.12.0: `/demo/salon`, `/demo/tattoo`, `/demo/gym` and `/demo/shop`, `TRADE_DEMOS`). Each trade page's "See a demo" opens its own: Sample Salon, Sample Tattoo Studio and Sample Gym track their own checklist (SalonArmor, InkArmor, GymArmor) and HRArmor; Sample Shop tracks ShopArmor first, then HRArmor and PayArmor (1.13.0: its menu and tour lead with ShopArmor). On another of the workspace's checklists (HRArmor in a salon) the demo bar names that page's own checklist. On a phone the bar is one line (the step and the next page), with the rest folded under "About this demo". `_trade_plan` gives the trade's checklist one task overdue, one due soon, two done and two yes-or-no answers, each found by trying the date (`demo.reading_for`), so it always shows the level it is meant to. The demo page lists them under the restaurant.
 - A bar on every demo page says it is pretend data and that nothing is saved or sent, shows the tour's pages in order (four for the business, five for the classroom) with a **Next** button, and **Start your free trial** (on the last page, the main button). "Leave the demo" replaces "Sign out".
 - **Nothing is kept.** Each page works on its own copy of the demo data, made in memory from a template and thrown away when the page is done; the real database never sees it. Forms are refused with "This is the demo, with pretend data, so nothing is saved..." except the sample lesson's quiz, which is graded in that page's copy and forgotten.
 - **Nothing is sent.** The pretend people have `.example` addresses, `notify()` refuses inside a demo, and the timers only open the real database.
@@ -155,18 +155,18 @@ Across all 540 checks there are 227 maximums, 36 minimums, 215 required controls
 
 ### 2.3 Dates that count themselves
 
-135 checks are counted in days. For these, a person can enter a date instead of a number, and Aegizyn recounts the days every morning:
+135 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
 
-- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, Resto Aegizyn's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday.
+- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, RestoArmor's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday. Its pages say both numbers (1.26.0): the summary, the report and its CSV "made or opened 8 days ago (day 9)", Home and the check "Day 9 (made or opened 2026-11-16) is over the 7-day limit", never "9 days ago" for food made 8 days ago.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
 
 19 more checks count **months or years since** something happened, such as "Months since the facility's last completed PREA audit" or "Years since this turnout gear was manufactured". They take a date the same way and count up by themselves:
 
 - **Months** (15 checks) count from the date to the same day of the month: exactly 12 on the anniversary, a little over the day after. The due date is the anniversary.
-- **Calendar months** (3 Aero Aegizyn checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
+- **Calendar months** (3 AeroArmor checks whose rule says "calendar months") count whole months only, as the FAA does: a check any day in June 2025 is good through June 30, 2026, which is the due date.
 - **Years** (1 check) count like months, in years.
 
-16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday. The deadline is missed once the due date has ended, so from the next day the check is Blocked and overdue, even when that day is a weekend or a holiday and the count hasn't grown: an I-9 due on a Friday is Blocked on the Saturday ("1 day overdue", "The 3 business days limit ended on" that Friday) on its page, the overview, the report and its CSV, in reminders and in Armo. The warning point is always a business day, so the weekend before it stays Cleared.
+16 checks count **business, working or work days since** something happened, such as "Business days since the new hire's first day of work without a completed I-9 Section 2". They take a date too. Each of these days is Monday to Friday, not counting US federal holidays (a holiday that falls on a Saturday is kept the Friday before, one on a Sunday the Monday after). The start day itself is day 0, and the due date is the day the limit is reached: an I-9 for a Monday start is due Thursday. The deadline is missed once the due date has ended, so from the next day the check is Blocked and overdue, even when that day is a weekend or a holiday and the count hasn't grown: an I-9 due on a Friday is Blocked on the Saturday ("1 day overdue", "The 3-business-day limit ended on" that Friday) on its page, the overview, the report and its CSV, in reminders and in Armo. The warning point is always a business day, so the weekend before it stays Cleared.
 
 22 checks count **hours since** something happened, such as "Hours since becoming aware of a personal data breach not yet reported to the supervisory authority (the data protection regulator)" (72 hours) or "Hours since learning of a work-related fatality without reporting it to OSHA" (8 hours). They take the date **and time** the clock started, and count real hours from it to now, in whole minutes:
 
@@ -199,13 +199,13 @@ On each industry page, every check has its own small form:
 - Yes and No buttons for required and forbidden checks;
 - **Save**, and **Clear** to remove the reading.
 
-Below the inputs, the page shows the limit and the warning point, for example "Limit 365 days · warns from 335 days". The app checks every input. A number that isn't a number, or that is infinite, is refused with a message that says what to enter.
+Below the inputs, the page shows the limit and the warning point, for example "365-day limit · warns from 335 days" (a deadline: "Due by its date · warns from 30 days left"). The app checks every input. A number that isn't a number, or that is infinite, is refused with a message that says what to enter.
 
 **Several at once.** Each check also has a **Select** box. Tick several, then choose one change in "Update several at once" at the top of the page: **Mark done today** (duties that repeat), **Answer Yes** or **Answer No** (yes-or-no checks) or **Set the date** (date-counted checks; hour clocks still need their start time on their own). Each check goes through the same code as a single update, so it gets the same checks and its own audit row. It is all or nothing: if one ticked check can't take the change, or its date is refused, nothing is saved and the page says which check and why. Anyone on the team can use it, as with single updates; a kid's Academy device cannot.
 
 **Checks with one entry per item** (1.11.0, `catalog.MULTI_CHECKS`). A few checks are about several things at once: the 7-day date marking (one entry per food batch or container), cold and hot holding (one reading per fridge or unit), a salon's disinfectant jars and pedicure tubs, a studio's sterilizers, a gym's AEDs and pools. Each entry has a name ("Walk-in cooler"), its own value or date and its own deadline and light; the check's status is the worst of its entries, and the report and its download list each entry under the check. **Add a …** adds one; each entry has **Save**, **Done today** (for duties that repeat) and **Remove**. The first entry is the check's own saved value (`items`, named by `items.label`), so a value saved before 1.11.0, or sent by Kryozyn, is the first entry; the others are in `check_entries`. Every change has its own line in the audit trail. "Update several at once" leaves these checks alone: update each entry on its own.
 
-**The illness log** (1.11.0). "Sick employees kept off work" (Resto Aegizyn) is still answered Yes or No, and Yes is still the bad answer (a bulk update never answers it Yes). Beside it, the **Illness log** keeps who reported being sick, what and what was done: the date, the worker's **first name or initials only** (one word, like Sam or S.L.: a full name is refused, and the page says so), one of six listed symptoms from the FDA Food Code (no free text), and "Sent home", "Kept away from food" or "Back at work". Vomiting, diarrhea, jaundice or a diagnosed illness can't be marked "kept away from food": those mean sending the worker home (Food Code 2-201.12). The audit trail notes that a report was added or removed and its date, never who or what.
+**The illness log** (1.11.0). "Sick employees kept off work" (RestoArmor) is still answered Yes or No, and Yes is still the bad answer (a bulk update never answers it Yes). Beside it, the **Illness log** keeps who reported being sick, what and what was done: the date, the worker's **first name or initials only** (one word, like Sam or S.L.: a full name is refused, and the page says so), one of six listed symptoms from the FDA Food Code (no free text), and "Sent home", "Kept away from food" or "Back at work". Vomiting, diarrhea, jaundice or a diagnosed illness can't be marked "kept away from food": those mean sending the worker home (Food Code 2-201.12). The audit trail notes that a report was added or removed and its date, never who or what.
 
 ### 2.6 A company's own limits
 
@@ -226,7 +226,7 @@ Below the inputs, the page shows the limit and the warning point, for example "L
 
 **History (the audit trail).** Every change in the workspace: readings, limits, invites and team changes, with the time (UTC), the person, the industry and a "before → after" description, for example "COBRA election notice sent: no reading → date 2026-10-05". It also exports to CSV. On a phone (1.22.0) each change is a card: the person, the industry and the time ("20 Nov 16:07") on top, the change in full under it.
 
-**Reminders.** Every reminder and account email Aegizyn has sent the team, newest first, with its status (sent, saved or failed) and the error for any failure. When email isn't set up, reminders are saved here instead, and a note says so.
+**Reminders.** Every reminder and account email OmniArmor has sent the team, newest first, with its status (sent, saved or failed) and the error for any failure. When email isn't set up, reminders are saved here instead, and a note says so.
 
 **Settings.**
 
@@ -245,8 +245,8 @@ Visitors who aren't signed in see:
 
 - a landing page with the slogan, who it's for and, in the first screen, the plans (section 2.12): the free trial (`ACADEMY_TRIAL_DAYS`), Pro and Plus with their prices per location, the free Academy worlds and the Kitchen Safety Bundle. Every number on it is read from the code and settings (`_plan_summary.html`, which the industry pages show too);
 - a list of all 54 industries, and of trades;
-- one page per trade (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops, which have no industry of their own, and schools (`/for/schools`), which have two, School Safety Aegizyn's safety routines and School Aegizyn's legal duties, brought together with a note that Kryozyn can watch the nurse's office and cafeteria fridges 24/7 and a link to the Academy for schools. Each names the Aegizyn checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what Aegizyn doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
-- one public page per industry (for example `/industries/fleet-aegizyn`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
+- one page per trade (`/for/<trade>`, `trades.py`): salons and barbershops, tattoo and piercing studios, gyms and fitness studios, and shops, which have no industry of their own, and schools (`/for/schools`), which have two, SchoolSafetyArmor's safety routines and SchoolArmor's legal duties, brought together with a note that Kryozyn can watch the nurse's office and cafeteria fridges 24/7 and a link to the Academy for schools. Each names the OmniArmor checklists that fit and the checks in them (by catalog key, so titles and rules are the catalog's), which come with reminder emails, what OmniArmor doesn't cover for that trade, the plans in short, and one honest line: it helps you stay on top of your checklists, doesn't guarantee compliance and isn't legal advice. Its sign-up link picks those checklists. Trades that already have an industry page (restaurants, child care, pharmacies, dental and medical offices, bars, hotels) are linked from the list instead;
+- one public page per industry (for example `/industries/fleetarmor`) listing its ten checks, its top 5 first with "Why this matters", so a prospect can see their own risks before signing up, with the plans in short;
 - the Academy for schools and teachers (`/classrooms`, section 5.13): classes, the class view, certificates, the leaderboard, the free pilot and the classroom prices;
 - the demos (`/demo`, section 2.1.3), opened from "See a demo" on the landing page and the trade pages and "See the classroom demo" on the Academy for schools page;
 - a sign-in page, a sign-up page, a forgot-password page, and a "Kids" page where a child enters a join code for the Academy;
@@ -270,24 +270,25 @@ An invite is a one-time link valid for 7 days. Only a hash of the link is stored
 
 - **Sign-in** uses email and password. After 5 failed attempts for one email, or 20 from one network address, within 15 minutes, sign-in is paused: "Too many sign-in attempts. Wait 15 minutes, or reset your password."
 - **Forgot password** sends a one-time reset link that lasts 1 hour. Requests are limited to 3 per hour per email and 20 per network address. Resetting the password signs the person out on every other device.
+- **Change password** (1.26.0): signed in, anyone opens Settings, **Your password**, types the current password and a new one (at least 10 characters) and presses **Change password**. Tries are limited like reset requests (3 an hour per person, 20 per network address). It signs the person out on every other device, spends any reset link still open, notes "... changed their password" in History in each of their workspaces and emails them, with a reset link in case it wasn't them.
 - **Sessions** last 14 days.
 
 The full list of protections is in Part 7.
 
 ### 2.11 The Kitchen Safety Bundle: Kryozyn fills in the temperature checks
 
-Kryozyn is MTRX Horizyn's fridge and freezer alarm app. Connected, it fills in Aegizyn's temperature-log checks from its own readings, so a restaurant doesn't type in a fridge temperature by hand. Today that is Resto Aegizyn's **Cold holding at 41°F or below** (`TEMPERATURE_CHECKS` in `omniarmor_app/connections.py`); a workspace that doesn't track Resto Aegizyn has nothing for it to fill in.
+Kryozyn is MTRX Horizyn's fridge and freezer alarm app. Connected, it fills in OmniArmor's temperature-log checks from its own readings, so a restaurant doesn't type in a fridge temperature by hand. Today that is RestoArmor's **Cold holding at 41°F or below** (`TEMPERATURE_CHECKS` in `omniarmor_app/connections.py`); a workspace that doesn't track RestoArmor has nothing for it to fill in.
 
-- **Connecting.** The owner opens Settings, **Connections**, and presses **Create Kryozyn connection key**. The key is shown once, on that page; Aegizyn keeps only its hash (like invite links), so it can't show it again, and afterwards the page shows its last 4 characters, when it was made and when it was last used. One key is active per workspace. **Regenerate key** makes a new one and stops the old one at once; **Revoke key** stops it. Each is in History. Members see the status but can't change the key.
+- **Connecting.** The owner opens Settings, **Connections**, and presses **Create Kryozyn connection key**. The key is shown once, on that page; OmniArmor keeps only its hash (like invite links), so it can't show it again, and afterwards the page shows its last 4 characters, when it was made and when it was last used. One key is active per workspace. **Regenerate key** makes a new one and stops the old one at once; **Revoke key** stops it. Each is in History. Members see the status but can't change the key.
 - **Each day** Kryozyn sends one summary for the site's day to `POST /api/connect/kryozyn/daily`, with the key as its sign-in: how many units it watches, how many stayed in range all day, the warmest reading, any breaches (unit, times, peak and limit, the role of who acknowledged it, such as "on-call staff", and a code for what was done) and a link to its log. Names never arrive: roles and actions come from fixed lists.
-- **A clean day ticks the check.** When every unit stayed in range, the check gets the day's warmest reading through `tracking.apply_change`, the same code a person's Save goes through, and History says "From Kryozyn: 7 of 7 units in range all day", with Kryozyn as who made the change. Aegizyn judges the reading against its own 41°F limit.
+- **A clean day ticks the check.** When every unit stayed in range, the check gets the day's warmest reading through `tracking.apply_change`, the same code a person's Save goes through, and History says "From Kryozyn: 7 of 7 units in range all day", with Kryozyn as who made the change. OmniArmor judges the reading against its own 41°F limit.
 - **A breach ticks nothing.** It leaves a note on the check, such as "Kryozyn: 1 breach on Walk-in freezer, 02:10–02:45, peak 41°F (limit 0°F); acknowledged by on-call staff", with the date, the site and a link to the Kryozyn log, until someone on the team presses **Mark reviewed**. The note is in History too.
 - **Safe to send twice.** Reports are kept per workspace, check and day: the same day again changes nothing, and a corrected report replaces the note. A report never takes a reading away, never overwrites one someone on the team saved that day or later, and an older day never overwrites a newer one.
 - **What it shows.** Until connected, the temperature check and Settings say "Kitchen Safety Bundle: let Kryozyn fill this in automatically", with a link to Connections; once reports arrive, "Connected to Kryozyn · last report 2026-11-12".
 
 The Privacy page says in one line what a connection sends: temperature summaries, unit names and roles, never names.
 
-- **Signed reports and the bundle's Pro.** Kryozyn customers pay Kryozyn for the bundle, and it includes Aegizyn Pro for that location. Kryozyn signs the reports of bundle sites with the secret both apps share (`KITCHEN_BUNDLE_SECRET`), in the header `X-Kryozyn-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>`. Aegizyn checks it over the raw body bytes with a constant-time compare, refuses a `t` more than 300 seconds from now, and remembers each accepted signature for 10 minutes (`bundle_signatures`), so the same signed request sent again doesn't count (the per-date idempotency alone would stop a replay changing readings, but not renewing the bundle). A report that counts records when it arrived (`orgs.bundle_report_at`). A report with no signature, a wrong, stale or replayed one, or any report while the secret is unset, is processed exactly as before and just doesn't count; the answer says which (`signature`, `bundle_counted`). What the cover gives is in section 2.12.
+- **Signed reports and the bundle's Pro.** Kryozyn customers pay Kryozyn for the bundle, and it includes OmniArmor Pro for that location. Kryozyn signs the reports of bundle sites with the secret both apps share (`KITCHEN_BUNDLE_SECRET`), in the header `X-Kryozyn-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_request_body_bytes}")>`. OmniArmor checks it over the raw body bytes with a constant-time compare, refuses a `t` more than 300 seconds from now, and remembers each accepted signature for 10 minutes (`bundle_signatures`), so the same signed request sent again doesn't count (the per-date idempotency alone would stop a replay changing readings, but not renewing the bundle). A report that counts records when it arrived (`orgs.bundle_report_at`). A report with no signature, a wrong, stale or replayed one, or any report while the secret is unset, is processed exactly as before and just doesn't count; the answer says which (`signature`, `bundle_counted`). What the cover gives is in section 2.12.
 
 The full contract the Kryozyn side builds against (the body, every field's limits, the signature, responses and error codes, idempotency and rate limits) is [docs/KRYOZYN-CONNECTION.md](KRYOZYN-CONNECTION.md).
 
@@ -344,25 +345,25 @@ The first daily run that finds a check in a new window sends one reminder for it
 Each person in the company who has the daily digest on (Settings, "Your reminder emails"; it starts on) gets one email per day at most: a digest of everything that entered a new window. It looks like this:
 
 ```
-Subject: Aegizyn: 1 overdue, 3 coming due for Acme Logistics
+Subject: OmniArmor: 1 overdue, 3 coming due for Acme Logistics
 
 Compliance reminders for Acme Logistics, 2026-10-25.
 
 OVERDUE
-- Fleet Aegizyn: Annual driving record review, 15 days overdue (2026-10-10). Order the driver's MVR from each state now, review it and file it in the qualification file.
+- FleetArmor: Annual driving record review, 15 days overdue (2026-10-10). Order the driver's MVR from each state now, review it and file it in the qualification file.
 
 COMING DUE
-- Fleet Aegizyn: Driver medical certificate current, due in 12 days (2026-11-06). Pull the driver from duty until a certified medical examiner issues a new certificate.
+- FleetArmor: Driver medical certificate current, due in 12 days (2026-11-06). Pull the driver from duty until a certified medical examiner issues a new certificate.
 ...
 
 Right now: 3 blocked, 5 warnings, 9 cleared, 3 without a reading.
-Open your checks: https://aegizyn.mtrxhorizyn.com/app
+Open your checks: https://omniarmor.mtrxhorizyn.com/app
 
-You get this email because the daily digest is on in your Aegizyn settings.
+You get this email because the daily digest is on in your OmniArmor settings.
 
 --
-Choose which reminder emails you get: https://aegizyn.mtrxhorizyn.com/app/settings#reminders
-Aegizyn is a product of MTRX Horizyn.
+Choose which reminder emails you get: https://omniarmor.mtrxhorizyn.com/app/settings#reminders
+OmniArmor is a product of MTRX Horizyn.
 ```
 
 ### 3.3 Time-limit alerts
@@ -375,19 +376,19 @@ The 22 hour clocks and 2 minute clocks run out in as little as 15 minutes (MSHA'
 Each email is about one clock and goes to everyone in the company with time-limit alerts on (a choice of its own in Settings, next to the digest; it starts on). Times are in the company's timezone:
 
 ```
-Subject: Aegizyn: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)
+Subject: OmniArmor: Report a work fatality in 8 hours, due 2026-11-04 17:00 EST (Acme Logistics)
 
 Time limit warning for Acme Logistics, 2026-11-04 15:00 EST.
 
-- HR Aegizyn: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). Report the fatality to OSHA now by phone or in person, and preserve the scene.
+- HRArmor: Report a work fatality in 8 hours, due in 2 h (2026-11-04 17:00 EST). Report the fatality to OSHA now by phone or in person, and preserve the scene.
 
-Open it: https://aegizyn.mtrxhorizyn.com/app/industry/30#rule-fatality_report_8h
+Open it: https://omniarmor.mtrxhorizyn.com/app/industry/30#rule-fatality_report_8h
 
-You get this email because time-limit alerts are on in your Aegizyn settings.
+You get this email because time-limit alerts are on in your OmniArmor settings.
 
 --
-Choose which reminder emails you get: https://aegizyn.mtrxhorizyn.com/app/settings#reminders
-Aegizyn is a product of MTRX Horizyn.
+Choose which reminder emails you get: https://omniarmor.mtrxhorizyn.com/app/settings#reminders
+OmniArmor is a product of MTRX Horizyn.
 ```
 
 The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject, "overdue, was due 2026-11-04 17:00 EST".
@@ -399,7 +400,7 @@ The overdue one reads "Time limit overdue", "1 min overdue" and, in the subject,
 
 ### 3.4 How every email looks
 
-Every email Aegizyn sends (the digest, the time-limit alerts, password reset links and Autopilot's emails to the operator) has two parts with the same words: plain text, as above, and HTML, one column 600 pixels wide in the site's colors, with the Aegizyn name on black, the red-to-orange line under it, and a button for each "Open ...:" or "Set a new password:" link. Both are made from the one plain-text body (`omniarmor_app/notify.py`, `templates/email/message.html`), which is also the copy Reminders keeps. Under a line, every email ends with "Aegizyn is a product of MTRX Horizyn."; reminders add the link to choose which reminder emails you get (and a `List-Unsubscribe` header pointing there), Autopilot's emails say Autopilot sent them, and the weekly report says where to turn it off. If the HTML part ever fails to draw, the email goes out as plain text rather than not at all. `tests/test_emails.py` makes the app send one of each and checks them all.
+Every email OmniArmor sends (the digest, the time-limit alerts, password reset links and Autopilot's emails to the operator) has two parts with the same words: plain text, as above, and HTML, one column 600 pixels wide in the site's colors, with the OmniArmor.ai name on black, the red-to-orange line under it, and a button for each "Open ...:" or "Set a new password:" link. Both are made from the one plain-text body (`omniarmor_app/notify.py`, `templates/email/message.html`), which is also the copy Reminders keeps. Under a line, every email ends with "OmniArmor is a product of MTRX Horizyn."; reminders add the link to choose which reminder emails you get (and a `List-Unsubscribe` header pointing there), Autopilot's emails say Autopilot sent them, and the weekly report says where to turn it off. If the HTML part ever fails to draw, the email goes out as plain text rather than not at all. `tests/test_emails.py` makes the app send one of each and checks them all.
 
 ### 3.5 The daily job
 
@@ -411,7 +412,7 @@ A built-in timer runs inside the app; there is no separate cron or queue service
    - used or expired password reset links;
    - invites that expired over 30 days ago;
    - expired Academy friend codes and join codes.
-3. **Backup**, last, so the copy holds the day's reminders as sent and restoring it never sends them again. It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `aegizyn-YYYYMMDD-HHMMSS-*.db` only then (copies named `omniarmor-*.db` before 1.25.0 still count), as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
+3. **Backup**, last, so the copy holds the day's reminders as sent and restoring it never sends them again. It takes a consistent copy of the database using SQLite's online backup, checks the copy (SQLite's quick check), names it `omniarmor-YYYYMMDD-HHMMSS-*.db` only then (copies named `omniarmor-*.db` before 1.25.0 still count), as one file that needs nothing beside it to be restored, and keeps the newest 14 copies (`BACKUP_KEEP`). A copy that fails half-way (a full disk) is removed, so the retry makes a real one.
 
 Several server processes can run at once safely. Each sweep (the alerts, the daily job, Autopilot) holds a lock in the database (`job_locks`) while it runs, renewed every 20 seconds, so no two processes run the same sweep at once however long it takes; a process that dies loses its lock within 2 minutes. Each day's run is also claimed in the database, so it happens only once. If a run crashes halfway (for example the server restarted), its claim goes stale after an hour and the next check can claim it again. If any step fails, the run releases its claim and tries again in about 10 minutes; reminders already sent are not repeated.
 
@@ -427,7 +428,7 @@ Everything that changes a company's data writes an audit row: who, when, what ki
 
 ### 4.1 Who Armo is
 
-Armo is Aegizyn's mascot: a round, friendly shield with big sparkly eyes, a warm blush and little arms, drawn entirely in inline SVG. He has moods (happy, cheer, think, sleep and alert) and idle props (a coffee mug, a book, juggling balls, and "zzz" for a nap).
+Armo is OmniArmor's mascot: a round, friendly shield with big sparkly eyes, a warm blush and little arms, drawn entirely in inline SVG. He has moods (happy, cheer, think, sleep and alert) and idle props (a coffee mug, a book, juggling balls, and "zzz" for a nap).
 
 ### 4.2 What he does on the business pages
 
@@ -451,7 +452,7 @@ Armo is Aegizyn's mascot: a round, friendly shield with big sparkly eyes, a warm
   - pointers to the Academy, the report and History.
 - **Has his own page** (`/app/armo`) that lists everything he found, each with "What to do" and a Fix it button, plus the personality picker.
 
-**Armo and Pilot keep apart** (1.11.0; 1.11.1; 1.12.0). Armo lives in the bottom-left corner and Pilot's robot in the bottom-right, and the page keeps room at the bottom so neither covers its last lines. Pilot core 1.1.1 (1.12.0) keeps the robot off the page's words and buttons wherever it is scrolled to and off a box being typed in; Aegizyn's config lists Armo in `yieldTo`, and every status tag, Top 5 badge, the Kitchen Safety Bundle note, a check's message, flashes and banners, Armo's bubble and badge and the menu at the top in `avoid`. On a phone (1.13.0) only one helper shows, in one corner: Armo while his badge has a count (something needs doing, and he goes straight to it), Pilot the rest of the time; the robot never tucks half off the screen there. Since 1.14.0 (Pilot core 1.2.0, `keepInViewport`) a tucked-away robot shrinks into its corner, fully on the screen, on a phone and on a computer, and on a phone the page's column keeps the core's 30 px side room for it (`gutter: ["main > .wrap"]`). Pilot's welcome is Aegizyn's own: a business owner's checklist questions, a teacher's class questions, or a visitor's (docs/PILOT.md). On signed-in pages `app.css` sets the core's `--pilot-gap` to sit above the tab bar, which is also where the core checks. Only one helper is prominent at a time: Armo's bubble opens only when tapped (or once a day beside the column), and while it is open in the robot's corner the robot steps aside. See docs/PILOT.md.
+**Armo and Pilot keep apart** (1.11.0; 1.11.1; 1.12.0). Armo lives in the bottom-left corner and Pilot's robot in the bottom-right, and the page keeps room at the bottom so neither covers its last lines. Pilot core 1.1.1 (1.12.0) keeps the robot off the page's words and buttons wherever it is scrolled to and off a box being typed in; OmniArmor's config lists Armo in `yieldTo`, and every status tag, Top 5 badge, the Kitchen Safety Bundle note, a check's message, flashes and banners, Armo's bubble and badge and the menu at the top in `avoid`. On a phone (1.13.0) only one helper shows, in one corner: Armo while his badge has a count (something needs doing, and he goes straight to it), Pilot the rest of the time; the robot never tucks half off the screen there. Since 1.14.0 (Pilot core 1.2.0, `keepInViewport`) a tucked-away robot shrinks into its corner, fully on the screen, on a phone and on a computer, and on a phone the page's column keeps the core's 30 px side room for it (`gutter: ["main > .wrap"]`). Pilot's welcome is OmniArmor's own: a business owner's checklist questions, a teacher's class questions, or a visitor's (docs/PILOT.md). On signed-in pages `app.css` sets the core's `--pilot-gap` to sit above the tab bar, which is also where the core checks. Only one helper is prominent at a time: Armo's bubble opens only when tapped (or once a day beside the column), and while it is open in the robot's corner the robot steps aside. See docs/PILOT.md.
 
 ### 4.3 Personalities
 
@@ -691,7 +692,7 @@ Version 1.6.0. A school or a teacher runs the Academy for a whole class or an en
 
 Version 1.9.0, after an honest product review.
 
-- **A school's workspace** (`orgs.kind = 'school'`, `classrooms.is_class_workspace`). The teacher sign-up (`/signup?then=classes`, linked from `/classrooms` and `/for/schools`) asks only for a name, a school email, a password and the school's name: no industry list. It makes a school's workspace with the school safety checklist (School Safety Aegizyn) ready for Whole school, starts the free class pilot at once, and sets the free time to end with the pilot, so a teacher sees one countdown. Workspaces already here that use the classroom plans, the pilot or classes, and track no checklist but the school ones, became schools in the upgrade (schema version 25).
+- **A school's workspace** (`orgs.kind = 'school'`, `classrooms.is_class_workspace`). The teacher sign-up (`/signup?then=classes`, linked from `/classrooms` and `/for/schools`) asks only for a name, a school email, a password and the school's name: no industry list. It makes a school's workspace with the school safety checklist (SchoolSafetyArmor) ready for Whole school, starts the free class pilot at once, and sets the free time to end with the pilot, so a teacher sees one countdown. Workspaces already here that use the classroom plans, the pilot or classes, and track no checklist but the school ones, became schools in the upgrade (schema version 25).
 - **Its menus.** The top bar shows the school's name, not a checklist's brand. The tab bar is Home (the classes page), Checklist, Reminders, History and Settings, and signing in lands on the classes page. The family learners page sends a school to its classes.
 - **Its plan page** (`/app/plan`, `templates/app/plan_school.html`) shows only the free class pilot (with its days left), Classroom and Whole school, with a card button when Stripe is set up, or "Contact us" by email when it isn't. No Pro, Plus or Kitchen Safety Bundle. Settings says the same in one line.
 - **The Classroom track** (`academy.CLASSROOM`). Every student in a class learns on it (students already in a class moved to it in the upgrade; what they finished before still counts in the class view and the pilot report). The class runs a pretend lemonade stand, Sunny Cup Lemonade, and the first worlds use it: Meet the Class Stand, Rules at the Stand, Money at the Stand and Work as a Team, then worlds about running any business that suit a class. Left out: the family company, the app's own lights and reminders, hiring and letting people go, taxes, loans and the industry Rule Quests; a question that mentions a family's own shop or the app is never asked. Each world is a fixed list of questions cut into lessons of five, so no question comes back in a later lesson of the same world, and a world has only as many lessons as it has questions for (at most 8): the level count is what a student plays. It ends with the Class Challenge (10 questions) and the certificate.
@@ -720,15 +721,15 @@ Version 1.9.0, after an honest product review.
 
 - **Codes for students added later** (`classrooms.students_without_code`, `learners.joined_at`, schema version 27). The join codes page and the class page say "2 students have no code yet" with **Make codes for them**, which makes codes only for students with no working code who haven't joined on a device, so the slips already handed out keep working. **Make new codes for everyone** is apart, folded under "Lost the slips?", and says the old slips stop working. Joining with a code sets `joined_at`; "Sign out on every device" clears it.
 - **One notice after adding students**: what was added, what to check below and what wasn't added, in one line.
-- **A teacher's Settings** (`views.settings_scope`). "School", not "Company"; no Locations (a location is a business's; the switcher stays for someone in several workspaces). On the free trial or Classroom: no industries and no reminder choices (the reminders are about the school checklist, which comes with Whole school). On Whole school: only School Aegizyn and School Safety Aegizyn, and the daily digest (no school check counts hours, so no clock alerts). A form only changes what it shows.
+- **A teacher's Settings** (`views.settings_scope`). "School", not "Company"; no Locations (a location is a business's; the switcher stays for someone in several workspaces). On the free trial or Classroom: no industries and no reminder choices (the reminders are about the school checklist, which comes with Whole school). On Whole school: only SchoolArmor and SchoolSafetyArmor, and the daily digest (no school check counts hours, so no clock alerts). A form only changes what it shows.
 - **One lesson count per track** (`Track.lessons`, `Track.lessons_done`, `Track.quests_for`): the Academy home, the track picker and its detail, the learner's map and the progress report all count the business lessons only (Launchpad 90), with the workspace's Rule Quests shown apart as "+N Rule Quests". Ranks still count every level passed.
 - **The daily goal counts passes** (`learner_days.passed`); a failed try is never celebrated. The streak still counts every day played.
 - **The report on a phone** is a card per check, each column labelled.
 
-### 5.18 Version 1.14.0: Pilot core 1.2.0 and Aegizyn's own Pilot welcome
+### 5.18 Version 1.14.0: Pilot core 1.2.0 and OmniArmor's own Pilot welcome
 
 - **Pilot core 1.2.0** (`static/pilot/`, the thirteen files copied unchanged from the MTRX Horizyn site; the pictures, layers and poses were already the same).
-- **Aegizyn's own welcome** (`pilot-omniarmor.js`, `WELCOME`): a business owner sees "Your checklist helper" with What's due or overdue?, Explain this check, Summarise my report, What does this colour mean? and Add my AI key; a teacher sees "Your classroom helper" with Add students, How do join codes work?, Plan a week of lessons, Print certificates and Add my AI key; a visitor gets the questions for the business side or, on `/classrooms` and the teacher guide, the schools side. The page's suggestions under the pills leave out any that repeats a pill until a chat has started. No picture or video key sections (`hideKeySections`).
+- **OmniArmor's own welcome** (`pilot-omniarmor.js`, `WELCOME`): a business owner sees "Your checklist helper" with What's due or overdue?, Explain this check, Summarise my report, What does this colour mean? and Add my AI key; a teacher sees "Your classroom helper" with Add students, How do join codes work?, Plan a week of lessons, Print certificates and Add my AI key; a visitor gets the questions for the business side or, on `/classrooms` and the teacher guide, the schools side. The page's suggestions under the pills leave out any that repeats a pill until a chat has started. No picture or video key sections (`hideKeySections`).
 - **Tucked away, the robot shrinks into its corner** (`keepInViewport`), fully on the screen, instead of hanging off the edge. `app.css` no longer sets the core's `--pilot-tuck` or holds the robot whole on a phone; it counts the small robot's move across from the right-hand corners' own 16 px on a computer (it then sits at the empty right end of the tab bar), and on a phone keeps it in the one corner (3 px from the edge, above the tab bar), shrinking there too when the core would move it elsewhere. The phone's column keeps the core's 30 px side room (`gutter: ["main > .wrap"]`). The 1.13.0 phone rules stay: one helper in one corner, Armo first while his badge has a count, nothing while typing; Pilot is still never on a student's page.
 
 ### 5.19 Version 1.14.1: Pilot core 1.2.1
@@ -750,11 +751,11 @@ Version 1.9.0, after an honest product review.
 
 - **Pictures at twice their phone size** (`static/shots/`): each is about 960 px wide (the steps cropped to 4:5, as they show), WebP, 20 to 62 KB. On a phone or a tablet the headline's picture sits right under its buttons, before the prices (`_shots.phone_shot`); on a computer beside the headline (`hero_shot`). Both are the same file. A trade's overview is taken with Getting started finished, so its own checks show. The schools page shows the school safety checklist (`school-checklist`, from a school's workspace on Whole school, pretend data; `shots.kind_for` gives it "school"), and the third classroom step the one-page class report (`class-report`) instead of the progress page again. To retake them, open each demo 480 px wide at 2x, hide Pilot, Armo and the demo bar, and save through the browser's own WebP encoder at about quality 0.62 (ImageMagick here ignores its quality setting).
 - **One grown-up look** (`academy.css`, `.ac-grown`): the classes page, a class, its join codes, certificates and report, the Academy page for a business and a learner's progress report use the business pages' type, buttons and cards. The rounded game look stays on a kid's own screens.
-- **The side bar's logo** (`base.html` `.tab-logo`): from 1100 px the Aegizyn name sits at the top of the side bar and the top bar keeps only its links.
+- **The side bar's logo** (`base.html` `.tab-logo`): from 1100 px the OmniArmor name sits at the top of the side bar and the top bar keeps only its links.
 - **The helpers' corner on a phone** (`app.css`): the page's column keeps the same room at both sides (the 42 px kept at the right for Armo is gone, and on signed-in pages Pilot adds no side room: `gutter` is `false` there in `pilot-omniarmor.js`). The bottom-right corner above the tab bar is reserved instead: the tab bar grows a small raised corner where the one helper sits, and Armo keeps his size there.
 - **Lessons** (`academy.story`): a first lesson's questions that its cards don't teach in so many words get a "Quiz hint" card on how to think, never the answers; the fact still shows the moment each question is answered. Passing a stage opens a celebration over the results (`result.html` `[data-celebrate]`, hidden until `academy.js` shows it; without the script the results' own card is the celebration): the learner's picture (growing when they rank up), stars bursting, "Keep going" or Escape to close, and a chime made in the browser only if "Sound" is switched on, on that device (off at first). Less motion turns the movement off.
 - **The picture grows on the map** (`map.html`, `academy.rank_ladder`): bigger at each rank, with the forms still to come in a row under the progress bar, and a small copy pinned on the world played next.
-- **Kid screens stay closed**: a lesson on a grown-up's device shows the Aegizyn name without a link and no menu or footer, only "Back to map"; a student who joined on their own device and opens any grown-up page (`/app` and the rest) goes to their own map (`security._kid_home`).
+- **Kid screens stay closed**: a lesson on a grown-up's device shows the OmniArmor name without a link and no menu or footer, only "Back to map"; a student who joined on their own device and opens any grown-up page (`/app` and the rest) goes to their own map (`security._kid_home`).
 - **Polish**: Escape, a tap outside or focus leaving closes the phone's menu, and the report has a Print button (`static/page.js`); the Kitchen Safety Bundle's offer is only in Settings, Connections, not on a new user's first checklist (`_bundle_check.html`); Pilot also keeps off a check's "Select" box and the teacher guide's lines (`avoid` in `pilot-omniarmor.js`).
 
 ## 6. Autopilot and the bug finder
@@ -795,7 +796,7 @@ The emails go to `OPERATOR_EMAIL`. Without that setting, or without email set up
 
 ### 6.4 The bug finder
 
-- **Crash fingerprints.** Every server error (a page that fails with a 500) is recorded with the page address, the error, the full traceback, and a **fingerprint**: the kind of error plus the file and function in Aegizyn's own code where it happened. Line numbers are left out, so unrelated edits don't change it. A fingerprint seen for the first time is a new bug. Autopilot emails it with:
+- **Crash fingerprints.** Every server error (a page that fails with a 500) is recorded with the page address, the error, the full traceback, and a **fingerprint**: the kind of error plus the file and function in OmniArmor's own code where it happened. Line numbers are left out, so unrelated edits don't change it. A fingerprint seen for the first time is a new bug. Autopilot emails it with:
   - how many times it happened in the last day, and on which pages;
   - when it was first seen;
   - where in the code it happened;
@@ -841,7 +842,7 @@ The same error is emailed at most once an hour, and no more than 20 reports go o
 
 ### 6.7 Usage counts
 
-Aegizyn counts how often a few key features are used, as one total per feature per day (UTC): checks updated (one at a time and in bulk), bulk updates, lessons started (a lesson page opened) and passed, certificates earned, Help page views, sign-ups, and since 1.5.0 plans paused, save offers taken, plans cancelled from the app, upgrade offers shown, plan switches started from the app and locations added. A count adds one to the day's total; there is no row per use, no cookie, no account, workspace or learner id, no IP address and no outside service. The operator's account (section 6.8) sees the last 30 days in Settings; MTRX Horizyn's console gets the same days from `/api/stats`, which answers only its `STATS_KEY`. Totals older than 400 days are deleted by the daily job. The Privacy page says so in one sentence.
+OmniArmor counts how often a few key features are used, as one total per feature per day (UTC): checks updated (one at a time and in bulk), bulk updates, lessons started (a lesson page opened) and passed, certificates earned, Help page views, sign-ups, and since 1.5.0 plans paused, save offers taken, plans cancelled from the app, upgrade offers shown, plan switches started from the app and locations added. A count adds one to the day's total; there is no row per use, no cookie, no account, workspace or learner id, no IP address and no outside service. The operator's account (section 6.8) sees the last 30 days in Settings; MTRX Horizyn's console gets the same days from `/api/stats`, which answers only its `STATS_KEY`. Totals older than 400 days are deleted by the daily job. The Privacy page says so in one sentence.
 
 ### 6.8 The operator's account
 
@@ -868,6 +869,7 @@ Every point below is in the code today.
 - Passwords must be at least 10 characters (and at most 200). They are stored only as salted, deliberately slow hashes (Werkzeug's password hashing).
 - **Sign-in rate limiting:** 5 failures per email or 20 per network address within 15 minutes pauses sign-in.
 - **Password reset links** last 1 hour and work once. Reset requests are limited (3 per email and 20 per network address per hour). Only a hash of each link is stored.
+- **Changing a password in Settings** needs the current one, is limited like a reset (3 tries an hour per person, 20 per network address), signs out every other device, spends open reset links, is in History and is emailed to the person.
 - **Invite links** last 7 days, and only their hash is stored.
 - **The Kryozyn connection key** is shown once and only its hash is stored. One is active per workspace; regenerating or revoking stops the old one at once. Its address answers only that key in the `Authorization` header (never the sign-in cookie), so it is the one POST besides Stripe's signed webhook without a form token. It allows 60 reports an hour per key and 120 requests an hour per network address, and 10 wrong keys from an address in 15 minutes pause that address (section 2.11).
 - **Sessions** are checked on every request against the person's identity: a session counter plus a key made from the person's id, email and creation time. Changing a password bumps the counter, which signs out every other device. A reused account id can't inherit an old session.
@@ -916,7 +918,7 @@ Every point below is in the code today.
 
 ### 7.5 Payments
 
-- Card details never touch Aegizyn; Stripe Checkout and the Stripe customer portal handle them.
+- Card details never touch OmniArmor; Stripe Checkout and the Stripe customer portal handle them.
 - **Webhooks:**
   - Each webhook is checked against Stripe's signature and must be no more than 5 minutes old.
   - Repeats are ignored, and so are events older than the last one applied.
@@ -946,7 +948,7 @@ Kid pages are also no longer cached.
 
 ### 8.1 The big picture
 
-Aegizyn is a single Python web app (Flask) with a SQLite database. It needs no separate database server, job queue, cache or image host. Pages are plain HTML forms that work without JavaScript; small scripts add Armo, the game feel of the Academy, and live updates. Everything visual (the logo, Armo, icons, avatars, emblems and world scenes) is inline SVG, so there are no image files to host.
+OmniArmor is a single Python web app (Flask) with a SQLite database. It needs no separate database server, job queue, cache or image host. Pages are plain HTML forms that work without JavaScript; small scripts add Armo, the game feel of the Academy, and live updates. Everything visual (the logo, Armo, icons, avatars, emblems and world scenes) is inline SVG, so there are no image files to host.
 
 ```
 Browser (HTML forms, no JavaScript needed)
@@ -988,7 +990,7 @@ SQLite database (one file on a persistent disk) + daily backups
     - `academy.js`, the lesson stepper, instant feedback, sparks and count-up;
     - `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` and `manifest.webmanifest`, the icons;
     - `og-image.png`, the picture shown when a public page is shared.
-- `omni_armor_rules/`: the 540 rules in twelve files (`group_1.py` to `group_10.py`, five industries each, `group_11.py` with School Safety Aegizyn and `group_12.py` with Salon Aegizyn, Ink Aegizyn and Gym Aegizyn), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
+- `omni_armor_rules/`: the 540 rules in twelve files (`group_1.py` to `group_10.py`, five industries each, `group_11.py` with SchoolSafetyArmor and `group_12.py` with SalonArmor, InkArmor and GymArmor), and `rule.py` with the `Rule` format and the single `evaluate` function every rule uses. The catalog is validated when it's imported.
 - `omni_armor_platform.py`: the original engine. It holds the theme table of 54 industries with their colors, plus 25 detailed checks (one per original industry, such as an hours-of-service timer and a MARPOL discharge check), an audit log, and a console demo.
 - `dashboard/`: a standalone demo page of all 540 checks (the "Risk Console"), built from the catalog by `build_dashboard.py` into `index.html`. Its JavaScript `evaluate` mirrors `rule.py`; a test proves they agree on 2,700 sample readings. Day checks take a date there too, and hour checks a date and time, counted in the browser's timezone.
 - `tests/`: 723 tests in 40 files.
@@ -1016,7 +1018,7 @@ SQLite database (one file on a persistent disk) + daily backups
   - `test_logs.py` (4: the main flows against gunicorn as the Docker image runs it and against the development server, then the daily job, the alerts, Autopilot and a crash, with every log line searched for passwords, tokens, cookies, keys and full email addresses) and `test_cookies_and_time.py` (7: the one cookie's flags and lifetime through every way in and out; dates shown in the workspace's time zone; no naive or local clock in the code).
 - `docs/`:
   - `ARCHITECTURE.md`, `OPERATIONS.md` and `COSTS.md`;
-  - `academy-preview/`, with 13 screenshots of the Academy (retaken in 1.24.0: the family home, track picker, map, a world, a lesson, its quiz and result, practice, progress, friends, plans, Armo's page and the kids' join page on a phone).
+  - `academy-preview/`, with 13 screenshots of the Academy (retaken in 1.26.0: the family home, track picker, map, a world, a lesson, its quiz and result, practice, progress, friends, plans, Armo's page and the kids' join page on a phone).
 - Packaging and hosting:
   - `Dockerfile`;
   - `docker-compose.yml` with a `Caddyfile` for free automatic HTTPS;
@@ -1135,12 +1137,12 @@ Command-line tools:
 
 ### 9.2 Hosting options
 
-Aegizyn is a product of MTRX Horizyn and has no domain of its own. MTRX Horizyn owns the one domain (its own site on the domain itself and `www`), and Aegizyn runs on the subdomain `aegizyn.mtrxhorizyn.com`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to Aegizyn's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://aegizyn.mtrxhorizyn.com`. docs/OPERATIONS.md section 1 has the steps.
+OmniArmor is a product of MTRX Horizyn and has no domain of its own. MTRX Horizyn owns the one domain (its own site on the domain itself and `www`), and OmniArmor runs on the subdomain `omniarmor.mtrxhorizyn.com`, beside the company's other apps on theirs. A subdomain rather than a folder keeps each app its own origin: the sign-in cookie has no `Domain`, so it goes back only to OmniArmor's own address, and the app sends no CORS headers, so a sibling app's page can't read it. Setting it up: one DNS record for `omniarmor` (a `CNAME` to Render, or an `A` record to your server), the host's custom-domain step (Render's Custom Domains, or `DOMAIN` for Caddy), HTTPS (both get the certificate themselves), and `BASE_URL=https://omniarmor.mtrxhorizyn.com`. docs/OPERATIONS.md section 1 has the steps.
 
 - **Render (easiest):** push the repository to GitHub, then choose New > Blueprint in Render. `render.yaml` creates the web service with a 1 GB persistent disk, a health check and a random `SECRET_KEY`. Set `BASE_URL`. It needs a paid plan because the app needs a persistent disk.
 - **One small server (cheapest):**
   1. Create a free-tier or smallest VM with Docker.
-  2. Add an A record named `aegizyn` on MTRX Horizyn's domain, pointing at it.
+  2. Add an A record named `omniarmor` on MTRX Horizyn's domain, pointing at it.
   3. Copy the repository, run `cp .env.example .env`, and set `SECRET_KEY`, `BASE_URL` and `DOMAIN`.
   4. Run `docker compose up -d`.
 
@@ -1157,11 +1159,11 @@ The Docker image:
 
 ### 9.3 Email
 
-Without email settings, reminders and password-reset links are saved under Reminders instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; Aegizyn sends from its own address there, such as `Aegizyn <no-reply@aegizyn.mtrxhorizyn.com>`, and every email ends with "Aegizyn is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
+Without email settings, reminders and password-reset links are saved under Reminders instead of sent. To send real email, sign up with any SMTP provider, verify the sending domain, and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM`. All of MTRX Horizyn's apps send from its one domain, so SPF, DKIM and DMARC are set up once on that domain; OmniArmor sends from its own address there, such as `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`, and every email ends with "OmniArmor is a product of MTRX Horizyn." STARTTLS is on by default. Free sending tiers are usually enough, because each person gets at most one reminder email per company per day, plus two time-limit alerts each time an hour or minute clock runs (section 3.3).
 
 ### 9.4 Backups and restore
 
-Backups are files named `aegizyn-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR` (before 1.25.0, `omniarmor-...db`; those are still read, kept and pruned). `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
+Backups are files named `omniarmor-YYYYMMDD-HHMMSS-*.db` in `BACKUP_DIR` (1.25.0 named them `aegizyn-...db`; those are still read, kept and pruned). `flask --app wsgi backup` makes one now. Copy them off the server regularly, because a backup on the same disk doesn't survive losing the disk.
 
 To restore, follow the 10-minute checklist in docs/OPERATIONS.md, section 4: copy the backup to a fresh file beside the database, check it, point `DATABASE_PATH` at it and restart, then check sign-in, the checks, the Academy and History. The old database stays as it was, so going back is one setting. `tests/test_operations.py` rehearses it on every push.
 
@@ -1183,7 +1185,7 @@ Back up first, then deploy the new version. After upgrading from 1.1.1 or earlie
 - **Reminders and backups:** included, built into the app.
 - **HTTPS:** free (Caddy and Let's Encrypt).
 - **Email:** optional; a free sending tier, or a low per-email price.
-- **Domain name:** nothing to buy: Aegizyn runs on a subdomain of MTRX Horizyn's domain.
+- **Domain name:** nothing to buy: OmniArmor runs on a subdomain of MTRX Horizyn's domain.
 - **Off-server backup copies:** recommended; a free object-storage tier.
 - **Payments:** Stripe's per-payment fee, with no monthly fee.
 
@@ -1201,7 +1203,7 @@ What the app does to stay cheap:
 
 The demos anyone can open from the site (section 2.1.3) need nothing set up: they are built in memory by each server process. The `seed-demo` command below is for a separate demo database to sign in to, for screenshots and sales calls.
 
-`flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking Pharmacy Aegizyn and HR Aegizyn, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept under Reminders (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
+`flask --app wsgi seed-demo --force demo.db` makes a believable workspace for screenshots and sales calls in a new database file, with made-up names: Juniper Lane Pharmacy, tracking PharmacyArmor and HRArmor, an owner and a pharmacist on the team, checks done, coming due and overdue (the dates are counted from the day it is seeded), a few weeks of audit trail, the morning's digest kept under Reminders (never sent), two Academy learners partway through on the Academy plan (one with a certificate), and Autopilot's history with one real pass at the end. It prints the sign-in addresses (on the reserved `.example` domain) and the password. It refuses any database holding an account, a workspace or a learner, checks again inside the write, and in production never touches the app's own database, even an empty one. docs/OPERATIONS.md, section 6, has the steps.
 ---
 
 ## 10. Design and writing style
@@ -1225,7 +1227,7 @@ All of the app's words follow the same rules, and new work should too:
 
 - Plain, direct sentences. Write the way a knowledgeable person talks.
 - Name things by what people recognize (reminders, checks, the report), not how the system is built.
-- Messages say what's wrong and what to do: "380 days is over the 365 days limit. Order the driver's MVR from each state now, review it and file it in the qualification file."
+- Messages say what's wrong and what to do: "380 days is over the 365-day limit. Order the driver's MVR from each state now, review it and file it in the qualification file."
 - Buttons say exactly what happens: "Done today", "Fix it", "Export CSV", "Make a join code".
 - No em dashes or mannered phrasing in content; the Academy banks are plain ASCII.
 - Kid-facing text is warm and encouraging and never mean: "Good try! Now you know."
@@ -1244,7 +1246,7 @@ The project was built in steps, each one a commit on GitHub:
    - California nurse ratios.
 3. **The 500-rule catalog** for 50 industries (the original 25 plus 25 more), with one shared `evaluate`, and the interactive **Risk Console** dashboard built from the catalog.
 4. **Risk Console upgrades.** The slogan, problems sorted first, date pickers on the 123 day-count rules, a copyable plain-text report, and search across all rules. Then a switch to one accessible dark theme, and a minimalist redesign.
-5. **The Aegizyn web app.**
+5. **The OmniArmor web app.**
    - sign-up, workspaces, invites and password reset;
    - per-company tracking with timezones, Done today and policy limits;
    - the daily job with reminder digests, backups and cleanup;
@@ -1314,7 +1316,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
 - **Before the next deploy:**
   - **Set `OPERATOR_EMAIL`** and the SMTP settings so Autopilot can email problems, and `SUPPORT_EMAIL` for the Help page.
   - **Run `flask --app wsgi make-operator` once** with the `OPERATOR_EMAIL` address after the deploy (section 6.8): since 1.1.2 nobody is the operator until it is run, and check that the account it prints is yours.
-  - **Set up Stripe for Pro and Plus** (docs/OPERATIONS.md, section 7, "Upgrading to 1.3.0"): the three prices, the portal's plan switching, and `KITCHEN_BUNDLE_SECRET` on both Aegizyn and Kryozyn. Tell customers first: after the upgrade every workspace without a plan has the trial, then read-only.
+  - **Set up Stripe for Pro and Plus** (docs/OPERATIONS.md, section 7, "Upgrading to 1.3.0"): the three prices, the portal's plan switching, and `KITCHEN_BUNDLE_SECRET` on both OmniArmor and Kryozyn. Tell customers first: after the upgrade every workspace without a plan has the trial, then read-only.
   - **For yearly billing, create the 3 yearly prices in Stripe** (docs/OPERATIONS.md, section 7, "Upgrading to 1.4.0") and set `PRO_YEARLY_STRIPE_PRICE`, `PLUS_YEARLY_STRIPE_PRICE` and `PLUS_BUNDLE_UPGRADE_YEARLY_STRIPE_PRICE`; until then every plan stays monthly only.
   - **For the cancel screen's one-time discount, create the coupon in Stripe** (25% off, repeating, 2 months; docs/OPERATIONS.md, section 7, "Upgrading to 1.5.0") and set `SAVE_OFFER_STRIPE_COUPON`; until then the cancel screen offers the pause and cancelling only. Leave pausing off in Stripe's customer portal.
   - **Back up** the database first, as always.
@@ -1331,7 +1333,7 @@ Previews, the playable lesson pages and this handbook's companion brief were pub
   1. Incorporate (for example as a Delaware C corporation).
   2. Get an EIN, open a business bank account, and assign the code and name to the company.
   3. Have a lawyer review the Terms and Privacy pages and the catalog.
-  4. Add the `aegizyn` subdomain on MTRX Horizyn's domain (docs/OPERATIONS.md, section 1).
+  4. Add the `omniarmor` subdomain on MTRX Horizyn's domain (docs/OPERATIONS.md, section 1).
 - **Scale.** The app is built for one small server. `docs/LOAD-TEST.md` has the measured limits and when to grow: more processes (`WEB_CONCURRENCY`) and a bigger server first, then a different database (Postgres) at roughly a few thousand busy workspaces or several servers.
 
 ### 12.3 How to keep working on it
@@ -1354,7 +1356,7 @@ These are the habits the project was built with. Keep them:
 ## Appendix A: All 54 industries and 540 checks
 Every check, as the app holds it. "Limit" is the line that makes a check Blocked; "warns from" is the point where it turns to Warning. "Policy" means the limit is an industry standard or common policy that a company can change. "Counts days since" and "counts days until" mark the 148 checks counted in days from a date; the 19 checks counted in months or years and the 16 counted in business, working or work days since a date (section 2.3) can be tracked from a date too.
 
-### 1. Fleet Aegizyn (Logistics)
+### 1. FleetArmor (Logistics)
 
 **1. 11-hour driving limit** (Maximum 11 h, warns from 10 h)
 
@@ -1436,7 +1438,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: No more driving until on-duty hours fall under 70, or take a 34-hour restart.
 - Example reading used in demos: 66 h
 
-### 2. Resto Aegizyn (Restaurants)
+### 2. RestoArmor (Restaurants)
 
 **1. Cold holding at 41°F or below** (Maximum 41°F, warns from 40°F)
 
@@ -1518,7 +1520,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Correct the payroll and pay back overtime owed; review how the regular rate is figured for tipped staff.
 - Example reading used in demos: No
 
-### 3. Yacht Aegizyn (Superyachts)
+### 3. YachtArmor (Superyachts)
 
 **1. Untreated sewage 12 nm from land** (Minimum 12 nm, warns from 13 nm)
 
@@ -1600,7 +1602,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Bring the Garbage Record Book up to date and file shore reception receipts.
 - Example reading used in demos: Yes
 
-### 4. Aero Aegizyn (Aviation)
+### 4. AeroArmor (Aviation)
 
 **1. 100-hour inspection** (Maximum 100 h, warns from 90 h)
 
@@ -1682,7 +1684,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Restrict the aircraft to VFR until the altimeter and static system test is done and logged.
 - Example reading used in demos: 25 months
 
-### 5. Hospital Aegizyn (Hospitals)
+### 5. HospitalArmor (Hospitals)
 
 **1. Med-surg nurse staffing ratio** (Maximum 5 patients per nurse, warns from 5 patients per nurse; policy, a company can set its own limit)
 
@@ -1764,7 +1766,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Update and repost the complete machine-readable standard charges file now.
 - Example reading used in demos: 200 days
 
-### 6. AI Aegizyn (AI Platforms)
+### 6. AIArmor (AI Platforms)
 
 **1. Post-market drift monitoring** (Maximum 0.15, warns from 0.12; policy, a company can set its own limit)
 
@@ -1846,7 +1848,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Pull the unsupported claims from all marketing now and keep only claims backed by documented testing.
 - Example reading used in demos: Yes
 
-### 7. Library Aegizyn (Libraries)
+### 7. LibraryArmor (Libraries)
 
 **1. CIPA internet filter active** (Must be in place, answered Yes or No)
 
@@ -1928,7 +1930,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Book a licensed extinguisher service now and tag every unit after maintenance.
 - Example reading used in demos: 350 days
 
-### 8. School Aegizyn (Schools)
+### 8. SchoolArmor (Schools)
 
 **1. FERPA consent before disclosure** (Must be in place, answered Yes or No)
 
@@ -2010,7 +2012,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Request the missing inspection from the local health department and post the latest report.
 - Example reading used in demos: Yes
 
-### 9. Prop Aegizyn (Real Estate)
+### 9. PropArmor (Real Estate)
 
 **1. Deposits in a separate account** (Must be in place, answered Yes or No)
 
@@ -2092,7 +2094,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Restore access and utilities immediately and use the court eviction process instead.
 - Example reading used in demos: No
 
-### 10. Auto Aegizyn (Dealerships)
+### 10. AutoArmor (Dealerships)
 
 **1. Buyers Guide on every used car** (Must be in place, answered Yes or No)
 
@@ -2174,7 +2176,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Book a qualified penetration test now and track fixes for every finding.
 - Example reading used in demos: 400 days
 
-### 11. Luxury Aegizyn (Luxury Brands)
+### 11. LuxuryArmor (Luxury Brands)
 
 **1. CITES permit for exotic materials** (Must be in place, answered Yes or No)
 
@@ -2256,7 +2258,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Hold the shipment; assemble tracing documents back to raw materials and replace any Xinjiang or listed-entity source.
 - Example reading used in demos: No
 
-### 12. Agri Aegizyn (Agriculture)
+### 12. AgriArmor (Agriculture)
 
 **1. Pesticide pre-harvest interval** (Must be in place, answered Yes or No)
 
@@ -2338,7 +2340,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Verify the contractor's DOL certificate before the crew works again; stop using any unregistered contractor.
 - Example reading used in demos: No
 
-### 13. Cop Aegizyn (Police Compliance)
+### 13. CopArmor (Police Compliance)
 
 **1. Evidence room inspection** (Maximum 183 days, warns from 153 days; policy, a company can set its own limit; counts days since a date)
 
@@ -2420,7 +2422,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Get a qualified interpreter or other auxiliary aid before continuing the interview, and document it.
 - Example reading used in demos: Yes
 
-### 14. Fire Aegizyn (Fire Departments)
+### 14. FireArmor (Fire Departments)
 
 **1. SCBA inspected and charged** (Minimum 90%, warns from 92%)
 
@@ -2502,7 +2504,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Offer the hepatitis B vaccine series at no cost now, or get a signed declination.
 - Example reading used in demos: 3 working days
 
-### 15. Park Aegizyn (Amusement Parks)
+### 15. ParkArmor (Amusement Parks)
 
 **1. Daily pre-opening ride inspection** (Must be in place, answered Yes or No)
 
@@ -2584,7 +2586,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop the maintenance work; lock out all energy sources under written procedures before anyone resumes.
 - Example reading used in demos: Yes
 
-### 16. Jail Aegizyn (Prison Compliance)
+### 16. JailArmor (Prison Compliance)
 
 **1. Restrictive housing welfare checks** (Maximum 30 min, warns from 24 min; policy, a company can set its own limit; counts minutes since a date and time)
 
@@ -2666,7 +2668,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Issue a written response to the grievance now and log the date it was delivered to the inmate.
 - Example reading used in demos: 12 days
 
-### 17. Insure Aegizyn (Insurance)
+### 17. InsureArmor (Insurance)
 
 **1. TCPA consent for marketing calls** (Must be in place, answered Yes or No)
 
@@ -2748,7 +2750,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: File the SAR with FinCEN now and keep the supporting records for five years.
 - Example reading used in demos: 27 days
 
-### 18. Bank Aegizyn (Banking Compliance)
+### 18. BankArmor (Banking Compliance)
 
 **1. Currency Transaction Report** (Maximum $10,000, warns from $9,000)
 
@@ -2830,7 +2832,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Send the written acknowledgment now and do not collect the disputed amount until the error is resolved.
 - Example reading used in demos: 12 days
 
-### 19. Fintech Aegizyn (Finance Compliance)
+### 19. FintechArmor (Finance Compliance)
 
 **1. Form ADV annual amendment** (Maximum 90 days, warns from 75 days; counts days since a date)
 
@@ -2912,7 +2914,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop business that uses capital, notify the SEC and FINRA the same day, and add capital before resuming.
 - Example reading used in demos: 115%
 
-### 20. Petro Aegizyn (Oil & Gas Production)
+### 20. PetroArmor (Oil & Gas Production)
 
 **1. Transmission valve inspection** (Maximum 15 months, warns from 13 months)
 
@@ -2994,7 +2996,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Call the National Response Center at 1-800-424-8802 now and start containment and cleanup.
 - Example reading used in demos: Yes
 
-### 21. Factory Aegizyn (Manufacturing)
+### 21. FactoryArmor (Manufacturing)
 
 **1. Lockout/tagout before servicing** (Must be in place, answered Yes or No)
 
@@ -3076,7 +3078,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Enter the case on the OSHA 300 log and complete the 301 incident report now.
 - Example reading used in demos: 9 days
 
-### 22. Pharma Aegizyn (Pharmaceuticals)
+### 22. PharmaArmor (Pharmaceuticals)
 
 **1. Part 11 electronic signatures** (Must be in place, answered Yes or No)
 
@@ -3158,7 +3160,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Take a complete inventory of all controlled substances now and keep the record for DEA inspection.
 - Example reading used in demos: 500 days
 
-### 23. Mine Aegizyn (Mining & Minerals)
+### 23. MineArmor (Mining & Minerals)
 
 **1. New miner training** (Minimum 4 h, warns from 23 h)
 
@@ -3240,7 +3242,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Test grounding continuity and resistance now and record the results.
 - Example reading used in demos: 340 days
 
-### 24. Port Aegizyn (Port Authorities)
+### 24. PortArmor (Port Authorities)
 
 **1. TWIC for secure areas** (Must be in place, answered Yes or No)
 
@@ -3322,7 +3324,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Take the crane out of service until an accredited agency examines and certifies it.
 - Example reading used in demos: 390 days
 
-### 25. Gene Aegizyn (Biotech & Genetics)
+### 25. GeneArmor (Biotech & Genetics)
 
 **1. IBC approval before research** (Must be in place, answered Yes or No)
 
@@ -3404,7 +3406,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop enrolling participants and submit the study to the IRB for review.
 - Example reading used in demos: Yes
 
-### 26. Senior Aegizyn (Nursing Homes & Assisted Living)
+### 26. SeniorArmor (Nursing Homes & Assisted Living)
 
 **1. Abuse allegation reported in 2 hours** (Maximum 2 h, warns from 1.5 h; counts hours since a date and time)
 
@@ -3486,7 +3488,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Review and update the emergency plan, risk assessment and communication plan now, and document the review.
 - Example reading used in demos: 400 days
 
-### 27. Dental Aegizyn (Dental & Medical Practices)
+### 27. DentalArmor (Dental & Medical Practices)
 
 **1. No false or unsupported claims** (Must never happen, answered Yes or No)
 
@@ -3568,7 +3570,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Install or repair a compliant amalgam separator, follow the best management practices, and file the compliance report.
 - Example reading used in demos: Yes
 
-### 28. Pharmacy Aegizyn (Pharmacies)
+### 28. PharmacyArmor (Pharmacies)
 
 **1. Controlled Rx red flags resolved** (Must be in place, answered Yes or No)
 
@@ -3650,7 +3652,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Remove the unlicensed person from duty or stop operating under the expired permit until it is renewed.
 - Example reading used in demos: 90 days
 
-### 29. Build Aegizyn (Construction)
+### 29. BuildArmor (Construction)
 
 **1. Fall protection at 6 feet** (Must be in place, answered Yes or No)
 
@@ -3732,7 +3734,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop paint-disturbing work until the firm is certified and a certified renovator directs lead-safe practices.
 - Example reading used in demos: Yes
 
-### 30. HR Aegizyn (Employers & HR)
+### 30. HRArmor (Employers & HR)
 
 **1. Overtime paid over 40 hours** (Must be in place, answered Yes or No)
 
@@ -3814,7 +3816,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Report the fatality to OSHA now by phone or in person, and preserve the scene.
 - Example reading used in demos: 2 h
 
-### 31. Privacy Aegizyn (Data Privacy & SaaS)
+### 31. PrivacyArmor (Data Privacy & SaaS)
 
 **1. Breach notice to authority in 72 hours** (Maximum 72 h, warns from 48 h; counts hours since a date and time)
 
@@ -3896,7 +3898,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Complete the DPIA before continuing; consult the supervisory authority if high risk remains after mitigation.
 - Example reading used in demos: No
 
-### 32. Pay Aegizyn (Payments & Merchants)
+### 32. PayArmor (Payments & Merchants)
 
 **1. No CVV or track data after auth** (Must never happen, answered Yes or No; policy)
 
@@ -3978,7 +3980,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Lower the surcharge to the cap, confirm your state allows it, disclose it and stop surcharging debit cards.
 - Example reading used in demos: 3.5%
 
-### 33. Crypto Aegizyn (Crypto & Money Services)
+### 33. CryptoArmor (Crypto & Money Services)
 
 **1. Effective AML program** (Must be in place, answered Yes or No)
 
@@ -4060,7 +4062,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop any deletion of BSA records and set retention to at least five years.
 - Example reading used in demos: Yes
 
-### 34. Mortgage Aegizyn (Mortgage Lending)
+### 34. MortgageArmor (Mortgage Lending)
 
 **1. No unexplained lending disparities** (Must never happen, answered Yes or No)
 
@@ -4142,7 +4144,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Do not close until flood insurance is in place; send the borrower notice and force-place coverage if it lapses.
 - Example reading used in demos: No
 
-### 35. Collect Aegizyn (Debt Collection)
+### 35. CollectArmor (Debt Collection)
 
 **1. Consent for autodialed cell calls** (Must be in place, answered Yes or No)
 
@@ -4224,7 +4226,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop collecting from consumers in unlicensed states and apply for the license or confirm the exemption.
 - Example reading used in demos: Yes
 
-### 36. Defense Aegizyn (Defense Contractors)
+### 36. DefenseArmor (Defense Contractors)
 
 **1. CUI safeguarded per NIST SP 800-171** (Must be in place, answered Yes or No)
 
@@ -4306,7 +4308,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Submit the registration renewal and fee in DECCS now; do not export until the registration is current.
 - Example reading used in demos: 45 days
 
-### 37. Food Aegizyn (Food Manufacturing)
+### 37. FoodArmor (Food Manufacturing)
 
 **1. Environmental pathogen monitoring** (Must be in place, answered Yes or No)
 
@@ -4388,7 +4390,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Renew or re-register the facility in FDA's FURLS system now.
 - Example reading used in demos: Yes
 
-### 38. Device Aegizyn (Medical Devices)
+### 38. DeviceArmor (Medical Devices)
 
 **1. CAPA process working** (Must be in place, answered Yes or No)
 
@@ -4470,7 +4472,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop shipping unlabeled units; apply UDIs and submit the GUDID records.
 - Example reading used in demos: Yes
 
-### 39. Chem Aegizyn (Chemical Plants)
+### 39. ChemArmor (Chemical Plants)
 
 **1. No overdue equipment inspections** (Must never happen, answered Yes or No)
 
@@ -4552,7 +4554,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Keep the employee off hazmat work until recurrent training is completed and recorded.
 - Example reading used in demos: 1,010 days
 
-### 40. Waste Aegizyn (Hazardous Waste)
+### 40. WasteArmor (Hazardous Waste)
 
 **1. LQG 90-day accumulation limit** (Maximum 90 days, warns from 80 days; counts days since a date)
 
@@ -4634,7 +4636,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Prepare and file the biennial hazardous waste report through RCRAInfo now.
 - Example reading used in demos: Yes
 
-### 41. Grid Aegizyn (Electric Utilities)
+### 41. GridArmor (Electric Utilities)
 
 **1. Security patch evaluation cycle** (Maximum 35 days, warns from 28 days; counts days since a date)
 
@@ -4716,7 +4718,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Submit the EOP-004 Attachment 2 or DOE OE-417 form to the required parties now.
 - Example reading used in demos: 3 h
 
-### 42. Water Aegizyn (Water Utilities)
+### 42. WaterArmor (Water Utilities)
 
 **1. Lead 90th percentile action level** (Maximum 15 ppb, warns from 12 ppb)
 
@@ -4798,7 +4800,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Assign a properly certified operator now and notify the state of the change.
 - Example reading used in demos: Yes
 
-### 43. Law Aegizyn (Law Firms)
+### 43. LawArmor (Law Firms)
 
 **1. Limitations deadlines docketed** (Must be in place, answered Yes or No; policy)
 
@@ -4880,7 +4882,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Train the untrained staff now and restrict their access to client funds and data until done.
 - Example reading used in demos: Yes
 
-### 44. Campus Aegizyn (Colleges & Universities)
+### 44. CampusArmor (Colleges & Universities)
 
 **1. Return of Title IV funds in 45 days** (Maximum 45 days, warns from 35 days; counts days since a date)
 
@@ -4962,7 +4964,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Complete and document the biennial review now and keep the report available on request.
 - Example reading used in demos: 18 months
 
-### 45. Child Aegizyn (Child Care)
+### 45. ChildArmor (Child Care)
 
 **1. Background checks before access** (Must be in place, answered Yes or No; policy)
 
@@ -5044,7 +5046,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Do not claim the noncompliant meals; fix the menu and train kitchen staff on the meal pattern.
 - Example reading used in demos: Yes
 
-### 46. Hotel Aegizyn (Hotels & Lodging)
+### 46. HotelArmor (Hotels & Lodging)
 
 **1. Total price shown with all fees** (Must be in place, answered Yes or No)
 
@@ -5126,7 +5128,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Train untrained staff on the safety data sheets and labels for their chemicals before their next shift.
 - Example reading used in demos: Yes
 
-### 47. Bar Aegizyn (Bars, Breweries & Liquor)
+### 47. BarArmor (Bars, Breweries & Liquor)
 
 **1. No alcohol sold to minors** (Must never happen, answered Yes or No)
 
@@ -5208,7 +5210,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Decline or return the inducement and document it; check your state's tied-house rules before accepting anything.
 - Example reading used in demos: No
 
-### 48. Firearm Aegizyn (Firearms Dealers)
+### 48. FirearmArmor (Firearms Dealers)
 
 **1. Form 4473 fully completed** (Must be in place, answered Yes or No)
 
@@ -5290,7 +5292,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Stop the sale and ship the handgun to a licensed dealer in the buyer's state instead.
 - Example reading used in demos: No
 
-### 49. Casino Aegizyn (Casinos & Gaming)
+### 49. CasinoArmor (Casinos & Gaming)
 
 **1. CTR filed within 15 days** (Maximum 15 days, warns from 12 days; counts days since a date)
 
@@ -5372,7 +5374,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Restore or rebuild missing records and set a five-year retention hold.
 - Example reading used in demos: Yes
 
-### 50. Shop Aegizyn (E-commerce)
+### 50. ShopArmor (E-commerce)
 
 **1. Ship on time or offer cancellation** (Maximum 30 days, warns from 25 days; counts days since a date)
 
@@ -5456,7 +5458,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 
 ---
 
-### 51. School Safety Aegizyn (School Safety & Operations)
+### 51. SchoolSafetyArmor (School Safety & Operations)
 
 **1. Fire and lockdown drills logged** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
 
@@ -5538,7 +5540,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Start the renewal now so it's back before it lapses, and keep staff without a current check away from students.
 - Example reading used in demos: 52 days
 
-### 52. Salon Aegizyn (Salons & Barbershops)
+### 52. SalonArmor (Salons & Barbershops)
 
 **1. Shop license renewed on time** (Minimum 0 days, warns from 30 days; policy, a company can set its own limit; counts days until a date)
 
@@ -5620,7 +5622,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Check each extinguisher's gauge, pin and seal and that nothing blocks it, then write down the date.
 - Example reading used in demos: 12 days
 
-### 53. Ink Aegizyn (Tattoo & Piercing Studios)
+### 53. InkArmor (Tattoo & Piercing Studios)
 
 **1. Studio permit renewed on time** (Minimum 0 days, warns from 30 days; policy, a company can set its own limit; counts days until a date)
 
@@ -5702,7 +5704,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - What to do when it's broken: Clean and disinfect the station before the next client and change every barrier.
 - Example reading used in demos: Yes
 
-### 54. Gym Aegizyn (Gyms & Fitness Studios)
+### 54. GymArmor (Gyms & Fitness Studios)
 
 **1. AED ready and checked** (Maximum 30 days, warns from 25 days; policy, a company can set its own limit; counts days since a date)
 
@@ -5785,7 +5787,7 @@ Every check, as the app holds it. "Limit" is the line that makes a check Blocked
 - Example reading used in demos: Yes
 
 ## Appendix B: Every Academy world, with its lesson cards
-Stage 1 of every world opens with these lesson cards. The cards of the first worlds use the family company's own name and industries; they are shown here for a sample company, Acme Logistics, that tracks Fleet Aegizyn and HR Aegizyn.
+Stage 1 of every world opens with these lesson cards. The cards of the first worlds use the family company's own name and industries; they are shown here for a sample company, Acme Logistics, that tracks FleetArmor and HRArmor.
 
 ### Foundations (8 worlds, on every track)
 
@@ -5811,12 +5813,12 @@ Stage 1 of every world opens with these lesson cards. The cards of the first wor
 
 - *Rules are like game rules.* Games are fair and fun because everyone follows the same rules. Businesses work the same way.
 - *Who makes them?.* Governments write rules to keep workers, customers and neighbors safe. Inspectors check them.
-- *A real one.* One of Acme Logistics's rules: "11-hour driving limit." Aegizyn keeps an eye on it every day.
+- *A real one.* One of Acme Logistics's rules: "11-hour driving limit." OmniArmor keeps an eye on it every day.
 - *Why it matters.* Breaking a rule can mean a fine (money paid as a penalty), losing customers, or someone getting hurt.
 
 **World 4: Stop, Careful, Go.** Read the company's signals.
 
-- *Three lights.* Aegizyn checks every rule and shows a light, just like a traffic light.
+- *Three lights.* OmniArmor checks every rule and shows a light, just like a traffic light.
 - *Green.* All good! The reading is safely inside the rule.
 - *Yellow.* Careful! It's getting close to the limit. Time to plan a fix.
 - *Red.* Stop! The rule is broken. Fix it right away to protect people and avoid a fine.
@@ -5825,7 +5827,7 @@ Stage 1 of every world opens with these lesson cards. The cards of the first wor
 
 - *Jobs that repeat.* Lots of jobs must be done again and again, like checking safety gear every year.
 - *A real example.* "Annual driving record review" has to be done at least every 365 days.
-- *Counting days.* Aegizyn counts the days since a job was last done, so nobody has to remember.
+- *Counting days.* OmniArmor counts the days since a job was last done, so nobody has to remember.
 - *Friendly reminders.* It sends reminders 30, 7 and 1 day before a deadline, so the team is never surprised.
 
 **World 6: Money Smarts.** Revenue, costs and profit.
@@ -5848,7 +5850,7 @@ Stage 1 of every world opens with these lesson cards. The cards of the first wor
 
 - *Owners lead people.* A business is its people. Leading Acme Logistics means helping the team do great work.
 - *Listen.* Good leaders listen to workers and customers, especially when they raise a problem.
-- *Keep records.* Aegizyn's audit trail remembers who changed what, and when. That keeps everyone honest.
+- *Keep records.* OmniArmor's audit trail remembers who changed what, and when. That keeps everyone honest.
 - *Ask for help.* Great owners ask experts for advice: lawyers, accountants and experienced workers.
 
 ### Leadership (8 worlds, on every track)
@@ -6578,7 +6580,7 @@ Each personality changes only Armo's words and outfit. Chief is the default for 
 | GET, POST | `/signup` | Sign up (or accept an invite) |
 | GET | `/sitemap.xml` | sitemap.xml |
 | GET | `/static/<path:filename>` | CSS, scripts and icons |
-| GET | `/terms` | Terms page: the rules for using Aegizyn |
+| GET | `/terms` | Terms page: the rules for using OmniArmor |
 
 ---
 
@@ -6589,23 +6591,23 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 | Setting | Default | What it does |
 |---|---|---|
 | `SECRET_KEY` | random in development; required in production | Signs sessions. Generate with `python3 -c "import secrets; print(secrets.token_hex(32))"`. |
-| `AEGIZYN_ENV` | development | Set to `production` to require a secret key, mark cookies Secure and trust one proxy hop. The older name, `OMNIARMOR_ENV`, still works; `AEGIZYN_ENV` wins when both are set (1.24.0). |
-| `OLD_HOSTS` | `omniarmor.mtrxhorizyn.com` | The app's old addresses, comma-separated: a page asked for there is redirected (301) to the same path at `BASE_URL`; Stripe's webhook, Kryozyn's daily report and the health checks are answered there as before. Empty turns it off (1.24.0). |
-| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://aegizyn.mtrxhorizyn.com`, the subdomain on MTRX Horizyn's domain. |
+| `OMNIARMOR_ENV` | development | Set to `production` to require a secret key, mark cookies Secure and trust one proxy hop. |
+| `OLD_HOSTS` | `aegizyn.mtrxhorizyn.com` | The app's old addresses, comma-separated: a page asked for there is redirected (301) to the same path at `BASE_URL`; Stripe's webhook, Kryozyn's daily report and the health checks are answered there as before. Empty turns it off (1.24.0). |
+| `BASE_URL` | http://localhost:8000 | The public address, used in emails and links: `https://omniarmor.mtrxhorizyn.com`, the subdomain on MTRX Horizyn's domain. |
 | `DOMAIN` | (none) | For docker-compose only: the domain Caddy gets an HTTPS certificate for. |
 | `DATABASE_PATH` | instance/omniarmor.db | Where the SQLite database lives. Use a persistent disk. |
 | `BACKUP_DIR` | a `backups` folder next to the database | Where daily backups go. |
 | `BACKUP_KEEP` | 14 | How many backups to keep. |
 | `SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD` | empty, 587 | Email provider. Without SMTP_HOST, emails are saved under Reminders instead of sent. |
 | `SMTP_STARTTLS` | 1 | Use STARTTLS with the email provider. |
-| `MAIL_FROM` | Aegizyn <no-reply@localhost> | The sender of every email. Live: `Aegizyn <no-reply@aegizyn.mtrxhorizyn.com>`. |
+| `MAIL_FROM` | OmniArmor <no-reply@localhost> | The sender of every email. Live: `OmniArmor <no-reply@omniarmor.mtrxhorizyn.com>`. |
 | `DAILY_JOB_HOUR_UTC` | 11 | The hour (UTC) after which the daily job runs. |
 | `SCHEDULER_ENABLED` | 1 | Run the built-in timer inside the app: time-limit alerts, the daily job and Autopilot. It runs in the server only (gunicorn or `flask run`), never in a one-off `flask` command. |
 | `AUTOPILOT_ENABLED` | 1 | Run Autopilot every 10 minutes. |
 | `OPERATOR_EMAIL` | (none) | Where Autopilot emails big problems. Without it, they go to the server log. The account with this address that `make-operator` was run for also sees the usage counts in Settings (section 6.8). |
 | `ERRORS_EMAIL` | (none) | One inbox for a short report of each server error, with no personal data: one per distinct error an hour, at most 20 a day (section 6.6). Without it, none are written or sent. |
-| `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer (live: `help@aegizyn.mtrxhorizyn.com`). Without it, the page points to the help inside the app. |
-| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts and daily usage counts, nothing about anyone) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://aegizyn.mtrxhorizyn.com/api/stats`. |
+| `SUPPORT_EMAIL` | (none) | An address people can write to for help, named in the Help page's last answer (live: `help@omniarmor.mtrxhorizyn.com`). Without it, the page points to the help inside the app. |
+| `STATS_KEY` | (none) | Turns on `/api/stats` (user counts and daily usage counts, nothing about anyone) for the owner's MTRX Horizyn console. Set it to the same value as the console's `MTRX_STATS_KEY`, and point the console's `OMNIARMOR_STATS_URL` at `https://omniarmor.mtrxhorizyn.com/api/stats`. |
 | `TRUSTED_PROXIES` | 1 in production, 0 otherwise | How many reverse proxies sit in front of the app, for the real client address. |
 | `SESSION_COOKIE_SECURE` | on in production | Send the sign-in cookie only over HTTPS. |
 | `WEB_CONCURRENCY, WEB_THREADS` | 1, 8 | Server processes and threads (Docker image). |
@@ -6653,5 +6655,5 @@ Settings are environment variables (copy `.env.example` to `.env`, or set them i
 - **Friend code**: a one-time code that connects two learners from different families.
 - **Autopilot**: the 10-minute health pass that fixes small problems and emails big ones.
 - **Fingerprint**: how the bug finder tells one bug from another: the kind of error plus where in the code it happened.
-- **Operator**: whoever runs the Aegizyn service (as opposed to a customer company).
+- **Operator**: whoever runs the OmniArmor service (as opposed to a customer company).
 

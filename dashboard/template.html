@@ -1,4 +1,4 @@
-<title>Aegizyn Risk Console</title>
+<title>OmniArmor Risk Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -184,7 +184,7 @@ footer{color:var(--faint);font-size:13.5px;padding-top:8px;border-top:1px solid 
             <defs><linearGradient id="blend" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E5261C"></stop><stop offset="1" stop-color="#F59234"></stop></linearGradient></defs>
             <circle class="mark-ring" cx="20" cy="22.5" r="7" fill="none" stroke="url(#blend)" stroke-width="3.5"></circle>
           </svg>
-          <div class="wordmark" aria-label="Aegizyn"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
+          <div class="wordmark" aria-label="OmniArmor.ai"><span aria-hidden="true"><span class="ch" style="--i:0">O</span><span class="ch" style="--i:1">m</span><span class="ch" style="--i:2">n</span><span class="ch" style="--i:3">i</span><span class="ch" style="--i:4">A</span><span class="ch" style="--i:5">r</span><span class="ch" style="--i:6">m</span><span class="ch" style="--i:7">o</span><span class="ch" style="--i:8">r</span></span><span class="dim" aria-hidden="true"><span class="ch" style="--i:9">.</span><span class="ch" style="--i:10">a</span><span class="ch" style="--i:11">i</span></span></div>
         </div>
         <p class="slogan">Catch the fine before it catches you.</p>
       </div>
@@ -563,7 +563,7 @@ $("reset").addEventListener("click", () => {
 function reportText(ind) {
   const t = tally(levelsFor(ind));
   const date = new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
-  const lines = [`Aegizyn compliance report`, `${ind.brand} (${ind.sector}), ${date}`,
+  const lines = [`OmniArmor.ai compliance report`, `${ind.brand} (${ind.sector}), ${date}`,
     `${t.BLOCKED} blocked, ${plural(t.WARNING, "warning", "warnings")}, ${t.CLEARED} cleared` + (t.NONE ? `, ${t.NONE} without a reading` : ""), ""];
   for (const level of ["BLOCKED", "WARNING", "NONE", "CLEARED"]) {
     const rules = ind.rules.filter(r => evaluate(r, readings[ind.id][r.key])[0] === level);

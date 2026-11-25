@@ -40,7 +40,7 @@ TIMEZONE = "America/Chicago"
 DOMAIN = "juniperlane.example"   # .example is reserved: never a real address
 OWNER = ("Avery Quill", f"avery@{DOMAIN}")
 PHARMACIST = ("Jules Marrow", f"jules@{DOMAIN}")
-PHARMACY, EMPLOYER = 28, 30      # Pharmacy Aegizyn, HR Aegizyn
+PHARMACY, EMPLOYER = 28, 30      # PharmacyArmor, HRArmor
 WORKSPACE_AGE_DAYS = 62
 
 # Each check's reading, as the level it should show today:

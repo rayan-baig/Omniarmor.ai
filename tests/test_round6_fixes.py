@@ -235,7 +235,7 @@ class TestPilotForTeachersAndVisitors(SchoolCase):
 
     def test_visitors_are_greeted_as_omniarmor_s_helper(self):
         js = read("omniarmor_app", "static", "pilot-omniarmor.js")
-        self.assertEqual(js.count('tagline: "Your Aegizyn helper",'), 2)
+        self.assertEqual(js.count('tagline: "Your OmniArmor helper",'), 2)
         self.assertNotIn('visitor: {\n      tagline: "Your checklist helper"', js)
 
 

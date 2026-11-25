@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Autopilot: keeps Aegizyn running without someone checking it every day.
+"""Autopilot: keeps OmniArmor running without someone checking it every day.
 
 Every 10 minutes it looks the service over. Small problems it fixes on its own
 and writes down: failed emails are sent again, a missed backup is made, old
@@ -298,7 +298,7 @@ def tell_operator(cfg, subject, body, kind="autopilot"):
     if not to or not cfg.get("SMTP_HOST"):
         log.error("AUTOPILOT: %s\n%s", subject, body)
         return False
-    status, error = send_email(cfg, to, f"[Aegizyn] {subject}", body, kind=kind)
+    status, error = send_email(cfg, to, f"[OmniArmor] {subject}", body, kind=kind)
     if status != "sent":
         log.error("AUTOPILOT: couldn't email %s (%s): %s\n%s", to, error, subject, body)
     return status == "sent"

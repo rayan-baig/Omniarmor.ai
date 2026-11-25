@@ -13,10 +13,8 @@ To rename the company, change "company" and "domain" in names.json. The help
 address and every app's address follow the domain; the old addresses of this
 app (OLD_APP_HOSTS) keep working as redirects to the new one (security.py).
 
-The assistant: "assistant" is the name every page shows today, the same as
-the shared Pilot core's own words (static/pilot/, which this app never
-edits). "assistant_next" is the name it will take once the core is renamed;
-switch "assistant" to it then.
+The assistant: "assistant" is the name every page shows, the same as the
+shared Pilot core's own words (static/pilot/, which this app never edits).
 """
 
 import json
@@ -42,7 +40,6 @@ FRIDGE_HOST = f"{RAW['fridge_subdomain']}.{DOMAIN}"
 FRIDGE_URL = f"https://{FRIDGE_HOST}"
 
 ASSISTANT = RAW["assistant"]
-ASSISTANT_NEXT = RAW["assistant_next"]
 
 # The company's other apps: {name: address}.
 OTHER_APPS = {name: f"https://{sub}.{DOMAIN}" for name, sub in RAW["other_apps"].items()}

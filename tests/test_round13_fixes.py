@@ -81,7 +81,7 @@ class TestSummaryWordsByKind(PharmacyCase):
         self.assertIn("4 days overdue · last done 35 days ago", action)
         self.assertNotIn("last done 47 days ago", action)
         # A deadline says its days once: "Due in 41 days", not "Due in 41 days · 41 days left".
-        self.assertIn("Pharmacy staff licenses current · Pharmacy Aegizyn Due in 41 days", action)
+        self.assertIn("Pharmacy staff licenses current · PharmacyArmor Due in 41 days", action)
         self.assertNotIn("41 days left", action)
         i9 = self.state(HR, "i9_section_2")
         text = words(page)
@@ -292,7 +292,7 @@ class TestOneSetOfStatusWords(PharmacyCase):
                      "Without a reading: not recorded yet"):
             self.assertIn(pair, key)
         groups = words(between(page, "data-summary-groups", "</ul>"))
-        self.assertRegex(groups, r"Pharmacy Aegizyn · Pharmacies \d+ blocked · \d+ warnings? · \d+ cleared")
+        self.assertRegex(groups, r"PharmacyArmor · Pharmacies \d+ blocked · \d+ warnings? · \d+ cleared")
         for old in ("checks current", " due soon · ", " not recorded"):
             self.assertNotIn(old, groups)
         self.assertNotIn("checks current", summary)
@@ -321,7 +321,7 @@ class TestStudentFooter(PilotCase):
             for client in (kid,):
                 page = client.get(path, follow_redirects=True).data.decode()
                 foot = words(page[page.index('<footer class="site">'):page.index("</footer>")])
-                self.assertIn("Aegizyn Academy · Learn how a business works, one lesson at a time", foot, path)
+                self.assertIn("OmniArmor Academy · Learn how a business works, one lesson at a time", foot, path)
                 self.assertNotIn("Catch the fine", foot, path)
                 self.assertNotIn("legal advice", foot, path)
                 self.assertFalse(has_pilot(page), path)
@@ -339,7 +339,7 @@ class TestCopy(AppTestCase):
         page = words(self.client.get("/pricing").data.decode())
         self.assertIn(f"{names.FRIDGE_APP} Kitchen Safety Bundle: for kitchens on {names.FRIDGE_APP}, "
                       f"{names.COMPANY}'s fridge and freezer alarm app.", page)
-        self.assertIn(f"{plans.price_label(plans.BUNDLE_DOLLARS)} paid to {names.FRIDGE_APP} includes Aegizyn Pro", page)
+        self.assertIn(f"{plans.price_label(plans.BUNDLE_DOLLARS)} paid to {names.FRIDGE_APP} includes OmniArmor Pro", page)
 
     def test_download_the_report_and_history_first(self):
         for name in ("help.html", "security.html", "privacy.html"):
@@ -362,23 +362,24 @@ class TestBackupNames(AppTestCase):
         with open(os.path.join(self.folder, name), "wb") as f:
             f.write(b"old")
 
-    def test_new_backups_are_aegizyn_and_old_ones_still_count(self):
+    def test_new_backups_and_old_ones_both_count(self):
+        # 1.26.0: back to the name OmniArmor, new copies are omniarmor-*.db and 1.25.0's aegizyn-*.db ones count.
         from omniarmor_app import autopilot, jobs
         from omniarmor_app.db import utcnow
         for day in ("20200101", "20200102", "20200103"):
-            self.plant(f"omniarmor-{day}-000000-000000.db")
-        self.assertTrue(autopilot.latest_backup(self.cfg).endswith("omniarmor-20200103-000000-000000.db"))
+            self.plant(f"aegizyn-{day}-000000-000000.db")
+        self.assertTrue(autopilot.latest_backup(self.cfg).endswith("aegizyn-20200103-000000-000000.db"))
         made = jobs.backup_database(self.cfg)
-        self.assertRegex(os.path.basename(made), r"^aegizyn-\d{8}-\d{6}-\d{6}\.db$")
+        self.assertRegex(os.path.basename(made), r"^omniarmor-\d{8}-\d{6}-\d{6}\.db$")
         left = sorted(os.listdir(self.folder))
         # Pruned by date across both names: the oldest old one went, the newest copy is the new one.
-        self.assertEqual(left, ["aegizyn-" + os.path.basename(made).split("-", 1)[1],
-                                "omniarmor-20200102-000000-000000.db", "omniarmor-20200103-000000-000000.db"])
+        self.assertEqual(left, ["aegizyn-20200102-000000-000000.db", "aegizyn-20200103-000000-000000.db",
+                                "omniarmor-" + os.path.basename(made).split("-", 1)[1]])
         self.assertEqual(autopilot.latest_backup(self.cfg), made)
         # An old-named copy made today is today's copy: no second one.
         for name in os.listdir(self.folder):
             os.remove(os.path.join(self.folder, name))
-        today = f"omniarmor-{utcnow().strftime('%Y%m%d')}-000000-000000.db"
+        today = f"aegizyn-{utcnow().strftime('%Y%m%d')}-000000-000000.db"
         self.plant(today)
         self.assertEqual(os.path.basename(jobs.backup_database(self.cfg)), today)
         self.assertEqual(os.listdir(self.folder), [today])
@@ -387,8 +388,8 @@ class TestBackupNames(AppTestCase):
         from omniarmor_app import jobs
         src = read("omniarmor_app", "autopilot.py")
         self.assertIn("Made a missing backup: {os.path.basename(made)}.", src)
-        self.assertEqual(jobs.BACKUP_PREFIX, "aegizyn")
-        self.assertEqual(jobs.OLD_BACKUP_PREFIXES, ("omniarmor",))
+        self.assertEqual(jobs.BACKUP_PREFIX, "omniarmor")
+        self.assertEqual(jobs.OLD_BACKUP_PREFIXES, ("aegizyn",))
 
 
 class TestVersion(unittest.TestCase):

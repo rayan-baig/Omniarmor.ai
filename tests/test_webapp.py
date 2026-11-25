@@ -78,7 +78,7 @@ class AppTestCase(unittest.TestCase):
 
 class TestPublicPages(AppTestCase):
     def test_pages_render(self):
-        for path in ["/", "/industries", "/industries/fleet-aegizyn", "/industries/shop-aegizyn", "/login", "/signup",
+        for path in ["/", "/industries", "/industries/fleetarmor", "/industries/shoparmor", "/login", "/signup",
                      "/forgot", "/robots.txt", "/sitemap.xml"]:
             self.assertEqual(self.client.get(path).status_code, 200, path)
 
@@ -164,7 +164,7 @@ class TestPublicPages(AppTestCase):
         self.assertEqual(self.client.get("/signup?industry=abc").status_code, 200)
 
     def test_every_industry_page_and_its_signup_link(self):
-        for slug in ["fleet-aegizyn", "resto-aegizyn", "shop-aegizyn", "casino-aegizyn"]:
+        for slug in ["fleetarmor", "restoarmor", "shoparmor", "casinoarmor"]:
             page = self.client.get(f"/industries/{slug}").data.decode()
             link = re.search(r'href="(/signup\?industry=\d+)"', page).group(1)
             self.assertEqual(self.client.get(link).status_code, 200, link)
@@ -195,7 +195,7 @@ class TestAccounts(AppTestCase):
         self.assertEqual(r.status_code, 302)
         page = self.client.get("/app").data.decode()
         self.assertIn("Acme Logistics", page)
-        self.assertIn("Fleet Aegizyn", page)
+        self.assertIn("FleetArmor", page)
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT role FROM memberships").fetchone()[0], "owner")
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM org_industries").fetchone()[0], 2)
@@ -602,7 +602,7 @@ class TestJobs(AppTestCase):
         # Automatically, a day's copy is made once: a retried run reuses it.
         self.assertEqual(backup_database(cfg), made[-1])
         result = run_daily(cfg, force=True)
-        self.assertIn("backup=aegizyn-", result)
+        self.assertIn("backup=omniarmor-", result)
 
     def test_find_rule(self):
         self.assertIsNone(find_rule(99, "x"))

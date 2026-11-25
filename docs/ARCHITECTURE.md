@@ -1,4 +1,4 @@
-# How Aegizyn fits together
+# How OmniArmor fits together
 
 ```
 Browser (HTML forms, no JavaScript needed)
@@ -71,7 +71,7 @@ Kryozyn as who made the change. The contract is
 
 ## The demos
 
-`demo_mode.py` lets a visitor try Aegizyn without an account: `/demo/business`
+`demo_mode.py` lets a visitor try OmniArmor without an account: `/demo/business`
 (a pretend restaurant) and `/demo/classroom` (a teacher's class). Opening one
 puts a demo pass in the session (rate limited per address, 30 minutes). On the
 app's own pages, `security.load_user` then signs the visitor in as the demo's

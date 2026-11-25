@@ -1,7 +1,58 @@
 # Changelog
 
-What changed in Aegizyn (called OmniArmor until 1.24.0), in plain words, newest first. The version number
+What changed in OmniArmor (called Aegizyn in 1.24.0 and 1.25.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
+
+## 1.26.0 (25 November 2026)
+
+Back to the name OmniArmor, and fixes from a strict fourteenth review.
+
+- **Back to the name OmniArmor.** The app is OmniArmor (OmniArmor.ai) again,
+  at `omniarmor.mtrxhorizyn.com`, and the checklists are RestoArmor,
+  SalonArmor, SchoolSafetyArmor and the rest, at their old addresses
+  (`/industries/restoarmor`). The 1.24.0 addresses keep working:
+  `aegizyn.mtrxhorizyn.com` sends every page on to the same page here
+  (Stripe's webhook, Kryozyn's report and the health checks are answered
+  there as before), and `/industries/resto-aegizyn` and the others redirect.
+  History written as "Resto Aegizyn" shows "RestoArmor" again (schema
+  version 29). New backups are `omniarmor-*.db` again; `aegizyn-*.db` ones
+  still count. The fridge app stays Kryozyn and the company MTRX Horizyn,
+  each a line in `names.json`; the assistant is Pilot. The pictures on the
+  public pages, the sharing picture and the Academy previews were taken
+  again. `OMNIARMOR_ENV` is the setting's name (docs/OPERATIONS.md,
+  "Upgrading to 1.26.0", has the owner's steps).
+- **A food batch's days add up.** The 7-day rule counts the day food is made
+  or opened as day 1, so food made 8 days ago is on day 9: the summary, the
+  report and its CSV say "made or opened 8 days ago (day 9)" (it said "9
+  days ago"), and Home, the check and Armo say "Day 9 (made or opened
+  2026-11-16) is over the 7-day limit". Made today is "today (day 1)"; the
+  last day says "is the last day of the 7-day limit".
+- **"Is my data safe?" starts with "Yes."** Each safety question gets its own
+  first words: "Do you sell my data?" still starts "No, we don't sell your
+  data.", a question about cookies "No tracking cookies", where it's kept
+  "With our hosting company".
+- **Time zone:** the sign-up page still takes it from your device, and now
+  the welcome says it ("Due dates roll over at midnight Chicago time
+  (America/Chicago). Not where you are? Change it in Settings."). Settings
+  explains what it changes, and History notes a new one. A workspace already
+  on UTC stays on UTC until its owner changes it.
+- **Change password in Settings** ("Your password"): the current password and
+  a new one, the same 10-character rule and the same limit on tries as a
+  reset. Every other device is signed out, an open reset link stops working,
+  History says so and you get an email. Pilot's password answer points there
+  when you're signed in.
+- **The report and its CSV say what each reading is**, in the summary's
+  words: "Last done 35 days ago", "41 days left", "Qualifying event 47 days
+  ago", "44°F" (it said "35 days").
+- **Copy:** "the 7-day limit", "the 3-business-day limit", "the 2-hour
+  limit" everywhere, and under each box "31-day limit · warns from 25 days"
+  (a deadline: "Due by its date · warns from 30 days left"). The plan page
+  says the plan once ("You're on Plus", then "Billed monthly, renews ..."),
+  and the free trial once. The summary says a reading once ("44°F is over
+  the 41°F limit", with no "· last reading 44°F" after it). Pilot's "Explain
+  this page" names the page once and doesn't link to the page you're on.
+  Pilot answers "Do you have a free plan?" and "Is there a yearly discount?"
+  from the real plans, with no key. "Time zone", not "Timezone".
 
 ## 1.25.0 (24 November 2026)
 

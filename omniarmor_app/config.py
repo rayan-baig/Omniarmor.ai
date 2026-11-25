@@ -26,10 +26,10 @@ def support_email(cfg):
 
 
 def environment(env=None):
-    """The environment, "production" or "development": AEGIZYN_ENV, or the older OMNIARMOR_ENV
-    (1.24.0: both work, and AEGIZYN_ENV wins when both are set)."""
+    """The environment, "production" or "development": OMNIARMOR_ENV. 1.26.0: AEGIZYN_ENV, which 1.24.0 and 1.25.0
+    used, is still read when OMNIARMOR_ENV isn't set, so a server set up then keeps working."""
     env = os.environ if env is None else env
-    return (env.get("AEGIZYN_ENV") or env.get("OMNIARMOR_ENV") or "development").strip()
+    return (env.get("OMNIARMOR_ENV") or env.get("AEGIZYN_ENV") or "development").strip()
 
 
 def _hosts(value):
@@ -140,13 +140,13 @@ def load_config(**overrides):
         # (and every form also needs its CSRF token).
         "SESSION_COOKIE_SAMESITE": "Lax",
         # Host-only: no Domain attribute, so the cookie goes back to this
-        # exact host and nowhere else. Aegizyn runs on a subdomain of the
+        # exact host and nowhere else. OmniArmor runs on a subdomain of the
         # company's domain, beside its other apps; a cookie scoped to the
-        # parent domain would carry an Aegizyn sign-in to every one of them.
+        # parent domain would carry an OmniArmor sign-in to every one of them.
         "SESSION_COOKIE_DOMAIN": None,
         "PERMANENT_SESSION_LIFETIME": timedelta(days=14),
         "MAX_CONTENT_LENGTH": 1024 * 1024,
-        # 1.24.0: the app's old addresses (names.py, OLD_APP_HOSTS: omniarmor.<domain>), comma-separated. A page
+        # 1.24.0: the app's old addresses (names.py, OLD_APP_HOSTS: aegizyn.<domain>, 1.26.0), comma-separated. A page
         # asked for there is sent on, with a permanent redirect, to the same path at BASE_URL's address. Stripe's
         # webhook, Kryozyn's daily report and the health checks are answered there as before, so nothing that
         # posts to the old address breaks (security.py, old_host_redirect). Set it to empty to turn this off.
@@ -158,7 +158,7 @@ def load_config(**overrides):
         _production_checks(cfg, base_url_given)
     if not cfg["SECRET_KEY"]:
         if cfg["ENV_NAME"] == "production":
-            raise SettingsError("SECRET_KEY must be set when AEGIZYN_ENV=production")
+            raise SettingsError("SECRET_KEY must be set when OMNIARMOR_ENV=production")
         cfg["SECRET_KEY"] = secrets.token_hex(32)  # development only: sessions reset on restart
     if not 0 <= cfg["DAILY_JOB_HOUR_UTC"] <= 23:
         raise SettingsError("DAILY_JOB_HOUR_UTC must be between 0 and 23")
@@ -192,5 +192,5 @@ def _production_checks(cfg, base_url_given):
         problems.append("STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is not: people could pay and never get"
                         " their plan. Set it to the webhook's signing secret from Stripe (docs/OPERATIONS.md, section 8).")
     if problems:
-        raise SettingsError("Aegizyn can't start in production until these settings are fixed:\n- "
+        raise SettingsError("OmniArmor can't start in production until these settings are fixed:\n- "
                             + "\n- ".join(problems))

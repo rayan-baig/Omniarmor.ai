@@ -7,7 +7,7 @@ lists for salons, tattoo studios and gyms.
 - The migration keeps every value: one saved before becomes the first entry.
 - "Sick employees kept off work" keeps its Yes-is-bad answer and gains a
   dated log, by first name or initials only.
-- Salon Aegizyn, Ink Aegizyn and Gym Aegizyn each cite a real, general source, say
+- SalonArmor, InkArmor and GymArmor each cite a real, general source, say
   where rules vary, and are what their trade pages lead with.
 """
 
@@ -245,7 +245,7 @@ class TestTradeStarterLists(unittest.TestCase):
             self.assertIn("check your local rules", trade.groups[0][2])
             for key in trade.groups[0][1]:
                 self.assertIsNotNone(find_rule(industry_id, key), key)
-        self.assertIn(INDUSTRIES[52]["brand"], "Salon Aegizyn")
+        self.assertIn(INDUSTRIES[52]["brand"], "SalonArmor")
 
     def test_entry_checks_exist(self):
         for industry_id, key in MULTI_CHECKS:
@@ -257,7 +257,7 @@ class TestTradePages(AppTestCase):
         for slug in TestTradeStarterLists.NEW.values():
             page = self.client.get(f"/for/{slug}").data.decode()
             self.assertIn("check your local rules", page)
-        for brand in ("salon-aegizyn", "ink-aegizyn", "gym-aegizyn"):
+        for brand in ("salonarmor", "inkarmor", "gymarmor"):
             self.assertEqual(self.client.get(f"/industries/{brand}").status_code, 200)
 
 

@@ -141,7 +141,7 @@
   }
 
   // While Armo's bubble (an alert, a "Fix it", a tip) is showing, Pilot's
-  // robot steps aside by itself: Aegizyn's Pilot config lists Armo in its
+  // robot steps aside by itself: OmniArmor's Pilot config lists Armo in its
   // yieldTo (pilot-omniarmor.js, Pilot core 1.1.1), so nothing is needed here.
 
   function jump() {

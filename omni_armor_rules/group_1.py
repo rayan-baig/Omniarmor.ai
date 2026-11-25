@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Rule catalog, group 1: Fleet Aegizyn, Resto Aegizyn, Yacht Aegizyn, Aero Aegizyn and
-Hospital Aegizyn. Ten rules per industry; rule 1 of each is the topic of the
+Rule catalog, group 1: FleetArmor, RestoArmor, YachtArmor, AeroArmor and
+HospitalArmor. Ten rules per industry; rule 1 of each is the topic of the
 existing detailed check in omni_armor_platform.py.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 1. FLEET AEGIZYN (FMCSA motor carriers) ---
+    # --- 1. FLEETARMOR (FMCSA motor carriers) ---
     1: [
         Rule(key="hos_11_hour", title="11-hour driving limit",
              cost="Out-of-service orders idle the truck and load, and HOS violations raise CSA scores and insurance costs.",
@@ -73,7 +73,7 @@ RULES = {
              action="No more driving until on-duty hours fall under 70, or take a 34-hour restart."),
     ],
 
-    # --- 2. RESTO AEGIZYN (restaurants) ---
+    # --- 2. RESTOARMOR (restaurants) ---
     2: [
         Rule(key="cold_holding", title="Cold holding at 41°F or below",
              cost="Out-of-temperature food is discarded, is a priority violation at inspection and can cause outbreaks and lawsuits.",
@@ -138,7 +138,7 @@ RULES = {
              action="Correct the payroll and pay back overtime owed; review how the regular rate is figured for tipped staff."),
     ],
 
-    # --- 3. YACHT AEGIZYN (superyachts / commercial yachts) ---
+    # --- 3. YACHTARMOR (superyachts / commercial yachts) ---
     3: [
         Rule(key="sewage_discharge_distance", title="Untreated sewage 12 nm from land",
              cost="Illegal sewage discharge draws Coast Guard and port state fines and can lead to detention of the yacht.",
@@ -203,7 +203,7 @@ RULES = {
              action="Bring the Garbage Record Book up to date and file shore reception receipts."),
     ],
 
-    # --- 4. AERO AEGIZYN (Part 135 air charter) ---
+    # --- 4. AEROARMOR (Part 135 air charter) ---
     4: [
         Rule(key="inspection_100_hour", title="100-hour inspection",
              cost="Flying for hire past the 100-hour inspection grounds the aircraft and draws FAA civil penalties per flight.",
@@ -268,7 +268,7 @@ RULES = {
              action="Restrict the aircraft to VFR until the altimeter and static system test is done and logged."),
     ],
 
-    # --- 5. HOSPITAL AEGIZYN (hospitals) ---
+    # --- 5. HOSPITALARMOR (hospitals) ---
     5: [
         Rule(key="nurse_staffing_ratio", title="Med-surg nurse staffing ratio",
              cost="Short staffing leads to survey citations, state penalties where ratios are law, and patient harm lawsuits.",

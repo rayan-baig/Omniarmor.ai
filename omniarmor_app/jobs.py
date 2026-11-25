@@ -153,7 +153,7 @@ def backup_database(cfg, fresh=False):
         return existing[-1]
     _remove_stale_partials(cfg["BACKUP_DIR"])
     dest = os.path.join(cfg["BACKUP_DIR"], f"{BACKUP_PREFIX}-{utcnow().strftime('%Y%m%d-%H%M%S-%f')}.db")
-    # Written under another name and only named aegizyn-*.db once it is
+    # Written under another name and only named omniarmor-*.db once it is
     # complete and checked. A copy that failed half-way (a full disk) used to
     # stay under the real name: every later run that day took it for today's
     # backup, Autopilot saw a fresh backup, and the restore drill found a
@@ -174,10 +174,11 @@ def backup_database(cfg, fresh=False):
 
 
 PARTIAL = ".partial"
-# 1.25.0: backups are named aegizyn-YYYYMMDD-HHMMSS-*.db. The ones made before, omniarmor-*.db, still count: they are
-# today's copy, the newest copy Autopilot and the health check look at, and pruned with the rest, oldest first.
-BACKUP_PREFIX = "aegizyn"
-OLD_BACKUP_PREFIXES = ("omniarmor",)
+# Backups are named omniarmor-YYYYMMDD-HHMMSS-*.db. 1.26.0: back to the name OmniArmor; the ones made by 1.25.0,
+# aegizyn-*.db, still count: they are today's copy, the newest copy Autopilot and the health check look at, and
+# pruned with the rest, oldest first.
+BACKUP_PREFIX = "omniarmor"
+OLD_BACKUP_PREFIXES = ("aegizyn",)
 
 
 def backup_files(folder, rest="*.db"):
@@ -323,7 +324,7 @@ def run_pause_sweep(conn, cfg, now=None):
                     "- Checks can be saved again, and reminder emails come back on.\n\n"
                     "Nothing to do if that suits you. To pause longer or cancel instead:\n\n"
                     f"Open your plan: {base}/app/plan/cancel")
-            notify(conn, cfg, "plan", user["email"], f"Your Aegizyn plan starts again on {day}", body,
+            notify(conn, cfg, "plan", user["email"], f"Your OmniArmor plan starts again on {day}", body,
                    org_id=org["id"], user_id=user["id"])
         conn.execute("UPDATE orgs SET pause_reminded_at = ? WHERE id = ?", (iso(now), org["id"]))
         conn.commit()

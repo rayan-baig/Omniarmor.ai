@@ -266,7 +266,7 @@ class TestTheServersLogNoSecrets(LogCase):
 
 
 class TestJobsAndCrashesLogNoSecrets(LogCase):
-    """What Aegizyn itself writes: the daily job, the time-limit alerts,
+    """What OmniArmor itself writes: the daily job, the time-limit alerts,
     Autopilot falling back to the log, and a page that crashes."""
 
     def setUp(self):

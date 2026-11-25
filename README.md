@@ -1,21 +1,20 @@
-# Aegizyn
+# OmniArmor.ai
 
 **Catch the fine before it catches you.**
 
-Aegizyn is a product of MTRX Horizyn. In production it runs on its own
-subdomain of MTRX Horizyn's domain, `aegizyn.mtrxhorizyn.com`
+OmniArmor is a product of MTRX Horizyn. In production it runs on its own
+subdomain of MTRX Horizyn's domain, `omniarmor.mtrxhorizyn.com`
 ([docs/OPERATIONS.md](docs/OPERATIONS.md), section 1).
 
-**Names (1.24.0).** This app was called OmniArmor until 1.24.0, and the
-fridge-alarm app it connects to, Kryozyn, was called CyberLogix. The old
-address, `omniarmor.mtrxhorizyn.com`, redirects to the new one. The company's
-name and domain, the help address, the assistant's name and the other apps'
-names are kept in one file, `omniarmor_app/names.json`, so a company rename is
-a two-line change there. Folder, module, database and repository names
-(`omniarmor_app`, `omniarmor.db`, `rayan-baig/omniarmor.ai`) are historical
-and stay. What the owner does outside the code (DNS, Render, email, Stripe,
-Kryozyn's settings) is in [docs/OPERATIONS.md](docs/OPERATIONS.md), section 7,
-"Upgrading to 1.24.0".
+**Names (1.26.0).** 1.24.0 and 1.25.0 called this app Aegizyn, at
+`aegizyn.mtrxhorizyn.com`; 1.26.0 went back to OmniArmor, and that address
+now redirects here. The fridge-alarm app it connects to is Kryozyn (called
+CyberLogix before 1.24.0). The company's name and domain, the help address,
+the assistant's name, the fridge app's name and the other apps' names are kept
+in one file, `omniarmor_app/names.json`, so a rename is a line or two there.
+What the owner does outside the code (DNS, Render, email, Stripe, Kryozyn's
+settings) is in [docs/OPERATIONS.md](docs/OPERATIONS.md), section 7,
+"Upgrading to 1.26.0".
 
 A self-running compliance service for 54 regulated industries, K-12 schools among them. Each industry
 has ten checks covering the compliance failures that cost businesses in that
@@ -23,7 +22,7 @@ industry the most: common, expensive when missed, and cheap to prevent with a
 deadline, a threshold or a checklist. That is 540 checks in all.
 
 Companies sign up, pick their industries and enter each date or reading once.
-From then on Aegizyn:
+From then on OmniArmor:
 
 - **Can be tried without signing up:** "See a demo" opens a pretend restaurant (a few checks done, one overdue, a reminder and a report), and the Academy for schools page opens a pretend class with its progress view, join codes and a sample lesson. Nothing in a demo is saved and nothing is sent (`omniarmor_app/demo_mode.py`).
 - **Tracks deadlines by itself:** it counts the days from each saved date, every day, in the company's timezone, and the hours from each saved start time for the checks that run in hours.
@@ -32,9 +31,9 @@ From then on Aegizyn:
 - **Keeps the record:** every change is in the audit trail with who and when. Printable reports and CSV exports are ready for inspectors.
 - **Backs itself up:** daily database backups, with old copies pruned.
 - **Fills in the fridge checks itself (Kitchen Safety Bundle):** connected to Kryozyn, MTRX Horizyn's fridge and freezer alarm app, a restaurant's cold holding check ticks itself from Kryozyn's daily readings, and a breach leaves a note for someone to review. The owner makes the connection key in Settings, Connections; the contract Kryozyn builds against is [docs/KRYOZYN-CONNECTION.md](docs/KRYOZYN-CONNECTION.md). A connection sends temperature summaries and roles, never names.
-- **Has Pilot, the MTRX Horizyn AI assistant (1.10.0):** a robot in the corner of the public pages and of a business's and a teacher's own pages, running on the person's own AI key from their browser (Aegizyn never sees the key or the chat). It explains checks, reminders, statuses, rules and plans, and, after the person presses Allow, can mark a check done, update a check, set a reminder date, answer several checks (never Yes where Yes means a problem) or add students by first name. Never on a page a student uses. [docs/PILOT.md](docs/PILOT.md).
+- **Has Pilot, the MTRX Horizyn AI assistant (1.10.0):** a robot in the corner of the public pages and of a business's and a teacher's own pages, running on the person's own AI key from their browser (OmniArmor never sees the key or the chat). It explains checks, reminders, statuses, rules and plans, and, after the person presses Allow, can mark a check done, update a check, set a reminder date, answer several checks (never Yes where Yes means a problem) or add students by first name. Never on a page a student uses. [docs/PILOT.md](docs/PILOT.md).
 - **Has a helper, Armo:** a small shield character sits above the tab bar, does his own thing, and jumps up the moment something is blocked, overdue, due soon or a reminder email failed. Each alert has a one-click fix link. Pick one of 14 personalities (Chief, Sweetie, Jokester, Snark, Grumpy, Sleepy, Hype, Cap'n, Your Majesty, Robo, Chef, Sleuth, Zen or Professor), each with its own outfit and over 60 lines, or hide him.
-- **Made for schools too:** School Safety Aegizyn holds a school's safety routines (drills, AED and first-aid kits, playground and gym checks, the nurse's medication log and fridge, the cafeteria, bus and van pre-trip checks, concussion forms and heat checks, visitor sign-in, lab chemicals and background-check renewals), beside School Aegizyn's legal duties, on one page at `/for/schools`. A teacher signs up as a school and runs the Academy for a whole class (`/classrooms`), on the Classroom track: a pretend class lemonade stand, 16 worlds and 107 short lessons with no repeats, and a printable teacher guide (`/classrooms/guide`): students added by first name or nickname only, a class progress view, printable certificates, a leaderboard the teacher can switch off, and a one-page pilot report with totals only.
+- **Made for schools too:** SchoolSafetyArmor holds a school's safety routines (drills, AED and first-aid kits, playground and gym checks, the nurse's medication log and fridge, the cafeteria, bus and van pre-trip checks, concussion forms and heat checks, visitor sign-in, lab chemicals and background-check renewals), beside SchoolArmor's legal duties, on one page at `/for/schools`. A teacher signs up as a school and runs the Academy for a whole class (`/classrooms`), on the Classroom track: a pretend class lemonade stand, 16 worlds and 107 short lessons with no repeats, and a printable teacher guide (`/classrooms/guide`): students added by first name or nickname only, a class progress view, printable certificates, a leaderboard the teacher can switch off, and a one-page pilot report with totals only.
 - **Prepares the next generation:** the Future Owner Academy teaches kids who may inherit the business, in four tracks: Launchpad (630 levels), Trailblazer (890), Summit (836) and Titan Mastery (764), each level a different lesson. It has 43 worlds, from money, marketing, sales, hiring, safety, ethics, taxes and cyber safety to a winning mindset and the habits of champions, plus the family company's own rules, with over 1,200 written questions and facts. Lessons mix multiple choice, scenarios, true or false, a matching game and a sorting game (1.18.0), and Business Words asks its words in small scenes and sentences (1.19.0), on a map drawn as a path. It also has spaced-repetition practice, daily streaks, boss rounds, avatars that level up, friends and duels, and join codes so a kid can use the Academy on their own device. Plus includes all of it; its first worlds are free for everyone.
 
 ## Plans
@@ -83,7 +82,7 @@ from there.
   Settings.
 - **Trade pages** at `/for/<trade>` (salons and barbershops, tattoo and
   piercing studios, gyms and fitness studios, shops, schools) name the
-  Aegizyn checklists that fit each trade, and what they don't cover.
+  OmniArmor checklists that fit each trade, and what they don't cover.
 - **Classroom plans for schools**, yearly only: **Classroom, $299 a year**
   (the whole Academy for one class of up to 35 students) and **Whole school,
   $1,490 a year** (every class, and the school's checklist). A free 30-day
@@ -102,7 +101,7 @@ a compliance professional for your jurisdiction.
 python3 -m venv .venv && . .venv/bin/activate   # Python 3.11, as in the Dockerfile; 3.13 works too
 pip install -r requirements.txt -c constraints.txt
 flask --app wsgi run --port 8000          # development, at http://localhost:8000
-python3 -m unittest discover -s tests     # 1210 tests
+python3 -m unittest discover -s tests     # 1343 tests
 flask --app wsgi seed-demo --force demo.db   # a made-up demo workspace (docs/OPERATIONS.md, section 6)
 ```
 
@@ -110,7 +109,7 @@ A virtual environment is needed on most systems: Ubuntu 24.04, Debian 12 and
 Homebrew's Python refuse a plain `pip install`. The first start creates the
 database in `instance/`.
 
-Everything about Aegizyn in plain language, from every feature to all 540 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).
+Everything about OmniArmor in plain language, from every feature to all 540 checks: [docs/HANDBOOK.md](docs/HANDBOOK.md).
 
 Production: see [docs/OPERATIONS.md](docs/OPERATIONS.md) (Render one-click
 blueprint, Docker, or `docker compose up -d` on one small server with free
@@ -138,7 +137,7 @@ on first: [docs/STAGING.md](docs/STAGING.md).
 
 ## Forming the company
 
-Aegizyn is not a company of its own: it is a product of MTRX Horizyn, and
+OmniArmor is not a company of its own: it is a product of MTRX Horizyn, and
 MTRX Horizyn is the company to form. That's a legal filing only the founders
 can make. The usual path for a software startup:
 
@@ -151,7 +150,7 @@ can make. The usual path for a software startup:
 4. **Issue founder stock** and file an **83(b) election** with the IRS within
    30 days of receiving it.
 5. **Adopt bylaws**, open a business bank account, and assign the code and the
-   Aegizyn name to MTRX Horizyn.
+   OmniArmor name to MTRX Horizyn.
 
 A startup lawyer and an accountant should review each step. Have the lawyer
 review the Terms (`/terms`), Privacy (`/privacy`) and Security and your data (`/security`, 1.18.0: where the

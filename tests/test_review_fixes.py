@@ -34,14 +34,14 @@ class TestOutsideTheApp(unittest.TestCase):
         backups = tmp_path / "backups"
         backups.mkdir()
         for day in ("20260101", "20260102", "20260103"):
-            (backups / f"omniarmor-{day}-000000-000000.db").write_bytes(b"old")
+            (backups / f"aegizyn-{day}-000000-000000.db").write_bytes(b"old")
         cfg = {"DATABASE": str(db), "BACKUP_DIR": str(backups), "BACKUP_KEEP": 4}
         first = backup_database(cfg)
         for _ in range(5):
             assert backup_database(cfg) == first
         names = sorted(os.path.basename(p) for p in glob.glob(str(backups / "*.db")))
-        # 1.25.0: the new copy is aegizyn-*.db; the old omniarmor-*.db ones still count and stay.
-        assert len(names) == 4 and names[1].startswith("omniarmor-20260101") and names[0].startswith("aegizyn-")
+        # 1.26.0: the new copy is omniarmor-*.db; 1.25.0's aegizyn-*.db ones still count and stay.
+        assert len(names) == 4 and names[0].startswith("aegizyn-20260101") and names[3].startswith("omniarmor-")
 
     def test_a_deleted_workspaces_subscription_does_not_land_on_a_stranger(self):
         """Workspace ids are reused, and a renewal for a deleted workspace used to

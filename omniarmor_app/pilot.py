@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pilot, the company's assistant, on Aegizyn (docs/PILOT.md).
+"""Pilot, the company's assistant, on OmniArmor (docs/PILOT.md).
 
 Pilot runs in the visitor's browser on their own AI key and talks to the AI
 provider they chose, straight from the browser: this server never sees the

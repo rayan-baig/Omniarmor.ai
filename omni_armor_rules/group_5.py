@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Aegizyn rule catalog, group 5: industries 21-25.
+OmniArmor rule catalog, group 5: industries 21-25.
 
-21 Factory Aegizyn, 22 Pharma Aegizyn, 23 Mine Aegizyn, 24 Port Aegizyn, 25 Gene Aegizyn.
+21 FactoryArmor, 22 PharmaArmor, 23 MineArmor, 24 PortArmor, 25 GeneArmor.
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
-    # --- 21. FACTORY AEGIZYN (MANUFACTURING) ---
+    # --- 21. FACTORYARMOR (MANUFACTURING) ---
     21: [
         Rule(key="loto_isolation", title="Lockout/tagout before servicing",
              cost="Lockout/tagout is frequently cited by OSHA; failures bring citations, amputation and death lawsuits, and line shutdowns.",
@@ -73,7 +73,7 @@ RULES = {
              action="Enter the case on the OSHA 300 log and complete the 301 incident report now."),
     ],
 
-    # --- 22. PHARMA AEGIZYN (PHARMACEUTICALS) ---
+    # --- 22. PHARMAARMOR (PHARMACEUTICALS) ---
     22: [
         Rule(key="part11_signature", title="Part 11 electronic signatures",
              cost="Part 11 and data integrity gaps are common in FDA warning letters and can hold up batch release and product approvals.",
@@ -138,7 +138,7 @@ RULES = {
              action="Take a complete inventory of all controlled substances now and keep the record for DEA inspection."),
     ],
 
-    # --- 23. MINE AEGIZYN (MINING & MINERALS) ---
+    # --- 23. MINEARMOR (MINING & MINERALS) ---
     23: [
         Rule(key="part46_new_miner", title="New miner training",
              cost="Untrained miners draw MSHA citations and withdrawal orders that remove them from work, and raise accident risk.",
@@ -203,7 +203,7 @@ RULES = {
              action="Test grounding continuity and resistance now and record the results."),
     ],
 
-    # --- 24. PORT AEGIZYN (PORT AUTHORITIES) ---
+    # --- 24. PORTARMOR (PORT AUTHORITIES) ---
     24: [
         Rule(key="twic_access", title="TWIC for secure areas",
              cost="Access control failures draw Coast Guard civil penalties and can lead to orders suspending facility operations.",
@@ -268,7 +268,7 @@ RULES = {
              action="Take the crane out of service until an accredited agency examines and certifies it."),
     ],
 
-    # --- 25. GENE AEGIZYN (BIOTECH & GENETICS) ---
+    # --- 25. GENEARMOR (BIOTECH & GENETICS) ---
     25: [
         Rule(key="ibc_approval", title="IBC approval before research",
              cost="Noncompliance with the NIH Guidelines can lead NIH to suspend or end funding for the project or the whole institution.",

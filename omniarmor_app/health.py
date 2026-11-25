@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Is Aegizyn working? Two answers, for an uptime monitor.
+"""Is OmniArmor working? Two answers, for an uptime monitor.
 
 - /healthz: the server answers and its database opens (cheap: one query).
 - /readyz: everything behind the pages works too: the database, the

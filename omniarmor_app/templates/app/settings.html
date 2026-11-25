@@ -21,7 +21,7 @@
   <button class="btn quiet mt-s" type="submit">Save</button>
 </form>
 {% else %}
-<p class="muted" data-no-check-emails>Aegizyn emails you about your plan and your password only. Reminder emails are about the school safety checklist, which comes with <a href="{{ url_for('plan.plan_page') }}">Whole school</a>.</p>
+<p class="muted" data-no-check-emails>OmniArmor emails you about your plan and your password only. Reminder emails are about the school safety checklist, which comes with <a href="{{ url_for('plan.plan_page') }}">Whole school</a>.</p>
 {% endif %}
 
 <h2>Armo</h2>
@@ -182,7 +182,7 @@
 {% endif %}
 
 <h2 id="about">About</h2>
-<p class="row"><span>Aegizyn version <span class="mono" data-version>{{ APP_VERSION }}</span> · A product of {{ COMPANY }}</span>
+<p class="row"><span>OmniArmor version <span class="mono" data-version>{{ APP_VERSION }}</span> · A product of {{ COMPANY }}</span>
   <span><a href="{{ url_for('public.help') }}">Help</a> · <a href="{{ url_for('public.terms') }}">Terms</a> · <a href="{{ url_for('public.privacy') }}">Privacy</a></span></p>
 <p class="muted" id="get-help">Need help? The <a href="{{ url_for('public.help') }}">Help page</a> answers the common questions, or write to <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
 {% endblock %}

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Aegizyn web app. Catch the fine before it catches you.
+"""OmniArmor.ai web app. Catch the fine before it catches you.
 
 create_app() builds the app; wsgi.py runs it in production.
 """
@@ -47,7 +47,7 @@ def home():
     return render_template("home.html", industries=INDUSTRIES, facts=_landing_facts(), lead=lead_trades())
 
 
-# Industries named on the landing page as examples of who Aegizyn is for.
+# Industries named on the landing page as examples of who OmniArmor is for.
 LANDING_EXAMPLES = (2, 1, 29, 45, 5, 28)
 
 
@@ -90,7 +90,7 @@ def industry_page(slug):
     if match is None:
         abort(404)
     if old or slug != match["slug"]:
-        # An address from before the 1.24.0 rename ("/industries/restoarmor"), or in other letters: one address.
+        # An address from 1.24.0 or 1.25.0 ("/industries/resto-aegizyn"), or in other letters: one address.
         return redirect(url_for("public.industry_page", slug=match["slug"]), code=301)
     top = top_checks(match["id"])
     rest = [r for r in rules_for(match["id"]) if r not in top]
@@ -396,7 +396,7 @@ ERROR_PAGES = {
 # stylesheet) and leads home.
 PLAIN_ERROR_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow"><title>{title} · Aegizyn</title>
+<meta name="robots" content="noindex, nofollow"><title>{title} · OmniArmor.ai</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/static/app.css"></head>
 <body><main id="main"><div class="wrap"><div class="narrow error-page">
 <p class="eyebrow">Error {code}</p><h1>{title}</h1><p class="sub">{description}</p>
@@ -410,7 +410,7 @@ DATABASE_DOWN = ("unable to open", "database is locked", "disk i/o error", "data
                  "readonly database", "file is not a database", "malformed")
 
 
-class AegizynFlask(Flask):
+class OmniArmorFlask(Flask):
     def log_exception(self, exc_info):
         # Flask's own version writes the page address, which can hold a reset token.
         self.logger.error(f"Exception on {redact(request.path)} [{request.method}]", exc_info=exc_info)
@@ -441,7 +441,7 @@ def percent(part, whole, least=0):
 
 def create_app(**overrides):
     cfg = load_config(**overrides)
-    app = AegizynFlask(__name__, instance_relative_config=False)
+    app = OmniArmorFlask(__name__, instance_relative_config=False)
     app.config.update(cfg)
     if cfg["TRUSTED_PROXIES"] > 0:
         hops = cfg["TRUSTED_PROXIES"]
@@ -457,7 +457,7 @@ def create_app(**overrides):
     except (sqlite3.Error, OSError) as exc:
         # Said plainly in the server log, rather than a traceback ending in
         # "unable to open database file".
-        raise SettingsError(f"Aegizyn can't open its database at {app.config['DATABASE']} (DATABASE_PATH):"
+        raise SettingsError(f"OmniArmor can't open its database at {app.config['DATABASE']} (DATABASE_PATH):"
                             f" {exc}. Check that the disk is attached, writable and not full.") from exc
 
     app.teardown_appcontext(close_db)

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Privacy{% endblock %}
-{% block description %}What Aegizyn collects, why, who else sees it, how long we keep it and how to delete it, in plain words.{% endblock %}
+{% block description %}What OmniArmor collects, why, who else sees it, how long we keep it and how to delete it, in plain words.{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -13,7 +13,7 @@
 
 <h2>The short version</h2>
 <ul>
-  <li>Aegizyn is a product of {{ COMPANY }}. "We" on this page means {{ COMPANY }}, which looks after your data.</li>
+  <li>OmniArmor is a product of {{ COMPANY }}. "We" on this page means {{ COMPANY }}, which looks after your data.</li>
   <li>We keep what you type in, so the app can do its job.</li>
   <li>We don't sell your data. We don't show ads. We don't use tracking or analytics tools.</li>
   <li>A few outside companies help run the site. They are all listed below.</li>
@@ -35,7 +35,7 @@
   <li>We save the date you last used the app (just the date).</li>
   <li>When someone types a wrong password, asks for a password reset, signs up, opens a demo, or tries a kid join code or a friend code, we note the email typed (if any) and the IP address. This stops people from guessing passwords and codes, and from opening the demo over and over.</li>
 </ul>
-<p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run Aegizyn, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened. They can also have a short report of each server error emailed to one inbox, at most {{ facts.error_emails_per_day }} a day: the time, the page address without anything after the "?", and where in our code it failed, with no form, cookie, email address or IP address in it.</p>
+<p><strong>When something breaks:</strong> we save an error report with the page address (with the links above hidden) and what went wrong in our code. Our Autopilot emails new problems to the people who run OmniArmor, at most {{ facts.operator_emails_per_hour }} emails an hour; past that, or when email isn't set up, the same message goes to the server log, with email addresses shortened. They can also have a short report of each server error emailed to one inbox, at most {{ facts.error_emails_per_day }} a day: the time, the page address without anything after the "?", and where in our code it failed, with no form, cookie, email address or IP address in it.</p>
 <p><strong>When you pay for a plan (Pro or Plus):</strong> we keep Stripe's customer and subscription numbers, which plan it is, its status, renewal date and, if you cancel, the date it ends. If you pause it, we keep when the pause began and the date it ends; if you take the one-time discount, the date you took it. We never see your card number.</p>
 <p><strong>Offers to change plan:</strong> we note when we last showed you one, so you see at most one a week, and whether you said "No thanks", so it doesn't come back.</p>
 
@@ -43,7 +43,7 @@
 <p>{{ ASSISTANT }} is an optional helper on our public pages and on a business's and a teacher's own pages. It is never on a page a student uses, and never on a kid's device. It runs on <strong>your own AI key</strong>, from an AI company you choose (Anthropic, OpenAI, Gemini, or another service that works the same way, or a model on your own computer). AI keys are for grown-ups: the AI companies require you to be 18 or over.</p>
 <ul>
   <li><strong>Your AI key</strong> stays in your browser: for this tab only, unless you tick "Remember my keys on this device". Our server never sees your AI key, and {{ ASSISTANT }} goes only to the AI company you chose, straight from your browser. Nothing goes through our server, so we never see the conversation either. "Remove my keys from this browser" deletes them.</li>
-  <li><strong>What {{ ASSISTANT }} sends, and only when you send a message:</strong> what you typed and the chat so far in that tab; {{ ASSISTANT }}'s rules and its guide to Aegizyn; the name of the screen you're on; and the notes in "What {{ ASSISTANT }} remembers", if you turned memory on (it is off to start with, and kept only in your browser). With "Analyze &amp; explain" or "Summarise" it also sends an outline of the words on the screen, and shows you exactly what it sent. It never reads boxes you type in, hidden things, people's names in your team list or the audit trail, email addresses or phone numbers.</li>
+  <li><strong>What {{ ASSISTANT }} sends, and only when you send a message:</strong> what you typed and the chat so far in that tab; {{ ASSISTANT }}'s rules and its guide to OmniArmor; the name of the screen you're on; and the notes in "What {{ ASSISTANT }} remembers", if you turned memory on (it is off to start with, and kept only in your browser). With "Analyze &amp; explain" or "Summarise" it also sends an outline of the words on the screen, and shows you exactly what it sent. It never reads boxes you type in, hidden things, people's names in your team list or the audit trail, email addresses or phone numbers.</li>
   <li><strong>Your records and your students:</strong> {{ ASSISTANT }} doesn't send your checks, readings or anyone's name by itself. They go to the AI company only when your own message includes them, or when you ask {{ ASSISTANT }} something that needs them (like "what's due?"), and then only what that answer needs: check names, statuses and dates, never who changed what. A teacher's students' names go only if the teacher types them to add students, and {{ ASSISTANT }} never reads the class list back.</li>
   <li><strong>Changes:</strong> {{ ASSISTANT }} changes something only after you press Allow on a card that says exactly what will happen, through the same forms you use, with your own sign-in. It never pays, deletes anything, changes a plan, invites or removes people, or touches a student's account.</li>
   <li>The chat is kept in your browser tab and forgotten when you close it, or when someone else signs in or out in that tab. The AI company you chose handles what it receives under its own privacy rules, and bills your AI key.</li>
@@ -51,7 +51,7 @@
 
 <h2 id="cookies">Cookies</h2>
 <ul>
-  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to Aegizyn's own address only: {{ COMPANY }}'s other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days|plural('day') }} from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
+  <li>We use one cookie. It keeps you signed in and stops other sites from sending fake forms as you. The page's own code can't read it, and it is only sent over a secure connection. It belongs to OmniArmor's own address only: {{ COMPANY }}'s other apps, on their own addresses, never get it. When you sign in (or a kid joins with a code), it lasts {{ facts.session_days|plural('day') }} from the last time you use the site. Before that, it only holds a form token (and, while you look at a demo, which demo and when it ends) and goes away when you close your browser.</li>
   <li>Armo, the helper, keeps two tiny notes in your browser tab: whether it already said hello, and which alert you closed. They go away when you close the tab.</li>
   <li>{{ ASSISTANT }} keeps its chat, its settings and your AI key (if you added one) in your browser: for that tab only, unless you choose to remember them on that device. The corner you drag {{ ASSISTANT }}'s robot to, and its look, are kept on that device. None of it is a cookie, and none of it is sent to us.</li>
   <li>No ad cookies. No tracking cookies.</li>
@@ -63,7 +63,7 @@
   <li>To keep accounts safe: sign-in, limits on wrong guesses, and error reports so we can fix bugs.</li>
   <li>To run the Academy, and to know which plan your workspace is on.</li>
   <li>To count users. We count how many accounts there are and how many were used in the last 30 days. Only those two numbers go to our own admin dashboard. No names, no emails, no companies.</li>
-  <li>To see which features get used, we keep one total a day for each of a few things (checks updated, bulk updates, lessons started and passed, certificates, Help page views and sign-ups), with no cookie and nothing that says who or which workspace, and only the people who run Aegizyn see them.</li>
+  <li>To see which features get used, we keep one total a day for each of a few things (checks updated, bulk updates, lessons started and passed, certificates, Help page views and sign-ups), with no cookie and nothing that says who or which workspace, and only the people who run OmniArmor see them.</li>
 </ul>
 
 <h2 id="who">Who else sees it</h2>
@@ -75,7 +75,7 @@
   <li>Academy friends, who can be in other families, see a kid's nickname, picture, rank and stars, and duel scores. There is no chat.</li>
   <li>Students in a class have no Academy friends. If the teacher turns the class leaderboard on (it starts off), classmates see each other's first name or nickname, picture and lessons done, and never another class.</li>
 </ul>
-<p><strong>The people at {{ COMPANY }} who run Aegizyn</strong> can open the database when they need to fix something. They also get Autopilot's emails about problems: error reports, failing backups, and reminder emails that keep failing (with the error the email service gave).</p>
+<p><strong>The people at {{ COMPANY }} who run OmniArmor</strong> can open the database when they need to fix something. They also get Autopilot's emails about problems: error reports, failing backups, and reminder emails that keep failing (with the error the email service gave).</p>
 <p><strong>Outside companies:</strong></p>
 <ul>
   <li><strong>Our hosting company</strong> runs the server. It stores the database, the backups and the server logs.</li>
@@ -91,7 +91,7 @@
   <li><strong>Password reset links</strong> work once, for {{ facts.reset_hours }} hour{{ 's' if facts.reset_hours != 1 }}. <strong>Team invite links</strong> work for {{ facts.invite_days|plural('day') }}.</li>
   <li><strong>Kid join codes</strong> work for {{ facts.join_code_days|plural('day') }} and <strong>friend codes</strong> for {{ facts.friend_code_days|plural('day') }}. Then they are deleted.</li>
   <li><strong>Answers from a quiz nobody finished:</strong> {{ facts.quiz_check_days|plural('day') }}.</li>
-  <li><strong>Error reports:</strong> {{ facts.error_days|plural('day') }} in the app. A copy emailed to the people who run Aegizyn stays in their inbox.</li>
+  <li><strong>Error reports:</strong> {{ facts.error_days|plural('day') }} in the app. A copy emailed to the people who run OmniArmor stays in their inbox.</li>
   {% if facts.backup_keep > 0 %}
   <li><strong>Backups:</strong> we copy the whole database once a day, check each copy before we keep it, and keep the newest {{ facts.backup_keep }} copies. So something you delete can stay in a backup for about {{ facts.backup_keep|plural('day') }}.{% if facts.offsite_backup %} A copy of each day's backup also goes to a second storage company, where it can stay for as long as that company keeps old copies.{% endif %}</li>
   {% else %}

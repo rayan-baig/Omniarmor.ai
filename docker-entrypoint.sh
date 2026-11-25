@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start Aegizyn as the unprivileged `omniarmor` user, whatever owns the disk.
+# Start OmniArmor as the unprivileged `omniarmor` user, whatever owns the disk.
 #
 # A host's persistent disk is often mounted owned by root, and on such a disk
 # the app (which runs as `omniarmor`) could not create its database and the

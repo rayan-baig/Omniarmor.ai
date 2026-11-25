@@ -79,7 +79,7 @@ class TestAStrangerWithTheOperatorsAddress(OperatorCase):
             with mock.patch.object(autopilot, "send_email",
                                    lambda cfg, to, subject, body, **kw: sent.append((to, subject)) or ("sent", None)):
                 self.assertTrue(autopilot.weekly_summary(conn, cfg))
-        self.assertEqual(sent, [(OPERATOR, "[Aegizyn] Weekly Autopilot report")])
+        self.assertEqual(sent, [(OPERATOR, "[OmniArmor] Weekly Autopilot report")])
 
     def test_case_and_spaces_in_the_address_change_nothing(self):
         other = self.app.test_client()
@@ -233,7 +233,7 @@ class TestBugEmailsAreScrubbed(unittest.TestCase):
         self.assertEqual([f.key[:4] for f in result["problems"]], ["bug:"])
         [(to, subject, body)] = [m for m in self.sent if "Bug:" in m[1]]
         self.assertEqual(to, OPERATOR)
-        self.assertTrue(subject.startswith("[Aegizyn] Bug: ValueError: no account for [email]"), subject)
+        self.assertTrue(subject.startswith("[OmniArmor] Bug: ValueError: no account for [email]"), subject)
         for secret in secrets:
             self.assertNotIn(secret, subject)
             self.assertNotIn(secret, body)

@@ -8,15 +8,16 @@ from omni_armor_platform import MoonstoneThemeColors
 from omni_armor_rules import CATALOG, get_rule
 
 INDUSTRIES = {}
-# 1.24.0: each industry's page address (/industries/<slug>) is its name in
-# lower case with hyphens ("Resto Aegizyn": resto-aegizyn). OLD_SLUGS holds
-# the addresses they had before the rename ("restoarmor"), which redirect.
+# Each industry's page address (/industries/<slug>) is its name in lower
+# case ("RestoArmor": restoarmor). OLD_SLUGS holds the addresses 1.24.0 and
+# 1.25.0 gave them, when they were called "Resto Aegizyn"
+# ("resto-aegizyn"), which redirect (1.26.0).
 OLD_SLUGS = {}
 for _id, _info in sorted(MoonstoneThemeColors.INDUSTRIES.items()):
     _brand, _, _sector = _info["name"].partition(" (")
     _slug = re.sub(r"[^a-z0-9]+", "-", _brand.lower()).strip("-")
     INDUSTRIES[_id] = {"id": _id, "brand": _brand, "sector": _sector.rstrip(")"), "slug": _slug}
-    OLD_SLUGS[_brand.replace(" Aegizyn", "Armor").replace(" ", "").lower()] = _slug
+    OLD_SLUGS[re.sub(r"(?<=[a-z])(?=[A-Z])", "-", _brand[:-len("Armor")]).lower() + "-aegizyn"] = _slug
 
 
 def industry_by_slug(slug):

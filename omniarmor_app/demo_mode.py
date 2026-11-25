@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Try Aegizyn without signing up: a business demo and a classroom demo,
+"""Try OmniArmor without signing up: a business demo and a classroom demo,
 both with pretend data.
 
     /demo/business     a restaurant: a few checks done, one overdue, this
@@ -8,7 +8,7 @@ both with pretend data.
                        progress view, join codes and a sample lesson
     /demo/salon, /demo/tattoo, /demo/gym, /demo/shop
                        a salon, a tattoo studio, a gym and a shop, each with
-                       its own checklist (Salon Aegizyn, Ink Aegizyn, Gym Aegizyn; a
+                       its own checklist (SalonArmor, InkArmor, GymArmor; a
                        shop's card payments and online sales) and an
                        employer's: one check overdue, one due soon, a few
                        done, so each trade page's demo matches the trade
@@ -77,12 +77,12 @@ COOK = ("Jules Okafor", f"jules@{DOMAIN}")
 SCHOOL = "Sample School (demo)"
 TEACHER = ("Taylor Brooks", f"taylor@{DOMAIN}")
 CLASS_NAME = "Room 12"
-RESTAURANT, EMPLOYER = 2, 30     # Resto Aegizyn, HR Aegizyn
-SCHOOL_INDUSTRY = 51             # School Safety Aegizyn
+RESTAURANT, EMPLOYER = 2, 30     # RestoArmor, HRArmor
+SCHOOL_INDUSTRY = 51             # SchoolSafetyArmor
 WORKSPACE_AGE_DAYS = 6
 # The trade demos: kind -> (the trade's industries, its own first; the
 # workspace's name; the owner; what the demo page calls it; its trade page).
-# Each also has HR Aegizyn, as a shop with staff does; the readings of its own
+# Each also has HRArmor, as a shop with staff does; the readings of its own
 # checklist are planned by _trade_plan.
 TRADE_DEMOS = {
     "salon": ((52, EMPLOYER), "Sample Salon (demo)", ("Robin Vale", f"robin@{DOMAIN}"), "A salon",
@@ -457,7 +457,7 @@ def tour(kind):
              "What needs attention, what's coming due and what to do next, on one page."),
             ("app.industry", url_for("app.industry", industry_id=industry), "Your trade's checklist",
              f"{INDUSTRIES[industry]['brand']}: each check says what to do and which rule it comes from. Enter a"
-             " date or an answer once and Aegizyn counts the days."),
+             " date or an answer once and OmniArmor counts the days."),
             ("app.notifications", url_for("app.notifications"), "Reminders",
              "This morning's reminder email. In the demo it is kept here and never sent."),
             ("app.report", url_for("app.report"), "Report",
@@ -469,7 +469,7 @@ def tour(kind):
              "What needs attention, what's coming due and what to do next, on one page."),
             ("app.industry", url_for("app.industry", industry_id=RESTAURANT), "A checklist",
              "Each check says what to do and which rule it comes from. Enter a date or an answer once and"
-             " Aegizyn counts the days."),
+             " OmniArmor counts the days."),
             ("app.notifications", url_for("app.notifications"), "Reminders",
              "This morning's reminder email. In the demo it is kept here and never sent."),
             ("app.report", url_for("app.report"), "Report",
@@ -511,10 +511,10 @@ def demo_context():
     shown = (request.view_args or {}).get("industry_id")
     if (here is not None and request.endpoint == "app.industry" and shown in INDUSTRIES
             and steps[here][1] != url_for("app.industry", industry_id=shown)):
-        # Another of the workspace's checklists (HR Aegizyn in a salon): the
+        # Another of the workspace's checklists (HRArmor in a salon): the
         # step's words name the page's own checklist, not the trade's.
         text = (f"{INDUSTRIES[shown]['brand']}: each check says what to do and which rule it comes from. Enter a"
-                " date or an answer once and Aegizyn counts the days.")
+                " date or an answer once and OmniArmor counts the days.")
         title = f"The {INDUSTRIES[shown]['brand']} checklist"
     return {"demo_bar": {
         "kind": kind,

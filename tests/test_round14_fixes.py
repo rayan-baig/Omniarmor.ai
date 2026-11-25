@@ -344,7 +344,7 @@ class TestCopy(TodayCase):
         self.assertEqual(__version__, "1.26.0")
         log = read("CHANGELOG.md")
         section = log[log.index("## 1.26.0"):log.index("## 1.25.0")]
-        for said in ("Back to the name OmniArmor", "day 9", "Yes.", "time zone", "Change password", "Last done 35 days",
+        for said in ("Back to the name OmniArmor", "day 9", "Yes.", "Time zone", "Change password", "Last done 35 days",
                      "7-day limit", "free plan", "yearly discount"):
             self.assertIn(said, section)
         self.assertIn("**1.26.0**", read("docs", "PILOT.md"))

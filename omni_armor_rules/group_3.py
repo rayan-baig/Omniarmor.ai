@@ -2,17 +2,17 @@
 """
 Rule catalog, group 3: industries 11-15.
 
-11 Luxury Aegizyn, 12 Agri Aegizyn, 13 Cop Aegizyn, 14 Fire Aegizyn, 15 Park Aegizyn.
+11 LuxuryArmor, 12 AgriArmor, 13 CopArmor, 14 FireArmor, 15 ParkArmor.
 Each list holds the ten compliance failures that cost organizations in that
 industry the most money. Rule 1 of each list matches the industry's detailed
-check in AegizynPortal (see `method`).
+check in OmniArmorPortal (see `method`).
 """
 
 from omni_armor_rules.rule import Rule
 
 RULES = {
     # ------------------------------------------------------------------
-    # 11. LUXURY AEGIZYN - luxury goods brands and retailers
+    # 11. LUXURYARMOR - luxury goods brands and retailers
     # ------------------------------------------------------------------
     11: [
         Rule(key="cites_permit", title="CITES permit for exotic materials",
@@ -89,7 +89,7 @@ RULES = {
     ],
 
     # ------------------------------------------------------------------
-    # 12. AGRI AEGIZYN - farms and growers
+    # 12. AGRIARMOR - farms and growers
     # ------------------------------------------------------------------
     12: [
         Rule(key="phi_met", title="Pesticide pre-harvest interval",
@@ -166,7 +166,7 @@ RULES = {
     ],
 
     # ------------------------------------------------------------------
-    # 13. COP AEGIZYN - police departments
+    # 13. COPARMOR - police departments
     # ------------------------------------------------------------------
     13: [
         Rule(key="evidence_inspection", title="Evidence room inspection",
@@ -243,7 +243,7 @@ RULES = {
     ],
 
     # ------------------------------------------------------------------
-    # 14. FIRE AEGIZYN - fire departments
+    # 14. FIREARMOR - fire departments
     # ------------------------------------------------------------------
     14: [
         Rule(key="scba_pressure", title="SCBA inspected and charged",
@@ -320,7 +320,7 @@ RULES = {
     ],
 
     # ------------------------------------------------------------------
-    # 15. PARK AEGIZYN - amusement and water parks
+    # 15. PARKARMOR - amusement and water parks
     # ------------------------------------------------------------------
     15: [
         Rule(key="daily_ride_inspection", title="Daily pre-opening ride inspection",

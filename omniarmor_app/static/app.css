@@ -1,4 +1,4 @@
-/* Aegizyn: one dark theme on every device. Black with a red-orange
+/* OmniArmor.ai: one dark theme on every device. Black with a red-orange
    blend as the brand accent; within statuses, red means blocked and orange
    means warning, so the two stay distinguishable. */
 /* Fonts, served from this site (static/fonts, LICENSE.txt there): no other company sees a visit. Latin
@@ -200,8 +200,8 @@ summary:where(:not(.pilot-root *)):hover{color:var(--ink)}
 .yes-bad{margin:0;font-size:13px;color:var(--faint)}
 .log-form .field{display:flex;flex-direction:column;gap:4px}
 .entry-row td{font-size:13.5px;color:var(--muted)}
-/* Pilot in Aegizyn's own colours (1.18.0): the app's themeClass (pilot-omniarmor.js) on Pilot's root, so the
-   window is Aegizyn's warm black with its orange-to-red edge instead of the core's navy and violet. Only colours
+/* Pilot in OmniArmor's own colours (1.18.0): the app's themeClass (pilot-omniarmor.js) on Pilot's root, so the
+   window is OmniArmor's warm black with its orange-to-red edge instead of the core's navy and violet. Only colours
    change; the core's layout, robot and words stay as they are (static/pilot/ is never edited here). */
 .pilot-root.omni-pilot{--pilot-blue:#F7743A;--pilot-cyan:#FF9A66;--pilot-violet:#E5261C;--pilot-ink:#F2ECE4;--pilot-muted:#C3B8AC;
   --pilot-glass:rgba(22,20,18,.97);--pilot-glass-2:rgba(30,24,20,.97);--pilot-edge:rgba(247,116,58,.55);--pilot-ready:#4FD1A5;--pilot-nokey:#FFC24B;
@@ -277,7 +277,7 @@ td.num.reading{white-space:normal;min-width:9em}
   table.report-cards td.rc-empty{display:none}
   table.report-cards tr.entry-row{padding-left:16px}
 }
-/* History on a phone (1.22.0): each entry is a card, "Jules Marrow · Pharmacy Aegizyn · 20 Nov 16:07" on top and the
+/* History on a phone (1.22.0): each entry is a card, "Jules Marrow · PharmacyArmor · 20 Nov 16:07" on top and the
    change in full under it, instead of four columns cut off at the side. A computer, printing and the CSV keep the
    table; the short time shows only in a card. */
 .audit-zone{margin:12px 0 4px;font-size:13px;color:var(--faint)}
@@ -844,7 +844,7 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   .nav{gap:6px}
 }
 
-/* The Aegizyn name at the top of the computer's side bar (1.16.0); the top bar then keeps only its links. */
+/* The OmniArmor name at the top of the computer's side bar (1.16.0); the top bar then keeps only its links. */
 .tab-logo{display:none}
 @media (min-width:1100px){
   body.has-tabs:not(.lesson-view) .tab-logo{display:inline-flex;align-items:center;gap:10px;min-height:48px;margin:0 2px 14px;padding:0 12px;color:var(--ink);text-decoration:none}

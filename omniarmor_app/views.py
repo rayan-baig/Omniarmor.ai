@@ -72,7 +72,7 @@ def nav_context():
     class_workspace = is_class_workspace(g.org)
     from .demo_mode import TRADE_DEMOS
     if g.get("demo") in TRADE_DEMOS:
-        # A trade demo's menu leads with the trade's own checklist (Shop Aegizyn before Pay Aegizyn and HR Aegizyn).
+        # A trade demo's menu leads with the trade's own checklist (ShopArmor before PayArmor and HRArmor).
         order = TRADE_DEMOS[g.demo][0]
         ids = sorted(ids, key=lambda i: order.index(i) if i in order else len(order))
     return {"nav_industries": [INDUSTRIES[i] for i in ids], "plan_access": access,
@@ -161,7 +161,7 @@ def getting_started(conn, states, ids):
          "detail": "Answer it or enter its date, then press Save."},
         {"key": "first_reminder", "label": "Set your first reminder", "done": bool(dated),
          "next": next_reading(states, ids, dated=True),
-         "detail": "Enter the date of a check that is counted from a date. Aegizyn emails you before it's due."},
+         "detail": "Enter the date of a check that is counted from a date. OmniArmor emails you before it's due."},
         {"key": "team", "label": "Invite a teammate or choose your reminder emails" if owner
          else "Choose your reminder emails", "done": chose or (owner and (teammate or invited)),
          "link": (url_for("app.settings", _anchor="team" if owner else "reminders"),
@@ -515,7 +515,7 @@ def _csv_response(filename, header, rows):
 @bp.route("/audit.csv")
 @login_required
 def audit_csv():
-    return _csv_response("aegizyn-audit-trail.csv",
+    return _csv_response("omniarmor-audit-trail.csv",
                          [f"Time ({g.org['timezone']})", "Person", "Action", "Industry", "Check", "Before", "After",
                           "Summary"],
                          ([r["at_csv"], r["user_name"] or "System", r["action"], r["industry"], r["rule_title"],
@@ -593,7 +593,7 @@ def report_csv():
         return redirect(url_for("app.report"))
     states = sorted(states_for_org(get_db(), g.org), key=lambda s: (s.industry_id, s.sort_key))
     # 1.25.0: in the workspace's own time zone, named in the header, like History's CSV (it was UTC).
-    return _csv_response("aegizyn-compliance-report.csv",
+    return _csv_response("omniarmor-compliance-report.csv",
                          ["Industry", "Check", "Status", "Reading", "Due date", "Rule",
                           f"Last updated ({g.org['timezone']})", "Updated by"],
                          _report_rows(states, _org_zone(g.org)))
@@ -655,7 +655,7 @@ def settings():
     return _settings_page()
 
 
-SCHOOL_CHECKLISTS = (8, 51)    # School Aegizyn and School Safety Aegizyn: the school's own checklists
+SCHOOL_CHECKLISTS = (8, 51)    # SchoolArmor and SchoolSafetyArmor: the school's own checklists
 
 
 def settings_scope(conn, org, access=None):

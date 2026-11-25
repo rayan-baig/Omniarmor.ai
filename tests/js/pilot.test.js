@@ -2,7 +2,7 @@
 // tests/test_pilot.py runs this file too, so `python -m unittest` covers it.
 // Every provider is mocked: no request leaves this machine.
 // The core's own tests, copied from the MTRX Horizyn site with the core;
-// only the paths and the site's own tests differ (Aegizyn's pack, tools
+// only the paths and the site's own tests differ (OmniArmor's pack, tools
 // and welcome are tested in tests/js/omniarmor-pilot.test.js).
 "use strict";
 const test = require("node:test");
@@ -519,7 +519,7 @@ test("the robot is the owner's picture at the size the screen needs; the P mark 
   assert.ok(made.every((n) => !("style" in n.attrs)));
 });
 
-// The MTRX site's own pack and Ask Genesis tests stay in that repo. Aegizyn's
+// The MTRX site's own pack and Ask Genesis tests stay in that repo. OmniArmor's
 // pack and tools are tested in tests/js/omniarmor-pilot.test.js.
 
 test("the window never writes the word null: every replaceChildren goes through put()", () => {
@@ -617,7 +617,7 @@ test("placement: the robot keeps clear of things to avoid and of another helper,
   const size = { width: 56, height: 54 };
   // Nothing in the way: its own corner.
   assert.deepEqual(Mascot.choosePlace({ corner: "br", view, size, gap: 12, blocks: [] }), { corner: "br", peek: false });
-  // Another helper (Aegizyn's Armo) in the bottom right: the robot moves to the bottom left.
+  // Another helper (OmniArmor's Armo) in the bottom right: the robot moves to the bottom left.
   const armo = box(300, 690, 80, 100);
   assert.deepEqual(Mascot.choosePlace({ corner: "br", view, size, gap: 12, blocks: [armo] }), { corner: "bl", peek: false });
   // A full-width bar along the bottom: a top corner.
@@ -961,7 +961,7 @@ test("placement 1.2.0: a row of dots with tooltips counts, and line ends just be
   assert.equal(placed.peek, true);
 });
 
-// The MTRX site's own welcome is tested in that repo; Aegizyn's is in
+// The MTRX site's own welcome is tested in that repo; OmniArmor's is in
 // tests/js/omniarmor-pilot.test.js.
 
 // ---------------------------------------------------------------- core 1.3.0: the first look, one key ask, room for the welcome, tap targets
@@ -1316,7 +1316,7 @@ test("store 1.4.0: an app's own answer and the key offer under it survive the tr
   assert.equal(Store.cleanMessage({ role: "note", kind: "html", text: "x" }).kind, "info");
 });
 
-// The MTRX site's own 1.4.0 pills are tested in that repo; Aegizyn's are in
+// The MTRX site's own 1.4.0 pills are tested in that repo; OmniArmor's are in
 // tests/js/omniarmor-pilot.test.js.
 
 test("wandering 1.4.0: something to avoid holds the robot still only where it strolls, not anywhere on the page", () => {
@@ -1630,7 +1630,7 @@ function fakePage({ width = 375, height = 812, items = [], vars = {}, cssBottom,
   return { doc, win, own, launcher, els, avoid: [], corner: "br", shown: "br", full: true, text: true, keepIn: true };
 }
 
-// Aegizyn's signed-in phone page: a fixed tab bar (64 px, with its links) along the bottom; the app raises the
+// OmniArmor's signed-in phone page: a fixed tab bar (64 px, with its links) along the bottom; the app raises the
 // robot's corners above it (--pilot-gap: 76px; bottom: 76px) and keeps the core's 3 px margin and 0.82 scale.
 const PHONE_KEEP = { "--pilot-peek-scale": 0.82, "--pilot-keep-margin": 3, "--pilot-keep-room": 12, "--pilot-peek-show": 20 };
 function tabBarPage({ width = 375, height = 812, raised = true, linksAbove = false } = {}) {
@@ -1654,7 +1654,7 @@ test("placement 1.4.2: a corner raised above a bottom tab bar is measured there 
   assert.equal(Mascot.placeNow(p).hide, undefined);
   assert.equal(Mascot.placeNow({ ...p, scrolled: true, full: false }).hide, undefined);
   // The tucked box: above the tab bar, never nearer the bottom than the corner's raise (76 px less the core's own
-  // 9 px pull: 67 px, where Aegizyn's own CSS draws it), the core's 3 px from the side.
+  // 9 px pull: 67 px, where OmniArmor's own CSS draws it), the core's 3 px from the side.
   const keep = { scale: 0.82, margin: 3, pull: 12 - 3 };
   const box = Mascot.peekBox("br", { width: 375, height: 812 }, { width: 56, height: 54 }, { x: 76, b: 76, t: 76 }, 20, keep);
   assert.equal(box.right, 375 - 3);
@@ -2006,7 +2006,7 @@ test("typed 1.4.3: stop words are dropped before stemming, so \"does\" and \"thi
   assert.deepEqual(plain(P.wordsOf("What's this? Is it theirs?")), [], "and once stemmed (\"theirs\" -> \"their\")");
   assert.deepEqual(plain(P.wordsOf("What is my walk-in fridge's temperature?")), ["walk", "fridge", "temperature"]);
   const base = "https://omni.example/business";
-  // Aegizyn's business pages (its labels and `match` words).
+  // OmniArmor's business pages (its labels and `match` words).
   const explain = () => "The rule behind this check.";
   const colour = () => "Red means overdue.";
   const omni = P.ownPills([
@@ -2187,7 +2187,7 @@ test("no key 1.4.3: a typed question nothing fits gets a message in the chat and
 test("typed 1.4.3: a pill's or a suggestion's own words, typed, always get that item's answer (live answer functions too)", () => {
   const P = panelHelpers();
   // Each pill and suggestion that answers or links, typed as words (any case, no "?"). (The MTRX site checks every
-  // page of its own here; Aegizyn's pages are checked in tests/js/omniarmor-pilot.test.js.)
+  // page of its own here; OmniArmor's pages are checked in tests/js/omniarmor-pilot.test.js.)
   const base = "https://x.example/";
   const live = () => "Your projects.";
   const items = P.ownPills([{ icon: "chat", label: "What is Orbyt?", answer: "Orbyt is..." }, { icon: "spark", label: "See it live", link: "/demo" }], base)

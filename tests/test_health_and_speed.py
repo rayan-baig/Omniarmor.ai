@@ -236,12 +236,12 @@ class TestHeartbeatsAndWatchdogs(ReadyCase):
             # A day later, one reminder.
             self.assertTrue(autopilot.watch_daily_timer(cfg, now=utcnow() + timedelta(hours=25)))
             self.assertEqual(sent.call_count, 2)
-            self.assertTrue(sent.call_args[0][2].startswith("[Aegizyn] Still open:"))
+            self.assertTrue(sent.call_args[0][2].startswith("[OmniArmor] Still open:"))
             # Running again: Autopilot's own pass says it's fixed.
             self.fresh()
             autopilot.run(cfg, force=True)
         subjects = [c[0][2] for c in sent.call_args_list]
-        self.assertIn("[Aegizyn] Fixed: The every-10-minutes timer has stopped", subjects)
+        self.assertIn("[OmniArmor] Fixed: The every-10-minutes timer has stopped", subjects)
 
     def test_no_heartbeat_yet_means_nothing_to_watch(self):
         cfg = dict(self.app.config, OPERATOR_EMAIL="ops@example.com", SMTP_HOST="smtp.example.com")
@@ -392,12 +392,12 @@ class TestStartUpChecks(unittest.TestCase):
 
     def test_half_set_email_is_refused(self):
         with self.assertRaises(SettingsError) as caught:
-            self.production(SMTP_HOST="smtp.example.com", MAIL_FROM="Aegizyn <no-reply@omniarmor.test>",
+            self.production(SMTP_HOST="smtp.example.com", MAIL_FROM="OmniArmor <no-reply@omniarmor.test>",
                             SMTP_USER="apikey")
         self.assertIn("SMTP_PASSWORD is empty", str(caught.exception))
 
     def test_a_complete_production_setup_starts(self):
-        cfg = self.production(SMTP_HOST="smtp.example.com", MAIL_FROM="Aegizyn <no-reply@omniarmor.test>",
+        cfg = self.production(SMTP_HOST="smtp.example.com", MAIL_FROM="OmniArmor <no-reply@omniarmor.test>",
                               STRIPE_SECRET_KEY="sk_test_x", STRIPE_WEBHOOK_SECRET="whsec_x")
         self.assertEqual(cfg["ENV_NAME"], "production")
 

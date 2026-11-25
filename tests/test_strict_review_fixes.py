@@ -99,7 +99,7 @@ class TestSchoolChecklistOnlyOnWholeSchool(SchoolCase):
         self.assertTrue(response.headers["Location"].endswith("/app/academy/classes"))
         response = self.client.get("/app/report.csv")
         self.assertEqual(response.status_code, 302)
-        self.assertNotIn(b"School Safety Aegizyn", response.data)
+        self.assertNotIn(b"SchoolSafetyArmor", response.data)
 
     def test_pilot_knows_no_school_checklist_on_the_trial(self):
         page = self.client.get("/app/academy/classes").data.decode()
@@ -226,9 +226,9 @@ class TestPilotWords(unittest.TestCase):
 
 class TestTradeDemos(AppTestCase):
     def test_each_trade_page_opens_its_own_demo(self):
-        for slug, kind, brand in (("salons-and-barbershops", "salon", "Salon Aegizyn"),
-                                  ("tattoo-and-piercing-studios", "tattoo", "Ink Aegizyn"),
-                                  ("gyms-and-fitness-studios", "gym", "Gym Aegizyn")):
+        for slug, kind, brand in (("salons-and-barbershops", "salon", "SalonArmor"),
+                                  ("tattoo-and-piercing-studios", "tattoo", "InkArmor"),
+                                  ("gyms-and-fitness-studios", "gym", "GymArmor")):
             page = self.client.get(f"/for/{slug}").data.decode()
             self.assertIn(f'href="/demo/{kind}"', page, slug)
             self.assertNotIn("pretend restaurant", page, slug)
@@ -237,7 +237,7 @@ class TestTradeDemos(AppTestCase):
             self.assertEqual(response.status_code, 302)
             home = words(client.get("/app").data.decode())
             self.assertIn(brand, home, slug)
-            self.assertNotIn("Resto Aegizyn", home, slug)
+            self.assertNotIn("RestoArmor", home, slug)
             industry = TRADE_INDUSTRY[kind]
             levels = {s.level for s in self._states(kind)}
             self.assertTrue({"BLOCKED", "WARNING", "CLEARED"} <= levels, (kind, levels))
@@ -379,7 +379,7 @@ class TestEntriesAndEmails(AppTestCase):
                          (member, now_iso()))
             for uid, address in ((owner, "owner@example.com"), (member, "cook@example.com")):
                 conn.execute("INSERT INTO notifications (org_id, user_id, created_at, kind, recipient, subject, body,"
-                             " status) VALUES (1, ?, ?, 'reminder', ?, 'Aegizyn: 1 overdue', 'x', 'logged')",
+                             " status) VALUES (1, ?, ?, 'reminder', ?, 'OmniArmor: 1 overdue', 'x', 'logged')",
                              (uid, now_iso(), address))
             conn.commit()
         page = self.client.get("/app/notifications").data.decode()

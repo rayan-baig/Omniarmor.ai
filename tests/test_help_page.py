@@ -57,7 +57,7 @@ class TestHelpPage(AppTestCase):
             f"Start with the top {TOP_COUNT}",
             f"after {cfg['DAILY_JOB_HOUR_UTC']:02d}:00 UTC",
             f"{', '.join(str(d) for d in REMINDER_DAYS[:-1])} or {REMINDER_DAYS[-1]} day",
-            f"Every {SLOT_MINUTES} minutes it checks Aegizyn over",
+            f"Every {SLOT_MINUTES} minutes it checks OmniArmor over",
             f"works once, for {JOIN_CODE_DAYS} days",
             f"for {RESET_HOURS} hour",
             f"about {cfg['BACKUP_KEEP']} days",
@@ -112,7 +112,7 @@ class TestHelpPage(AppTestCase):
         page = response.get_data(as_text=True)
         self.assertNotIn('name="robots"', page)
         self.assertIn('<link rel="canonical" href="https://omniarmor.test/help">', page)
-        self.assertIn('<meta property="og:title" content="Help and questions · Aegizyn">', page)
+        self.assertIn('<meta property="og:title" content="Help and questions · OmniArmor.ai">', page)
         self.assertIn("<loc>https://omniarmor.test/help</loc>", self.client.get("/sitemap.xml").get_data(as_text=True))
         robots = self.client.get("/robots.txt").get_data(as_text=True)
         self.assertFalse(any(line.startswith("Disallow: /help") for line in robots.splitlines()))

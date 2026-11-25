@@ -22,7 +22,7 @@ You're on {{ facts.plus.name }} at the {{ facts.bundle.name }} price{{ ', billed
 {%- elif a.paid -%}
 You're on {{ a.plan_name }}{{ ', billed yearly' if a.yearly }}{% if a.renews_at %}, renews {{ a.renews_at|local_date }}{% endif %}.
 {%- elif a.source == 'bundle' -%}
-No charge from Aegizyn while Kryozyn sends signed reports. Last signed report {{ a.bundle.last|local_date }}.
+No charge from OmniArmor while Kryozyn sends signed reports. Last signed report {{ a.bundle.last|local_date }}.
 {%- elif a.source == 'bundle_grace' -%}
 Kryozyn hasn't sent a signed report since {{ a.bundle.last|local_date }}. {{ facts.bundle.includes.name }} stays included until {{ a.bundle.grace_ends|local_date }}.
 {%- elif a.trial and headed -%}

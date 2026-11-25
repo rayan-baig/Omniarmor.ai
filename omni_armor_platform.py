@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Aegizyn - 25-Industry Compliance Gatekeeper Platform
+OmniArmor.ai - 25-Industry Compliance Gatekeeper Platform
 
 Every module check returns a ComplianceResult with one of three levels:
     CLEARED - within the rule
@@ -37,65 +37,65 @@ class MoonstoneThemeColors:
     LEVEL_COLORS = {CLEARED: "#2E7D32", WARNING: "#EF6C00", BLOCKED: "#C62828"}
 
     INDUSTRIES = {
-        1:  {"name": "Fleet Aegizyn (Logistics)", "color": "Safety Neon Orange", "hex": "#FF5F1F"},
-        2:  {"name": "Resto Aegizyn (Restaurants)", "color": "Vibrant Tomato Red", "hex": "#FF6347"},
-        3:  {"name": "Yacht Aegizyn (Superyachts)", "color": "Tropical Mint Teal", "hex": "#00F5D4"},
-        4:  {"name": "Aero Aegizyn (Aviation)", "color": "High-Altitude Electric Blue", "hex": "#00D2FF"},
-        5:  {"name": "Hospital Aegizyn (Hospitals)", "color": "Medical Neon Green", "hex": "#39FF14"},
-        6:  {"name": "AI Aegizyn (AI Platforms)", "color": "Glowing Cyber Purple", "hex": "#9D4EDD"},
-        7:  {"name": "Library Aegizyn (Libraries)", "color": "Vintage Amber Yellow", "hex": "#FFB703"},
-        8:  {"name": "School Aegizyn (Schools)", "color": "Schoolhouse Crimson Gold", "hex": "#D4AF37"},
-        9:  {"name": "Prop Aegizyn (Real Estate)", "color": "Luxury Copper Bronze", "hex": "#CD7F32"},
-        10: {"name": "Auto Aegizyn (Dealerships)", "color": "Racing Nitrous Yellow", "hex": "#FFEA00"},
-        11: {"name": "Luxury Aegizyn (Luxury Brands)", "color": "Velvet Royal Magenta", "hex": "#CA0060"},
-        12: {"name": "Agri Aegizyn (Agriculture)", "color": "Harvest Emerald Olive", "hex": "#4B6043"},
-        13: {"name": "Cop Aegizyn (Police Compliance)", "color": "Patrol Precinct Navy Blue", "hex": "#0A1128"},
-        14: {"name": "Fire Aegizyn (Fire Departments)", "color": "Blazing Firehouse Red", "hex": "#D00000"},
-        15: {"name": "Park Aegizyn (Amusement Parks)", "color": "Coaster Electric Lime", "hex": "#CCFF00"},
-        16: {"name": "Jail Aegizyn (Prison Compliance)", "color": "Iron Vault Charcoal Grey", "hex": "#343A40"},
+        1:  {"name": "FleetArmor (Logistics)", "color": "Safety Neon Orange", "hex": "#FF5F1F"},
+        2:  {"name": "RestoArmor (Restaurants)", "color": "Vibrant Tomato Red", "hex": "#FF6347"},
+        3:  {"name": "YachtArmor (Superyachts)", "color": "Tropical Mint Teal", "hex": "#00F5D4"},
+        4:  {"name": "AeroArmor (Aviation)", "color": "High-Altitude Electric Blue", "hex": "#00D2FF"},
+        5:  {"name": "HospitalArmor (Hospitals)", "color": "Medical Neon Green", "hex": "#39FF14"},
+        6:  {"name": "AIArmor (AI Platforms)", "color": "Glowing Cyber Purple", "hex": "#9D4EDD"},
+        7:  {"name": "LibraryArmor (Libraries)", "color": "Vintage Amber Yellow", "hex": "#FFB703"},
+        8:  {"name": "SchoolArmor (Schools)", "color": "Schoolhouse Crimson Gold", "hex": "#D4AF37"},
+        9:  {"name": "PropArmor (Real Estate)", "color": "Luxury Copper Bronze", "hex": "#CD7F32"},
+        10: {"name": "AutoArmor (Dealerships)", "color": "Racing Nitrous Yellow", "hex": "#FFEA00"},
+        11: {"name": "LuxuryArmor (Luxury Brands)", "color": "Velvet Royal Magenta", "hex": "#CA0060"},
+        12: {"name": "AgriArmor (Agriculture)", "color": "Harvest Emerald Olive", "hex": "#4B6043"},
+        13: {"name": "CopArmor (Police Compliance)", "color": "Patrol Precinct Navy Blue", "hex": "#0A1128"},
+        14: {"name": "FireArmor (Fire Departments)", "color": "Blazing Firehouse Red", "hex": "#D00000"},
+        15: {"name": "ParkArmor (Amusement Parks)", "color": "Coaster Electric Lime", "hex": "#CCFF00"},
+        16: {"name": "JailArmor (Prison Compliance)", "color": "Iron Vault Charcoal Grey", "hex": "#343A40"},
         # Was #E5E5E5, which vanished against the lavender base.
-        17: {"name": "Insure Aegizyn (Insurance)", "color": "Premium Gold Platinum", "hex": "#CFB53B"},
-        18: {"name": "Bank Aegizyn (Banking Compliance)", "color": "Wall Street Emerald Jade", "hex": "#004B23"},
+        17: {"name": "InsureArmor (Insurance)", "color": "Premium Gold Platinum", "hex": "#CFB53B"},
+        18: {"name": "BankArmor (Banking Compliance)", "color": "Wall Street Emerald Jade", "hex": "#004B23"},
         # Was #E2EAFC, which vanished against the lavender base.
-        19: {"name": "Fintech Aegizyn (Finance Compliance)", "color": "High-Frequency Silver Blue", "hex": "#78909C"},
-        20: {"name": "Petro Aegizyn (Oil & Gas Production)", "color": "Industrial Crude Gold", "hex": "#FF9F1C"},
-        21: {"name": "Factory Aegizyn (Manufacturing)", "color": "Assembly Line Steel Grey-Blue", "hex": "#4A5759"},
-        22: {"name": "Pharma Aegizyn (Pharmaceuticals)", "color": "Bio-Hazard Warning Coral", "hex": "#FF70A6"},
-        23: {"name": "Mine Aegizyn (Mining & Minerals)", "color": "Blasting Orange-Yellow", "hex": "#FF5A5F"},
-        24: {"name": "Port Aegizyn (Port Authorities)", "color": "Oceanic Deep Harbor Blue", "hex": "#03045E"},
-        25: {"name": "Gene Aegizyn (Biotech & Genetics)", "color": "Glowing Cyber Lab Ultraviolet", "hex": "#7209B7"},
+        19: {"name": "FintechArmor (Finance Compliance)", "color": "High-Frequency Silver Blue", "hex": "#78909C"},
+        20: {"name": "PetroArmor (Oil & Gas Production)", "color": "Industrial Crude Gold", "hex": "#FF9F1C"},
+        21: {"name": "FactoryArmor (Manufacturing)", "color": "Assembly Line Steel Grey-Blue", "hex": "#4A5759"},
+        22: {"name": "PharmaArmor (Pharmaceuticals)", "color": "Bio-Hazard Warning Coral", "hex": "#FF70A6"},
+        23: {"name": "MineArmor (Mining & Minerals)", "color": "Blasting Orange-Yellow", "hex": "#FF5A5F"},
+        24: {"name": "PortArmor (Port Authorities)", "color": "Oceanic Deep Harbor Blue", "hex": "#03045E"},
+        25: {"name": "GeneArmor (Biotech & Genetics)", "color": "Glowing Cyber Lab Ultraviolet", "hex": "#7209B7"},
         # Expansion industries 26-50: rule catalog only, no detailed check yet.
-        26: {"name": "Senior Aegizyn (Nursing Homes & Assisted Living)", "color": "Heirloom Rose", "hex": "#C4577A"},
-        27: {"name": "Dental Aegizyn (Dental & Medical Practices)", "color": "Enamel Aqua", "hex": "#2BB3C0"},
-        28: {"name": "Pharmacy Aegizyn (Pharmacies)", "color": "Apothecary Green", "hex": "#2F9E6E"},
-        29: {"name": "Build Aegizyn (Construction)", "color": "Hi-Vis Hardhat Yellow", "hex": "#F5B700"},
-        30: {"name": "HR Aegizyn (Employers & HR)", "color": "Payroll Indigo", "hex": "#3F51B5"},
-        31: {"name": "Privacy Aegizyn (Data Privacy & SaaS)", "color": "Encrypted Slate Violet", "hex": "#6C5B9E"},
-        32: {"name": "Pay Aegizyn (Payments & Merchants)", "color": "Terminal Teal", "hex": "#008C8C"},
-        33: {"name": "Crypto Aegizyn (Crypto & Money Services)", "color": "Block Orange", "hex": "#F7931A"},
-        34: {"name": "Mortgage Aegizyn (Mortgage Lending)", "color": "Deed Blue", "hex": "#1E5AA8"},
-        35: {"name": "Collect Aegizyn (Debt Collection)", "color": "Notice Burgundy", "hex": "#8C2F39"},
-        36: {"name": "Defense Aegizyn (Defense Contractors)", "color": "Field Olive Drab", "hex": "#5B6B2E"},
-        37: {"name": "Food Aegizyn (Food Manufacturing)", "color": "Harvest Wheat", "hex": "#D9A441"},
-        38: {"name": "Device Aegizyn (Medical Devices)", "color": "Sterile Steel Blue", "hex": "#4F7CAC"},
-        39: {"name": "Chem Aegizyn (Chemical Plants)", "color": "Reagent Chartreuse", "hex": "#9BC53D"},
-        40: {"name": "Waste Aegizyn (Hazardous Waste)", "color": "Drum Hazard Orange", "hex": "#E86A1C"},
-        41: {"name": "Grid Aegizyn (Electric Utilities)", "color": "High-Voltage Cyan", "hex": "#00A6D6"},
-        42: {"name": "Water Aegizyn (Water Utilities)", "color": "Reservoir Navy", "hex": "#16457A"},
-        43: {"name": "Law Aegizyn (Law Firms)", "color": "Counsel Oxblood", "hex": "#6D1A36"},
-        44: {"name": "Campus Aegizyn (Colleges & Universities)", "color": "Ivy Green", "hex": "#2E6B3A"},
-        45: {"name": "Child Aegizyn (Child Care)", "color": "Crayon Sky Blue", "hex": "#5AB0F0"},
-        46: {"name": "Hotel Aegizyn (Hotels & Lodging)", "color": "Concierge Plum", "hex": "#7B3F7E"},
-        47: {"name": "Bar Aegizyn (Bars, Breweries & Liquor)", "color": "Amber Ale", "hex": "#C8792A"},
-        48: {"name": "Firearm Aegizyn (Firearms Dealers)", "color": "Gunmetal Grey", "hex": "#53565A"},
-        49: {"name": "Casino Aegizyn (Casinos & Gaming)", "color": "Felt Table Green", "hex": "#0B7A3E"},
-        50: {"name": "Shop Aegizyn (E-commerce)", "color": "Cart Magenta", "hex": "#D63384"},
-        # Industry 51 (1.6.0): a K-12 school's safety routines, beside School Aegizyn's legal duties. Rule catalog only.
-        51: {"name": "School Safety Aegizyn (School Safety & Operations)", "color": "Chalkboard Green", "hex": "#3A7D5C"},
+        26: {"name": "SeniorArmor (Nursing Homes & Assisted Living)", "color": "Heirloom Rose", "hex": "#C4577A"},
+        27: {"name": "DentalArmor (Dental & Medical Practices)", "color": "Enamel Aqua", "hex": "#2BB3C0"},
+        28: {"name": "PharmacyArmor (Pharmacies)", "color": "Apothecary Green", "hex": "#2F9E6E"},
+        29: {"name": "BuildArmor (Construction)", "color": "Hi-Vis Hardhat Yellow", "hex": "#F5B700"},
+        30: {"name": "HRArmor (Employers & HR)", "color": "Payroll Indigo", "hex": "#3F51B5"},
+        31: {"name": "PrivacyArmor (Data Privacy & SaaS)", "color": "Encrypted Slate Violet", "hex": "#6C5B9E"},
+        32: {"name": "PayArmor (Payments & Merchants)", "color": "Terminal Teal", "hex": "#008C8C"},
+        33: {"name": "CryptoArmor (Crypto & Money Services)", "color": "Block Orange", "hex": "#F7931A"},
+        34: {"name": "MortgageArmor (Mortgage Lending)", "color": "Deed Blue", "hex": "#1E5AA8"},
+        35: {"name": "CollectArmor (Debt Collection)", "color": "Notice Burgundy", "hex": "#8C2F39"},
+        36: {"name": "DefenseArmor (Defense Contractors)", "color": "Field Olive Drab", "hex": "#5B6B2E"},
+        37: {"name": "FoodArmor (Food Manufacturing)", "color": "Harvest Wheat", "hex": "#D9A441"},
+        38: {"name": "DeviceArmor (Medical Devices)", "color": "Sterile Steel Blue", "hex": "#4F7CAC"},
+        39: {"name": "ChemArmor (Chemical Plants)", "color": "Reagent Chartreuse", "hex": "#9BC53D"},
+        40: {"name": "WasteArmor (Hazardous Waste)", "color": "Drum Hazard Orange", "hex": "#E86A1C"},
+        41: {"name": "GridArmor (Electric Utilities)", "color": "High-Voltage Cyan", "hex": "#00A6D6"},
+        42: {"name": "WaterArmor (Water Utilities)", "color": "Reservoir Navy", "hex": "#16457A"},
+        43: {"name": "LawArmor (Law Firms)", "color": "Counsel Oxblood", "hex": "#6D1A36"},
+        44: {"name": "CampusArmor (Colleges & Universities)", "color": "Ivy Green", "hex": "#2E6B3A"},
+        45: {"name": "ChildArmor (Child Care)", "color": "Crayon Sky Blue", "hex": "#5AB0F0"},
+        46: {"name": "HotelArmor (Hotels & Lodging)", "color": "Concierge Plum", "hex": "#7B3F7E"},
+        47: {"name": "BarArmor (Bars, Breweries & Liquor)", "color": "Amber Ale", "hex": "#C8792A"},
+        48: {"name": "FirearmArmor (Firearms Dealers)", "color": "Gunmetal Grey", "hex": "#53565A"},
+        49: {"name": "CasinoArmor (Casinos & Gaming)", "color": "Felt Table Green", "hex": "#0B7A3E"},
+        50: {"name": "ShopArmor (E-commerce)", "color": "Cart Magenta", "hex": "#D63384"},
+        # Industry 51 (1.6.0): a K-12 school's safety routines, beside SchoolArmor's legal duties. Rule catalog only.
+        51: {"name": "SchoolSafetyArmor (School Safety & Operations)", "color": "Chalkboard Green", "hex": "#3A7D5C"},
         # Industries 52-54 (1.11.0): starter lists for trades that had only borrowed checks. Rule catalog only.
-        52: {"name": "Salon Aegizyn (Salons & Barbershops)", "color": "Salon Rose", "hex": "#B5487A"},
-        53: {"name": "Ink Aegizyn (Tattoo & Piercing Studios)", "color": "Ink Indigo", "hex": "#3D3A8C"},
-        54: {"name": "Gym Aegizyn (Gyms & Fitness Studios)", "color": "Track Orange", "hex": "#D9622B"},
+        52: {"name": "SalonArmor (Salons & Barbershops)", "color": "Salon Rose", "hex": "#B5487A"},
+        53: {"name": "InkArmor (Tattoo & Piercing Studios)", "color": "Ink Indigo", "hex": "#3D3A8C"},
+        54: {"name": "GymArmor (Gyms & Fitness Studios)", "color": "Track Orange", "hex": "#D9622B"},
     }
 
 
@@ -144,7 +144,7 @@ class ComplianceResult:
 # =====================================================================
 # 🌌 THE 25-INDUSTRY SYSTEM CORE MAIN ENGINE
 # =====================================================================
-class AegizynPortal:
+class OmniArmorPortal:
     # MARPOL minimum distance from nearest land, in nautical miles, outside
     # special areas. None means the discharge is never allowed at sea.
     MARPOL_MIN_DISTANCE_NM = {
@@ -234,7 +234,7 @@ class AegizynPortal:
         """Checks all 250 rules with their sample values."""
         return {module_id: self.run_industry(module_id) for module_id in sorted(CATALOG)}
 
-    # --- 1. FLEET AEGIZYN (LOGISTICS) ---
+    # --- 1. FLEETARMOR (LOGISTICS) ---
     def fleet_armor_hos_timer(self, driving_hours, on_duty_window_hours=None, driving_since_break_hours=None):
         """FMCSA hours of service for property-carrying drivers."""
         self._require_non_negative(driving_hours=driving_hours, on_duty_window_hours=on_duty_window_hours,
@@ -262,7 +262,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(1, feature, CLEARED, "CLEARED",
             f"Driver has {remaining:g} legal driving hours remaining.", rule)
 
-    # --- 2. RESTO AEGIZYN (RESTAURANTS) ---
+    # --- 2. RESTOARMOR (RESTAURANTS) ---
     def resto_armor_temp_check(self, current_temp_f, unit_name="Cold holding unit"):
         """Cold holding of time/temperature-control-for-safety (TCS) food."""
         rule = "FDA Food Code 3-501.16(A)(2) - cold-hold TCS food at 41°F (5°C) or below"
@@ -276,7 +276,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(2, feature, CLEARED, "CLEARED",
             f"{unit_name} holding safely at {current_temp_f:g}°F.", rule)
 
-    # --- 3. YACHT AEGIZYN (SUPERYACHTS) ---
+    # --- 3. YACHTARMOR (SUPERYACHTS) ---
     def yacht_armor_marpol_sentry(self, distance_from_land_nm, discharge_requested, waste_type="sewage_untreated"):
         """MARPOL discharge limits outside special areas. Annex IV covers ships of
         400 GT and above or certified for more than 15 persons."""
@@ -299,7 +299,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(3, feature, CLEARED, "CLEARED",
             f"{waste_type} discharge permitted at {distance_from_land_nm:g} nm.{extra} Not allowed in special areas or U.S. No Discharge Zones. Log it in the record book.", rule)
 
-    # --- 4. AERO AEGIZYN (AVIATION) ---
+    # --- 4. AEROARMOR (AVIATION) ---
     def aero_armor_faa_logger(self, hours_since_inspection, ferrying_to_inspection=False):
         """100-hour inspection for aircraft used for hire, including Part 135
         aircraft with 9 or fewer passenger seats."""
@@ -319,7 +319,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(4, feature, CLEARED, "CLEARED",
             f"{100 - h:g} h until the 100-hour inspection.", rule)
 
-    # --- 5. HOSPITAL AEGIZYN (HOSPITALS) ---
+    # --- 5. HOSPITALARMOR (HOSPITALS) ---
     def hospital_armor_patient_gate(self, nurses_on_duty, patient_census, unit="med_surg", max_patients_per_nurse=None):
         """Nurse staffing ratios. CMS requires adequate staffing but sets no
         federal ratio, so the default table is California's."""
@@ -348,7 +348,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(5, feature, CLEARED, "CLEARED",
             f"{ratio:.1f} patients per nurse, within 1:{limit}.", rule)
 
-    # --- 6. AI AEGIZYN (AI PLATFORMS) ---
+    # --- 6. AIARMOR (AI PLATFORMS) ---
     def ai_armor_eu_act_monitor(self, drift_score, policy_threshold=0.15):
         """Post-market monitoring for high-risk AI systems. The Act sets no
         numeric drift limit; policy_threshold comes from your risk-management plan."""
@@ -364,7 +364,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(6, feature, CLEARED, "CLEARED",
             f"Drift {drift_score:g} is within your {policy_threshold:g} threshold.", rule)
 
-    # --- 7. LIBRARY AEGIZYN (LIBRARIES) ---
+    # --- 7. LIBRARYARMOR (LIBRARIES) ---
     def library_armor_cipa_filter(self, requested_url, flagged_by_filter, adult_research_override=False):
         """CIPA filtering for libraries that receive E-rate or LSTA funds."""
         rule = "CIPA, 47 U.S.C. 254(h)(6) - filter images that are obscene, child sexual abuse material or harmful to minors"
@@ -378,7 +378,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(7, feature, BLOCKED, "ACCESS BLOCKED",
             f"'{requested_url}' matched a CIPA filter category.", rule)
 
-    # --- 8. SCHOOL AEGIZYN (SCHOOLS) ---
+    # --- 8. SCHOOLARMOR (SCHOOLS) ---
     def school_armor_ferpa_block(self, requester_role, legitimate_educational_interest=False, written_consent_on_file=False):
         """Access to student education records."""
         rule = "FERPA 34 CFR 99.30 (written consent) and 99.31(a)(1) (school officials with legitimate educational interest)"
@@ -392,7 +392,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(8, feature, BLOCKED, "ACCESS REJECTED",
             f"{requester_role} has no written consent and no 99.31 exception. Records withheld.", rule)
 
-    # --- 9. PROP AEGIZYN (REAL ESTATE) ---
+    # --- 9. PROPARMOR (REAL ESTATE) ---
     def prop_armor_escrow_isolation(self, deposit_in_separate_account):
         """Tenant deposits and client trust funds kept apart from operating cash."""
         rule = "State trust-account and security-deposit law (e.g., N.Y. Gen. Oblig. Law 7-103, Fla. Stat. 83.49)"
@@ -403,7 +403,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(9, feature, CLEARED, "CLEARED",
             "Funds posted to a separate trust or escrow account.", rule)
 
-    # --- 10. AUTO AEGIZYN (DEALERSHIPS) ---
+    # --- 10. AUTOARMOR (DEALERSHIPS) ---
     def auto_armor_ftc_sticker_check(self, buyers_guide_displayed):
         """FTC Used Car Rule window sticker."""
         rule = "FTC Used Car Rule, 16 CFR 455.2 - Buyers Guide posted on every used vehicle offered for sale"
@@ -414,7 +414,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(10, feature, CLEARED, "CLEARED",
             "Buyers Guide posted.", rule)
 
-    # --- 11. LUXURY AEGIZYN (LUXURY BRANDS) ---
+    # --- 11. LUXURYARMOR (LUXURY BRANDS) ---
     def luxury_armor_cites_gate(self, cites_listed_species, cites_permit_attached):
         """International trade in products from CITES-listed species."""
         rule = "CITES; U.S. rules 50 CFR Parts 14 and 23 (permits plus USFWS Form 3-177 declaration)"
@@ -428,7 +428,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(11, feature, CLEARED, "CLEARED",
             "No CITES-listed materials in this batch.", rule)
 
-    # --- 12. AGRI AEGIZYN (AGRICULTURE) ---
+    # --- 12. AGRIARMOR (AGRICULTURE) ---
     def agri_armor_withholding_clock(self, days_since_application, phi_days):
         """Pesticide pre-harvest interval (PHI) from the product label."""
         self._require_non_negative(days_since_application=days_since_application, phi_days=phi_days)
@@ -440,7 +440,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(12, feature, CLEARED, "CLEARED",
             f"PHI of {phi_days:g} days met. Harvest permitted.", rule)
 
-    # --- 13. COP AEGIZYN (POLICE COMPLIANCE) ---
+    # --- 13. COPARMOR (POLICE COMPLIANCE) ---
     def cop_armor_evidence_timer(self, days_since_last_inspection, max_days=183):
         """Property and evidence room inspections. The default (semiannual)
         follows CALEA accreditation; set max_days to your agency policy."""
@@ -457,7 +457,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(13, feature, CLEARED, "CLEARED",
             f"Next inspection due in {max_days - d:g} days.", rule)
 
-    # --- 14. FIRE AEGIZYN (FIRE DEPARTMENTS) ---
+    # --- 14. FIREARMOR (FIRE DEPARTMENTS) ---
     def fire_armor_scba_verification(self, inspected_this_shift, cylinder_pressure_pct=None):
         """SCBA readiness. cylinder_pressure_pct is a percent of the maker's
         rated full pressure."""
@@ -473,7 +473,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(14, feature, CLEARED, "CLEARED",
             "SCBA inspected and cylinder charged.", rule)
 
-    # --- 15. PARK AEGIZYN (AMUSEMENT PARKS) ---
+    # --- 15. PARKARMOR (AMUSEMENT PARKS) ---
     def park_armor_ride_clearance(self, daily_inspection_completed):
         """Pre-opening ride inspection."""
         rule = "ASTM F770 - daily pre-opening inspection by the owner/operator; state ride laws adopt or add to it"
@@ -484,7 +484,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(15, feature, CLEARED, "CLEARED",
             "Daily inspection signed off. Ride may open.", rule)
 
-    # --- 16. JAIL AEGIZYN (PRISON COMPLIANCE) ---
+    # --- 16. JAILARMOR (PRISON COMPLIANCE) ---
     def jail_armor_wellness_timer(self, minutes_since_last_check, max_interval_minutes=30):
         """Welfare checks in restrictive housing. 30 minutes is a common
         corrections standard; suicide watch is usually 15 minutes or constant."""
@@ -502,7 +502,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(16, feature, CLEARED, "CLEARED",
             f"Last check {m:g} min ago.", rule)
 
-    # --- 17. INSURE AEGIZYN (INSURANCE) ---
+    # --- 17. INSUREARMOR (INSURANCE) ---
     def insure_armor_tcpa_filter(self, on_do_not_call_list, prior_express_written_consent=False,
                                  established_business_relationship=False, autodialed_or_prerecorded=True,
                                  local_hour=None):
@@ -522,7 +522,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(17, feature, CLEARED, "CLEARED",
             "Consent and calling-time checks passed.", rule)
 
-    # --- 18. BANK AEGIZYN (BANKING COMPLIANCE) ---
+    # --- 18. BANKARMOR (BANKING COMPLIANCE) ---
     def bank_armor_ctr_monitor(self, cash_total_business_day):
         """Currency Transaction Report on a customer's aggregated cash for one business day."""
         self._require_non_negative(cash_total_business_day=cash_total_business_day)
@@ -538,7 +538,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(18, feature, CLEARED, "CLEARED",
             f"${amount:,.2f} in cash today. No CTR required.", rule)
 
-    # --- 19. FINTECH AEGIZYN (FINANCE COMPLIANCE) ---
+    # --- 19. FINTECHARMOR (FINANCE COMPLIANCE) ---
     def fintech_armor_adv_countdown(self, days_since_fiscal_year_end):
         """Form ADV annual updating amendment for registered investment advisers."""
         self._require_non_negative(days_since_fiscal_year_end=days_since_fiscal_year_end)
@@ -554,7 +554,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(19, feature, CLEARED, "CLEARED",
             f"{90 - d:g} days left to file the annual amendment.", rule)
 
-    # --- 20. PETRO AEGIZYN (OIL & GAS PRODUCTION) ---
+    # --- 20. PETROARMOR (OIL & GAS PRODUCTION) ---
     def petro_armor_valve_sentry(self, months_since_inspection, inspected_this_calendar_year=True):
         """Gas transmission valve inspections. Hazardous-liquid lines follow
         49 CFR 195.420 instead (twice a year, at most 7.5 months apart)."""
@@ -574,7 +574,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(20, feature, CLEARED, "CLEARED",
             f"{15 - m:g} months left before the 15-month limit.", rule)
 
-    # --- 21. FACTORY AEGIZYN (MANUFACTURING) ---
+    # --- 21. FACTORYARMOR (MANUFACTURING) ---
     def factory_armor_loto_gate(self, isolation_verified, every_worker_lock_applied=True):
         """Lockout/tagout before servicing machinery."""
         rule = "OSHA 29 CFR 1910.147(d)(6) verify isolation before servicing; (f)(3) each worker applies a personal lock in group lockout"
@@ -588,7 +588,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(21, feature, CLEARED, "MAINTENANCE MODE READY",
             "Isolation verified and every worker's lock applied.", rule)
 
-    # --- 22. PHARMA AEGIZYN (PHARMACEUTICALS) ---
+    # --- 22. PHARMAARMOR (PHARMACEUTICALS) ---
     def pharma_armor_cfr_signature(self, printed_name_shown, date_time_shown=True, meaning_shown=True,
                                    two_component_login=True):
         """Electronic signature checks on a regulated record."""
@@ -609,7 +609,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(22, feature, CLEARED, "CLEARED",
             "Signature manifestation and identity checks complete.", rule)
 
-    # --- 23. MINE AEGIZYN (MINING & MINERALS) ---
+    # --- 23. MINEARMOR (MINING & MINERALS) ---
     def mine_armor_part46_gate(self, training_hours, days_on_job=0):
         """New-miner training at Part 46 mines (sand, gravel, surface stone and
         similar); other mines follow Part 48."""
@@ -628,7 +628,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(23, feature, CLEARED, "CLEARED",
             "24-hour new-miner training complete.", rule)
 
-    # --- 24. PORT AEGIZYN (PORT AUTHORITIES) ---
+    # --- 24. PORTARMOR (PORT AUTHORITIES) ---
     def port_armor_twic_check(self, has_valid_twic, escorted=False):
         """Access to MTSA secure areas."""
         rule = "MTSA, 33 CFR 101.514 - unescorted access to secure areas requires a valid TWIC"
@@ -642,7 +642,7 @@ class AegizynPortal:
         return self._execute_gatekeeper_event(24, feature, BLOCKED, "ACCESS DENIED",
             "No valid TWIC and no escort. Gate stays closed.", rule)
 
-    # --- 25. GENE AEGIZYN (BIOTECH & GENETICS) ---
+    # --- 25. GENEARMOR (BIOTECH & GENETICS) ---
     def gene_armor_nih_monitor(self, ibc_approved, guidelines_section="III-D"):
         """Recombinant or synthetic nucleic acid experiments at institutions
         that receive NIH funding."""
@@ -675,8 +675,8 @@ class AegizynPortal:
     def run_portal(self):
         """Runs one sample check for each of the 25 modules and returns the results."""
         if self.verbose:
-            print(f"\n🛡️  Aegizyn: {SLOGAN}")
-            print(f"🌌 [Aegizyn Master Portal]: Active - Theme: {self.theme.BASE_THEME} / Brand: {self.theme.BRAND_PRIMARY}")
+            print(f"\n🛡️  OmniArmor.ai: {SLOGAN}")
+            print(f"🌌 [OmniArmor.ai Master Portal]: Active - Theme: {self.theme.BASE_THEME} / Brand: {self.theme.BRAND_PRIMARY}")
             print(f"💰 Bootstrapped Maintenance Overhead Active: {self.tracker.total_cost_tracker()}")
             print("-" * 75)
 
@@ -719,7 +719,7 @@ class AegizynPortal:
 
 def print_catalog_summary():
     """Runs all 250 catalog rules on their sample values and prints one line per industry."""
-    portal = AegizynPortal(verbose=False)
+    portal = OmniArmorPortal(verbose=False)
     print("\n💸 [Costliest-Risk Catalog] - 10 rules per industry, sample readings")
     print("-" * 83)
     totals = {level: 0 for level in LEVELS}
@@ -735,6 +735,6 @@ def print_catalog_summary():
 
 
 if __name__ == "__main__":
-    portal = AegizynPortal()
+    portal = OmniArmorPortal()
     portal.run_portal()
     print_catalog_summary()
