@@ -219,7 +219,8 @@ class TestIllnessLog(EntryCase):
         other = self.app.test_client()
         self.signup(email="other@example.com", industries=(RESTO,), client=other)
         page = other.get(f"/app/industry/{RESTO}").data.decode()
-        self.assertNotIn("Kai", page)
+        # As a whole word: the page's random CSRF token can contain the letters "Kai".
+        self.assertNotRegex(page, r"\bKai\b")
 
 
 class TestTradeStarterLists(unittest.TestCase):

@@ -556,7 +556,7 @@ class TestStudentsSeeOnlyTheirClass(ClassCase):
         page = kid.get(f"/app/academy/{self.kids_a['Sam']}/class").data.decode()
         board = re.findall(r'class="ac-board-name">([^<(]+)', page)
         self.assertEqual([b.strip() for b in board], ["Priya", "Sam"])
-        self.assertNotIn("Zed", page)
+        self.assertNotRegex(page, r"\bZed\b")  # whole word: the CSRF token is random letters
         self.assertNotIn("Room B", page)
 
     def test_another_classs_pages_are_closed_to_a_student(self):
@@ -576,7 +576,7 @@ class TestStudentsSeeOnlyTheirClass(ClassCase):
         kid = self.kid_client(self.kids_a["Sam"])
         page = kid.get(f"/app/academy/{self.kids_a['Sam']}/class").data.decode()
         self.assertIn("data-board-off", page)
-        self.assertNotIn("Priya", page)
+        self.assertNotRegex(page, r"\bPriya\b")
         self.post(f"/app/academy/classes/{self.a}/leaderboard", {"leaderboard": "on"})
         self.assertIn("Priya", kid.get(f"/app/academy/{self.kids_a['Sam']}/class").data.decode())
 
