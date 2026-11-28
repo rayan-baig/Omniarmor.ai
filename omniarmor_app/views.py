@@ -18,7 +18,7 @@ from .config import support_email
 from .catalog import (ILLNESS_LOG_CHECKS, INDUSTRIES, TOP_COUNT, can_override, counts_time, entry_date_words, find_rule,
                       multi_check, rules_for, top_rank, why_line)
 from .db import get_db, now_iso, record_audit
-from .security import MIN_PASSWORD, clean_text, flash_error, home_url, login_required, owner_required
+from .security import MIN_PASSWORD, clean_text, flash_at, flash_error, home_url, login_required, owner_required
 from .tracking import (BULK_ACTIONS, ILLNESS_ACTIONS, ILLNESS_REPORTED, LEVEL_LABEL, LEVEL_ORDER, ValidationError, add_illness,
                        apply_bulk, apply_change, apply_entry, checklist_ids, illness_log, item_rows, local_date, org_industry_ids,
                        org_now, org_today, remove_illness, states_for_org, tally, tracked_items)
@@ -637,11 +637,20 @@ def notifications():
         " ORDER BY notifications.created_at DESC, notifications.id DESC LIMIT 200",
         (g.org["id"], g.org["id"], g.user["id"]),
     ).fetchall()
-    next_dated = None
+    next_dated = first = None
     if not rows:
+        from .reminders import first_digest, paused
         conn = get_db()
-        next_dated = next_reading(states_for_org(conn, g.org), checklist_ids(conn, g.org), dated=True)
-    return render_template("app/notifications.html", rows=rows, next_dated=next_dated, recipient_label=recipient_label)
+        states = states_for_org(conn, g.org)
+        # 1.28.0: once a check counted from a date has its date, when the first digest goes out (it said they start
+        # once one has its date, even after dates were entered).
+        first = first_digest(conn, current_app.config, g.org, states)
+        if first is not None:
+            first = {"at": first[0], "state": first[1], "paused": paused(g.org, current_app.config)}
+        else:
+            next_dated = next_reading(states, checklist_ids(conn, g.org), dated=True)
+    return render_template("app/notifications.html", rows=rows, next_dated=next_dated, first=first,
+                           recipient_label=recipient_label)
 
 
 def recipient_label(row, me_id):
@@ -726,7 +735,8 @@ def _settings_page(new_key=None):
 def connection_create():
     key = connections.create_key(get_db(), g.org["id"], g.user["id"])
     if key is None:
-        flash_error("This workspace already has a Kryozyn connection key. Regenerate it to get a new one.")
+        flash_at("connections", "This workspace already has a Kryozyn connection key. Regenerate it to get a new one.",
+                 "error")
         return redirect(url_for("app.settings", _anchor="connections"))
     return _settings_page(new_key=key)
 
@@ -740,11 +750,12 @@ def connection_regenerate():
 @bp.route("/settings/connections/cyberlogix/revoke", methods=["POST"])
 @owner_required
 def connection_revoke():
+    # 1.28.0: each notice under "Connections", where the page opens (flash_at), not at the top, out of sight on a phone.
     if connections.revoke_key(get_db(), g.org["id"], g.user["id"]):
-        flash("The Kryozyn connection key was revoked. Kryozyn can't send reports until you create a new one.",
-              "ok")
+        flash_at("connections", "The Kryozyn connection key was revoked. Kryozyn can't send reports until you create a"
+                 " new one.")
     else:
-        flash_error("There is no active Kryozyn connection key to revoke.")
+        flash_at("connections", "There is no active Kryozyn connection key to revoke.", "error")
     return redirect(url_for("app.settings", _anchor="connections"))
 
 
@@ -767,7 +778,8 @@ def settings_reminders():
                  " WHERE id = ?", (*(int(on) for on in picked.values()), now_iso(), g.user["id"]))
     conn.commit()
     said = ", ".join(f"{name} {'on' if picked[field] else 'off'}" for field, name in choices)
-    flash(f"Saved: {said[0].upper()}{said[1:]}.", "ok")
+    # 1.28.0: under "Your reminder emails", where the page opens (flash_at), as the password form's notices are.
+    flash_at("reminders", f"Saved: {said[0].upper()}{said[1:]}.")
     return redirect(url_for("app.settings", _anchor="reminders"))
 
 
@@ -829,10 +841,11 @@ def add_location():
     owned = conn.execute("SELECT COUNT(*) FROM memberships WHERE user_id = ? AND role = 'owner'",
                          (g.user["id"],)).fetchone()[0]
     if not name:
-        flash_error("Enter the new location's name, without line breaks.")
+        flash_at("locations", "Enter the new location's name, without line breaks.", "error")
         return redirect(url_for("app.settings", _anchor="locations"))
     if owned >= MAX_LOCATIONS:
-        flash_error(f"One account can own up to {MAX_LOCATIONS} locations. Please contact us for more.")
+        flash_at("locations", f"One account can own up to {MAX_LOCATIONS} locations. Please contact us for more.",
+                 "error")
         return redirect(url_for("app.settings", _anchor="locations"))
     now = now_iso()
     industries = org_industry_ids(conn, g.org["id"])

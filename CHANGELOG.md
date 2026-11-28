@@ -3,6 +3,51 @@
 What changed in OmniArmor (called Aegizyn in 1.24.0 and 1.25.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.28.0 (28 November 2026)
+
+Fixes from a strict sixteenth review.
+
+- **Settings says how it went where you are, in every section.** Saving
+  "Your reminder emails" ("Saved: Daily digest on, time-limit alerts
+  off.") now shows under that heading, where the page opens after Save, and
+  so do the Connections notices (the Kryozyn key revoked or already made)
+  and the Locations ones (a new location with no name). On a phone they
+  showed at the top of the page, out of sight, as the password's did before
+  1.27.0.
+- **Pilot, with no AI key:** "Is there a yearly plan?" and "Can I pay
+  yearly?" get the yearly answer (they found nothing). "What happens when
+  my trial ends?" and "after the free trial?" get a new answer from the real
+  plans: nothing is deleted or charged, the tracker is read-only until the
+  owner picks a plan (for a school, the classes and their progress are kept).
+  "Which check should I do first?", "Where do I start?" and "What's my
+  priority?" name the check to do first. On Home, "What's overdue?" counts
+  the items it lists ("Needs attention: 1 blocked, 2 warnings", one per food
+  batch, as Home lists them; it gave the checks' totals, which didn't match
+  the rows) and gives each its line beside its tag ("Blocked · 3 days
+  overdue · made or opened 9 days ago (day 10)").
+- **Armo keeps off the words on a phone.** Where even tucked into his corner
+  he would sit on the page's words ("6 without a reading" on the summary at
+  320 px), he steps away until the spot is free again, and he looks at the
+  words inside a row too. His bubble always shows him.
+- **Reminders, before the first email,** says when the first daily digest
+  goes out once a check counted from a date has its date ("The first daily
+  digest goes out on 2026-11-28 at about 05:00 (America/Chicago), for
+  Ready-to-eat food 7-day limit in RestoArmor, due 2026-12-04"), from the
+  daily job's own schedule. It said reminders start once a date is entered,
+  even after one was. Paused without a plan, it says so.
+- **Adding students** goes back to the class page, so a reload no longer
+  lands on the form's address (it answered 405). The names to check wait
+  there as before, and what couldn't be added comes back in the box once.
+- **A new student's first map says "Welcome!"**, not "Welcome back,
+  superstar!", until they have played.
+- **The public home:** the overview picture and the reminder email under
+  How it works were taken again, with today's words and room around the
+  email (its left edge was cut off). The "Days, business days or hours" and
+  "Everyone picks their emails" cards say what How it works doesn't (they
+  repeated its first two steps). The pricing page's line about Help says
+  "monthly or yearly billing" only where yearly prices are offered, as Help
+  does.
+
 ## 1.27.0 (28 November 2026)
 
 Fixes from a strict fifteenth review.

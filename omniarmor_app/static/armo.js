@@ -15,7 +15,9 @@
    He keeps clear of the page as Pilot does (keepClear): when he would sit
    on a status tag, a button, a link or the page's words, he shrinks into
    his corner (armo-tucked), where on a phone the page's column keeps room
-   for him (app.css). He comes back out when the spot is free again. */
+   for him (app.css). Where even tucked he would cover the page's words, he
+   steps away (armo-away, 1.28.0). He comes back out when the spot is free
+   again. */
 (function () {
   "use strict";
   var root = document.querySelector("[data-companion]");
@@ -128,6 +130,7 @@
     next.textContent = options.next || "";
     next.hidden = !options.next;
     bubble.hidden = false;
+    root.classList.remove("armo-away");
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // restart the pop animation
     bubble.classList.add("pop");
@@ -138,6 +141,7 @@
   function hide() {
     bubble.hidden = true;
     clearTimeout(hideTimer);
+    keepClear();
   }
 
   // While Armo's bubble (an alert, a "Fix it", a tip) is showing, Pilot's
@@ -301,8 +305,13 @@
   function textUnder(el, area) {
     if (!document.createRange) return false;
     var range = document.createRange();
-    for (var i = 0; i < el.childNodes.length; i += 1) {
-      var node = el.childNodes[i];
+    // 1.28.0: a row's or a card's words inside its own elements too (the " · SalonArmor" after a title), which a
+    // point can miss between them; a bigger box (a section, the page's column) only its own words.
+    var deep = document.createTreeWalker && el.getBoundingClientRect().height <= 240;
+    var walker = deep ? document.createTreeWalker(el, 4) : null;   // 4: NodeFilter.SHOW_TEXT
+    var i = 0;
+    var node;
+    while ((node = deep ? walker.nextNode() : el.childNodes[i++])) {
       if (node.nodeType !== 3 || !/\S/.test(node.nodeValue)) continue;
       range.selectNodeContents(node);
       var rects = range.getClientRects();
@@ -355,8 +364,11 @@
       if (!bubble.hidden) return;
       // Judged at full size, in his own spot: out, measured, and back in
       // within one frame, so nothing flickers.
-      root.classList.remove("armo-tucked");
+      root.classList.remove("armo-tucked", "armo-away");
       root.classList.toggle("armo-tucked", busy());
+      // 1.28.0: still on the page's words once tucked (a narrow phone: "6 without a reading" on the summary), he
+      // steps away until the spot is free again, rather than cover them.
+      if (root.classList.contains("armo-tucked") && busy()) root.classList.add("armo-away");
     });
   }
   window.addEventListener("scroll", keepClear, { passive: true });

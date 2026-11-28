@@ -67,6 +67,7 @@
 </div>
 <p class="hint mt-s">The class trial is {{ school.pilot_days|plural('day') }} for {{ school.pilot_classes }} class of up to {{ school.class_size }} students, no card. Pay by card or ask for an invoice: <a href="{{ url_for('public.academy_schools', _anchor='price') }}">more for schools</a>.</p>
 
-<p class="hint mt">Every detail (the trial, monthly or yearly, pausing and cancelling) is in <a href="{{ url_for('public.help', _anchor='prices') }}">Help</a>.</p>
+{#- 1.28.0: "monthly or yearly" only where a yearly price is set up, as Help says it (1.27.0). -#}
+<p class="hint mt">Every detail (the trial, {{ 'monthly or yearly billing' if yr.any else 'monthly billing' }}, pausing and cancelling) is in <a href="{{ url_for('public.help', _anchor='prices') }}">Help</a>.</p>
 <p class="cta mt"><a class="btn" href="{{ url_for('auth.signup') }}">Start your free trial</a> <a class="btn quiet" href="{{ url_for('demo.index') }}">Try the demo</a></p>
 {% endblock %}

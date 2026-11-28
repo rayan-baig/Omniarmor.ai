@@ -186,7 +186,7 @@ class TestFullNamesAreConfirmed(SchoolCase):
     def test_a_two_word_name_is_not_added_until_the_teacher_chooses(self):
         response = self.add_students(self.class_id, ["Ava Thompson", "Liam", "Noah K", "Jo B."])
         self.assertEqual(sorted(self.students(self.class_id)), ["Jo B.", "Liam", "Noah K"])
-        page = response.data.decode()
+        page = self.client.get(response.headers["Location"]).data.decode()   # 1.28.0: post-redirect-get
         self.assertIn("data-confirm-names", page)
         self.assertIn('value="Ava T" checked', page)
         self.assertIn("looks like a first and last name", words(page))

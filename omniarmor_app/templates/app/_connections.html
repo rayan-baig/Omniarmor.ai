@@ -1,6 +1,7 @@
 {# Settings, Connections: the Kitchen Safety Bundle's Kryozyn key. Everyone sees the status; only the owner changes the key. #}
 {% set c = connection %}
 <h2 id="connections">Connections</h2>
+{{ notes_at('connections') }}
 <div class="bundle-card" data-connections>
   <p class="bundle-card-title"><span class="bundle-tag">Kitchen Safety Bundle</span> Kryozyn</p>
   {% if c.connected and c.last_report %}

@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_kryozyn import BundleCase  # noqa: E402
 from test_webapp import AppTestCase  # noqa: E402
 
-from omniarmor_app import config, connections, create_app, db, names, notify  # noqa: E402
+from omniarmor_app import config, connections, db, names, notify  # noqa: E402
 from omniarmor_app.catalog import INDUSTRIES, OLD_SLUGS  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

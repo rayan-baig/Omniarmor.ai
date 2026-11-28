@@ -807,6 +807,8 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 .companion.armo-tucked .companion-armo svg{width:40px;height:40px}
 .companion.armo-tucked .companion-stage{animation:none}
 .companion.armo-tucked .companion-badge{top:-6px;right:-4px}
+/* 1.28.0: where even tucked he would sit on the page's words (armo.js), he steps away until the spot is free. */
+.companion.armo-away{visibility:hidden}
 @media (max-width:720px){
   .companion.armo-tucked{right:max(3px,env(safe-area-inset-right))}
   .companion.armo-tucked .companion-armo svg{width:36px;height:36px}

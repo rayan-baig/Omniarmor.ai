@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 {% from "_empty.html" import empty %}
 {% block title %}Settings{% endblock %}
-{#- 1.27.0: the password form's notices show under "Your password", where the page opens after it (base.html). -#}
-{% set inline_flashes = ['password'] %}
+{#- 1.27.0: the password form's notices show under "Your password", where the page opens after it (base.html).
+    1.28.0: so do the reminder emails', Connections' and Locations' notices, each under its own heading; a section
+    the page doesn't show leaves its notices at the top. -#}
+{% set connections_shown = connection.checks or connection.connected or access.bundle.state != 'none' %}
+{% set locations_shown = scope.locations or locations|length > 1 %}
+{% set inline_flashes = ['password', 'reminders'] + (['connections'] if connections_shown else []) + (['locations'] if locations_shown else []) %}
+{#- A section's own notices (security.flash_at), under its heading. -#}
+{% macro notes_at(section) %}{% with notes = flashes_for(section) %}{% if notes %}
+<ul class="flashes" role="status" data-{{ section }}-note>
+  {% for kind, message in notes %}<li class="flash {{ kind }}">{{ message }}</li>{% endfor %}
+</ul>
+{% endif %}{% endwith %}{% endmacro %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -12,6 +22,7 @@
 </div>
 
 <h2 id="reminders">Your reminder emails</h2>
+{{ notes_at('reminders') }}
 {% if email_choices %}
 <p class="muted"><span data-pilot-private>Sent to {{ g.user.email }}.</span> Everyone on the team chooses their own. Reminders keeps a copy of each.</p>
 {% if access.paused %}<p class="plan-banner paused" data-reminders-paused><strong>Off while your plan is paused.</strong> {% if access.pause_open %}No reminder emails or alerts go out while it's paused (with no end date), whatever you pick here. They start again with the plan.{% else %}No reminder emails or alerts go out until {{ access.resumes_at|local_date }}, whatever you pick here. They start again by themselves that day.{% endif %}</p>{% endif %}
@@ -32,11 +43,7 @@
 
 {#- 1.26.0: change the password here, signed in (auth.change_password); a reset link is for a forgotten one. -#}
 <h2 id="password">Your password</h2>
-{% with notes = flashes_for('password') %}{% if notes %}
-<ul class="flashes" role="status" data-password-note>
-  {% for kind, message in notes %}<li class="flash {{ kind }}">{{ message }}</li>{% endfor %}
-</ul>
-{% endif %}{% endwith %}
+{{ notes_at('password') }}
 <form method="post" action="{{ url_for('auth.change_password') }}" class="narrow" data-change-password>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="text" name="username" value="{{ g.user.email }}" autocomplete="username" hidden>
@@ -104,9 +111,11 @@
 
 {% if scope.locations %}
 <h2 id="locations">Locations</h2>
+{{ notes_at('locations') }}
 <p class="muted">Each location is its own workspace, with its own checks, team and plan. {% if locations|length > 1 %}You're working in <strong>{{ g.org.name }}</strong>.{% endif %}</p>
 {% elif locations|length > 1 %}
 <h2 id="locations">Your workspaces</h2>
+{{ notes_at('locations') }}
 <p class="muted">You're working in <strong>{{ g.org.name }}</strong>.</p>
 {% endif %}
 {% if locations|length > 1 %}
@@ -133,7 +142,7 @@
   </form>
 {% endif %}
 
-{% if connection.checks or connection.connected or access.bundle.state != 'none' %}{% include "app/_connections.html" %}{% endif %}
+{% if connections_shown %}{% include "app/_connections.html" %}{% endif %}
 
 {% from "app/_plan_status.html" import status_line %}
 {% set pf = plan_facts() %}

@@ -506,7 +506,12 @@ def level_map(learner_id):
     up_next = next((c for c in topics + [final] + mine if c["next"] and not c["paid"]), None)
     join = get_db().execute("SELECT * FROM join_codes WHERE learner_id = ? AND expires_at > ?",
                             (learner_id, now_iso())).fetchone() if g.get("kid") is None else None
+    # 1.28.0: a learner who hasn't played yet is greeted "Welcome!", not "Welcome back, superstar!" (learner_days
+    # has a row for each day with a try, on any track).
+    played = get_db().execute("SELECT 1 FROM learner_days WHERE learner_id = ? LIMIT 1",
+                              (learner_id,)).fetchone() is not None
     return render_template("academy/map.html", summary=_summary(learner, progress), units=units, final=final,
+                           played=played,
                            mine=mine, explore=explore, up_next=up_next, glossary=academy.GLOSSARY,
                            avatars=academy.AVATARS, industries=INDUSTRIES, track=t,
                            unlock_world=academy.world(academy.INDUSTRY_UNLOCK_WORLD),

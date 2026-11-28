@@ -77,7 +77,10 @@ class TestPasswordNoticeInItsSection(AppTestCase):
         self.assertNotIn("That isn't your current password", self.client.get("/app/settings").data.decode())
 
     def test_other_notices_stay_at_the_top(self):
-        self.post("/app/settings/reminders", {"email_reminders": "on"})
+        # 1.28.0: the reminder emails' notice shows under its own heading too (tests/test_round16_fixes.py), so this
+        # is the company settings' notice, which still shows at the top.
+        self.post("/app/settings/company", {"name": "Acme Logistics", "timezone": "America/New_York",
+                                            "industries": ["1", "18"]})
         page = self.client.get("/app/settings").data.decode()
         self.assertNotIn("data-password-note", page)
         self.assertIn('<ul class="flashes" role="status">', page[:page.index('<div class="page-head">')])
@@ -186,7 +189,7 @@ class TestFirstRun(TodayCase):
 class TestVersion(unittest.TestCase):
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.27.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 27, 0))
         with open(os.path.join(ROOT, "CHANGELOG.md"), encoding="utf-8") as f:
             log = f.read()
         section = log[log.index("## 1.27.0"):log.index("## 1.26.0")]

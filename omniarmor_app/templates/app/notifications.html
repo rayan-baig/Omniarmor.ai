@@ -29,7 +29,16 @@
     {% endfor %}
   </ul>
 {% else %}
-  {% if next_dated %}
+  {% if first %}
+    {#- 1.28.0: a check counted from a date has its date, so when the first digest goes out (reminders.first_digest). -#}
+    {% set s = first.state %}
+    {% if first.paused %}
+      {% set when = 'Reminder emails are paused while this workspace has no plan. Once it has one, the daily digest goes out the next morning a check is 30, 7 or 1 day from due, due that day, or overdue.' %}
+    {% else %}
+      {% set when = 'The first daily digest goes out on ' ~ first.at.strftime('%Y-%m-%d') ~ ' at about ' ~ first.at.strftime('%H:%M') ~ ' (' ~ g.org.timezone.replace('_', ' ') ~ '), for ' ~ s.rule.title ~ ' in ' ~ s.industry.brand ~ (', which is overdue' if s.days_left < 0 else ', due ' ~ s.due_date.isoformat()) ~ ', to everyone on the team with the daily digest on.' %}
+    {% endif %}
+    {{ empty('reminders', 'Every reminder email sent to your team will show here. ' ~ when, url_for('app.settings', _anchor='reminders'), 'Choose your reminder emails') }}
+  {% elif next_dated %}
     {{ empty('reminders', 'Every reminder email sent to your team will show here. They start once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
   {% elif class_workspace and not school_checklist %}
     {{ empty('reminders', 'Emails about your account, like a new sign-in link, will show here. Reminder emails for the school safety checklist come with the Whole school plan.', url_for('classes.index'), 'Back to your classes') }}

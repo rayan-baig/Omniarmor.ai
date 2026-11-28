@@ -55,6 +55,24 @@ def _set_asking(class_id, names):
         session.pop(_ASKING, None)
 
 
+# 1.28.0: after adding students the page is fetched again (post-redirect-get), so a reload doesn't land on the
+# form's address. What couldn't be added, and why, is kept for that one page view: put back in the box to fix, as
+# before. Only up to this many characters: past it (a long paste) the page is shown in place, as before 1.28.0, so
+# the session cookie stays small.
+_REJECTED = "names-not-added"
+_REJECTED_MOST = 1500
+
+
+def _back_with(row, rejected, status):
+    """Back to the class page, with what wasn't added (or that page in place, for a long list)."""
+    kept = [[typed, why] for typed, why in rejected]
+    if sum(len(typed) + len(why or "") for typed, why in kept) > _REJECTED_MOST:
+        return _class_view(row, rejected, status)
+    if kept:
+        session[_REJECTED] = {"class": row["id"], "names": kept}
+    return _back(row["id"])
+
+
 def _back(class_id=None):
     if class_id is None:
         return redirect(url_for("classes.index"))
@@ -187,7 +205,10 @@ def _card_from(org):
 @grown_ups_only
 def class_page(class_id):
     """The teacher's class view: lessons done per student and the class total."""
-    return _class_view(_class_or_404(class_id))
+    row = _class_or_404(class_id)
+    kept = session.pop(_REJECTED, None) or {}
+    rejected = [tuple(x) for x in kept.get("names", [])] if kept.get("class") == row["id"] else []
+    return _class_view(row, rejected)
 
 
 @bp.route("/app/academy/classes/<int:class_id>/students", methods=["POST"])
@@ -221,7 +242,7 @@ def add_students(class_id):
         limits = plans.class_limits(g.org)
         flash_error(f"This class is full ({limits['class_size']} students)." if limits["active"] else
                     "Start the free trial or choose a classroom plan to add students.")
-        return _class_view(row, [(typed, None) for _, typed in names], 400)
+        return _back_with(row, [(typed, None) for _, typed in names], 400)
     taken = {k["nickname"].lower() for k in classrooms.students(conn, class_id)}
     wanted, rejected, ask = classrooms.sort_names(names, taken, room, confirmed=confirmed)
     pictures = list(academy.AVATARS)
@@ -251,10 +272,8 @@ def add_students(class_id):
         flash(" ".join(said), "error" if rejected and not wanted else "ok")
     if ask:
         _set_asking(class_id, _asking(class_id) + list(ask))
-    if not rejected and not ask:
-        return _back(class_id)
-    return _class_view(conn.execute("SELECT * FROM classes WHERE id = ?", (class_id,)).fetchone(), rejected,
-                       200 if wanted or ask else 400, ask=ask)
+    # 1.28.0: back to the class page (post-redirect-get); the names to ask about wait in the session (_set_asking).
+    return _back_with(row, rejected, 200 if wanted or ask else 400)
 
 
 def _class_view(row, rejected=(), status=200, ask=()):

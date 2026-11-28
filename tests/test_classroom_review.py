@@ -230,9 +230,10 @@ class TestAddingStudents(SchoolCase):
         long_name = "Alexandria-Rose Featherstonehaugh"
         self.add_students(self.class_id, ["Maya"])
         response = self.add_students(self.class_id, ["Sam", long_name, "Maya", "Priya", "Priya", "jo@example.com"])
-        self.assertEqual(response.status_code, 200)
+        # 1.28.0: back to the class page (post-redirect-get), with what wasn't added kept for it.
+        self.assertEqual(response.status_code, 302)
         self.assertEqual(sorted(self.students(self.class_id)), ["Maya", "Priya", "Sam"])
-        page = response.data.decode()
+        page = self.client.get(response.headers["Location"]).data.decode()
         text = words(page)
         self.assertIn("Added 2 students to Room 12.", text)
         self.assertIn(f"{long_name}: is longer than {classrooms.MAX_NAME} characters", text)
@@ -244,7 +245,7 @@ class TestAddingStudents(SchoolCase):
 
     def test_a_name_typed_twice_isnt_called_already_in_the_class(self):
         response = self.add_students(self.class_id, ["Maya", "maya"])
-        text = words(response.data.decode())
+        text = words(self.client.get(response.headers["Location"]).data.decode())   # 1.28.0: post-redirect-get
         self.assertIn("maya: was typed twice", text)
         self.assertNotIn("already in this class", text)
         self.assertEqual(list(self.students(self.class_id)), ["Maya"])

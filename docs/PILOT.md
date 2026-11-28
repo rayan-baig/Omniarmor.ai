@@ -205,6 +205,15 @@ warning) with its link. A `GLOBAL` answer can list words that ask it on their ow
 "cookies" and "kept" are the safety answer's, so "Do you use cookies?" and "Where is my data kept?" find it with no
 key, unless one of the page's own buttons lists that word under another label.
 
+**1.28.0**: "yearly", "annual" and "annually" ask the yearly answer on their own (`alone`), so "Is there a yearly
+plan?" and "Can I pay yearly?" no longer tie with the free plan's "plan" or the price's "pay". New in `GLOBAL`: "What
+happens when the trial ends?" (`trialEndAnswer`, "trial" on its own): nothing deleted or charged, the tracker
+read-only until the owner picks a plan (a school's: the classes and their progress kept). A welcome pill can have
+words of its own too (`PILL_ALONE`): "first" is "Summarise my report", so "Which check should I do first?" names the
+check to fix first; "start" and "priority" are among its words. On Home, "What's overdue?" counts the rows it lists
+(one per tracked item; it gave the page's totals, which count each check once) and gives each its detail line
+beside its tag.
+
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of

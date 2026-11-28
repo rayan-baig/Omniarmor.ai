@@ -59,6 +59,33 @@ def reminder_window(days_left):
     return f"overdue-week-{weeks_overdue}"
 
 
+def first_digest(conn, cfg, org, states, now=None):
+    """When the first daily digest goes out (1.28.0: Reminders says so before any email has gone out, once a check
+    counted from a date has its date): the daily job's run (jobs.run_daily: the first run on or after
+    DAILY_JOB_HOUR_UTC each UTC day) on the first day one of those checks is in a reminder window (reminder_window:
+    30 days or fewer to go, or overdue). (that moment in the workspace's time zone, the check), or None when no
+    check counted from a date has its date."""
+    dated = [s for s in states if s.mode and s.due_date is not None and s.days_left is not None]
+    if not dated:
+        return None
+    soonest = min(dated, key=lambda s: s.days_left)
+    now = now or utcnow()
+    tz = ZoneInfo(org["timezone"])
+    run = now.replace(hour=cfg["DAILY_JOB_HOUR_UTC"], minute=0, second=0, microsecond=0)
+    ran = conn.execute("SELECT 1 FROM job_runs WHERE job = 'daily' AND run_date = ?", (now.date().isoformat(),))
+    if ran.fetchone():
+        run += timedelta(days=1)          # today's has run: tomorrow's is next
+    elif run < now:
+        run = now.replace(second=0, microsecond=0) + timedelta(minutes=1)   # due now: the next minute's check runs it
+    target = soonest.due_date - timedelta(days=max(REMINDER_DAYS))
+    days = (target - run.astimezone(tz).date()).days
+    if days > 0:
+        run = (run + timedelta(days=days)).replace(hour=cfg["DAILY_JOB_HOUR_UTC"], minute=0)
+        while run.astimezone(tz).date() < target:
+            run += timedelta(days=1)
+    return run.astimezone(tz), soonest
+
+
 def _line(state):
     when = f"{state.overdue_by} overdue" if state.overdue else f"due {state.due_in}"
     return f"- {state.industry['brand']}: {state.rule.title}, {when} ({state.due_label}). {state.rule.action}"

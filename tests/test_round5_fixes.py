@@ -107,8 +107,9 @@ class TestOneNoticeAfterAddingStudents(SchoolCase):
         self.teacher_signup()
         class_id = self.add_class()
         self.client.get(f"/app/academy/classes/{class_id}")      # the sign-up's and the class's own notices
-        page = html.unescape(self.add_students(class_id, ["Liam", "Noah K", "Ava Thompson", "bob@example.com"])
-                             .data.decode())
+        added = self.add_students(class_id, ["Liam", "Noah K", "Ava Thompson", "bob@example.com"])
+        # 1.28.0: back to the class page (post-redirect-get), where the one notice shows.
+        page = html.unescape(self.client.get(added.headers["Location"]).data.decode())
         notices = re.findall(r'<li class="flash (\w+)">([^<]*)</li>', page)
         self.assertEqual(len(notices), 1, notices)
         kind, said = notices[0]

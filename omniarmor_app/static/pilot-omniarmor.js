@@ -191,11 +191,18 @@
     if (attention) {
       const rows = all("a.row[data-level]", attention);
       const coming = all("[data-coming-due] a.row");
-      const c = pageCounts() || { BLOCKED: 0, WARNING: 0 };
+      // 1.28.0: the rows themselves are counted (one per tracked item, as Home lists them; the totals count each
+      // check once), and each says its detail line beside its tag ("Blocked · 4 days overdue · last done 35 days
+      // ago"), as "What's due this week?" gives each its date.
+      const level = (a) => a.getAttribute("data-level");
+      const blocked = rows.filter((a) => level(a) === "BLOCKED").length;
       const out = [];
       if (rows.length) {
-        out.push(`**Needs attention: ${c.BLOCKED} blocked, ${count(c.WARNING, "warning")}.**`);
-        for (const a of rows.slice(0, 5)) out.push(`- ${linked(said(one(".title", a)), pathOf(a))}: ${said(one(".tag", a))}`);
+        out.push(`**Needs attention: ${blocked} blocked, ${count(rows.length - blocked, "warning")}.**`);
+        for (const a of rows.slice(0, 5)) {
+          const detail = said(one("[data-attention-detail]", a));
+          out.push(`- ${linked(said(one(".title", a)), pathOf(a))}: ${said(one(".tag", a))}${detail ? ` · ${detail}` : ""}`);
+        }
         if (rows.length > 5) out.push(`- and ${rows.length - 5} more under Needs attention on this page`);
       } else {
         out.push(said(one(".empty", attention)) || "Nothing is blocked or close to a limit right now.");
@@ -733,6 +740,25 @@
       + "The Academy's first worlds stay free for everyone. "
       + (who === "business" ? "[Your plan](/app/plan) · [All the prices](/pricing)" : "[All the prices](/pricing)");
   }
+  // 1.28.0: "What happens when my trial ends?", from the real plans (plans.py, Help's "Is there a free trial?"): no card,
+  // so nothing is charged; nothing is deleted; without a plan the tracker is read-only until a plan is chosen.
+  function trialEndAnswer(f) {
+    const x = f || {};
+    if (who === "teacher" || schoolSide) {
+      return `**When the free class trial ends, nothing is deleted:** the classes, their progress and the trial report are kept. `
+        + `It needs no card, so nothing is charged. To go on, the school chooses **${words(x.classroom) || "Classroom"}** (${yearly(x.classroom_price)}) `
+        + `or **${words(x.school) || "Whole school"}** (${yearly(x.school_price)}). `
+        + (who === "teacher" ? "[Your plan](/app/plan)" : "[See the prices](/classrooms#price)");
+    }
+    const yearlyToo = yearlyOffered(x) ? `, or yearly (${words(x.free_label) || "for less"})` : "";
+    return "**When the free trial ends, nothing is deleted and nothing is charged.** "
+      + `${x.trial_days ? `The trial is ${x.trial_days} days of everything in ${words(x.plus) || "Plus"}, from the day you sign up, with no card. ` : "The trial needs no card. "}`
+      + "After it, without a plan, the compliance tracker is read-only: you can still see, print and download every record, but new checks can't be saved and reminders pause "
+      + `until the workspace owner chooses **${words(x.pro) || "Pro"}** (${words(x.pro_price)}) or **${words(x.plus) || "Plus"}** (${words(x.plus_price)})${yearlyToo}. `
+      + "The Academy's first worlds stay free for everyone.\n\n"
+      + (who === "business" ? "Your trial's days left are on the [Plans page](/app/plan). [All the prices](/pricing)"
+        : "[Start your free trial](/signup) · [All the prices](/pricing)");
+  }
   function yearlyAnswer(f) {
     const x = f || {};
     if (who === "teacher" || schoolSide) {
@@ -826,7 +852,13 @@
     { label: "Is there a free plan?", answer: (ctx) => freePlanAnswer(ctx && ctx.facts),
       match: ["free", "forever", "freemium", "tier", "unpaid"] },
     { label: "Is there a yearly discount?", answer: (ctx) => yearlyAnswer(ctx && ctx.facts),
-      match: ["yearly", "annual", "annually", "year", "discount", "discounts", "save", "saving", "savings", "deal", "cheaper"] },
+      match: ["yearly", "annual", "annually", "year", "discount", "discounts", "save", "saving", "savings", "deal", "cheaper"],
+      // 1.28.0: "Is there a yearly plan?" and "Can I pay yearly?" tied with the free plan's "plan" and the price's "pay".
+      alone: ["yearly", "annual", "annually"] },
+    // 1.28.0: "What happens when my trial ends?", "after the free trial?" (nothing had "trial").
+    { label: "What happens when the trial ends?", answer: (ctx) => trialEndAnswer(ctx && ctx.facts),
+      match: ["trial", "trials", "end", "ends", "ended", "ending", "over", "expire", "expires", "expired", "after", "happen", "happens", "afterwards"],
+      alone: ["trial"] },
     { label: "Is this legal advice?", answer: LEGAL, match: LEGAL_WORDS },
     // 1.23.0: "close" and "account" are deleting the workspace now (below), which isn't cancelling.
     { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",
@@ -938,7 +970,8 @@
     "What's due or overdue?": ["overdue", "late", "today", "attention", "urgent", "expired", "expiring", "deadline", "upcoming", "blocked", "warning",
       "due", "week", "soon", "coming", "next", "month", "tomorrow"],
     "Explain this check": ["rule", "mean", "means", "source", "law", "regulation"],
-    "Summarise my report": ["summary", "summarize", "summarise", "report", "inspector", "fix", "first"],
+    // 1.28.0: "Which check should I do first?", "Where do I start?", "What's my priority?".
+    "Summarise my report": ["summary", "summarize", "summarise", "report", "inspector", "fix", "first", "start", "priority", "priorities"],
     "What does this colour mean?": ["color", "colors", "colour", "red", "orange", "faint", "status", "blocked", "warning", "cleared"],
     "How do I export it?": ["export", "csv", "download", "print", "spreadsheet", "excel", "report"],
     "What's in History?": ["history", "audit", "trail", "log", "changes"],
@@ -972,6 +1005,8 @@
     "What's the Kitchen Safety Bundle?": ["bundle", "kitchen", "fridge", "fridges", "freezer", "sensor", "sensors", "temperature", String(N.fridge_app || "").toLowerCase()].filter(Boolean),
     "Is anything saved?": ["save", "saved", "stored", "kept", "delete"],
   };
+  // 1.28.0: a pill's word that asks for it alone, whatever else is typed (aloneFor).
+  const PILL_ALONE = { "Summarise my report": ["first"] };
   // 1.25.0: a page suggestion in the words of an answer on every page (GLOBAL: "How do I cancel?" on the pricing page)
   // takes that answer's words too; the page's own button stands in for it there, so "Can I get a refund?" still fits.
   const globalWords = (label) => (GLOBAL.find((x) => x.label === label) || {}).match;
@@ -1023,12 +1058,16 @@
   // the core wants two words to match): that GLOBAL answer, with the words typed as its match words so the core finds
   // it. Never when one of this page's own buttons lists that word under another label ("Is anything kept?" on the
   // demos page stays "Is anything saved?"), and never when two answers have it.
+  // 1.28.0: a welcome pill can have such a word too (PILL_ALONE): "Which check should I do first?" tied between "Explain
+  // this check" and "Summarise my report", which names the check to fix first.
   function aloneFor(question, items) {
     const P = window.PilotPanel;
     if (typeof P.wordsOf !== "function") return null;
     const asked = P.wordsOf(question);
     const said = (x) => P.wordsOf((x.alone || []).join(" ")).filter((w) => asked.includes(w));
-    const fits = GLOBAL.filter((x) => said(x).length);
+    const pillsAlone = welcome.pills.filter((p) => PILL_ALONE[p.label] && p.answer)
+      .map((p) => ({ label: p.label, answer: p.answer, match: p.match, alone: PILL_ALONE[p.label] }));
+    const fits = GLOBAL.concat(pillsAlone).filter((x) => said(x).length);
     if (fits.length !== 1) return null;
     const pick = fits[0];
     const theirs = items.some((i) => i.label !== pick.label && (i.match || []).some((w) => said(pick).includes(w)));

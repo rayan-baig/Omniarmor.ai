@@ -649,7 +649,8 @@ function classPage() {
 test("1.17.0: what's due on Home answers at once from the page, with links to each check, and nothing sent", () => {
   const c = mountOn("business", "/app", overviewPage());
   const text = c.answer("What's due or overdue?");
-  assert.match(text, /\*\*Needs attention: 1 blocked, 2 warnings\.\*\*/);
+  // 1.28.0: the rows it lists are counted (one blocked, one warning), not the page's totals.
+  assert.match(text, /\*\*Needs attention: 1 blocked, 1 warning\.\*\*/);
   assert.match(text, /\[Hood cleaning\]\(\/app\/industry\/2#rule-hood\): OVERDUE/);
   // Words from the page can't add markdown of their own.
   assert.match(text, /\[Walk-in fridge temperature\]\(\/app\/industry\/2#rule-fridge\): Warning/);
@@ -1581,4 +1582,102 @@ test("1.27.0: \"Do you use cookies?\" and \"Where is my data kept?\" get the saf
   }
   // A page's own button that lists the word keeps it: "Is anything kept?" on the demos page is "Is anything saved?".
   assert.equal(typedEverywhere("visitor", "/demo")("Is anything kept?").label, "Is anything saved?");
+});
+
+// ---------------------------------------------------------------- 1.28.0: a strict sixteenth review
+
+test("1.28.0: \"Is there a yearly plan?\" and \"Can I pay yearly?\" get the yearly answer with no key", () => {
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/pricing"], ["visitor", "/help"], ["business", "/app"],
+    ["business", "/app/plan"], ["business", "/app/settings"]]) {
+    for (const facts of [{}, { pro_yearly: "PRO-YEAR", plus_yearly: "PLUS-YEAR" }]) {
+      const ask = typedEverywhere(who, where, { facts, label: true });
+      for (const q of ["Is there a yearly plan?", "Can I pay yearly?", "Do you have an annual plan?", "Can I pay annually?"]) {
+        const got = ask(q);
+        assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+        assert.equal(got.label, "Is there a yearly discount?", `${who} ${where}: "${q}"`);
+        assert.match(got.text, facts.pro_yearly ? /^\*\*Yes: paying yearly gives 2 months free\.\*\*/ : /^Not right now: .* billed monthly/);
+      }
+      // The questions that had these words before keep their answers.
+      assert.notEqual(ask("How much does it cost?").label, "Is there a yearly discount?", `${who} ${where}`);
+      assert.equal(ask("Do you have a free plan?").label, "Is there a free plan?", `${who} ${where}`);
+    }
+  }
+  // A teacher hears that a school's plans are yearly only.
+  assert.match(typedEverywhere("teacher", "/app/academy/classes")("Is there a yearly plan?").text, /^A school's plans are paid yearly only/);
+});
+
+test("1.28.0: \"What happens when my trial ends?\" says what really happens, with no key", () => {
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/pricing"], ["visitor", "/help"], ["business", "/app"],
+    ["business", "/app/audit"], ["business", "/app/plan"]]) {
+    const ask = typedEverywhere(who, where, { label: true });
+    for (const q of ["What happens when my trial ends?", "after the free trial?", "What happens after the trial?", "trial"]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, "What happens when the trial ends?", `${who} ${where}: "${q}"`);
+      const text = got.text;
+      assert.match(text, /^\*\*When the free trial ends, nothing is deleted and nothing is charged\.\*\* The trial is 14 days of everything in Plus/);
+      assert.match(text, /read-only: you can still see, print and download every record, but new checks can't be saved and reminders pause/);
+      assert.match(text, /\*\*Pro\*\* \(PRO-PRICE\) or \*\*Plus\*\* \(PLUS-PRICE\)\./, "monthly only: no yearly price set up");
+      if (who === "visitor") for (const l of linksIn(text)) assert.ok(!l.startsWith("/app"), `${where}: ${l}`);
+      else assert.ok(linksIn(text).includes("/app/plan"));
+    }
+    const yearly = typedEverywhere(who, where, { label: true, facts: { pro_yearly: "PRO-YEAR", plus_yearly: "PLUS-YEAR" } });
+    assert.match(yearly("What happens when my trial ends?").text, /\(PLUS-PRICE\), or yearly \(2 months free\)\./);
+    // A free plan is still the free plan's answer.
+    assert.equal(ask("Is there a free plan?").label, "Is there a free plan?");
+  }
+  // A school's trial: one class, kept when it ends; the schools page's own button still answers how it works.
+  const teacher = typedEverywhere("teacher", "/app/academy/classes")("What happens when my trial ends?");
+  assert.equal(teacher.label, "What happens when the trial ends?");
+  assert.match(teacher.text, /^\*\*When the free class trial ends, nothing is deleted:\*\* the classes, their progress and the trial report are kept\./);
+  assert.match(teacher.text, /\*\*Classroom\*\* \(CLASSROOM-PRICE a year\)/);
+  assert.equal(typedEverywhere("visitor", "/classrooms")("How does the free trial work?").label, "How does the free trial work?");
+});
+
+test("1.28.0: \"Which check should I do first?\" names the check to fix first, with no key", () => {
+  for (const where of ["/app", "/app/audit", "/app/industry/2", "/app/settings"]) {
+    const ask = typedEverywhere("business", where, { due: WEEK_DUE, label: true });
+    for (const q of ["Which check should I do first?", "What should I do first?", "Where do I start?", "What's my priority?",
+      "Which one first?"]) {
+      const got = ask(q);
+      assert.ok(got, `${where}: "${q}" found nothing`);
+      assert.equal(got.label, "Summarise my report", `${where}: "${q}"`);
+      assert.match(got.text, /^\*\*Fix first:\*\* \[Hood cleaning: overdue by 4 days\]\(\/app\/industry\/2#rule-hood\)/, `${where}: "${q}"`);
+    }
+    // "Explain this check" is still that.
+    assert.equal(ask("Explain this check").label, "Explain this check");
+  }
+});
+
+// A business's Home with one row per tracked item (1.27.0), each with its detail line.
+function overviewItemsPage() {
+  const row = (level, href, title, detail, tag) => h("li", {}, h("a", { class: "row", "data-level": level, href },
+    h("span", {}, h("span", { class: "title" }, title), h("span", { class: "meta" }, " · RestoArmor"),
+      h("span", { class: "meta", "data-attention-detail": "" }, detail)),
+    h("span", { class: `tag ${level}` }, tag)));
+  return h("main", {},
+    // The totals count each check once: the food check is blocked by one batch and has another on its last day.
+    h("div", { class: "totals" }, h("span", { class: "BLOCKED" }, h("b", {}, "2"), "blocked"),
+      h("span", { class: "WARNING" }, h("b", {}, "1"), "warning"), h("span", {}, h("b", {}, "5"), "cleared")),
+    h("section", { "data-needs-attention": "" }, h("ul", { class: "list" },
+      row("BLOCKED", "/app/industry/2#rule-date_marking", "Ready-to-eat food 7-day limit · Opened ham", "3 days overdue · made or opened 9 days ago (day 10)", "Blocked"),
+      row("BLOCKED", "/app/industry/2#rule-hood", "Hood cleaning", "4 days overdue · last done 35 days ago", "Blocked"),
+      row("WARNING", "/app/industry/2#rule-date_marking", "Ready-to-eat food 7-day limit · Chicken salad", "Due today · made or opened 6 days ago (day 7)", "Warning"),
+      row("WARNING", "/app/industry/2#rule-permit", "Health permit", "Due in 5 days", "Warning"))),
+    h("section", { "data-coming-due": "" }, h("p", { class: "empty" }, "Nothing is coming due in the next 60 days.")));
+}
+
+test("1.28.0: \"What's overdue?\" on Home counts the rows it lists, and gives each its detail line beside its tag", () => {
+  const c = mountOn("business", "/app", overviewItemsPage());
+  for (const asked of ["What's due or overdue?", "What's overdue?", "what is due today"]) {
+    const text = c.pill("What's due or overdue?").answer({ facts: c.facts, ready: false, screen: {}, label: asked });
+    assert.match(text, /^\*\*Needs attention: 2 blocked, 2 warnings\.\*\*\n/, asked);
+    assert.match(text, /- \[Ready-to-eat food 7-day limit · Opened ham\]\(\/app\/industry\/2#rule-date_marking\): Blocked · 3 days overdue · made or opened 9 days ago \(day 10\)\n/);
+    assert.match(text, /- \[Hood cleaning\]\(\/app\/industry\/2#rule-hood\): Blocked · 4 days overdue · last done 35 days ago\n/);
+    assert.match(text, /- \[Ready-to-eat food 7-day limit · Chicken salad\]\(\/app\/industry\/2#rule-date_marking\): Warning · Due today · made or opened 6 days ago \(day 7\)\n/);
+    assert.match(text, /- \[Health permit\]\(\/app\/industry\/2#rule-permit\): Warning · Due in 5 days\n/);
+    assert.equal((text.match(/^- /gm) || []).length, 4, "every row it counted is listed");
+  }
+  // A row with no detail line shows its tag alone, as before.
+  assert.match(mountOn("business", "/app", overviewPage()).answer("What's due or overdue?"), /\(\/app\/industry\/2#rule-hood\): OVERDUE\n/);
 });
