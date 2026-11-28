@@ -27,7 +27,7 @@ from .db import SCHEMA_VERSION, close_db, connect, get_db, migrate, utcnow
 from .jobs import register_cli, start_scheduler
 from . import shots
 from .redact import RedactingFilter, redact
-from .security import check_csrf, csrf_token, home_url, load_user, old_host_redirect, security_headers
+from .security import check_csrf, csrf_token, flashes_for, home_url, load_user, old_host_redirect, security_headers
 from .tracking import format_quantity, local_date
 from .version import __version__
 from .words import plural, plural_word
@@ -469,7 +469,7 @@ def create_app(**overrides):
     app.after_request(robots_header)
     app.after_request(connections.api_headers)
     app.after_request(compress.gzip_response)
-    app.jinja_env.globals.update(csrf_token=csrf_token, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
+    app.jinja_env.globals.update(csrf_token=csrf_token, flashes_for=flashes_for, home_url=home_url, SLOGAN=SLOGAN, APP_VERSION=__version__,
                                 COMPANY=names.COMPANY, ASSISTANT=names.ASSISTANT, NAMES=names.for_pages(),
                                 public_page=public_page, canonical_url=canonical_url,
                                 plan_facts=lambda: plan_views.plan_facts(current_app.config),

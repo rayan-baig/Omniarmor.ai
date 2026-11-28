@@ -577,7 +577,8 @@ class TestBusinessDayDeadlinesOverAWeekend(AppTestCase):
                 self.assertIn("limit ended on 2026-11-06", page)
                 self.assertNotIn("close to the 3-business-day limit", page)
                 overview = self.client.get("/app").data.decode()
-                self.assertIn("limit ended on 2026-11-06", overview)
+                # 1.27.0: Home in the summary's words (tracking.summary_detail), as the summary says it.
+                self.assertIn(f"{overdue} overdue · hired 3 business days ago", overview)
                 self.assertIn('class="tag BLOCKED">Blocked', overview)
                 report = self.client.get("/app/report").data.decode()
                 row = report.split("<td>Form I-9 done within 3 business days</td>")[1].split("</tr>")[0]

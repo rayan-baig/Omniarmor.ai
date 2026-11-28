@@ -3,6 +3,39 @@
 What changed in OmniArmor (called Aegizyn in 1.24.0 and 1.25.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.27.0 (28 November 2026)
+
+Fixes from a strict fifteenth review.
+
+- **Change password says how it went where you are.** Settings opens at
+  "Your password" after the button is pressed, and the result ("That isn't
+  your current password. Nothing was changed.", "Your password is changed.
+  ...") now shows under that heading. On a phone it showed at the top of the
+  page, out of sight.
+- **Home lists each item that needs attention**, as the summary does. A food
+  batch on its last day (a warning, due today) was in neither of Home's lists
+  while another batch made its check blocked; now Needs attention has a row
+  for each batch or fridge that needs it, most urgent first. Armo's list and
+  Pilot's do too.
+- **Home says it in the summary's words:**
+  "4 days overdue · last done 35 days ago", "Due today · made or opened 6 days
+  ago (day 7)" (it said "35 days is over the 31-day limit"). The check itself
+  still says the limit.
+- **Pilot, with no AI key:** the cancel and refund answers mention a yearly
+  plan only where one is offered, as "Is there a yearly discount?" says.
+  "What's due this week?" lists what's overdue or blocked and what falls due
+  in the next 7 days, each with its date (it listed every warning, even one
+  41 days away). "What should I do first?" names the check to fix first, with
+  its link, instead of "open the report". "Do you use cookies?" and "Where is
+  my data kept?" get the safety answer, as similar questions did. Help says a
+  yearly plan's rule only where yearly plans are offered.
+- **First run:** the welcome's "Change it in Settings" is a link to the time
+  zone there. The third Getting started step is "Enter your first date", what
+  it checks (it said "Set your first reminder" and ticked when a food batch
+  got its date). On a computer the public home's five feature cards sit three
+  and two (the last sat alone on its row). On a phone, Pilot's robot keeps off
+  the page's words on the public pages and the first screen after sign-up.
+
 ## 1.26.0 (25 November 2026)
 
 Back to the name OmniArmor, and fixes from a strict fourteenth review.

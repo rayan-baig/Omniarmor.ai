@@ -301,7 +301,8 @@ class TestPilotDueList(AppTestCase):
             self.assertIsInstance(due, list, path)
             self.assertTrue(due, path)
             for item in due:
-                self.assertEqual(set(item), {"level", "title", "where", "url"})
+                # 1.27.0: with the check's days left and due date, for "What's due this week?".
+                self.assertEqual(set(item), {"level", "title", "where", "url", "days", "due"})
                 self.assertTrue(item["url"].startswith("/app/"), item)
 
     def test_a_visitor_gets_no_workspace_list(self):

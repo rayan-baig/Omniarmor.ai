@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_empty.html" import empty %}
 {% block title %}Settings{% endblock %}
+{#- 1.27.0: the password form's notices show under "Your password", where the page opens after it (base.html). -#}
+{% set inline_flashes = ['password'] %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -30,6 +32,11 @@
 
 {#- 1.26.0: change the password here, signed in (auth.change_password); a reset link is for a forgotten one. -#}
 <h2 id="password">Your password</h2>
+{% with notes = flashes_for('password') %}{% if notes %}
+<ul class="flashes" role="status" data-password-note>
+  {% for kind, message in notes %}<li class="flash {{ kind }}">{{ message }}</li>{% endfor %}
+</ul>
+{% endif %}{% endwith %}
 <form method="post" action="{{ url_for('auth.change_password') }}" class="narrow" data-change-password>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="text" name="username" value="{{ g.user.email }}" autocomplete="username" hidden>

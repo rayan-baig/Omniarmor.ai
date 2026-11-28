@@ -63,17 +63,18 @@
 <h2 id="needs-attention">Needs attention</h2>
 {% if problems %}
   <ul class="list">
-    {% for s in problems %}
+    {% for s, title, st in problems %}
       {#- 1.21.0: most urgent first (views.urgency: by days left), and a warning that shows early because its
-          window is a policy setting says so in one line. -#}
-      <li><a class="row" data-level="{{ s.level }}"{% if s.days_left is not none %} data-days="{{ s.days_left }}"{% endif %} href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
+          window is a policy setting says so in one line. 1.27.0: one row per tracked item, as on the summary, in
+          the summary's words ("4 days overdue · last done 35 days ago": tracking.summary_detail). -#}
+      <li><a class="row" data-level="{{ st.level }}"{% if st.days_left is not none %} data-days="{{ st.days_left }}"{% endif %} href="{{ url_for('app.industry', industry_id=s.industry_id) }}#rule-{{ s.key }}">
         <span>
-          <span class="title">{{ s.rule.title }}</span>
+          <span class="title">{{ title }}</span>
           <span class="meta"> · <span class="nowrap">{{ s.industry.brand }}</span></span><br>
-          <span class="meta">{{ s.message }}</span>
-          {% if early_policy(s) %}<br><span class="meta early-note" data-early-note>Why so early: this warning window is a policy setting (an industry standard, not a law), set to give you time to plan.</span>{% endif %}
+          <span class="meta" data-attention-detail>{{ st.summary_detail }}</span>
+          {% if early_policy(st) %}<br><span class="meta early-note" data-early-note>Why so early: this warning window is a policy setting (an industry standard, not a law), set to give you time to plan.</span>{% endif %}
         </span>
-        <span class="tag {{ s.level }}">{{ s.label }}</span>
+        <span class="tag {{ st.level }}">{{ st.label }}</span>
       </a></li>
     {% endfor %}
   </ul>

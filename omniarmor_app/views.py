@@ -92,10 +92,12 @@ def overview():
     states = states_for_org(conn, g.org)
     today = org_today(g.org)
     ids = checklist_ids(conn, g.org)
-    problems = sorted([s for s in states if s.problem], key=urgency)
     # 1.23.0: what's coming due is counted per item, like the summary's "Due in the next 30 days": a food batch
-    # due in 4 days shows here even when another batch makes its check blocked.
+    # due in 4 days shows here even when another batch makes its check blocked. 1.27.0: so is what needs attention,
+    # like the summary's "Needs action": a batch on its last day shows beside another batch that is over the limit
+    # (only the check's worst item showed, and the last-day batch was in neither list).
     rows = list(item_rows(states))
+    problems = sorted([r for r in rows if r[2].problem], key=lambda r: urgency(r[2]))
     upcoming = sorted([r for r in rows if r[2].due_date and 0 <= r[2].days_left <= UPCOMING_DAYS and not r[2].problem],
                       key=lambda r: r[2].days_left)
     later = sorted([r for r in rows if r[2].due_date and r[2].days_left > UPCOMING_DAYS and not r[2].problem],
@@ -140,7 +142,7 @@ def next_reading(states, ids, dated=False):
 
 def getting_started(conn, states, ids):
     """A new workspace's first steps: pick the checklists, complete the first
-    check, set the first reminder, then invite a teammate or choose your
+    check, enter the first date, then invite a teammate or choose your
     reminder emails. Each is ticked from what is saved, not from what was
     clicked, and the list is None once every step is done, so it disappears.
     (A school's workspace sees it only with Whole school: see overview.)"""
@@ -159,7 +161,9 @@ def getting_started(conn, states, ids):
         {"key": "first_check", "label": "Complete your first check", "done": bool(read),
          "next": first_top or next_reading(states, ids),
          "detail": "Answer it or enter its date, then press Save."},
-        {"key": "first_reminder", "label": "Set your first reminder", "done": bool(dated),
+        # 1.27.0: "Enter your first date", what it checks: any check counted from a date has one (a food batch's
+        # too). It said "Set your first reminder".
+        {"key": "first_reminder", "label": "Enter your first date", "done": bool(dated),
          "next": next_reading(states, ids, dated=True),
          "detail": "Enter the date of a check that is counted from a date. OmniArmor emails you before it's due."},
         {"key": "team", "label": "Invite a teammate or choose your reminder emails" if owner

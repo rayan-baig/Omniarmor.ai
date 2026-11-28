@@ -1506,3 +1506,79 @@ test("1.26.0: \"Do you have a free plan?\" and \"Is there a yearly discount?\" a
   assert.match(typedEverywhere("visitor", "/classrooms")("yearly discount?").text, /^A school's plans are paid yearly only: \*\*Classroom\*\* CLASSROOM-PRICE a year/);
   assert.match(typedEverywhere("teacher", "/app/settings")("Do you have a free plan?").text, /^\*\*No free plan, but a free trial:\*\* one class, for 30 days/);
 });
+
+// ---------------------------------------------------------------- 1.27.0: a strict fifteenth review
+
+test("1.27.0: the cancel and refund answers say nothing about a yearly plan unless one is offered, as the yearly answer says", () => {
+  for (const [who, where] of [["business", "/app/audit"], ["visitor", "/"], ["visitor", "/pricing"]]) {
+    const monthly = typedEverywhere(who, where, { label: true });
+    for (const q of ["How do I cancel?", "Can I get a refund?"]) {
+      const got = monthly(q);
+      assert.equal(got.label, "How do I cancel?", `${who} ${where}: "${q}"`);
+      assert.doesNotMatch(got.text, /yearly|the year|months left/i, `${who} ${where}: "${q}": ${got.text}`);
+      assert.match(got.text, /end of the month paid for/);
+    }
+    assert.match(monthly("Is there a yearly discount?").text, /^Not right now: .* billed monthly/);
+    const yearly = typedEverywhere(who, where, { label: true, facts: { pro_yearly: "PRO-YEAR", plus_yearly: "PLUS-YEAR" } });
+    assert.match(yearly("How do I cancel?").text, /- \*\*Yearly:\*\* it stays on until the end of the year paid for, with no refund for the months left\./);
+    assert.match(yearly("Can I get a refund?").text, /end of the month paid for \(or the year, for a yearly plan\)/);
+    assert.match(yearly("Is there a yearly discount?").text, /^\*\*Yes: paying yearly gives/);
+  }
+  // A school's plans are yearly only, so their answers still say so.
+  assert.match(typedEverywhere("visitor", "/classrooms")("How do I cancel?").text, /paid yearly/);
+});
+
+const WEEK_DUE = [
+  { level: "urgent", title: "Hood cleaning: overdue by 4 days", where: "RestoArmor", url: "/app/industry/2#rule-hood", days: -4, due: "2026-11-24" },
+  { level: "urgent", title: "Sick employee working is blocked", where: "RestoArmor", url: "/app/industry/2#rule-sick", days: null, due: "" },
+  { level: "soon", title: "Ready-to-eat food 7-day limit: due today", where: "RestoArmor", url: "/app/industry/2#rule-date_marking", days: 0, due: "2026-11-28" },
+  { level: "soon", title: "Liquor licence renewal: due in 41 days", where: "BarArmor", url: "/app/industry/5#rule-licence", days: 41, due: "2027-01-08" },
+  { level: "soon", title: "Walk-in fridge is close to the limit", where: "RestoArmor", url: "/app/industry/2#rule-fridge", days: null, due: "" },
+  { level: "info", title: "Health permit: due in 5 days", where: "RestoArmor", url: "/app/industry/2#rule-permit", days: 5, due: "2026-12-03" },
+  { level: "info", title: "Fire inspection: due in 20 days", where: "RestoArmor", url: "/app/industry/2#rule-fire", days: 20, due: "2026-12-18" },
+];
+
+test("1.27.0: \"What's due this week?\" keeps to what's overdue or blocked and due in the next 7 days, with the dates", () => {
+  for (const where of ["/app", "/app/report", "/app/audit", "/app/industry/2"]) {
+    const got = typedEverywhere("business", where, { due: WEEK_DUE, label: true })("What's due this week?");
+    assert.equal(got.label, "What's due or overdue?", where);
+    const text = got.text;
+    assert.match(text, /\*\*Overdue or blocked: 2\.\*\*\n- \[Hood cleaning: overdue by 4 days\]\(\/app\/industry\/2#rule-hood\) · RestoArmor · was due 2026-11-24\n- \[Sick employee working is blocked\]\(\/app\/industry\/2#rule-sick\) · RestoArmor\n/, where);
+    assert.match(text, /\*\*Due in the next 7 days: 2\.\*\*\n- \[Ready-to-eat food 7-day limit: due today\]\(\/app\/industry\/2#rule-date_marking\) · RestoArmor · due 2026-11-28\n- \[Health permit: due in 5 days\]\(\/app\/industry\/2#rule-permit\) · RestoArmor · due 2026-12-03\n/, where);
+    for (const never of ["41 days", "Fire inspection", "close to the limit"]) assert.ok(!text.includes(never), `${where}: ${never}`);
+  }
+  const none = typedEverywhere("business", "/app/audit", { due: WEEK_DUE.slice(3, 5), label: true })("What's due this week?");
+  assert.match(none.text, /^Nothing is overdue, blocked or due in the next 7 days\./);
+  // Asked without "week", the answer is the whole list, as before.
+  assert.match(typedEverywhere("business", "/app/audit", { due: WEEK_DUE, label: true })("What's overdue?").text, /Liquor licence renewal/);
+});
+
+test("1.27.0: \"What should I do first?\" names the top blocked check, with its link, off the report", () => {
+  for (const where of ["/app", "/app/audit", "/app/industry/2"]) {
+    const got = typedEverywhere("business", where, { due: WEEK_DUE, label: true })("What should I do first?");
+    assert.equal(got.label, "Summarise my report", where);
+    assert.match(got.text, /^\*\*Fix first:\*\* \[Hood cleaning: overdue by 4 days\]\(\/app\/industry\/2#rule-hood\) · RestoArmor \(was due 2026-11-24\)\./, where);
+    assert.ok(linksIn(got.text).includes("/app/industry/2#rule-hood"));
+    assert.ok(linksIn(got.text).includes("/app/report"));
+  }
+  // Nothing needs attention: the report, as before.
+  assert.match(typedEverywhere("business", "/app/audit", { label: true })("What should I do first?").text, /^\[Open the report\]\(\/app\/report\) and press this again/);
+});
+
+test("1.27.0: \"Do you use cookies?\" and \"Where is my data kept?\" get the safety answer with no key, as similar wordings do", () => {
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/pricing"], ["visitor", "/security"], ["visitor", "/classrooms"],
+    ["business", "/app"], ["business", "/app/settings"], ["teacher", "/app/academy/classes"]]) {
+    const ask = typedEverywhere(who, where, { label: true });
+    for (const [q, lead] of [["Do you use cookies?", /^No tracking cookies/], ["cookies", /^No tracking cookies/],
+      ["Where is my data kept?", /^With our hosting company/], ["Where is everything kept?", /^With our hosting company/]]) {
+      const got = ask(q);
+      assert.ok(got, `${who} ${where}: "${q}" found nothing`);
+      assert.equal(got.label, "Is my data safe?", `${who} ${where}: "${q}"`);
+      assert.match(got.text, lead, `${who} ${where}: "${q}"`);
+    }
+    // Other questions still wait for a key.
+    for (const q of ["Write me a poem", "What's the weather?"]) assert.equal(ask(q), null, `${who} ${where}: "${q}"`);
+  }
+  // A page's own button that lists the word keeps it: "Is anything kept?" on the demos page is "Is anything saved?".
+  assert.equal(typedEverywhere("visitor", "/demo")("Is anything kept?").label, "Is anything saved?");
+});

@@ -13,7 +13,7 @@ from flask import url_for
 
 from .armo_lines import PERSONALITIES
 from .db import iso, utcnow
-from .tracking import states_for_org
+from .tracking import item_rows, states_for_org
 from .words import plural
 
 UPCOMING_DAYS = 30
@@ -42,30 +42,38 @@ def _plural(n, word):
 
 def live_issues(conn, org):
     """What needs attention right now, most urgent first. Each issue has a
-    level (urgent, soon or info), a title, details, what to do and a link."""
+    level (urgent, soon or info), a title, details, what to do and a link;
+    a check's, its days left and due date too (None and "" without one), for
+    Pilot's "What's due this week?" (1.27.0). A check that tracks items one
+    by one (food batches, fridges) has an issue for each item, as on Home and
+    the summary (1.27.0): a batch due today shows beside another over the
+    limit."""
     states = states_for_org(conn, org)
     urgent, soon, info = [], [], []
-    for s in sorted(states, key=lambda s: s.sort_key):
+    for s, name, st in sorted(item_rows(states), key=lambda r: r[2].sort_key):
         link = url_for("app.industry", industry_id=s.industry_id) + f"#rule-{s.key}"
         where = s.industry["brand"]
-        if s.level == "BLOCKED":
-            if s.overdue:
-                title = f"{s.rule.title}: overdue by {s.overdue_by}"
+        if st.level == "BLOCKED":
+            if st.overdue:
+                title = f"{name}: overdue by {st.overdue_by}"
             else:
-                title = f"{s.rule.title} is blocked"
-            urgent.append({"level": "urgent", "kind": "blocked", "title": title, "where": where, "detail": s.message,
-                           "action": s.rule.action, "cost": s.rule.cost, "url": link})
-        elif s.level == "WARNING":
-            if s.days_left is not None and s.days_left >= 0:
-                title = f"{s.rule.title}: due {s.due_in}"
+                title = f"{name} is blocked"
+            urgent.append({"level": "urgent", "kind": "blocked", "title": title, "where": where, "detail": st.message,
+                           "action": s.rule.action, "cost": s.rule.cost, "url": link,
+                           "days": st.days_left, "due": st.due_label})
+        elif st.level == "WARNING":
+            if st.days_left is not None and st.days_left >= 0:
+                title = f"{name}: due {st.due_in}"
             else:
-                title = f"{s.rule.title} is close to the limit"
-            soon.append({"level": "soon", "kind": "warning", "title": title, "where": where, "detail": s.message,
-                         "action": s.rule.action, "cost": s.rule.cost, "url": link})
-        elif s.due_date is not None and s.days_left is not None and 0 <= s.days_left <= UPCOMING_DAYS:
-            info.append({"level": "info", "kind": "upcoming", "title": f"{s.rule.title}: due {s.due_in}",
-                         "where": where, "detail": f"Due {s.due_label}.",
-                         "action": "Plan it now so it doesn't become urgent.", "cost": "", "url": link})
+                title = f"{name} is close to the limit"
+            soon.append({"level": "soon", "kind": "warning", "title": title, "where": where, "detail": st.message,
+                         "action": s.rule.action, "cost": s.rule.cost, "url": link,
+                         "days": st.days_left, "due": st.due_label})
+        elif st.due_date is not None and st.days_left is not None and 0 <= st.days_left <= UPCOMING_DAYS:
+            info.append({"level": "info", "kind": "upcoming", "title": f"{name}: due {st.due_in}",
+                         "where": where, "detail": f"Due {st.due_label}.",
+                         "action": "Plan it now so it doesn't become urgent.", "cost": "", "url": link,
+                         "days": st.days_left, "due": st.due_label})
 
     since = iso(utcnow() - timedelta(days=FAILED_EMAIL_DAYS))
     failed = conn.execute("SELECT COUNT(*) FROM notifications WHERE org_id = ? AND status = 'failed' AND created_at >= ?",

@@ -6,6 +6,7 @@ from datetime import timedelta
 from zoneinfo import available_timezones
 
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
+from markupsafe import Markup, escape
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import usage
@@ -16,8 +17,8 @@ from .trades import SCHOOL_INDUSTRY, SIGNUP_LEAD
 from .db import get_db, iso, now_iso, record_audit, utcnow
 from .notify import notify
 from .security import (
-    clean_text, clear_failures, client_ip, flash_error, hash_token, home_url, login_required, new_token, normalize_email,
-    password_problem, rate_limited, record_event, record_failure,
+    clean_text, clear_failures, client_ip, flash_at, flash_error, hash_token, home_url, login_required, new_token,
+    normalize_email, password_problem, rate_limited, record_event, record_failure,
     safe_next, start_session, too_many_failures, valid_email,
 )
 
@@ -176,13 +177,13 @@ def signup():
         if teacher:
             # A teacher starts with the class; the free trial is already on.
             days = current_app.config["CLASSROOM_PILOT_DAYS"]
-            flash(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
-                  f" students by first name or nickname. {_zone_line(tz)}", "ok")
+            flash(escape(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
+                         " students by first name or nickname. ") + _zone_line(tz), "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.
-        flash(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
-              f" or answer once and OmniArmor keeps count from there. {_zone_line(tz)}", "ok")
+        flash(escape(f"Welcome to OmniArmor. Start with the top {TOP_COUNT} checks below: enter each date"
+                     " or answer once and OmniArmor keeps count from there. ") + _zone_line(tz), "ok")
         return redirect(url_for("app.industry", industry_id=start))
     # ?industry=2 from an industry page; a trade page (trades.py) names several.
     preselected = [i for i in request.args.getlist("industry", type=int) if i in INDUSTRIES][:10]
@@ -195,11 +196,12 @@ def signup():
 def _zone_line(tz):
     """The welcome's line about the workspace's time zone (1.26.0), the one the sign-up page took from the device
     (signup.js): "Due dates roll over at midnight Chicago time (America/Chicago). Not where you are? Change it in
-    Settings."."""
+    Settings.". 1.27.0: "Change it in Settings" is a link to the time zone there."""
     from .views import zone_words
     words = zone_words({"timezone": tz})
     named = words if words == "UTC" else f"{words} ({tz})"
-    return f"Due dates roll over at midnight {named}. Not where you are? Change it in Settings."
+    return Markup('Due dates roll over at midnight {0}. Not where you are? <a href="{1}">Change it in Settings</a>.').format(
+        named, url_for("app.settings", _anchor="workspace"))
 
 
 def _school_workspace(conn, user_id, name, tz, now):
@@ -326,25 +328,27 @@ def reset(token):
 def change_password():
     """Settings, Your password (1.26.0): the current password and a new one. The same length rule and the same
     limit on tries as a reset; every other device is signed out (the reset links still open are spent too), each
-    workspace's History says so, and an email tells the person, in case it wasn't them."""
+    workspace's History says so, and an email tells the person, in case it wasn't them. 1.27.0: each notice shows
+    under "Your password" (flash_at), where the page opens, not at the top of the page, out of sight on a phone."""
     back = redirect(url_for("app.settings", _anchor="password"))
     user = g.user
     current = request.form.get("current_password", "")
     new = request.form.get("new_password", "")
     keys = [f"password-change:{user['id']}", f"password-change-ip:{client_ip()}"]
     if rate_limited([(keys[0], CHANGES_PER_HOUR), (keys[1], CHANGES_PER_HOUR_FROM_ONE_PLACE)], timedelta(hours=1)):
-        flash_error("Too many tries in the last hour. Wait a while, or sign out and use Forgot your password?")
+        flash_at("password", "Too many tries in the last hour. Wait a while, or sign out and use Forgot your password?",
+                 "error")
         return back
     problem = password_problem(new)
     if problem:
-        flash_error(problem)
+        flash_at("password", problem, "error")
         return back
     record_event(keys)
     if not check_password_hash(user["password_hash"], current):
-        flash_error("That isn't your current password. Nothing was changed.")
+        flash_at("password", "That isn't your current password. Nothing was changed.", "error")
         return back
     if check_password_hash(user["password_hash"], new):
-        flash_error("That's the password you have now. Choose a new one.")
+        flash_at("password", "That's the password you have now. Choose a new one.", "error")
         return back
     conn = get_db()
     conn.execute("UPDATE users SET password_hash = ?, session_epoch = session_epoch + 1 WHERE id = ?",
@@ -361,7 +365,7 @@ def change_password():
     start_session(conn.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone())
     if org_id is not None:
         session["org_id"] = org_id
-    flash("Your password is changed. Every other device was signed out.", "ok")
+    flash_at("password", "Your password is changed. Every other device was signed out.")
     return back
 
 

@@ -195,6 +195,16 @@ names the page once (no ": Compliance report" after "Report: the compliance repo
 never links to the page it is on (no help link on `/help`, no demo link on `/demo`). The app is called OmniArmor
 again, and the names on Pilot's script tag (`names`) say so; the assistant is Pilot.
 
+**1.27.0**: the cancel and refund answers mention a yearly plan only where one is offered (`pro_yearly` or
+`plus_yearly` on the tag, as the yearly answer reads them), so with monthly billing only they say monthly only.
+"What's due this week?" (a typed question with "week" in it) keeps to what is overdue or blocked and what falls due
+in the next 7 days, each with its date: the workspace's list on the tag (`due`) now carries each check's `days` and
+`due` date, and a row for each tracked item (`armo.live_issues`), so a batch due today shows beside one over the
+limit. "What should I do first?" off the report names the top blocked check (else the top
+warning) with its link. A `GLOBAL` answer can list words that ask it on their own (`alone`, used by `aloneFor`):
+"cookies" and "kept" are the safety answer's, so "Do you use cookies?" and "Where is my data kept?" find it with no
+key, unless one of the page's own buttons lists that word under another label.
+
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of

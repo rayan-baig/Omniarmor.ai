@@ -67,8 +67,9 @@ class TestBatchMadeEightDaysAgo(TodayCase):
 
     def test_home_and_the_check_say_day_9_and_the_date(self):
         said = f"Day 9 (made or opened {self.made.isoformat()}) is over the 7-day limit."
-        self.assertIn(said, words(self.client.get("/app").data.decode()))
         self.assertIn(said, words(self.client.get(f"/app/industry/{RESTO}").data.decode()))
+        # 1.27.0: Home says it in the summary's words.
+        self.assertIn("2 days overdue · made or opened 8 days ago (day 9)", words(self.client.get("/app").data.decode()))
         self.assertNotIn("9 days is over", words(self.client.get("/app").data.decode()))
 
     def test_report_and_csv(self):
@@ -123,9 +124,10 @@ class TestTimeZone(AppTestCase):
         return self.post("/signup", data, client=client, follow_redirects=True)
 
     def test_the_welcome_names_the_device_s_time_zone(self):
-        page = words(self.signup_in("America/Chicago").data.decode())
-        self.assertIn("Due dates roll over at midnight Chicago time (America/Chicago). Not where you are? Change it in"
-                      " Settings.", page)
+        page = self.signup_in("America/Chicago").data.decode()
+        # 1.27.0: "Change it in Settings" is a link to the time zone there.
+        self.assertIn("Due dates roll over at midnight Chicago time (America/Chicago). Not where you are? "
+                      '<a href="/app/settings#workspace">Change it in Settings</a>.', page)
         with self.db() as conn:
             self.assertEqual(conn.execute("SELECT timezone FROM orgs").fetchone()[0], "America/Chicago")
 
@@ -318,9 +320,11 @@ class TestCopy(TodayCase):
         self.change(HR, "i9_section_2", date=(self.today() - timedelta(days=10)).isoformat())
         home = words(self.client.get("/app").data.decode())
         self.assertNotRegex(home, r"\d days limit|business days limit")
-        self.assertIn("is over the 3-business-day limit", home)
         page = words(self.client.get(f"/app/industry/{HR}").data.decode())
         self.assertNotRegex(page, r"Limit \d")
+        # 1.27.0: Home says it in the summary's words ("5 days overdue · hired 8 business days ago"); the check says
+        # the limit.
+        self.assertIn("is over the 3-business-day limit", page)
 
     def test_the_plan_page_says_the_plan_once(self):
         from omniarmor_app import academy_plan
@@ -341,7 +345,7 @@ class TestCopy(TodayCase):
 
     def test_version_and_changelog(self):
         from omniarmor_app.version import __version__
-        self.assertEqual(__version__, "1.26.0")
+        self.assertGreaterEqual(tuple(map(int, __version__.split("."))), (1, 26, 0))
         log = read("CHANGELOG.md")
         section = log[log.index("## 1.26.0"):log.index("## 1.25.0")]
         for said in ("Back to the name OmniArmor", "day 9", "Yes.", "Time zone", "Change password", "Last done 35 days",

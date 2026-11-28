@@ -202,7 +202,9 @@ def facts(who):
     if g.get("org") is not None and who in ("business", "teacher") and (who == "business" or checklists):
         from .armo_views import current_state
         state = current_state() or {}
-        due = [{"level": i["level"], "title": i["title"], "where": i["where"], "url": i["url"]}
+        # 1.27.0: with its days left and due date, so "What's due this week?" keeps to the next 7 days and says when.
+        due = [{"level": i["level"], "title": i["title"], "where": i["where"], "url": i["url"],
+                "days": i.get("days"), "due": i.get("due", "")}
                for i in state.get("issues", [])[:DUE_ITEMS]]
     return {
         "who": who,

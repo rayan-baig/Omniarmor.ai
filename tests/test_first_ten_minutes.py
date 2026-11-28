@@ -214,7 +214,7 @@ class TestGettingStarted(AppTestCase):
         page = self.overview()
         self.assertIn("Getting started · 2 of 4 done", page)
         self.assertIn("Complete your first check : done", page)
-        self.assertIn("Set your first reminder : not done yet", page)
+        self.assertIn("Enter your first date : not done yet", page)   # 1.27.0: it said "Set your first reminder"
         r = self.change(2, "date_marking", date=(date.today() - timedelta(days=2)).isoformat())
         self.assertEqual(r.status_code, 302)
         self.assertIn("Getting started · 3 of 4 done", self.overview())

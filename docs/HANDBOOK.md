@@ -113,7 +113,7 @@ Version 1.7.0. Until it is done, Home shows a **Getting started** list (`views.g
 
 1. Pick your checklists (done at sign-up; a link to change them in Settings).
 2. Complete your first check (any check with a reading), with a button to the first top check.
-3. Set your first reminder: any check counted from a date has its date, so its reminder emails are on their way. A button opens the next such check.
+3. Enter your first date: any check counted from a date has its date (a food batch's counts), so its reminder emails are on their way. A button opens the next such check.
 4. For the owner, invite a teammate or choose your reminder emails (a teammate, an invite link made, or the reminder choices saved in Settings, `users.reminders_chosen_at`); for a team member, choose your reminder emails.
 
 Each step ticks itself from what is saved, not from what was clicked. When all four are done the list goes away. It comes back if a step stops being true (the only reading is cleared, say). Accounts made before 1.7.0 have step 4 done already, so the list doesn't return to workspaces long past their first days.
@@ -157,7 +157,7 @@ Across all 540 checks there are 227 maximums, 36 minimums, 215 required controls
 
 135 checks are counted in days. For these, a person can enter a date instead of a number, and OmniArmor recounts the days every morning:
 
-- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, RestoArmor's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday. Its pages say both numbers (1.26.0): the summary, the report and its CSV "made or opened 8 days ago (day 9)", Home and the check "Day 9 (made or opened 2026-11-16) is over the 7-day limit", never "9 days ago" for food made 8 days ago.
+- **Days since** (115 checks): the person enters the date something last happened, such as the last annual vehicle inspection. The reading is the number of days from that date to today. The due date is that date plus the limit. One of them, RestoArmor's ready-to-eat food 7-day limit, counts the day the food was prepared or opened as day 1, as the Food Code does: food made on a Monday is on day 7 on Sunday, its due date, and Blocked on the next Monday. Its pages say both numbers (1.26.0): the summary, Home (1.27.0), the report and its CSV "made or opened 8 days ago (day 9)", the check and Armo "Day 9 (made or opened 2026-11-16) is over the 7-day limit", never "9 days ago" for food made 8 days ago.
 - **Days until** (11 checks): the person enters the date something expires, such as a medical certificate. The reading is the number of days from today to that date. The due date is the expiry date minus the limit.
 
 19 more checks count **months or years since** something happened, such as "Months since the facility's last completed PREA audit" or "Years since this turnout gear was manufactured". They take a date the same way and count up by themselves:
@@ -216,7 +216,7 @@ Below the inputs, the page shows the limit and the warning point, for example "3
 **Home (the overview).** The top line shows the company name and today's date in its timezone, then four counts: blocked, warnings, cleared and without a reading, with a thin colored bar showing the proportions. Below that:
 
 - **Getting started**: the list of section 2.1.2, until it is done.
-- **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with its message and a link to the check. With none, it says why and what to do next: no check has a reading yet (with a link to the first one to fill in), or how many checks still need one, or "Nice work" when every check has a reading.
+- **Needs attention**: every blocked and warning check across all of the company's industries, most urgent first, each with a link to the check. A check that tracks items one by one (food batches, fridges) has a row for each item that needs attention, as the inspection summary does (1.27.0), and each row says it in the summary's words: "4 days overdue · last done 35 days ago", "Due today · made or opened 6 days ago (day 7)". With none, it says why and what to do next: no check has a reading yet (with a link to the first one to fill in), or how many checks still need one, or "Nice work" when every check has a reading.
 - **Coming up**: date-tracked checks due within the next 60 days that aren't a problem yet. With none, it names the next deadline after that, or, before any date is in, a check counted from a date to start with.
 - A summary per industry.
 
@@ -270,7 +270,7 @@ An invite is a one-time link valid for 7 days. Only a hash of the link is stored
 
 - **Sign-in** uses email and password. After 5 failed attempts for one email, or 20 from one network address, within 15 minutes, sign-in is paused: "Too many sign-in attempts. Wait 15 minutes, or reset your password."
 - **Forgot password** sends a one-time reset link that lasts 1 hour. Requests are limited to 3 per hour per email and 20 per network address. Resetting the password signs the person out on every other device.
-- **Change password** (1.26.0): signed in, anyone opens Settings, **Your password**, types the current password and a new one (at least 10 characters) and presses **Change password**. Tries are limited like reset requests (3 an hour per person, 20 per network address). It signs the person out on every other device, spends any reset link still open, notes "... changed their password" in History in each of their workspaces and emails them, with a reset link in case it wasn't them.
+- **Change password** (1.26.0): signed in, anyone opens Settings, **Your password**, types the current password and a new one (at least 10 characters) and presses **Change password**. Tries are limited like reset requests (3 an hour per person, 20 per network address). It signs the person out on every other device, spends any reset link still open, notes "... changed their password" in History in each of their workspaces and emails them, with a reset link in case it wasn't them. The result (changed, or why not) shows under **Your password**, where the page opens after pressing the button (1.27.0).
 - **Sessions** last 14 days.
 
 The full list of protections is in Part 7.

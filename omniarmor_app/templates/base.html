@@ -148,7 +148,9 @@
       {% endif %}
     {% endif %}
     {% if demo_bar %}{% include "demo/_bar.html" %}{% endif %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    {#- 1.27.0: a notice a section of the page shows itself (security.flash_at: Settings' "Your password") is left
+        out here; that page names its sections in inline_flashes. -#}
+    {% with messages = flashes_for(inline=inline_flashes or ()) %}
       {% if messages %}
         {# A teacher's notices can name students: Pilot never reads them. #}
         <ul class="flashes" role="status"{% if class_workspace %} data-pilot-private{% endif %}>

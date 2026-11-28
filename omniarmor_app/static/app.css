@@ -351,6 +351,13 @@ table.audit-cards .at-short{display:none}
 .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px;padding-block:24px 8px;border-top:1px solid var(--line)}
 .features h3{margin:0 0 6px;font-size:17px}
 .features p{margin:0;color:var(--muted);font-size:15px}
+/* 1.27.0: on a computer the cards fill their rows evenly: five as three and two (the fifth sat alone on its row),
+   six as three and three. */
+@media (min-width:1000px){
+  .features{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .features > *{grid-column:span 2}
+  .features > :nth-child(4):nth-last-child(2),.features > :nth-child(5):last-child{grid-column:span 3}
+}
 .rule-list{list-style:none;margin:0;padding:0;counter-reset:r}
 .rule-list li{padding:14px 0;border-bottom:1px solid var(--line)}
 .rule-list strong{display:block}
@@ -711,6 +718,11 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
     top:auto;left:auto;right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom))}
   body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-bl,body.has-tabs .pilot-root.pilot-at-tr,body.has-tabs .pilot-root.pilot-at-tl{
     bottom:calc(76px + env(safe-area-inset-bottom))}
+  /* 1.27.0: on a signed-in page the column keeps the core's side room (--pilot-side, 34px) on the right too, where the
+     tucked robot's slice shows above the tab bar: with the page's own 16px it sat on line ends and card edges (the
+     first screen after sign-up). The left keeps its 16px. The footer's lines keep it too, on every page. */
+  :root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root) main > .wrap,:root.pilot-on body:has(> .pilot-root) footer.site > .wrap{
+    padding-right:max(var(--pilot-side,34px),env(safe-area-inset-right))}
   html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl) .pilot-launcher,
   html body .pilot-root.pilot-keep-in.pilot-peek:is(.pilot-at-br,.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-typing) .pilot-launcher:is(:hover,:focus-visible),
   html body .pilot-root.pilot-keep-in:is(.pilot-at-bl,.pilot-at-tr,.pilot-at-tl):not(.pilot-revealing) .pilot-launcher{

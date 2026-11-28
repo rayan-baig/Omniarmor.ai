@@ -164,8 +164,29 @@
     return out;
   }
 
+  // 1.27.0: "What's due this week?": what's overdue or blocked, then what falls due in the next 7 days, each with
+  // its date, from the workspace's own list (DUE), on every page. It listed every warning, even one 41 days away,
+  // with no dates.
+  const WEEK_DAYS = 7;
+  const WEEK_WORDS = /\bweek\b/i;
+  const daysOf = (x) => (Number.isInteger(x.days) ? x.days : null);
+  const dueOn = (x) => (typeof x.due === "string" ? words(x.due) : "");
+  function weekDueAnswer() {
+    const late = DUE.filter((x) => x.level === "urgent" || (daysOf(x) !== null && daysOf(x) < 0));
+    const soon = DUE.filter((x) => !late.includes(x) && daysOf(x) !== null && daysOf(x) >= 0 && daysOf(x) <= WEEK_DAYS)
+      .sort((a, b) => daysOf(a) - daysOf(b));
+    const when = (x) => (!dueOn(x) ? "" : daysOf(x) !== null && daysOf(x) < 0 ? ` · was due ${dueOn(x)}` : ` · due ${dueOn(x)}`);
+    const out = [];
+    if (late.length) out.push(`**Overdue or blocked: ${late.length}.**`, ...late.slice(0, 8).map((x) => `${dueLine(x)}${when(x)}`), "");
+    if (soon.length) out.push(`**Due in the next ${WEEK_DAYS} days: ${soon.length}.**`, ...soon.slice(0, 8).map((x) => `${dueLine(x)}${when(x)}`), "");
+    if (!out.length) out.push(`Nothing is overdue, blocked or due in the next ${WEEK_DAYS} days.`, "");
+    out.push("[Home](/app) lists everything that needs attention, and what's coming due in the next 60 days.");
+    return out.join("\n");
+  }
+
   // "What's due or overdue?"
-  function dueAnswer() {
+  function dueAnswer(ctx) {
+    if (ctx && typeof ctx.label === "string" && WEEK_WORDS.test(ctx.label)) return weekDueAnswer();
     const attention = one("[data-needs-attention]");
     if (attention) {
       const rows = all("a.row[data-level]", attention);
@@ -469,6 +490,13 @@
     }).filter((r) => r.title);
     if (!rows.length) {
       const c = pageCounts();
+      // 1.27.0: "What should I do first?" off the report names the check to fix first, with its link, from the
+      // workspace's own list (it only said to open the report and ask again).
+      const top = DUE.find((x) => x.level === "urgent") || DUE.find((x) => x.level === "soon");
+      if (top) {
+        return `**Fix first:** ${dueLine(top).slice(2)}${dueOn(top) ? ` (${daysOf(top) !== null && daysOf(top) < 0 ? "was due" : "due"} ${dueOn(top)})` : ""}.\n\n`
+          + `${c ? `Right now: ${countsLine(c)}.\n\n` : ""}[Open the report](/app/report) for every check, and press this again there for what comes next.`;
+      }
       return `${c ? `Right now: ${countsLine(c)}.\n\n` : ""}[Open the report](/app/report) and press this again for a summary of every check, with what to fix first.`;
     }
     const c = { BLOCKED: 0, WARNING: 0, CLEARED: 0, NONE: 0 };
@@ -731,20 +759,25 @@
     + "so for what a rule means for your business, ask your inspector, your local agency or a lawyer. OmniArmor keeps the dates, readings and reminders; it doesn't decide what the law requires of you.";
   // 1.25.0: "Can I get a refund?" starts with the answer to that, then how to cancel.
   const REFUND_WORDS = /\b(refunds?|refunded|money|back)\b/i;
-  function refundLead() {
+  // 1.27.0: a business plan is yearly only where a yearly price is set up (plans.py; pilot.py's pro_yearly and
+  // plus_yearly), as "Is there a yearly discount?" says: with none, the cancel answers say nothing about a year.
+  const yearlyOffered = (f) => Boolean((f || {}).pro_yearly || (f || {}).plus_yearly);
+  function refundLead(f) {
     if (who === "teacher" || schoolSide) {
       return "**No refund for the part of the year left.** A school's plan is paid yearly: cancelling stops the next year's charge, and the plan stays on until the end of the year paid for. "
         + "The free class trial needs no card, so it never costs anything.";
     }
-    return "**No refund for time already paid for, and nothing more is charged once you cancel.** The plan stays on until the end of the month paid for (or the year, for a yearly plan). "
+    return "**No refund for time already paid for, and nothing more is charged once you cancel.** "
+      + `The plan stays on until the end of the month paid for${yearlyOffered(f) ? " (or the year, for a yearly plan)" : ""}. `
       + "The free trial needs no card, so it never costs anything.";
   }
   function cancelAnswer(ctx) {
     const asked = ctx && typeof ctx.label === "string" ? ctx.label : "";
-    const body = cancelSteps();
-    return REFUND_WORDS.test(asked) ? `${refundLead()}\n\n**To cancel:** ${body[0].toLowerCase()}${body.slice(1)}` : body;
+    const f = (ctx && ctx.facts) || facts;
+    const body = cancelSteps(f);
+    return REFUND_WORDS.test(asked) ? `${refundLead(f)}\n\n**To cancel:** ${body[0].toLowerCase()}${body.slice(1)}` : body;
   }
-  function cancelSteps() {
+  function cancelSteps(f) {
     // 1.22.0: on the schools pages a visitor gets the school plans' answer too (it was the business plans' monthly
     // and pause options, which a school's plan doesn't have).
     if (who === "visitor" && schoolSide) {
@@ -760,7 +793,7 @@
     const where = who === "business" ? "the [Plans page](/app/plan)" : "the Plans page (Settings, Plan)";
     return `The workspace owner cancels on ${where}: press **Cancel or pause your plan**, then **Cancel my plan**. Nothing stops at once:\n\n`
       + "- **Monthly:** it stays on until the end of the month paid for, and isn't charged again.\n"
-      + "- **Yearly:** it stays on until the end of the year paid for, with no refund for the months left.\n"
+      + (yearlyOffered(f) ? "- **Yearly:** it stays on until the end of the year paid for, with no refund for the months left.\n" : "")
       + "- **A break instead?** A monthly plan can be paused for a few months: no charges, reminders stop, and it starts again by itself.\n\n"
       + "When the plan ends nothing is deleted: you can still see, print and download every record. [Cancelling, in Help](/help#cancel)";
   }
@@ -782,7 +815,9 @@
       // The core reads at most 20 words per item. 1.22.0: "Do you sell my data?", "Who do you share it with?",
       // "Where is my data stored?", "Do you use tracking cookies?".
       match: ["safe", "safety", "secure", "security", "privacy", "private", "data", "encrypted", "hacked", "breach", "gdpr", "coppa", "ferpa",
-        "sell", "sold", "share", "shared", "tracking", "cookies", "stored"] },
+        "sell", "sold", "share", "shared", "tracking", "cookies", "stored"],
+      // 1.27.0: these alone ask it, whatever else is typed (aloneFor).
+      alone: ["cookies", "kept"] },
     { label: "What does it cost?", answer: (ctx) => pricesAnswer(ctx && ctx.facts),
       match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars",
         "billing", "bill", "charge", "charged", "afford", "monthly"] },
@@ -981,7 +1016,23 @@
     const here = new Set(pills.map((p) => p.label).concat(list.map((c) => c.label)));
     const extra = GLOBAL.filter((x) => !here.has(x.label));
     const hit = P.matchTyped(question, pills.concat(...extra.map((x) => P.cleanChips([x], base))));
-    return hit && !hit.icon ? extra.find((x) => x.label === hit.label) || null : null;
+    if (hit) return !hit.icon ? extra.find((x) => x.label === hit.label) || null : null;
+    return aloneFor(question, pills.concat(P.cleanChips(list, base)));
+  }
+  // 1.27.0: a word that says on its own which answer is meant ("Do you use cookies?", "Where is my data kept?", where
+  // the core wants two words to match): that GLOBAL answer, with the words typed as its match words so the core finds
+  // it. Never when one of this page's own buttons lists that word under another label ("Is anything kept?" on the
+  // demos page stays "Is anything saved?"), and never when two answers have it.
+  function aloneFor(question, items) {
+    const P = window.PilotPanel;
+    if (typeof P.wordsOf !== "function") return null;
+    const asked = P.wordsOf(question);
+    const said = (x) => P.wordsOf((x.alone || []).join(" ")).filter((w) => asked.includes(w));
+    const fits = GLOBAL.filter((x) => said(x).length);
+    if (fits.length !== 1) return null;
+    const pick = fits[0];
+    const theirs = items.some((i) => i.label !== pick.label && (i.match || []).some((w) => said(pick).includes(w)));
+    return theirs ? null : { ...pick, match: asked.concat(pick.match || []).slice(0, 20) };
   }
   function chips() {
     let keyed = false;

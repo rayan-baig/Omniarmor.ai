@@ -260,7 +260,7 @@ class TestNeedsAttentionByUrgency(unittest.TestCase):
         self.assertFalse(views.early_policy(state("WARNING", 3, policy=True)))
         self.assertFalse(views.early_policy(state("BLOCKED", 41, policy=True)))
         page = read("omniarmor_app", "templates", "app", "overview.html")
-        self.assertIn("{% if early_policy(s) %}", page)
+        self.assertIn("{% if early_policy(st) %}", page)   # 1.27.0: one row per tracked item (s, title, st)
         self.assertIn("this warning window is a policy setting (an industry standard, not a law)", page)
 
 

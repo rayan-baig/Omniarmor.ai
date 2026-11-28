@@ -10,7 +10,7 @@ from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlsplit
 
-from flask import abort, flash, g, redirect, request, session, url_for
+from flask import abort, flash, g, get_flashed_messages, redirect, request, session, url_for
 
 from .db import get_db, iso, utcnow
 from .pilot import CONNECT as PILOT_CONNECT
@@ -370,3 +370,20 @@ def security_headers(response):
 
 def flash_error(message):
     flash(message, "error")
+
+
+def flash_at(section, message, kind="ok"):
+    """A notice shown inside one section of the page it goes back to, beside the form it answers (1.27.0): on a
+    phone, Settings opens at "Your password", far below the top of the page where notices show."""
+    flash(message, f"{kind} at-{section}")
+
+
+def flashes_for(section=None, inline=()):
+    """(kind, message) for each notice: section None for the top of the page, less those a section in `inline`
+    shows itself (base.html); a section's name for that section's own (flash_at)."""
+    out = []
+    for category, message in get_flashed_messages(with_categories=True):
+        kind, _, at = category.partition(" at-")
+        if (at == section) if section else (not at or at not in inline):
+            out.append((kind, message))
+    return out
