@@ -139,7 +139,11 @@ class TestTimeZone(AppTestCase):
         data = {"name": "Ms Park", "email": "park@school.example", "password": PASSWORD, "org_name": "Lincoln School",
                 "timezone": "America/Denver", "then": "classes"}
         page = words(self.post("/signup?then=classes", data, follow_redirects=True).data.decode())
-        self.assertIn("Due dates roll over at midnight Denver time (America/Denver).", page)
+        # 1.29.0: not in a teacher's welcome any more: the class trial has no due dates (tests/test_round17_fixes.py).
+        # The zone is still the device's, and Settings still names it.
+        self.assertNotIn("Due dates roll over at midnight", page)
+        with self.db() as conn:
+            self.assertEqual(conn.execute("SELECT timezone FROM orgs").fetchone()[0], "America/Denver")
 
     def test_settings_explains_it_and_history_says_when_it_changes(self):
         self.signup_in("UTC")

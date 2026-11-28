@@ -212,7 +212,10 @@
         out.push(`**Coming due in the next 60 days: ${coming.length}.**`);
         for (const a of coming.slice(0, 5)) out.push(`- ${linked(said(one(".title", a)), pathOf(a))}: ${said(one(".mono", a))}`);
       } else {
-        out.push(said(one("[data-coming-due] .empty")) || "Nothing is coming due in the next 60 days.");
+        // 1.29.0: with items under Needs attention (dated ones among them), nothing *else* comes due, in Home's own
+        // words ("Nothing else comes due in the next 60 days."); it said "No tracked deadlines" beside one due tomorrow.
+        out.push(said(one("[data-coming-due] .empty"))
+          || (rows.length ? "Nothing else comes due in the next 60 days." : "Nothing is coming due in the next 60 days."));
       }
       return out.join("\n");
     }
@@ -359,7 +362,31 @@
     + "[Security and your data](/security): where it's kept, backups, who can see a name and how to delete it. [The privacy page](/privacy)";
 
   // Short answers for page suggestions.
-  function reminderAnswer(f) {
+  // 1.29.0: "Who gets the reminder emails?" and "Can I turn off reminder emails?" get their own answer, pointing to
+  // Settings, Your reminder emails (reminders.py: each person's own choice, both on until they turn them off).
+  const EMAIL_OFF_WORDS = /\b(off|unsubscribe|opt[- ]?out|disable|mute)\b|\bstop (getting|receiving|sending|the|all|them|these|those|my|reminder|reminders|emails?)\b/i;
+  const EMAIL_WHO_WORDS = /\b(who|whom|recipients?)\b/i;
+  function emailsLead(asked) {
+    const q = String(asked || "");
+    const off = EMAIL_OFF_WORDS.test(q);
+    if (!off && !EMAIL_WHO_WORDS.test(q)) return "";
+    if (who === "teacher" && !facts.school_checklist) {
+      return "OmniArmor emails a teacher about the plan and the password only: reminder emails are about the school safety checklist, "
+        + "which comes with Whole school. [Your plan](/app/plan)";
+    }
+    const where = signedIn ? "[Settings](/app/settings#reminders), under **Your reminder emails**" : "Settings, under **Your reminder emails** (once you're signed in)";
+    const kept = signedIn ? "[Reminders](/app/notifications)" : "Reminders";
+    if (off) {
+      return `**Yes.** In ${where}, untick the daily digest, the time-limit alerts or both, then press **Save**. `
+        + `It changes your own emails only: everyone on the team chooses theirs, and nobody can choose for someone else. Every email already sent stays under ${kept}.`;
+    }
+    return "**Everyone on the team who has them on, each at their own email address.** The daily digest and the time-limit alerts start on for everyone, "
+      + `the owner and each teammate, until they turn them off. Each person chooses their own in ${where}; nobody can choose for someone else. `
+      + `Every email sent is kept under ${kept}.`;
+  }
+  function reminderAnswer(f, asked) {
+    const lead = emailsLead(asked);
+    if (lead) return lead;
     const days = dayList((f || {}).reminder_days);
     return `Once a day each person on the team gets one email, the daily digest, when a check is ${days || "close to"} from due, due today or overdue `
       + "(then once a week while it stays overdue). A missed day is caught up. Checks counted in hours also send an alert at their warning point and when they become overdue.\n\n"
@@ -390,13 +417,29 @@
   // ---------------------------------------------------------------- 1.18.0: every welcome button answers with no key
 
   // "Which checklist fits me?": asks what kind of business it is, with a link to each trade's page.
-  function checklistAnswer(f) {
+  // 1.29.0: "Does it work for a salon?" (a gym, a tattoo studio, a shop) starts with that trade's own page, from the
+  // trades pilot.py lists; "Which industries do you cover?" gets this answer too, signed in as well.
+  const TRADE_WORDS = [[/\b(salons?|barbers?|barbershops?|hairdressers?|nail)\b/i, "/for/salons-", "a salon or barbershop"],
+    [/\b(gyms?|fitness)\b/i, "/for/gyms-", "a gym or fitness studio"],
+    [/\b(tattoos?|piercings?)\b/i, "/for/tattoo-", "a tattoo or piercing studio"],
+    [/\b(shops?|stores?|retail)\b/i, "/for/shops-", "a shop"]];
+  function checklistAnswer(f, asked) {
     const x = f || {};
+    const q = String(asked || "");
     const list = (Array.isArray(x.trades) ? x.trades : []).filter((t) => t && typeof t.name === "string" && /^\/[\w/-]*$/.test(t.path || ""));
-    const links = list.slice(0, 12).map((t) => `- [${words(t.name)}](${t.path})`).join("\n");
-    return `**What kind of business is it?** Pick yours to see the checklists that fit it, what each one checks, and what OmniArmor doesn't cover:\n\n${links || "- [Every industry](/industries)"}\n\n`
+    const hit = TRADE_WORDS.find(([re, start]) => re.test(q) && list.some((t) => t.path.startsWith(start)));
+    const named = hit ? list.find((t) => t.path.startsWith(hit[1])) : null;
+    const links = list.filter((t) => t !== named).slice(0, 12).map((t) => `- [${words(t.name)}](${t.path})`).join("\n");
+    const head = named
+      ? `${/^\s*(does|do|can|will|would|is)\b/i.test(q) ? "**Yes.** " : ""}For ${hit[2]}: **[${words(named.name)}](${named.path})** has the checklists that fit it, `
+        + "what each one checks, and what OmniArmor doesn't cover.\n\nOr pick another kind of business:"
+      : "**What kind of business is it?** Pick yours to see the checklists that fit it, what each one checks, and what OmniArmor doesn't cover:";
+    const tail = who === "teacher" ? "A school's checklists are in [Settings](/app/settings#workspace), under **Your school checklists**."
+      : who === "business" ? "To add one to this workspace, the owner ticks it in [Settings](/app/settings#workspace), under **Industries**, and saves."
+        : "You can pick more than one when you sign up. [Or see a demo](/demo) first.";
+    return `${head}\n\n${links || "- [Every industry](/industries)"}\n\n`
       + `Not there? [All ${x.industries || ""} industries](/industries) each have their own starter list of ${x.top_count ? "the checks that cost them the most" : "checks"}. `
-      + "You can pick more than one when you sign up. [Or see a demo](/demo) first.";
+      + tail;
   }
 
   // "Which plan fits me?": the plans side by side, from plans.py's own names and prices.
@@ -549,7 +592,8 @@
 
   // A page suggestion: an AI prompt (words), or an answer given at once.
   const C = (label, what) => (typeof what === "string" ? { label, prompt: what } : { label, ...what });
-  const A = (fn) => ({ answer: (ctx) => fn((ctx && ctx.facts) || {}) });
+  // 1.29.0: with what was typed or pressed too (ctx.label), as "Who gets the reminder emails?" needs.
+  const A = (fn) => ({ answer: (ctx) => fn((ctx && ctx.facts) || {}, ctx && ctx.label) });
   // One answer function each for a question a pill and a suggestion both ask (in their own words): core 1.4.3
   // counts them as one item (sameItem), so a typed question never ties between them and the row under an
   // answer shows it once.
@@ -640,8 +684,23 @@
       + `It is copied once a day, and each copy is checked before it is kept.${kept}`
       + (x.offsite_backup ? " A copy of each day's backup also goes to a second, separate storage company." : "");
   }
+  // 1.29.0: a teacher's "Is my students' data safe?": what is kept about a student and what the class report shows
+  // (the privacy page's "Who can see a student's name", classrooms.report: totals only).
+  const STUDENT_WORDS = /\b(students?|pupils?|kids?|child|children|class|classes)\b/i;
+  function studentDataAnswer(x) {
+    const keep = Number(x.backup_keep) > 0 ? ` A deleted student can stay in a backup for about ${count(Number(x.backup_keep), "day")}, then it is gone.` : "";
+    return "**Yes. A student is only a first name or nickname you type:** never a last name, email, birthdate or photo, and students have no accounts or passwords.\n\n"
+      + "- **What's kept about each student:** that name, the picture they pick from the Academy's own (never a photo), the lessons they've played, their quiz scores and their certificates.\n"
+      + "- **Who sees the names:** the grown-ups signed in to this school's workspace (you, and any colleague the school invites). Nobody in another school or workspace.\n"
+      + "- **What a student sees:** only their own lessons, on a school device that joined with their code. If you turn the class leaderboard on (it starts off), classmates see each other's first name or nickname and lessons done, this class only.\n"
+      + "- **The class report** (the trial report during the free trial) shows totals only: students, lessons finished, certificates and topics covered. It names no student.\n"
+      + `- **${N.assistant} never reads the class list:** a name goes to your AI company only if you type it to add students, and ${N.assistant} is never on a student's page.\n`
+      + `- **To delete:** remove a student, or delete a whole class, on the class page. Their progress goes with them, at once.${keep}\n\n`
+      + "[Who can see a student's name](/privacy#students) · [Security and your data](/security)";
+  }
   function safeAnswer(f, asked) {
     const x = f || {};
+    if (who === "teacher" && STUDENT_WORDS.test(String(asked || ""))) return studentDataAnswer(x);
     const security = typeof x.security_path === "string" && /^\/[\w/-]*$/.test(x.security_path) ? x.security_path : "/security";
     const out = [safeLead(asked), "",
     storedLine(x),
@@ -742,8 +801,38 @@
   }
   // 1.28.0: "What happens when my trial ends?", from the real plans (plans.py, Help's "Is there a free trial?"): no card,
   // so nothing is charged; nothing is deleted; without a plan the tracker is read-only until a plan is chosen.
-  function trialEndAnswer(f) {
+  // 1.29.0: "Do I need a credit card?" (Help's "Do I need a card?": no card for the trial; a card only when a plan
+  // is chosen, on Stripe's page) and, signed in, "How many days are left on my trial?" from this workspace's own
+  // days left (pilot.py's trial_days_left).
+  const CARD_WORDS = /\b(card|cards|credit|debit)\b/i;
+  const LEFT_WORDS = /\b(left|remaining|remain|many days|how long|when does|when will)\b/i;
+  function cardAnswer(x) {
+    if (who === "teacher" || schoolSide) {
+      return `**No card for the free class trial.** It's ${x.pilot_days || 30} days for one class of up to ${x.class_size || 30} students, and nothing is charged when it ends. `
+        + `After it, a school pays for **${words(x.classroom) || "Classroom"}** or **${words(x.school) || "Whole school"}** by card, on Stripe's secure checkout page, or asks for an invoice. `
+        + (who === "teacher" ? "[Your plan](/app/plan)" : "[See the prices](/classrooms#price)");
+    }
+    return `**No card for the free trial.** ${x.trial_days ? `Every new workspace gets ${x.trial_days} days of everything in ${words(x.plus) || "Plus"} without one` : "The free trial needs none"}, `
+      + `so nothing is charged when it ends. A card is asked for only when the workspace owner chooses **${words(x.pro) || "Pro"}** or **${words(x.plus) || "Plus"}**, `
+      + "on Stripe's secure checkout page; OmniArmor never sees the card number.\n\n"
+      + (who === "business" ? "[Your plan](/app/plan) · [All the prices](/pricing)" : "[Start your free trial](/signup) · [All the prices](/pricing)");
+  }
+  function daysLeftLead(x) {
+    if (!signedIn || !Number.isInteger(x.trial_days_left)) return "";
+    const school = who === "teacher";
+    if (x.trial_days_left > 0) return `**${count(x.trial_days_left, "day")} left on your free ${school ? "class " : ""}trial.**`;
+    if (typeof x.plan_name === "string" && x.plan_name) return `**You're not on a free trial: this ${school ? "school" : "workspace"} is on ${words(x.plan_name)}.**`;
+    return `**No free ${school ? "class " : ""}trial days left.**`;
+  }
+  function trialEndAnswer(f, asked) {
     const x = f || {};
+    if (CARD_WORDS.test(String(asked || ""))) return cardAnswer(x);
+    const lead = LEFT_WORDS.test(String(asked || "")) ? daysLeftLead(x) : "";
+    if (lead && x.trial_days_left <= 0 && x.plan_name) return `${lead} Its details are on the [Plans page](/app/plan).`;
+    const body = trialEndBody(x);
+    return lead ? `${lead}\n\n${body}` : body;
+  }
+  function trialEndBody(x) {
     if (who === "teacher" || schoolSide) {
       return `**When the free class trial ends, nothing is deleted:** the classes, their progress and the trial report are kept. `
         + `It needs no card, so nothing is charged. To go on, the school chooses **${words(x.classroom) || "Classroom"}** (${yearly(x.classroom_price)}) `
@@ -836,6 +925,87 @@
       + "both have every check's status, reading, due date and rule. [History](/app/audit) has its own **Export CSV**, with who changed what and when. "
       + "For one page to show an inspector or an accountant, there's the [Inspection-ready summary](/app/report/summary).";
   }
+  // 1.29.0: more of the questions people type, answered from the app itself with no key (GLOBAL below).
+  // "How do I sign up?": the sign-up page's own fields (auth.signup), and where it lands.
+  function signupAnswer(f) {
+    const x = f || {};
+    if (signedIn) {
+      return "You're signed in already. To bring a colleague into this workspace, the owner creates an invite link in "
+        + `[Settings](/app/settings#team), under **Team**: they sign up with it.`;
+    }
+    const school = "[Sign up as a teacher](/signup?then=classes): your name, school email, a password and your school's name. "
+      + `You land on your classes, with the free ${x.pilot_days || 30}-day class trial on (no card).`;
+    if (schoolSide) return `${school}\n\nRunning a business? [Sign up here](/signup) instead.`;
+    return "Press **Start free** at the top, or [open the sign-up page](/signup): your name, work email, a password, your business's name, "
+      + "its time zone (set from your device) and the industries you pick. You land on your first checklist"
+      + `${x.trial_days ? `, with ${x.trial_days} days of everything in ${words(x.plus) || "Plus"}` : ""}, and no card is asked for.\n\n`
+      + `A teacher? ${school}`;
+  }
+  // "What is Armo?": Help's own words (help.html, "Autopilot ... your helper is Armo").
+  function armoAnswer() {
+    const page = signedIn ? "[his page](/app/armo)" : "his page";
+    return "**Armo is OmniArmor's helper inside the app:** the little shield in the corner of the signed-in pages. "
+      + "His badge counts what needs you: something blocked, overdue or due soon, or a reminder email that failed. Tap him to see each one, "
+      + "with a link that takes you straight to the fix. When things are calm he does his own thing.\n\n"
+      + `He keeps out of the way: his bubble opens when you tap him. Pick his personality, or hide him, on ${page} (Settings, Armo).`;
+  }
+  // "How do I change my time zone?": Settings, the company's (school's) section, the owner's only (settings.html).
+  function timezoneAnswer() {
+    const place = who === "teacher" ? "School" : "Company";
+    const why = who === "teacher" && !facts.school_checklist ? "History shows its times in it."
+      : "Due dates roll over at midnight in this time zone, and History and the reports show their times in it. Readings stay as they are when you change it.";
+    if (!signedIn) {
+      return "It's set from your device when you sign up, and the workspace owner can change it any time after in Settings, under **Time zone**. "
+        + "Due dates roll over at midnight in that time zone.";
+    }
+    return `The workspace owner opens [Settings](/app/settings#workspace), picks it under **Time zone** in the **${place}** section and presses `
+      + `**Save ${place.toLowerCase()} settings**. ${why}`;
+  }
+  // "Can I turn off the leaderboard?": the class page's own button (academy/class.html).
+  function leaderboardAnswer() {
+    const cls = who === "teacher" ? classHere() : null;
+    const where = cls ? `[the class page](/app/academy/classes/${cls.id}#leaderboard)` : who === "teacher" && CLASSES.length ? "each class's page" : "the class page";
+    const out = ["**Yes. The class leaderboard starts off,** and the teacher turns it on or off on "
+      + `${where}, under **Class leaderboard** (**Turn the leaderboard off**, or on). When it's on, students see their classmates' first names or nicknames `
+      + "and lessons done, for that class only. Nothing else."];
+    if (who === "teacher" && !cls && CLASSES.length) out.push("", classLinks("#leaderboard"));
+    return out.join("\n");
+  }
+  // "Can we pay by invoice?": a school's plans can be (plans.py, the classes page); Pro and Plus are paid by card.
+  function invoiceAnswer(f) {
+    const x = f || {};
+    const mail = typeof x.invoice_email === "string" && /^[^\s@()<>[\]]+@[^\s@()<>[\]]+$/.test(x.invoice_email) ? x.invoice_email : "";
+    const write = mail ? `write to ${mail}` : "write to us";
+    if (who === "teacher" || schoolSide) {
+      return `**Yes.** A school's plan (**${words(x.classroom) || "Classroom"}** or **${words(x.school) || "Whole school"}**, paid yearly) can be paid by card or by invoice: `
+        + `${write} with the school's name, the plan${who === "teacher" ? " and this workspace's name" : ""}. We send the invoice and turn the plan on for the school year. `
+        + (who === "teacher" ? "[Your plan](/app/plan)" : "[See the prices](/classrooms#price)");
+    }
+    return `**${words(x.pro) || "Pro"}** and **${words(x.plus) || "Plus"}** are paid by card, on Stripe's secure checkout page (OmniArmor never sees the card number), `
+      + `and Stripe keeps the invoices${who === "business" ? ": the owner opens them from the [Plans page](/app/plan)" : ""}. `
+      + `Paying by invoice is for a school's plans (${words(x.classroom) || "Classroom"} and ${words(x.school) || "Whole school"}). [All the prices](/pricing)`;
+  }
+  // A teacher's "What should I do first?": the class's first steps, from where this workspace is.
+  function firstStepsAnswer(f) {
+    const minutes = Number((f || {}).lesson_minutes) || 3;
+    const cls = classHere();
+    const first = !CLASSES.length ? "**Start by adding your class:** [Add your class](/app/academy/classes#add-class), then type your students' first names or nicknames, one on each line."
+      : `**Next, hand out the join codes:** ${cls ? `[the join codes for ${words(cls.name) || "your class"}](/app/academy/classes/${cls.id}/join-codes)` : "open a class's join codes"}, print them and cut them into slips.`;
+    const out = [first, "",
+      "1. Add your class and its students (first names or nicknames only).",
+      "2. Print the join codes: each student types theirs once on a school device.",
+      `3. Play the first lesson together: it takes about ${minutes} minutes, and opens the next world.`,
+      "4. Plan the week with **Plan a week of lessons**, and print certificates as students earn them."];
+    if (CLASSES.length && !cls) out.push("", classLinks("/join-codes"));
+    return out.join("\n");
+  }
+  // "Hi" or "Hello": a hello back, with the welcome's buttons under it (the core shows them under the app's own answer).
+  function helloAnswer() {
+    const what = who === "teacher" ? "your classroom helper" : who === "business" ? "your checklist helper" : `${N.app}'s helper`;
+    return `Hi! I'm ${N.assistant}, ${what}. Press one of these for an answer right away, or type a question.`;
+  }
+  const PRICES = (ctx) => pricesAnswer(ctx && ctx.facts);
+
   const GLOBAL = [
     { label: "Is my data safe?", answer: (ctx) => safeAnswer(ctx && ctx.facts, ctx && ctx.label),
       // The core reads at most 20 words per item. 1.22.0: "Do you sell my data?", "Who do you share it with?",
@@ -844,9 +1014,12 @@
         "sell", "sold", "share", "shared", "tracking", "cookies", "stored"],
       // 1.27.0: these alone ask it, whatever else is typed (aloneFor).
       alone: ["cookies", "kept"] },
-    { label: "What does it cost?", answer: (ctx) => pricesAnswer(ctx && ctx.facts),
+    { label: "What does it cost?", answer: PRICES,
       match: ["price", "prices", "cost", "costs", "much", "pricing", "expensive", "cheap", "pay", "fee", "subscription", "dollars",
-        "billing", "bill", "charge", "charged", "afford", "monthly"] },
+        "billing", "bill", "charge", "charged", "afford", "monthly"],
+      // 1.29.0: "How much is Plus?" (and the classroom plan) tied between "much" and the plan's name. A weak word: it
+      // gives way to any other answer's own word ("How much is the yearly plan?" stays the yearly answer).
+      alone: ["much", "price", "prices", "cost", "costs", "pricing"], weak: true },
     // 1.26.0: "Do you have a free plan?", "Is there a yearly discount?" (two words each, so they win over the price
     // answer, which no longer has "yearly").
     { label: "Is there a free plan?", answer: (ctx) => freePlanAnswer(ctx && ctx.facts),
@@ -856,13 +1029,17 @@
       // 1.28.0: "Is there a yearly plan?" and "Can I pay yearly?" tied with the free plan's "plan" and the price's "pay".
       alone: ["yearly", "annual", "annually"] },
     // 1.28.0: "What happens when my trial ends?", "after the free trial?" (nothing had "trial").
-    { label: "What happens when the trial ends?", answer: (ctx) => trialEndAnswer(ctx && ctx.facts),
-      match: ["trial", "trials", "end", "ends", "ended", "ending", "over", "expire", "expires", "expired", "after", "happen", "happens", "afterwards"],
-      alone: ["trial"] },
+    { label: "What happens when the trial ends?", answer: (ctx) => trialEndAnswer(ctx && ctx.facts, ctx && ctx.label),
+      match: ["trial", "trials", "end", "ends", "ended", "ending", "over", "expire", "expires", "expired", "after", "happen", "happens", "afterwards",
+        "card", "credit", "left", "remaining"],
+      // 1.29.0: "Do I need a credit card?" and "How many days left on my trial?" (trialEndAnswer: the card, the days left).
+      alone: ["trial", "card", "credit"] },
     { label: "Is this legal advice?", answer: LEGAL, match: LEGAL_WORDS },
     // 1.23.0: "close" and "account" are deleting the workspace now (below), which isn't cancelling.
     { label: "How do I cancel?", answer: cancelAnswer, match: ["cancel", "cancelling", "canceling", "cancellation", "refund", "refunds", "refunded", "downgrade", "quit", "pause", "anytime", "contract", "commitment",
-      "money", "back", "terminate"] },
+      "money", "back", "terminate"],
+      // 1.29.0: "Do you offer refunds?" (one word of two).
+      alone: ["refund", "refunds", "refunded"] },
     { label: "How do I export the report?", answer: exportAnswer,
       // 1.25.0: "How do I export my data?", "Can I download my records?" ("data" is in the safety and delete answers too, so
       // only "export", "download"... with it decides).
@@ -871,7 +1048,7 @@
     { label: "Explain this page", answer: explainPageAnswer, match: ["page", "screen", "overview", "summarise", "summarize"] },
     { label: "How do I add a teammate?", answer: (ctx) => teammateAnswer(ctx && ctx.facts),
       match: ["teammate", "invite", "colleague", "coworker", "employee", "employees", "worker", "workers", "team", "member", "members", "user", "users", "manager", "add"] },
-    { label: "How do reminder emails work?", answer: (ctx) => reminderAnswer((ctx && ctx.facts) || {}),
+    { label: "How do reminder emails work?", answer: (ctx) => reminderAnswer((ctx && ctx.facts) || {}, ctx && ctx.label),
       match: ["reminder", "email", "digest", "alert", "notification", "remind", "inbox", "unsubscribe"] },
     { label: "How do I add an industry?", answer: industryAnswer,
       match: ["industry", "industries", "checklist", "sector", "trade", "another", "add"] },
@@ -880,7 +1057,31 @@
     // 1.25.0: "How do I change my password?", "I forgot my password", "reset password".
     { label: "How do I change my password?", answer: (ctx) => passwordAnswer(ctx && ctx.facts),
       match: ["password", "passwords", "passcode", "reset", "forgot", "forgotten", "locked", "login", "signin"] },
-  ];
+    // 1.29.0: what the no-key review found nothing for. "Which industries do you cover?", "Does it work for a salon?":
+    // the visitor's own "Which checklist fits me?" (the same label, so on the visitor's pages that button answers).
+    // A label's own words count as match words (the core's matchTyped), so the new ones keep away from words other
+    // answers need ("Can we pay by invoice?" as a label took "pay" from the prices).
+    { label: "Which checklist fits me?", answer: (ctx) => checklistAnswer(ctx && ctx.facts, ctx && ctx.label),
+      match: ["industry", "industries", "checklist", "checklists", "cover", "covers", "trade", "trades", "salon", "barber", "gym", "tattoo",
+        "shop", "restaurant", "kind", "type"],
+      alone: ["industry", "industries", "salon", "salons", "gym", "gyms", "tattoo", "tattoos", "shop", "shops"] },
+    { label: "How do I sign up?", answer: (ctx) => signupAnswer(ctx && ctx.facts),
+      match: ["sign", "signup", "register", "registration", "create", "account", "join"], alone: ["signup", "register"] },
+    { label: "What is Armo?", answer: armoAnswer, match: ["armo", "mascot", "companion", "shield", "badge"], alone: ["armo"] },
+    { label: "Your time zone", answer: timezoneAnswer,
+      match: ["time", "zone", "zones", "timezone", "timezones", "midnight", "local", "clock"], alone: ["zone", "timezone"] },
+    { label: "The class leaderboard", answer: leaderboardAnswer,
+      match: ["leaderboard", "leaderboards", "ranking", "rankings", "scoreboard", "compete", "competition"], alone: ["leaderboard", "leaderboards"] },
+    { label: "Paying by invoice", answer: (ctx) => invoiceAnswer(ctx && ctx.facts),
+      match: ["invoice", "invoices", "invoiced", "purchase", "po"], alone: ["invoice", "invoices", "invoiced"] },
+    { label: "Hello", answer: helloAnswer, match: ["hi", "hello", "hey", "hiya", "howdy", "greetings", "morning", "afternoon", "evening", "good"], greeting: true },
+    // A teacher's: "What should I do first?" (a business's names the check to fix first: PILL_ALONE) and "How long is a
+    // lesson?" (the teacher guide's own button, on every teacher page).
+    { label: "What should I do first?", answer: (ctx) => firstStepsAnswer(ctx && ctx.facts), only: "teacher",
+      match: ["first", "start", "begin", "step", "steps", "priority"], alone: ["first"] },
+    { label: "How long is a lesson?", answer: (ctx) => lessonAnswer((ctx && ctx.facts) || {}), only: "teacher",
+      match: ["minute", "minutes", "long", "lesson", "lessons", "length", "question", "questions"] },
+  ].filter((x) => !x.only || x.only === who);
 
   const TASKS = {
     "/app": "Mark this check done today: ",
@@ -939,9 +1140,10 @@
     visitor: {
       tagline: "Your OmniArmor helper",
       pills: [ANSWER("chat", "What does OmniArmor do?", (ctx) => whatAnswer(ctx && ctx.facts)),
-        ANSWER("help", "Which checklist fits me?", (ctx) => checklistAnswer(ctx && ctx.facts)),
+        ANSWER("help", "Which checklist fits me?", (ctx) => checklistAnswer(ctx && ctx.facts, ctx && ctx.label)),
         // 1.21.0: the real plans and prices, with the link to Help under them (was only the link).
-        ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts)),
+        // 1.29.0: the same answer as "What does it cost?" (PRICES), so the core counts them as one.
+        ANSWER("bolt", "See the prices", PRICES),
         ANSWER("bars", "Explain this page", explainPageAnswer),
         KEY],
     },
@@ -1044,6 +1246,7 @@
   } catch (_) { /* no document events: the page's own answers only */ }
   function globalFor(question, list) {
     const P = window.PilotPanel;
+    near = [];
     if (!question || !P || typeof P.matchTyped !== "function") return null;
     const base = window.location.href || `https://omniarmor.invalid${path}`;
     const pills = P.ownPills(welcome.pills, base);
@@ -1052,8 +1255,42 @@
     const extra = GLOBAL.filter((x) => !here.has(x.label));
     const hit = P.matchTyped(question, pills.concat(...extra.map((x) => P.cleanChips([x], base))));
     if (hit) return !hit.icon ? extra.find((x) => x.label === hit.label) || null : null;
-    return aloneFor(question, pills.concat(P.cleanChips(list, base)));
+    const alone = aloneFor(question, pills.concat(P.cleanChips(list, base)));
+    if (!alone) near = closest(question, list, extra);
+    return alone;
   }
+  // 1.29.0: a typed question nothing answers, with no key: the core's reply ("I need an AI key to answer that one.
+  // Here's what I can help with right now:") offers this page's suggestions first (noKeyItems), so the two built-in
+  // answers closest to what was typed lead them, by the words they share with it (a label's words and its match
+  // words), this page's own buttons first when they tie. They stay until a button in Pilot's window is pressed or
+  // another question is sent. None share a word: the page's own suggestions and the welcome's buttons, as before.
+  const NEAR_MOST = 2;
+  let near = [];
+  function closest(question, list, extra) {
+    const P = window.PilotPanel;
+    if (typeof P.wordsOf !== "function") return [];
+    const asked = P.wordsOf(question);
+    const pool = welcome.pills.filter((p) => p.answer !== undefined).concat(list.filter((c) => c.answer !== undefined || c.link),
+      extra.filter((x) => !x.greeting));
+    const scored = pool.map((x, n) => {
+      const own = new Set(P.wordsOf(x.label).concat(P.wordsOf((x.match || []).join(" "))));
+      return { x, n, score: asked.filter((w) => own.has(w)).length };
+    }).filter((s) => s.score > 0).sort((a, b) => b.score - a.score || a.n - b.n);
+    const out = [];
+    for (const { x } of scored) {
+      if (out.length >= NEAR_MOST) break;
+      if (out.some((o) => o.label === x.label || (o.answer !== undefined && o.answer === x.answer))) continue;
+      out.push({ label: x.label, ...(x.link ? { link: x.link } : { answer: x.answer }), ...(x.match ? { match: x.match } : {}) });
+    }
+    return out;
+  }
+  try {
+    document.addEventListener("click", (e) => {
+      const b = e && e.target && e.target.closest ? e.target.closest("button") : null;
+      if (!near.length || !b || !b.closest(".pilot-root") || b.closest(".pilot-compose")) return;
+      setTimeout(() => { near = []; }, 0);
+    }, true);
+  } catch (_) { /* no document events: the closest answers stay until the next question */ }
   // 1.27.0: a word that says on its own which answer is meant ("Do you use cookies?", "Where is my data kept?", where
   // the core wants two words to match): that GLOBAL answer, with the words typed as its match words so the core finds
   // it. Never when one of this page's own buttons lists that word under another label ("Is anything kept?" on the
@@ -1067,10 +1304,13 @@
     const said = (x) => P.wordsOf((x.alone || []).join(" ")).filter((w) => asked.includes(w));
     const pillsAlone = welcome.pills.filter((p) => PILL_ALONE[p.label] && p.answer)
       .map((p) => ({ label: p.label, answer: p.answer, match: p.match, alone: PILL_ALONE[p.label] }));
-    const fits = GLOBAL.concat(pillsAlone).filter((x) => said(x).length);
+    let fits = GLOBAL.concat(pillsAlone).filter((x) => said(x).length);
+    // 1.29.0: a weak word (the price's "much") gives way to any other answer's own word.
+    if (fits.length > 1) fits = fits.filter((x) => !x.weak);
     if (fits.length !== 1) return null;
     const pick = fits[0];
-    const theirs = items.some((i) => i.label !== pick.label && (i.match || []).some((w) => said(pick).includes(w)));
+    // 1.29.0: a button with the very same answer isn't another answer ("See the prices" and "What does it cost?").
+    const theirs = items.some((i) => i.label !== pick.label && i.answer !== pick.answer && (i.match || []).some((w) => said(pick).includes(w)));
     return theirs ? null : { ...pick, match: asked.concat(pick.match || []).slice(0, 20) };
   }
   function chips() {
@@ -1079,7 +1319,8 @@
     const list = shownChips();
     const question = typed;
     typed = "";
-    if (keyed || !question) return list;
+    if (keyed) return list;
+    if (!question) return near.length ? near.concat(list.filter((c) => !near.some((x) => x.label === c.label))) : list;
     const extra = globalFor(question, list);
     return extra ? [extra] : list;
   }

@@ -257,6 +257,9 @@ def _fill_trade(conn, cfg, now, rng, kind):
     created = _at(opened, 9, 5)
     trial_ends = iso(now + timedelta(days=max(1, cfg["ACADEMY_TRIAL_DAYS"] - WORKSPACE_AGE_DAYS)))
     owner = _user(conn, person, created)
+    # 1.29.0: a returning owner's workspace, as the business demo is: their reminder emails were chosen, so Getting
+    # started is finished (it showed "3 of 4") and Home opens on the checks themselves.
+    conn.execute("UPDATE users SET reminders_chosen_at = ? WHERE id = ?", (created, owner))
     org = _org(conn, name, created, trial_ends)
     conn.execute("INSERT INTO memberships (user_id, org_id, role, created_at) VALUES (?, ?, 'owner', ?)",
                  (owner, org, created))

@@ -214,6 +214,24 @@ check to fix first; "start" and "priority" are among its words. On Home, "What's
 (one per tracked item; it gave the page's totals, which count each check once) and gives each its detail line
 beside its tag.
 
+**1.29.0**: new in `GLOBAL`, each from the app itself: the industries and a trade by name ("Does it work for a
+salon?": `checklistAnswer` starts with that trade's page, from the `trades` on the tag, now signed in too), signing
+up, Armo, the time zone, the class leaderboard, paying by invoice (`invoice_email` on the tag: a school's plans can
+be; Pro and Plus are paid by card) and "Hi" or "Hello" (a hello, with the welcome's buttons under it). A teacher's
+`GLOBAL` (`only: "teacher"`) adds "What should I do first?" and "How long is a lesson?". "card" and "credit" ask the
+trial answer on its own, which then says what Help says about a card; "refund" asks the cancel answer, which starts
+with the refund. The price's words ("much", "price", "cost") are `weak`: they ask the prices on their own unless another
+answer's own word is there too ("How much is the yearly plan?" stays yearly), and "See the prices" shares its answer
+(`PRICES`) so it never stands in their way. A label's own words count as match words, so a new label keeps clear of
+words others need. Signed in, "How many days left on my trial?" starts with the workspace's own days (`trial_days_left`,
+`plan_name` on the tag); "Who gets the reminder emails?" and "Can I turn off reminder emails?" get their own answers
+(Settings, **Your reminder emails**); a teacher's "Is my students' data safe?" says what is kept about a student and
+that the class report shows totals only. A typed question nothing answers, with no key, gets the core's reply with
+the two closest built-in answers first among its buttons (`closest`, by the words they share; this page's buttons
+first on a tie): the config puts them at the head of this page's suggestions (`near`), which the core's no-key row
+lists first, until a button in Pilot's window is pressed or another question is sent. On a phone, a signed-in page has
+**Ask Pilot** in the menu (`page.js`).
+
 **OmniArmor's colours** (1.18.0): the config's `themeClass: "omni-pilot"` puts a class on Pilot's root,
 and `app.css` (".pilot-root.omni-pilot") gives the window OmniArmor's warm black with the orange-to-red
 edge: core 1.4.1's theming variables (`--pilot-panel-bg`, `--pilot-pill-bg` and the rest) and a few rules of

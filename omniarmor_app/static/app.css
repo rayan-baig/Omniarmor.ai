@@ -754,6 +754,12 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
   .nav-drop{position:absolute;right:0;top:calc(100% + 8px);z-index:80;min-width:220px;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--raise);box-shadow:0 16px 40px rgba(0,0,0,.55)}
   .nav-drop a,.nav-drop button,.nav-drop form{width:100%}
   .nav-drop a,.nav-drop button{justify-content:flex-start;color:var(--ink)}
+  /* 1.29.0: Armo's count on the Menu button while he is away (armo.js), at its corner, over no words; and the
+     menu's first lines, his count and "Ask Pilot". */
+  .nav-menu > summary{position:relative}
+  .menu-count{position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--block);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg);line-height:1}
+  .menu-count[hidden]{display:none}
+  .nav-drop .nav-armo{font-weight:600}
 }
 @media (max-width:400px){
   .wordmark{font-size:20px}
@@ -799,6 +805,9 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
      margin counts toward the room. */
   :root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root) main > .wrap{
     padding-right:max(32px,calc(136px - max(0px,(100vw - 1396px) / 2)))}
+  /* 1.29.0: the footer's line too: at the foot of a short page the robot sat on "Security and your data". */
+  :root.pilot-on body.has-tabs:not(.lesson-view):has(> .pilot-root) footer.site > .wrap{
+    padding-right:max(32px,calc(136px - max(0px,(100vw - 1396px) / 2)))}
 }
 
 /* Armo keeps clear of the page (1.15.0), as Pilot does: where he sits over a status tag, a button, a link or
@@ -838,8 +847,8 @@ body.has-tabs .pilot-root.pilot-at-br,body.has-tabs .pilot-root.pilot-at-tr{righ
 .how-steps .shot img{box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .hero-more{margin-bottom:8px}
 .hero-more > .plans:first-child{margin-top:0}
+/* 1.29.0: 4:5 on a phone too, as the pictures are taken (it cropped them to squares, cutting off their lower part). */
 .how-steps .shot img{aspect-ratio:4/5;object-fit:cover;object-position:top}
-@media (max-width:720px){.how-steps .shot img{aspect-ratio:1/1}}
 /* The demo bar fits a 320px phone beside the room kept for Armo (1.15.0). */
 .demo-bar{grid-template-columns:minmax(0,1fr)}
 .demo-top > *,.demo-more,.demo-body{min-width:0;overflow-wrap:anywhere}

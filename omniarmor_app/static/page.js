@@ -1,7 +1,8 @@
 /* Small helpers on every page with the top menu (base.html), 1.16.0. Everything works without them.
    - The phone's Menu button (a <details>) opens and closes with no script; this also closes it with Escape
      or a tap or focus anywhere outside it.
-   - A Print button ([data-print], on the report) prints the page. It stays hidden without this script. */
+   - A Print button ([data-print], on the report) prints the page. It stays hidden without this script.
+   - "Ask Pilot" in the menu (1.29.0) opens Pilot. It stays hidden without this script or without Pilot. */
 (function () {
   "use strict";
   Array.prototype.forEach.call(document.querySelectorAll("[data-print]"), function (b) { b.hidden = false; });
@@ -28,6 +29,18 @@
     if (!menu.open) return;
     menu.open = false;
     if (focus && summary) summary.focus();
+  }
+  // 1.29.0: "Ask Pilot" in the phone's menu on a signed-in page (base.html): shown once Pilot is on the page (its
+  // script runs after this one), it closes the menu and opens Pilot's window, which shows over everything.
+  var askPilot = menu.querySelector("[data-nav-pilot]");
+  if (askPilot) {
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.Pilot && typeof window.Pilot.open === "function") askPilot.hidden = false;
+    });
+    askPilot.addEventListener("click", function () {
+      close(false);
+      if (window.Pilot && typeof window.Pilot.open === "function") window.Pilot.open();
+    });
   }
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && menu.open) { e.preventDefault(); close(true); }

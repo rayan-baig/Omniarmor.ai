@@ -160,16 +160,17 @@ def facts(who):
         # 1.24.0: the company's, the apps' and the assistant's names (names.py), so the config and the pack never
         # type them.
         "names": names.for_pages(),
+        # 1.29.0: where a school writes to pay by invoice, for "Can we pay by invoice?".
+        "invoice_email": cf["invoice_email"],
     }
     # ... "Which checklist fits me?" (the trades the industry list leads with,
-    # each with its page, then the other trade pages) ...
-    if who == "visitor":
-        from .trades import TRADES, lead_trades
-        listed = [{"name": name, "path": url_for(endpoint, **args)} for name, endpoint, args, _ in lead_trades()]
-        paths = {t["path"] for t in listed}
-        listed += [{"name": t.name, "path": url_for("public.trade_page", slug=t.slug)} for t in TRADES
-                   if url_for("public.trade_page", slug=t.slug) not in paths]
-        data["trades"] = listed
+    # each with its page, then the other trade pages; 1.29.0: signed in too, for "Which industries do you cover?") ...
+    from .trades import TRADES, lead_trades
+    listed = [{"name": name, "path": url_for(endpoint, **args)} for name, endpoint, args, _ in lead_trades()]
+    paths = {t["path"] for t in listed}
+    listed += [{"name": t.name, "path": url_for("public.trade_page", slug=t.slug)} for t in TRADES
+               if url_for("public.trade_page", slug=t.slug) not in paths]
+    data["trades"] = listed
     # ... and "Plan a week of lessons": the Classroom track's worlds in order,
     # with their lessons and a question to talk about (the teacher guide's).
     if who == "teacher" or (who == "visitor" and (request.endpoint or "").startswith(("public.academy_schools",
@@ -178,6 +179,11 @@ def facts(who):
         data["class_plan"] = [{"title": item["world"].title, "lessons": item["lessons"], "talk": item["talk"][0]}
                               for item in class_guide()]
         data["lesson_minutes"] = LESSON_MINUTES
+    # 1.29.0: this workspace's own trial days left (a teacher's: the free class trial's) and the plan it pays for,
+    # for "How many days are left on my trial?".
+    if access is not None:
+        data["trial_days_left"] = access["pilot_days"] if who == "teacher" else access["trial_days"]
+        data["plan_name"] = access["plan_name"] if access["paid"] and not access["paused"] and access["plan_name"] else ""
     # The checklists this workspace keeps (names and page numbers only), for
     # the tools that read its own pages. Never sent to the AI by itself.
     checklists = []

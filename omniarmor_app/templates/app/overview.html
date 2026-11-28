@@ -89,6 +89,7 @@
 </section>
 <section class="ov-col" aria-labelledby="coming-due" data-coming-due>
 <h2 id="coming-due">Coming due in the next 60 days</h2>
+{%- set dated_now = problems|map(attribute=2)|selectattr('days_left', 'ne', none)|list if problems else [] %}
 {% if upcoming %}
   <ul class="list">
     {% for s, title, st in upcoming %}
@@ -102,9 +103,13 @@
     {% endfor %}
   </ul>
 {% elif later %}
-  <p class="empty">No tracked deadlines in the next 60 days. The next one is <a href="{{ url_for('app.industry', industry_id=later[0].industry_id) }}#rule-{{ later[0].key }}">{{ later[1] }}</a> in {{ later[0].industry.brand }}, due {{ later[2].due_label }}.</p>
+  <p class="empty">{{ 'Nothing else comes due' if dated_now else 'No tracked deadlines' }} in the next 60 days. The next one is <a href="{{ url_for('app.industry', industry_id=later[0].industry_id) }}#rule-{{ later[0].key }}">{{ later[1] }}</a> in {{ later[0].industry.brand }}, due {{ later[2].due_label }}.</p>
 {% elif next_dated and not any_dated %}
   {{ empty('coming-due', 'Deadlines in the next 60 days will show here once a check counted from a date has its date, such as ' ~ next_dated.rule.title ~ ' in ' ~ next_dated.industry.brand ~ '.', url_for('app.industry', industry_id=next_dated.industry_id) ~ '#rule-' ~ next_dated.key, 'Open ' ~ next_dated.rule.title) }}
+{% elif dated_now %}
+  {#- 1.29.0: what is dated already shows under Needs attention ("Due in 1 day"), so this says nothing *else* comes
+      due, as the summary does: "No tracked deadlines" sat beside a warning due tomorrow. -#}
+  <p class="empty" data-nothing-else>Nothing else comes due in the next 60 days.</p>
 {% else %}
   <p class="empty">No tracked deadlines in the next 60 days.</p>
 {% endif %}

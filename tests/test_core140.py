@@ -70,7 +70,9 @@ class TestTheConfigUsesThem(unittest.TestCase):
                      'ANSWER("spark", "What does this colour mean?", colourAnswer)', 'ANSWER("help", "How do join codes work?"',
                      'LINK("copy", "Print certificates", certificatesLink())', 'ANSWER("chat", "What does OmniArmor do?"',
                      # 1.21.0: the prices answer with the plans themselves, then the link.
-                     'ANSWER("bolt", "See the prices", (ctx) => pricesAnswer(ctx && ctx.facts))',
+                     # 1.29.0: the same answer as the typed "What does it cost?" (PRICES), so the core counts them as one.
+                     'ANSWER("bolt", "See the prices", PRICES)',
+                     'const PRICES = (ctx) => pricesAnswer(ctx && ctx.facts);',
                      'ANSWER("help", "Is it safe for students?", SAFE)',
                      'ANSWER("bolt", "How does the free trial work?"'):
             self.assertIn(pill, self.config)

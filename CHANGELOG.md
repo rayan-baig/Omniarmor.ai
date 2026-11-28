@@ -3,6 +3,51 @@
 What changed in OmniArmor (called Aegizyn in 1.24.0 and 1.25.0), in plain words, newest first. The version number
 lives in `omniarmor_app/version.py`; the Settings page and `/healthz` show it.
 
+## 1.29.0 (28 November 2026)
+
+Fixes from a strict seventeenth review.
+
+- **Pilot, with no AI key, answers more of what people type.** "How much
+  is Plus?" (and a teacher's "How much is the classroom plan?") gets the
+  prices. "Do I need a credit card?" says what Help says: no card for the
+  free trial, a card only when a plan is chosen, on Stripe's page. "Do you
+  offer refunds?" starts with the refund. "Which industries do you cover?"
+  and "Does it work for a salon?" (a gym, a tattoo studio, a shop) give the
+  trade pages, that trade's first. "How do I sign up?", "What is Armo?" and
+  "How do I change my time zone?" have answers of their own, and so do a
+  teacher's "Can I turn off the leaderboard?", "Can we pay by invoice?" (a
+  school's plan can be; Pro and Plus are paid by card), "What should I do
+  first?" and "How long is a lesson?". "Hi" and "Hello" get a hello, with
+  the welcome's buttons under it. A question nothing answers still asks for
+  a key, but offers the two closest built-in answers first among its
+  buttons.
+- **Pilot uses what it knows.** Signed in, "How many days left on my
+  trial?" starts with this workspace's own days left (or the plan it is
+  on). "Who gets the reminder emails?" and "Can I turn off reminder
+  emails?" point to Settings, Your reminder emails: each person's own
+  choice, on until they turn it off. A teacher's "Is my students' data
+  safe?" says what is kept about a student (a first name or nickname, the
+  picture they pick, lessons, scores and certificates) and that the class
+  report shows totals only.
+- **Home no longer contradicts itself.** With a dated item under Needs
+  attention ("Due in 1 day"), Coming due says "Nothing else comes due in the
+  next 60 days", as the summary does (it said "No tracked deadlines"), and
+  so does Pilot's "What's overdue?" on Home.
+- **On a phone, Pilot is in the menu** of every signed-in page ("Ask
+  Pilot"), and while Armo steps away from the page's words his count shows
+  on the Menu button, with a line at the top of the menu that opens his
+  page. He comes back out only once the page has been still a moment, so he
+  no longer blinks in and out while it scrolls.
+- **Smaller things:** History says "Times are UTC" (it said "UTC (UTC)").
+  A teacher's welcome no longer mentions due dates rolling over at midnight.
+  A yes-or-no check's line under Needs attention (and on the summary) no
+  longer repeats its title ("Premises free of pests: Call a licensed...").
+  The salon, tattoo, gym and shop demos open with Getting started finished,
+  as the business demo does. The home page's step pictures keep their 4:5 on
+  a phone (they were cropped to squares), and the report picture was taken
+  again with today's data. On a computer, Pilot's robot no longer sits on
+  the footer's links at the foot of a short page.
+
 ## 1.28.0 (28 November 2026)
 
 Fixes from a strict sixteenth review.

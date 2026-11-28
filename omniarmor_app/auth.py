@@ -177,8 +177,9 @@ def signup():
         if teacher:
             # A teacher starts with the class; the free trial is already on.
             days = current_app.config["CLASSROOM_PILOT_DAYS"]
-            flash(escape(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
-                         " students by first name or nickname. ") + _zone_line(tz), "ok")
+            # 1.29.0: no line about due dates rolling over at midnight: a teacher's trial has no due dates.
+            flash(f"Welcome to OmniArmor. Your free {days}-day trial is on: add your class, then your"
+                  " students by first name or nickname.", "ok")
             return redirect(url_for("classes.index"))
         # A new workspace opens on an industry page, where the first check is
         # saved, not on an overview of empty totals one click further away.

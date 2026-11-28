@@ -97,8 +97,14 @@
       <div class="nav-wide">{{ nav_links() }}</div>
       {% if not g.user and not g.kid %}<a class="btn nav-cta" href="{{ url_for('auth.signup') }}" data-start-free>Start free</a>{% endif %}
       <details class="nav-menu" data-nav-menu>
-        <summary aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></summary>
-        <div class="nav-drop">{{ nav_links() }}</div>
+        <summary aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span>{% if g.user %}<b class="menu-count" data-armo-menu-count hidden></b>{% endif %}</summary>
+        {#- 1.29.0: on a phone a signed-in page keeps Pilot a tap away here (its robot steps back while Armo has a
+            count, and Armo steps away where he would cover the page's words), and while Armo is away his count
+            shows on the Menu button and here (armo.js), over no words. -#}
+        <div class="nav-drop">
+          {%- if g.user %}<a href="{{ url_for('armo.page') }}" class="nav-armo" data-armo-menu-link hidden></a>{% endif %}
+          {%- if g.user and pilot_tag() %}<button type="button" class="nav-pilot" data-nav-pilot hidden>Ask {{ ASSISTANT }}</button>{% endif %}
+          {{- nav_links() }}</div>
       </details>
     </nav>
     <script src="{{ url_for('static', filename='page.js') }}" defer></script>

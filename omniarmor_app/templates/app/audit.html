@@ -13,8 +13,9 @@
 {% if rows %}
 {# 1.22.0: on a phone each entry is a card (app.css, "History on a phone"): "Jules Marrow · PharmacyArmor ·
    20 Nov 16:07" on top, then the change in full. A computer and the CSV keep the four columns. #}
-{#- 1.23.0: every time in the workspace's own time zone (Settings), as on the summary; it was UTC. -#}
-<p class="audit-zone" data-audit-zone>Times are {{ zone }} ({{ g.org.timezone }}{% if zone_abbr and zone_abbr != 'UTC' %}, {{ zone_abbr }} now{% endif %}), this workspace's time zone. The CSV uses it too.</p>
+{#- 1.23.0: every time in the workspace's own time zone (Settings), as on the summary; it was UTC. 1.29.0: the zone
+    named once ("Times are UTC", not "UTC (UTC)"). -#}
+<p class="audit-zone" data-audit-zone>Times are {{ zone }}{% if zone != g.org.timezone %} ({{ g.org.timezone }}{% if zone_abbr and zone_abbr != 'UTC' %}, {{ zone_abbr }} now{% endif %}){% endif %}, this workspace's time zone. The CSV uses it too.</p>
 <div class="table-wrap">
   <table class="audit-cards" data-audit-table>
     <thead><tr><th scope="col">When ({{ zone }})</th><th scope="col">Who</th><th scope="col">Industry</th><th scope="col">Change</th></tr></thead>

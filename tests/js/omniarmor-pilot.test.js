@@ -1183,7 +1183,8 @@ test("1.21.0: the answers on every page never show as buttons, and a key turns t
     }
   }
   const src = fs.readFileSync(site("pilot-omniarmor.js"), "utf8");
-  assert.ok(src.includes("if (keyed || !question) return list;"));
+  // 1.29.0: with no key and nothing typed, the closest answers to a question nothing answered lead the list.
+  assert.ok(src.includes("if (keyed) return list;"));
 });
 
 // ---------------------------------------------------------------- 1.22.0: Pilot core 1.4.3
@@ -1680,4 +1681,218 @@ test("1.28.0: \"What's overdue?\" on Home counts the rows it lists, and gives ea
   }
   // A row with no detail line shows its tag alone, as before.
   assert.match(mountOn("business", "/app", overviewPage()).answer("What's due or overdue?"), /\(\/app\/industry\/2#rule-hood\): OVERDUE\n/);
+});
+
+// ---------------------------------------------------------------- 1.29.0: a strict seventeenth review
+
+const ALL_TRADES = TRADES.concat([{ name: "Gyms and fitness studios", path: "/for/gyms-and-fitness-studios" },
+  { name: "Tattoo and piercing studios", path: "/for/tattoo-and-piercing-studios" }, { name: "Shops and retail", path: "/for/shops-and-retail-stores" }]);
+
+test("1.29.0: the business questions the review found nothing for are answered with no key, from the real plans", () => {
+  for (const [who, where] of [["visitor", "/"], ["visitor", "/pricing"], ["visitor", "/help"], ["visitor", "/industries"],
+    ["business", "/app"], ["business", "/app/audit"], ["business", "/app/plan"]]) {
+    const ask = typedEverywhere(who, where, { label: true, facts: { trades: ALL_TRADES } });
+    const got = (q) => { const r = ask(q); assert.ok(r, `${who} ${where}: "${q}" found nothing`); return r; };
+    // Price words go to the prices.
+    for (const q of ["How much is Plus?", "How much is Pro?", "What's the price of Plus?"]) {
+      assert.match(got(q).text, /\*\*Plus: PLUS-PRICE\.\*\*/, `${who} ${where}: ${q}`);
+    }
+    // A card: what Help says (no card for the trial; a card only when a plan is chosen, on Stripe's page).
+    const card = got("Do I need a credit card?").text;
+    assert.match(card, /^\*\*No card for the free trial\.\*\* Every new workspace gets 14 days of everything in Plus without one, so nothing is charged when it ends\./);
+    assert.match(card, /A card is asked for only when the workspace owner chooses \*\*Pro\*\* or \*\*Plus\*\*, on Stripe's secure checkout page/);
+    // Refunds, on their own.
+    assert.match(got("Do you offer refunds?").text, /^\*\*No refund for time already paid for, and nothing more is charged once you cancel\.\*\*/);
+    // The industries, and a trade by name: its own page.
+    const which = got("Which industries do you cover?").text;
+    assert.ok(linksIn(which).includes("/for/salons-and-barbershops"), `${where}: ${which}`);
+    assert.ok(linksIn(which).includes("/industries"));
+    for (const [q, link] of [["Does it work for a salon?", "/for/salons-and-barbershops"], ["Do you have a checklist for a gym?", "/for/gyms-and-fitness-studios"],
+      ["Is it good for a tattoo studio?", "/for/tattoo-and-piercing-studios"], ["Does it work for my shop?", "/for/shops-and-retail-stores"]]) {
+      const text = got(q).text;
+      assert.equal(linksIn(text)[0], link, `${who} ${where}: ${q}`);
+      assert.match(text, /^\*\*Yes\.\*\* For a /, q);
+    }
+    // Signing up, Armo, the time zone.
+    const signup = got("How do I sign up?").text;
+    if (who === "visitor") {
+      assert.ok(linksIn(signup).includes("/signup") && linksIn(signup).includes("/signup?then=classes"), signup);
+    } else {
+      assert.match(signup, /^You're signed in already\./);
+      assert.ok(linksIn(signup).includes("/app/settings#team"));
+    }
+    assert.match(got("What is Armo?").text, /^\*\*Armo is OmniArmor's helper inside the app:\*\* the little shield/);
+    const zone = got("How do I change my time zone?").text;
+    if (who === "business") {
+      assert.match(zone, /^The workspace owner opens \[Settings\]\(\/app\/settings#workspace\), picks it under \*\*Time zone\*\* in the \*\*Company\*\* section and presses \*\*Save company settings\*\*\. Due dates roll over at midnight/);
+    } else {
+      assert.match(zone, /^It's set from your device when you sign up/);
+    }
+    for (const q of ["How much is Plus?", "Do I need a credit card?", "Do you offer refunds?", "Which industries do you cover?", "How do I sign up?",
+      "What is Armo?", "How do I change my time zone?"]) {
+      if (who === "visitor") for (const l of linksIn(got(q).text)) assert.ok(!l.startsWith("/app"), `${where}: ${q} links ${l}`);
+    }
+  }
+  // Signed in, the industries answer says where to add one; a visitor's, that more than one can be picked at sign-up.
+  assert.ok(linksIn(typedEverywhere("business", "/app", { label: true, facts: { trades: ALL_TRADES } })("Which industries do you cover?").text)
+    .includes("/app/settings#workspace"));
+  // The questions that had these words before keep their answers.
+  const biz = typedEverywhere("business", "/app", { label: true });
+  assert.equal(biz("How much is the yearly plan?").label, "Is there a yearly discount?");
+  assert.equal(biz("How do I pay?").label, "What does it cost?");
+  assert.equal(biz("How do I add an industry?").label, "How do I add an industry?");
+  assert.equal(biz("How do I change my password?").label, "How do I change my password?");
+  assert.equal(biz("How do I delete my account?").label, "How do I delete my workspace?");
+  assert.equal(typedEverywhere("visitor", "/classrooms")("Do I need a card?").label, "How does the free trial work?");
+});
+
+test("1.29.0: a teacher's questions the review found nothing for are answered with no key, true to the app", () => {
+  const classes = [{ id: 12, name: "Room 12" }];
+  for (const where of ["/app/academy/classes", "/app/academy/classes/12", "/app/settings", "/app/audit"]) {
+    const ask = typedEverywhere("teacher", where, { label: true, classes, facts: { invoice_email: "schools@omniarmor.example" } });
+    const got = (q) => { const r = ask(q); assert.ok(r, `${where}: "${q}" found nothing`); return r; };
+    const board = got("Can I turn off the leaderboard?").text;
+    assert.match(board, /^\*\*Yes\. The class leaderboard starts off,\*\* and the teacher turns it on or off on /);
+    assert.match(board, /\*\*Turn the leaderboard off\*\*/);
+    if (where === "/app/academy/classes/12") assert.ok(linksIn(board).includes("/app/academy/classes/12#leaderboard"));
+    assert.match(got("How much is the classroom plan?").text, /Classroom\W+CLASSROOM-PRICE a year/);
+    assert.ok(!got("How much is the classroom plan?").text.includes("PRO-PRICE"));
+    const invoice = got("Can we pay by invoice?").text;
+    assert.match(invoice, /^\*\*Yes\.\*\* A school's plan \(\*\*Classroom\*\* or \*\*Whole school\*\*, paid yearly\) can be paid by card or by invoice: write to schools@omniarmor\.example/);
+    assert.match(got("How long is a lesson?").text, /^A lesson is 5 questions and takes about 3 minutes\./);
+    const first = got("What should I do first?");
+    assert.equal(first.label, "What should I do first?", where);
+    assert.match(first.text, /join codes/);
+  }
+  // With no class yet, the first step is to add one.
+  const none = typedEverywhere("teacher", "/app/academy/classes", { label: true })("What should I do first?").text;
+  assert.match(none, /^\*\*Start by adding your class:\*\* \[Add your class\]\(\/app\/academy\/classes#add-class\)/);
+  // On the classroom plans' own page, its button still answers the price.
+  assert.equal(typedEverywhere("teacher", "/app/settings")("How much does it cost?").label, "Classroom or Whole school?");
+  // A business hears that invoices are for a school's plans, and "What should I do first?" is still the check to fix first.
+  const biz = typedEverywhere("business", "/app", { label: true, due: WEEK_DUE });
+  assert.match(biz("Can we pay by invoice?").text, /^\*\*Pro\*\* and \*\*Plus\*\* are paid by card, on Stripe's secure checkout page .*Paying by invoice is for a school's plans/);
+  assert.equal(biz("What should I do first?").label, "Summarise my report");
+});
+
+test("1.29.0: \"Hi\" and \"Hello\" get a hello back, with the welcome's buttons under it", () => {
+  const P = panel();
+  for (const [who, where, tagline] of [["visitor", "/", "OmniArmor's helper"], ["business", "/app", "your checklist helper"],
+    ["teacher", "/app/academy/classes", "your classroom helper"]]) {
+    const ask = typedEverywhere(who, where, { label: true });
+    for (const q of ["Hi", "Hello", "hey", "Hi there", "Good morning"]) {
+      const got = ask(q);
+      assert.ok(got, `${who}: "${q}"`);
+      assert.equal(got.label, "Hello");
+      assert.equal(got.text, `Hi! I'm Pilot, ${tagline}. Press one of these for an answer right away, or type a question.`);
+    }
+    // Under it, the core shows the welcome's buttons (againItems), as under any of the app's own answers.
+    const c = mountFor(who, where);
+    const base = `https://omniarmor.example${where}`;
+    const pills = P.ownPills(c.welcomePills, base);
+    const row = P.againItems([{ role: "user", text: "Hi" }, { role: "assistant", text: "Hi!", local: true, of: "Hello" }], pills, [], true);
+    for (const p of pills.filter((x) => !x.builtin)) assert.ok(row.some((r) => r.label === p.label), `${who}: ${p.label}`);
+  }
+});
+
+test("1.29.0: a question nothing answers offers the two closest built-in answers first, not only a refusal", () => {
+  const P = panel();
+  let given = null;
+  const listeners = [];
+  const store = { prefix: "omniarmor-pilot", loadChat: () => [], ready: () => false, clearChat() {}, setUi() {}, all: () => ({}), forget() {} };
+  const dataset = { who: "business", facts: JSON.stringify(FACTS), account: "a1", due: "[]", classes: "[]", checklists: "[]" };
+  const base = "https://omniarmor.example/app";
+  const timers = [];
+  const runTimers = () => { while (timers.length) timers.shift()(); };
+  vm.runInNewContext(fs.readFileSync(site("pilot-omniarmor.js"), "utf8"), {
+    setTimeout: (fn) => { timers.push(fn); return timers.length; },
+    window: { Pilot: { mount: (c) => { given = c; return true; }, store }, PilotPanel: P, location: { pathname: "/app", href: base, hash: "" },
+      innerHeight: 800, sessionStorage: { getItem: () => null, setItem() {} } },
+    document: { getElementById: () => ({ dataset }), title: "OmniArmor", querySelector: () => null, querySelectorAll: () => [],
+      addEventListener: (type, fn, capture) => { if (capture) listeners.push([type, fn]); } },
+  });
+  const send = (q) => {
+    const form = { classList: { contains: (c) => c === "pilot-compose" }, querySelector: () => ({ value: q }) };
+    for (const [type, fn] of listeners) if (type === "submit") fn({ target: form });
+    // As the core does: typedHere asks for this page's suggestions first, then the no-key reply asks again.
+    const typedItems = P.ownPills(given.welcomePills, base).concat(P.cleanChips([...given.chips({})], base));
+    const hit = P.matchTyped(q, typedItems);
+    runTimers();
+    return hit;
+  };
+  const row = () => [...P.noKeyItems(P.ownPills(given.welcomePills, base), P.cleanChips([...given.chips({})], base), true)].map((x) => String(x.label));
+  const before = row();
+  assert.equal(send("Can you write my report intro?"), null, "still the no-key reply");
+  const offered = row();
+  assert.deepEqual(offered.slice(0, 2), ["Summarise my report", "How do I export the report?"], offered.join(" | "));
+  assert.equal(offered[offered.length - 1], "Add my AI key");
+  assert.equal(new Set(offered).size, offered.length, "each once");
+  for (const x of P.cleanChips([...given.chips({})], base).slice(0, 2)) assert.ok(x.answer !== undefined, x.label);
+  // A button pressed in Pilot's window puts the row back as it was.
+  const button = { closest: (sel) => (sel === "button" || sel === ".pilot-root" ? button : null) };
+  for (const [type, fn] of listeners) if (type === "click") fn({ target: button });
+  runTimers();
+  assert.deepEqual(row(), before);
+  // A question that shares no word with any answer leaves the row as it was; one that is answered too.
+  send("Write me a poem");
+  assert.deepEqual(row(), before);
+  send("Can you write my report intro?");
+  assert.ok(send("What's overdue?"));
+  assert.deepEqual(row(), before);
+});
+
+test("1.29.0: Pilot answers from this workspace's own facts: trial days left, who gets the reminder emails, a teacher's students", () => {
+  const trial = (who, where, facts) => typedEverywhere(who, where, { label: true, facts })("How many days left on my trial?");
+  assert.match(trial("business", "/app", { trial_days_left: 9, plan_name: "" }).text,
+    /^\*\*9 days left on your free trial\.\*\*\n\n\*\*When the free trial ends, nothing is deleted and nothing is charged\.\*\*/);
+  assert.match(trial("business", "/app/audit", { trial_days_left: 1, plan_name: "" }).text, /^\*\*1 day left on your free trial\.\*\*/);
+  assert.equal(trial("business", "/app", { trial_days_left: 0, plan_name: "Pro" }).text,
+    "**You're not on a free trial: this workspace is on Pro.** Its details are on the [Plans page](/app/plan).");
+  assert.match(trial("business", "/app", { trial_days_left: 0, plan_name: "" }).text, /^\*\*No free trial days left\.\*\*\n\n\*\*When the free trial ends/);
+  assert.match(trial("teacher", "/app/academy/classes", { trial_days_left: 12, plan_name: "" }).text, /^\*\*12 days left on your free class trial\.\*\*/);
+  assert.match(trial("visitor", "/", {}).text, /^\*\*When the free trial ends, nothing is deleted/, "a visitor has no trial of their own");
+  // "What happens when my trial ends?" is as before.
+  assert.match(typedEverywhere("business", "/app", { label: true, facts: { trial_days_left: 9 } })("What happens when my trial ends?").text,
+    /^\*\*When the free trial ends/);
+
+  for (const where of ["/app", "/app/audit", "/app/notifications", "/app/report"]) {
+    const ask = typedEverywhere("business", where, { label: true });
+    const whoGets = ask("Who gets the reminder emails?").text;
+    assert.match(whoGets, /^\*\*Everyone on the team who has them on, each at their own email address\.\*\*/, where);
+    assert.ok(linksIn(whoGets).includes("/app/settings#reminders"), where);
+    for (const q of ["Can I turn off reminder emails?", "How do I unsubscribe from the reminder emails?"]) {
+      const off = ask(q).text;
+      assert.match(off, /^\*\*Yes\.\*\* In \[Settings\]\(\/app\/settings#reminders\), under \*\*Your reminder emails\*\*, untick the daily digest, the time-limit alerts or both, then press \*\*Save\*\*\./, `${where}: ${q}`);
+    }
+    assert.match(ask("How do reminder emails work?").text, /^Once a day each person on the team gets one email/, "the general answer as before");
+  }
+  // A teacher without the school checklist gets no reminder emails.
+  assert.match(typedEverywhere("teacher", "/app/academy/classes", { label: true })("Who gets the reminder emails?").text,
+    /^OmniArmor emails a teacher about the plan and the password only/);
+
+  for (const where of ["/app/academy/classes", "/app/academy/classes/12", "/app/settings"]) {
+    const ask = typedEverywhere("teacher", where, { label: true, classes: [{ id: 12, name: "Room 12" }] });
+    for (const q of ["Is my students' data safe?", "Is my students data safe?", "Is my class's data private?"]) {
+      const text = ask(q).text;
+      assert.match(text, /^\*\*Yes\. A student is only a first name or nickname you type:\*\* never a last name, email, birthdate or photo/, `${where}: ${q}`);
+      assert.match(text, /\*\*The class report\*\* \(the trial report during the free trial\) shows totals only: students, lessons finished, certificates and topics covered\. It names no student\./);
+      assert.ok(linksIn(text).includes("/privacy#students"));
+      assert.ok(!/\b(Ava|Liam|Noah)\b/.test(text));
+    }
+    assert.match(ask("Is my data safe?").text, /^Yes\. We don't sell your data/, "the general answer, as before");
+  }
+  assert.match(typedEverywhere("business", "/app", { label: true })("Is my students' data safe?").text, /^Yes\. We don't sell your data/);
+});
+
+test("1.29.0: on Home, \"What's overdue?\" says nothing else comes due when Needs attention has items, as the page does", () => {
+  const page = (empty) => h("main", {},
+    h("section", { "data-needs-attention": "" }, h("ul", { class: "list" },
+      h("li", {}, h("a", { class: "row", "data-level": "WARNING", "data-days": "1", href: "/app/industry/30#rule-i9" },
+        h("span", {}, h("span", { class: "title" }, "Form I-9"), h("span", { class: "meta", "data-attention-detail": "" }, "Due in 1 day")),
+        h("span", { class: "tag WARNING" }, "Warning"))))),
+    h("section", { "data-coming-due": "" }, ...(empty ? [h("p", { class: "empty" }, empty)] : [])));
+  for (const said of ["Nothing else comes due in the next 60 days.", ""]) {
+    const text = mountOn("business", "/app", page(said)).answer("What's due or overdue?");
+    assert.match(text, /^\*\*Needs attention: 0 blocked, 1 warning\.\*\*\n- \[Form I-9\]\(\/app\/industry\/30#rule-i9\): Warning · Due in 1 day\n\nNothing else comes due in the next 60 days\.$/, said);
+  }
 });

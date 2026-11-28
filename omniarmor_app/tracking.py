@@ -240,6 +240,12 @@ class ItemState:
         its reading in words, said once: "44°F is over the 41°F limit..." already says 44°F, so no "· last reading
         44°F" after it."""
         lead = self.due_text or self.message or ""
+        # 1.29.0: a yes-or-no check's message starts with its own title ("Premises free of pests: Call a licensed
+        # pest control operator..."), which the row already shows just above: said once.
+        title = f"{self.rule.title}: "
+        if not self.due_text and lead.startswith(title) and len(lead) > len(title):
+            lead = lead[len(title):]
+            lead = lead[:1].upper() + lead[1:]
         line = self.reading_line
         if line and not self.due_text and not self.mode and self.shown_value and lead.startswith(self.shown_value):
             line = ""

@@ -17,7 +17,9 @@
    his corner (armo-tucked), where on a phone the page's column keeps room
    for him (app.css). Where even tucked he would cover the page's words, he
    steps away (armo-away, 1.28.0). He comes back out when the spot is free
-   again. */
+   again: 1.29.0, once the page has been still a moment, so he doesn't
+   blink in and out as lines scroll past. While he is away his count shows
+   on the phone's Menu button and at the top of its menu, over no words. */
 (function () {
   "use strict";
   var root = document.querySelector("[data-companion]");
@@ -131,6 +133,7 @@
     next.hidden = !options.next;
     bubble.hidden = false;
     root.classList.remove("armo-away");
+    syncMenu();
     bubble.classList.remove("pop");
     void bubble.offsetWidth; // restart the pop animation
     bubble.classList.add("pop");
@@ -191,12 +194,34 @@
     pose("idle");
   }
 
+  function needsWords() {
+    return state.needs + (state.needs === 1 ? " thing needs" : " things need") + " attention";
+  }
   function updateBadge() {
     count.textContent = state.needs;
     count.hidden = !state.needs;
-    button.setAttribute("aria-label", state.needs
-      ? "Armo: " + state.needs + (state.needs === 1 ? " thing needs" : " things need") + " attention"
-      : "Armo");
+    button.setAttribute("aria-label", state.needs ? "Armo: " + needsWords() : "Armo");
+    syncMenu();
+  }
+
+  // 1.29.0: while he is away (armo-away) with something to report, his count is on the phone's Menu button and the
+  // menu's first line links to his page, so a phone never shows no helper and no count at all.
+  var menuCount = document.querySelector("[data-armo-menu-count]");
+  var menuLink = document.querySelector("[data-armo-menu-link]");
+  var menuSummary = menuCount && menuCount.closest ? menuCount.closest("summary") : null;
+  function syncMenu() {
+    var away = root.classList.contains("armo-away") && state.needs > 0;
+    if (menuCount) {
+      menuCount.textContent = state.needs;
+      menuCount.hidden = !away;
+    }
+    if (menuLink) {
+      menuLink.textContent = "Armo: " + needsWords();
+      menuLink.hidden = !away;
+    }
+    if (menuSummary) {
+      menuSummary.setAttribute("aria-label", away ? "Menu, Armo: " + needsWords() : "Menu");
+    }
   }
 
   // Click Armo: show the issue if there is one, otherwise chat.
@@ -355,6 +380,16 @@
     return false;
   }
   var clearQueued = false;
+  // 1.29.0: out, tucked or away, from least to most out of the way. He steps further away at once (never over the
+  // page's words), but comes back out only once the page has been still for CALM_MS and the spot is still free,
+  // so he doesn't blink in and out as lines scroll past under him.
+  var PLACES = ["out", "tucked", "away"];
+  var CALM_MS = 450;
+  var lastScroll = 0;
+  var calmTimer = null;
+  function place() {
+    return root.classList.contains("armo-away") ? "away" : root.classList.contains("armo-tucked") ? "tucked" : "out";
+  }
   function keepClear() {
     if (clearQueued) return;
     clearQueued = true;
@@ -364,13 +399,23 @@
       if (!bubble.hidden) return;
       // Judged at full size, in his own spot: out, measured, and back in
       // within one frame, so nothing flickers.
+      var was = place();
       root.classList.remove("armo-tucked", "armo-away");
       root.classList.toggle("armo-tucked", busy());
       // 1.28.0: still on the page's words once tucked (a narrow phone: "6 without a reading" on the summary), he
       // steps away until the spot is free again, rather than cover them.
       if (root.classList.contains("armo-tucked") && busy()) root.classList.add("armo-away");
+      var still = Date.now() - lastScroll;
+      if (PLACES.indexOf(place()) < PLACES.indexOf(was) && still < CALM_MS) {
+        root.classList.toggle("armo-tucked", was !== "out");
+        root.classList.toggle("armo-away", was === "away");
+        clearTimeout(calmTimer);
+        calmTimer = setTimeout(keepClear, CALM_MS - still + 20);
+      }
+      syncMenu();
     });
   }
+  window.addEventListener("scroll", function () { lastScroll = Date.now(); }, { passive: true });
   window.addEventListener("scroll", keepClear, { passive: true });
   window.addEventListener("resize", keepClear);
   document.addEventListener("focusin", keepClear);
